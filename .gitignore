@@ -1,0 +1,33 @@
+# Local environment / secrets — never commit real credentials.
+.env
+.env.*
+!.env.example
+
+# Local DB and backups
+contest.db
+contest.db.bak-*
+
+# Uploaded files
+uploads/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Claude Code workspace state — local-only, never push.
+.claude/
+
+# Test cache
+.pytest_cache/

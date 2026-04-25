@@ -1,0 +1,249 @@
+services:
+  backend:
+    image: ${DOCKER_USER:-codearena}/codearena-backend:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: codearena-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Pass through from host .env (shared secret, SMTP, etc.). Adjust as needed.
+      SECRET_KEY: ${SECRET_KEY:-}
+      # HTTP worker count. Default 4 — comfortable for ~200 active users.
+      # Each worker is a separate process: more parallelism, more memory.
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-4}
+      # SQLAlchemy pool sizing. Per-worker — total connections is
+      # (UVICORN_WORKERS × (DB_POOL_SIZE + DB_MAX_OVERFLOW)) at burst.
+      # Defaults give 4 × 25 = 100 burst; postgres max_connections=200.
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-15}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SSL: ${SMTP_SSL:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      SCORING_TIMEOUT_SECONDS: ${SCORING_TIMEOUT_SECONDS:-30}
+      SCORING_MODE: ${SCORING_MODE:-subprocess}
+      SCORING_IMAGE: ${SCORING_IMAGE:-codearena-scoring:latest}
+      SCORING_MEMORY_MB: ${SCORING_MEMORY_MB:-256}
+      SCORING_CPUS: ${SCORING_CPUS:-0.5}
+      # Composed URL uses the postgres service below. Override DATABASE_URL
+      # in .env if you want to point at an external DB instead.
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-codearena}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-codearena}}
+      # Redis/RQ scoring queue. Unset = fallback to in-process thread pool.
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SCORING_QUEUE_NAME: ${SCORING_QUEUE_NAME:-scoring}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    volumes:
+      # User-uploaded artefacts (submissions, statements, DOMjudge
+      # packages). Bind-mounted to a host directory so they're visible,
+      # backupable with plain tar, and can't be wiped by a stray
+      # ``docker volume prune`` the way a named volume could. Set
+      # UPLOADS_DIR in .env to move it elsewhere.
+      - ${UPLOADS_DIR:-./uploads}:/app/backend/uploads
+      # SCORING_MODE=docker needs the host Docker socket so the backend can
+      # spawn sibling scoring containers. Grants the backend root-equivalent
+      # on the host — acceptable for a single-tenant contest server where
+      # the backend is the only trusted app on the box.
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Internal only — Caddy is the one public-facing service. For local dev
+    # without Caddy, add `ports: - "8000:8000"`.
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  frontend:
+    image: ${DOCKER_USER:-codearena}/codearena-frontend:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: codearena-frontend
+    depends_on:
+      - backend
+    # Bind only to localhost so the host's nginx (or Caddy) can proxy to it.
+    # 127.0.0.1 prefix is important — without it the port would be public.
+    ports:
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-2027}:80"
+    restart: unless-stopped
+
+  caddy:
+    # Opt-in: only starts with `docker compose --profile edge-caddy up -d`.
+    # Skip it if the host already runs nginx/Traefik/etc. terminating TLS.
+    image: caddy:2.8-alpine
+    container_name: codearena-caddy
+    profiles: [ "edge-caddy" ]
+    depends_on:
+      - frontend
+    # Bind to a loopback port by default so a host-level nginx/Traefik
+    # can proxy in front of Caddy without port clashes. Override via
+    # .env (CADDY_BIND=0.0.0.0 and CADDY_HOST_PORT=80) if Caddy IS the
+    # edge of your deployment.
+    ports:
+      - "${CADDY_BIND:-127.0.0.1}:${CADDY_HOST_PORT:-9080}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: codearena-postgres
+    # Stock postgres ships with max_connections=100. With UVICORN_WORKERS=4
+    # and the SQLAlchemy pool sized to burst at 25/worker (= 100 across
+    # backend + ~10 across workers + headroom for psql / pg_dump), 100 is
+    # the floor. 200 leaves room for spikes and admin sessions.
+    # shared_buffers bumped accordingly — postgres' default 128MB is
+    # tiny for our row volume; 256MB is still conservative.
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=${POSTGRES_MAX_CONNECTIONS:-200}"
+      - "-c"
+      - "shared_buffers=${POSTGRES_SHARED_BUFFERS:-256MB}"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-codearena}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-codearena}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    # No host port — backend reaches it via the internal docker network only.
+    # Uncomment the ports block if you need to connect with psql from the host.
+    # ports:
+    #   - "127.0.0.1:5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-codearena}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    # Scoring queue broker. Persistence is ON so an in-flight RQ job
+    # survives a restart: AOF flushes every second + a periodic RDB
+    # snapshot. Redis data is tiny (the queue, not submission blobs),
+    # so a named volume is cheap.
+    image: redis:7-alpine
+    container_name: codearena-redis
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --save
+      - "60 1"
+      - --save
+      - "300 10"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  worker:
+    # Horizontally scalable scoring worker. Uses the same image as the
+    # backend (shares scoring_runner + scoring_jobs). Runs
+    # ``python -m backend.worker`` which consumes the Redis queue; does
+    # NOT expose any HTTP port.
+    #
+    # The replica count is driven by SCORING_WORKER_REPLICAS in .env
+    # (default 1). ``deploy.replicas`` is honored by ``docker compose
+    # up -d`` since Compose v2.13, so bumping the env var + plain
+    # ``up -d`` is enough to scale permanently across restarts — no
+    # more ``--scale`` flag to remember.
+    image: ${DOCKER_USER:-codearena}/codearena-backend:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    deploy:
+      replicas: ${SCORING_WORKER_REPLICAS:-1}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-codearena}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-codearena}}
+      # Worker DB pool — much smaller than the backend's. Each worker
+      # is a single-threaded RQ consumer holding 1 connection at a time.
+      DB_POOL_SIZE: ${WORKER_DB_POOL_SIZE:-2}
+      DB_MAX_OVERFLOW: ${WORKER_DB_MAX_OVERFLOW:-3}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SCORING_QUEUE_NAME: ${SCORING_QUEUE_NAME:-scoring}
+      SCORING_TIMEOUT_SECONDS: ${SCORING_TIMEOUT_SECONDS:-30}
+      SCORING_MODE: ${SCORING_MODE:-subprocess}
+      SCORING_IMAGE: ${SCORING_IMAGE:-codearena-scoring:latest}
+      SCORING_MEMORY_MB: ${SCORING_MEMORY_MB:-256}
+      SCORING_CPUS: ${SCORING_CPUS:-0.5}
+    volumes:
+      - ${UPLOADS_DIR:-./uploads}:/app/backend/uploads
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: [ "python", "-m", "backend.worker" ]
+    restart: unless-stopped
+
+  scoring-image:
+    # Build-only helper: `docker compose build scoring-image` materialises the
+    # SCORING_IMAGE tag used when SCORING_MODE=docker. This service never runs;
+    # `profiles: ["build-only"]` keeps `docker compose up` from touching it.
+    image: ${DOCKER_USER:-codearena}/codearena-scoring:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile.scoring
+    profiles: [ "build-only" ]
+    command: [ "true" ]
+
+  backup:
+    # One-shot backup helper. Run with:
+    #   docker compose run --rm backup
+    #
+    # Dumps the Postgres DB to a .sql.gz plus a tarball of the uploads
+    # volume, both timestamped under ./backups on the host. Exits as
+    # soon as the snapshot is done — schedule via host cron if you want
+    # nightly backups, e.g.
+    #   0 2 * * * cd /opt/codearena && docker compose run --rm backup
+    image: postgres:16-alpine
+    container_name: codearena-backup
+    profiles: [ "backup" ]
+    depends_on:
+      - postgres
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-codearena}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in .env}
+      PGDATABASE: ${POSTGRES_DB:-codearena}
+    volumes:
+      - ${UPLOADS_DIR:-./uploads}:/uploads:ro
+      - ./backups:/backups
+    entrypoint: [ "/bin/sh", "-c" ]
+    command: >-
+      "set -e;
+       stamp=$$(date +%Y%m%d-%H%M%S);
+       db_out=/backups/codearena-$${stamp}.sql.gz;
+       up_out=/backups/codearena-uploads-$${stamp}.tar.gz;
+       echo 'dumping postgres -> '$${db_out};
+       pg_dump --no-owner --no-privileges --format=plain | gzip -c >$${db_out};
+       echo 'packing uploads -> '$${up_out};
+       tar -czf $${up_out} -C /uploads . 2>/dev/null || true;
+       # keep only the 30 most recent of each kind
+       ls -1t /backups/codearena-*.sql.gz    | tail -n +31 | xargs -r rm -f --;
+       ls -1t /backups/codearena-uploads-*.tar.gz | tail -n +31 | xargs -r rm -f --;
+       echo 'done'"
+    restart: "no"
+
+volumes:
+  postgres-data:
+  redis-data:
+  caddy-data:
+  caddy-config:

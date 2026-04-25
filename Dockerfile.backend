@@ -1,0 +1,48 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+# Docker CLI: only the client — the daemon stays on the host and is reached
+# via the socket mounted at /var/run/docker.sock. Needed when
+# SCORING_MODE=docker, harmless otherwise. We want the `docker-cli` package
+# specifically (not `docker.io`, which is the daemon). On Debian trixie
+# the CLI lives in its own package.
+# Docker CLI (for SCORING_MODE=docker) + the compilers the ICPC judging
+# pipeline shells out to. Without gcc / g++ / javac the worker raises
+# FileNotFoundError on every C / C++ / Java submission, leaving rows
+# stuck in status='pending'. Python is already in the base image.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        docker-cli ca-certificates \
+        gcc g++ make \
+        default-jdk-headless \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install deps first for caching.
+COPY backend/requirements.txt /app/backend/requirements.txt
+RUN pip install --upgrade pip && pip install -r /app/backend/requirements.txt
+
+COPY backend /app/backend
+# Alembic config lives at the repo root; copy it so `alembic upgrade head`
+# works from /app inside the container.
+COPY alembic.ini /app/alembic.ini
+
+# Uploads and DB persist via named volumes mounted at /app/uploads and /app (contest.db).
+# Uploads directory is at /app/backend/uploads because
+# backend.routers.contests.UPLOAD_DIR resolves to
+# os.path.dirname(os.path.dirname(contests.py)) + "/uploads", i.e. the
+# backend package root. The compose file bind-mounts this from the host.
+RUN mkdir -p /app/backend/uploads
+
+EXPOSE 8000
+
+# Worker count is env-driven so it can be tuned per deployment without
+# rebuilding. 1 worker is fine for dev; for a contest with >50 active
+# users you want more (rule of thumb: min(CPU cores, 8); each worker is
+# its own process so memory cost is real, not free).
+ENV UVICORN_WORKERS=1
+CMD ["sh", "-c", "exec python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS}"]

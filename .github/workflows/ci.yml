@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+
+jobs:
+  backend:
+    name: Backend (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+      - name: Run pytest
+        env:
+          SECRET_KEY: ci-secret-never-used-in-prod
+          SCORING_TIMEOUT_SECONDS: "5"
+          # No SMTP → email stub; no SCORING_MODE → subprocess path.
+        run: python -m pytest backend/tests -q --tb=short
+
+  migrations:
+    name: Alembic migrations (Postgres)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+      - name: Apply every migration from zero
+        env:
+          DATABASE_URL: postgresql+psycopg2://ci:ci@localhost:5432/ci
+        # Catches migrations that only work against SQLite (batch_alter_table
+        # issues, server_default mismatches, etc.) — a class of bug we've hit
+        # repeatedly. Downgrade is not gated because not every historical
+        # migration is reversible against a populated DB.
+        run: alembic upgrade head
+
+  frontend:
+    name: Frontend (lint + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx eslint src --max-warnings=5
+      - run: npm run build
+
+  e2e:
+    name: Playwright smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install backend deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Run Playwright smoke
+        working-directory: frontend
+        run: npm run test:e2e
+      - name: Upload trace on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 7

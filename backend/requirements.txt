@@ -1,0 +1,30 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+sqlalchemy==2.0.35
+alembic==1.13.3
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.9
+pydantic==2.9.0
+aiofiles==24.1.0
+python-dotenv==1.0.1
+slowapi==0.1.9
+# Optional: if SENTRY_DSN is set, the backend auto-initialises it.
+sentry-sdk==2.17.0
+# Optional: pick a driver matching your DATABASE_URL. psycopg2-binary is the
+# easiest path for PostgreSQL; leave installed even for SQLite deployments —
+# it's ~3 MB and means no rebuild when you migrate off SQLite.
+psycopg2-binary==2.9.10
+# Redis-backed scoring queue. Optional: if REDIS_URL is unset the backend
+# falls back to the in-process ThreadPoolExecutor (fine for dev / tests).
+rq==1.16.2
+redis==5.0.8
+# DOMjudge / Kattis problem package import uses YAML manifests.
+PyYAML==6.0.2
+# TOTP-based two-factor auth. RFC 6238 implementation; ~100 lines of
+# Python wrapped in a stable API. We only call ``random_base32`` and
+# ``TOTP(secret).verify(code)``.
+pyotp==2.9.0
+# Dev/test only (safe to install in prod too):
+pytest==8.3.3
+httpx==0.27.2

@@ -1,0 +1,15 @@
+# System nginx on the host terminates TLS for challenge.vdrfinances.be
+# and forwards plain HTTP to this Caddy (bound to 127.0.0.1:8080).
+# Caddy's only job is the 500 MB body-size bump and SSE-friendly proxy
+# to the frontend container, which in turn proxies /api/* to the backend.
+:80 {
+    encode zstd gzip
+
+    request_body {
+        max_size 500MB
+    }
+
+    reverse_proxy frontend:80 {
+        flush_interval -1
+    }
+}

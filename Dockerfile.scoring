@@ -1,0 +1,16 @@
+# Scoring sandbox image. Kept deliberately minimal: just Python + the stdlib.
+# Admins who need extra packages inside the sandbox should extend this
+# Dockerfile (or build their own image and point SCORING_IMAGE at it).
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# A dedicated non-root UID. The subprocess inside won't be root even if the
+# scoring script escapes Python isolation.
+RUN useradd --system --create-home --uid 1999 scoring
+USER scoring
+WORKDIR /home/scoring
+
+# The wrapper is passed over stdin each run, so no files need baking in.
+CMD ["python", "-I", "-c", "import sys; exec(sys.stdin.read())"]

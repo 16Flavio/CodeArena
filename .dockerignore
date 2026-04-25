@@ -1,0 +1,16 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+contest.db
+contest.db.bak-*
+uploads/
+frontend/node_modules
+frontend/dist
+backend/__pycache__
+backend/**/__pycache__
+backend/tests
+**/.vscode
+**/.idea
+**/.DS_Store
