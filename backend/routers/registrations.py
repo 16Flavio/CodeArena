@@ -569,6 +569,8 @@ def unregister_self(
                 detail=f"team_id={membership.team_id} deleted_submissions={n_subs}",
             )
             db.commit()
+            from ..scoreboard_response_cache import invalidate_contest
+            invalidate_contest(contest_id)
             return {"detail": "Désinscription effectuée", "deleted_submissions": n_subs}
 
     solo_reg = _user_registration(db, contest_id, user.id)
@@ -697,6 +699,11 @@ def set_registration_disqualified(
     )
     db.commit()
     db.refresh(r)
+    # The DQ flag changes scoreboard visibility — drop the cached
+    # response so the change is reflected immediately rather than
+    # within the 2 s TTL.
+    from ..scoreboard_response_cache import invalidate_contest
+    invalidate_contest(r.contest_id)
     return schemas.ContestRegistrationOut(
         id=r.id,
         kind="team" if r.team_id is not None else "user",

@@ -41,11 +41,28 @@ def _submission_scope(team_id: int | None, user_id: int | None):
 
 def update_entry_for_submission(db: Session, submission: models.Submission) -> None:
     """Recompute the cached row for the submission's (scope, instance).
-    Idempotent — safe to call multiple times."""
+    Idempotent — safe to call multiple times.
+
+    Race-protected: two scoring workers that finish at the same instant
+    on submissions sharing a (scope, instance) would otherwise both see
+    ``entry is None`` and both INSERT, ending up with duplicate rows
+    (the UNIQUE constraint considers NULL distinct under SQL default
+    semantics, so a solo entry's NULL team_id doesn't collide). We
+    take a row-level lock on the Contest at function entry so writes
+    for the same contest serialise. Coarse but cheap (one extra
+    SELECT FOR UPDATE per scoring) and works on Postgres + SQLite."""
     team_id = submission.team_id
     user_id = submission.submitted_by if team_id is None else None
     instance_id = submission.instance_id
     contest_id = submission.contest_id
+
+    # SELECT FOR UPDATE on the contest serialises every scoreboard
+    # write for this contest — the duplicate-row race documented above
+    # vanishes because the second worker blocks on this lock until the
+    # first one's INSERT/UPDATE has flushed and is visible.
+    db.query(models.Contest).filter(
+        models.Contest.id == contest_id,
+    ).with_for_update().first()
 
     scored_q = (
         db.query(models.Submission)

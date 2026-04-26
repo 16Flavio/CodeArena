@@ -582,6 +582,73 @@ async def submit_icpc(
             if reg is None or reg.disqualified:
                 raise HTTPException(status_code=403, detail="Non inscrit / disqualifié")
 
+        # Persistent ban check — defence-in-depth on top of the DQ
+        # flag. ContestBan rows survive scope-switching evasion (a
+        # banned solo user trying to slip in via a team), and can also
+        # outlive a registration row (e.g. admin banned then user
+        # unregistered): without this check the user could re-register
+        # and resume submitting.
+        member_ids = [user.id]
+        if team_id is not None:
+            member_ids = [
+                tm.user_id for tm in db.query(models.TeamMember)
+                .filter(models.TeamMember.team_id == team_id).all()
+            ]
+        if member_ids and db.query(models.ContestBan).filter(
+            models.ContestBan.contest_id == contest_id,
+            models.ContestBan.user_id.in_(member_ids),
+        ).first() is not None:
+            raise HTTPException(status_code=403, detail="Vous êtes banni de ce concours")
+
+        # Per-problem quota + cooldown — same knobs as the output
+        # contest endpoint, just scoped to (team/user, problem_id)
+        # instead of (team/user, instance_id). At ICPC scale the wrong
+        # team spamming submits at 100 sub/s could DoS the queue.
+        scope_filter = (
+            models.Submission.team_id == team_id
+            if team_id is not None
+            else (models.Submission.team_id.is_(None)) & (models.Submission.submitted_by == user.id)
+        )
+        quota = contest.max_submissions_per_instance
+        if quota and quota > 0:
+            used = (
+                db.query(models.Submission)
+                .filter(
+                    models.Submission.contest_id == contest_id,
+                    models.Submission.problem_id == problem_id,
+                    scope_filter,
+                )
+                .count()
+            )
+            if used >= quota:
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"Quota atteint : {used}/{quota} soumissions sur ce problème",
+                )
+        cooldown = contest.min_seconds_between_submits or 0
+        if cooldown > 0:
+            last = (
+                db.query(models.Submission)
+                .filter(
+                    models.Submission.contest_id == contest_id,
+                    models.Submission.problem_id == problem_id,
+                    scope_filter,
+                )
+                .order_by(models.Submission.submitted_at.desc())
+                .first()
+            )
+            if last is not None:
+                since = (now - _aware(last.submitted_at)).total_seconds()
+                if since < cooldown:
+                    wait = int(cooldown - since) + 1
+                    from ..errors import ErrorCode, raise_error
+                    raise_error(
+                        code=ErrorCode.SUBMISSION_COOLDOWN,
+                        status=429,
+                        message=f"Wait {wait}s before submitting again",
+                        params={"wait_seconds": wait},
+                    )
+
     # Source can come from either the file field or the textarea.
     if file is not None:
         from ..upload_utils import read_upload_capped, safe_filename, MAX_ICPC_SOURCE_BYTES
@@ -595,6 +662,35 @@ async def submit_icpc(
     if not source_text.strip():
         raise HTTPException(status_code=400, detail="Source vide")
 
+    # Optional dedup block — same content+problem+team/user hash check
+    # as the output endpoint, scoped on problem_id instead of
+    # instance_id. Two-phase (pre-check + post-flush) so a concurrent
+    # racer can't slip through.
+    import hashlib as _hashlib
+    content_hash = _hashlib.sha256(source_text.encode("utf-8", errors="replace")).hexdigest()
+
+    def _scope_dedup_query(q):
+        q = q.filter(
+            models.Submission.content_hash == content_hash,
+            models.Submission.contest_id == contest_id,
+            models.Submission.problem_id == problem_id,
+        )
+        if team_id is not None:
+            return q.filter(models.Submission.team_id == team_id)
+        return q.filter(
+            models.Submission.team_id.is_(None),
+            models.Submission.submitted_by == user.id,
+        )
+
+    if not user.is_admin and contest.dedup_block:
+        if _scope_dedup_query(db.query(models.Submission)).first() is not None:
+            from ..errors import ErrorCode, raise_error
+            raise_error(
+                code=ErrorCode.SUBMISSION_DUPLICATE,
+                status=409,
+                message="Identical submission already on file",
+            )
+
     sub = models.Submission(
         team_id=team_id,
         contest_id=contest_id,
@@ -602,12 +698,33 @@ async def submit_icpc(
         instance_id=None,
         file_name=file_name,
         submission_data=source_text,
+        content_hash=content_hash,
         status="pending",
         submitted_by=user.id,
         source_language=lang.id,
         is_practice=(_aware(contest.end_time) is not None and now >= _aware(contest.end_time) and bool(contest.practice_mode)),
     )
     db.add(sub)
+    db.flush()
+
+    # Race-safe dedup re-check: a concurrent racer may have committed
+    # between our pre-check and this flush. Look for an EARLIER row
+    # with the same hash and rollback if found.
+    if not user.is_admin and contest.dedup_block:
+        earlier = (
+            _scope_dedup_query(db.query(models.Submission))
+            .filter(models.Submission.id < sub.id)
+            .first()
+        )
+        if earlier is not None:
+            db.rollback()
+            from ..errors import ErrorCode, raise_error
+            raise_error(
+                code=ErrorCode.SUBMISSION_DUPLICATE,
+                status=409,
+                message="Identical submission already on file",
+            )
+
     db.commit()
     db.refresh(sub)
     enqueue_scoring(sub.id)
@@ -1609,6 +1726,12 @@ def override_judging(
         from ..icpc_scoreboard_cache import update_icpc_entry
         update_icpc_entry(db, sub, problem, new_verdict, contest)
         db.commit()
+    # Drop the response cache so the override is visible to viewers
+    # within milliseconds, not within the 2 s TTL — this is what an
+    # admin clicking "override" rightly expects.
+    if contest is not None:
+        from ..scoreboard_response_cache import invalidate_contest
+        invalidate_contest(contest.id)
 
     runs = (
         db.query(models.JudgingRun)

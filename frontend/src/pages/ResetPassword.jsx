@@ -6,9 +6,23 @@ import { Zap, Eye, EyeOff, AlertCircle, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PasswordStrength from '../components/PasswordStrength';
 
+// Read the token from EITHER the URL fragment (preferred — never sent
+// to the server, never logged by the reverse proxy, never leaked via
+// Referer) OR the legacy ``?token=`` query string (for emails minted by
+// older releases that haven't expired yet). Fragment wins when both
+// are present.
+function readResetToken(searchParams) {
+  const hash = (typeof window !== 'undefined' ? window.location.hash : '') || '';
+  // Strip leading "#" and parse as a URLSearchParams-style fragment.
+  const fragment = hash.startsWith('#') ? hash.slice(1) : hash;
+  const fromHash = new URLSearchParams(fragment).get('token');
+  if (fromHash) return fromHash;
+  return searchParams.get('token') || '';
+}
+
 export default function ResetPassword() {
   const [params] = useSearchParams();
-  const token = useMemo(() => params.get('token') || '', [params]);
+  const token = useMemo(() => readResetToken(params), [params]);
   const [form, setForm] = useState({ password: '', confirm: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);

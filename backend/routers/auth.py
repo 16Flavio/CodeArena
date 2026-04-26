@@ -148,6 +148,12 @@ def change_password(
     if data.new_password == data.current_password:
         raise HTTPException(status_code=400, detail="Le nouveau mot de passe doit être différent de l'ancien")
     user.password_hash = hash_password(data.new_password)
+    # The lockout counter is shared between password and 2FA failures.
+    # If the legitimate user just changed their password, any prior
+    # bad-attempt streak is moot — clear it so they're not surprised
+    # by a 15-minute lockout the first time they mistype.
+    user.failed_login_count = 0
+    user.locked_until = None
     db.commit()
     return {"detail": "Mot de passe mis à jour."}
 
@@ -238,10 +244,14 @@ def totp_login_verify(
     user for a 6-digit TOTP or a recovery code, and submits both here."""
     from jose import JWTError, jwt as _jwt
     from .. import totp as _totp
-    import os as _os
-    secret = _os.environ.get("SECRET_KEY") or ""
+    # Read the signing key from the auth module (NOT os.environ): the
+    # module sets a per-process random fallback when SECRET_KEY is
+    # missing, and the encoder uses *that* to sign. Reading os.environ
+    # here would diverge from the encoder, breaking 2FA verification
+    # entirely on boxes without SECRET_KEY set.
+    from ..auth import SECRET_KEY, ALGORITHM
     try:
-        payload = _jwt.decode(data.challenge_token, secret, algorithms=["HS256"])
+        payload = _jwt.decode(data.challenge_token, SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError:
         raise_error(
             code=ErrorCode.TOTP_INVALID,
@@ -388,6 +398,14 @@ def reset_password(
     user.password_hash = hash_password(data.new_password)
     user.reset_token_hash = None
     user.reset_token_expires_at = None
+    # Clear the lockout counter — the original purpose of password
+    # reset is "I forgot mine", and an attacker who's been spraying
+    # passwords against this account has just been deprecated. Without
+    # this, a legitimate reset still leaves the user locked out for up
+    # to 15 minutes, which is precisely the DoS vector flagged in the
+    # audit. (Same rationale as change-password above.)
+    user.failed_login_count = 0
+    user.locked_until = None
     db.commit()
 
     return {"detail": "Mot de passe mis à jour. Vous pouvez maintenant vous connecter."}
@@ -506,8 +524,33 @@ def totp_disable(
             )
         # We're disabling anyway, so the trimmed list doesn't matter —
         # just clear everything.
+        used_recovery = True
+    else:
+        used_recovery = False
     user.totp_enabled = False
     user.totp_secret = None
     user.totp_recovery_codes = None
     db.commit()
+    # Notify the account owner — disabling 2FA is high-impact, and a
+    # recovery-code-based disable means an attacker holding a leaked
+    # recovery code could silently undo the protection. The user must
+    # see this email and act if it wasn't them.
+    try:
+        from .. import email_utils as _email
+        method = "code de récupération" if used_recovery else "code TOTP"
+        _email._send_email(
+            user.email,
+            subject="CodeArena : 2FA désactivée sur votre compte",
+            body=(
+                "Bonjour,\n\n"
+                f"L'authentification à deux facteurs (2FA) vient d'être désactivée "
+                f"sur votre compte CodeArena (méthode : {method}).\n\n"
+                "Si ce n'est PAS vous, votre compte est probablement compromis :\n"
+                "1. Changez immédiatement votre mot de passe.\n"
+                "2. Réactivez la 2FA depuis la page Sécurité.\n"
+                "3. Contactez un administrateur.\n"
+            ),
+        )
+    except Exception:  # pragma: no cover — email is best-effort
+        pass
     return {"detail": "2FA disabled"}

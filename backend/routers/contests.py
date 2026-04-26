@@ -564,6 +564,13 @@ def update_contest(
         )
     db.commit()
     db.refresh(contest)
+    # Any contest mutation can change scoreboard rendering — most
+    # notably ``freeze_scoreboard_at``, ``visible_at``, ``hidden_at``,
+    # ``participation_mode`` (which we may have just used to purge
+    # rows above). Drop the cached payload unconditionally so the
+    # admin sees their edit reflected on the next /scoreboard hit.
+    from ..scoreboard_response_cache import invalidate_contest
+    invalidate_contest(contest.id)
     # Reload with instances so the response matches the richer ContestOut.
     contest = (
         db.query(models.Contest)
@@ -676,13 +683,19 @@ async def upload_problem_statement(
 
 
 def _user_is_participant(db, contest: models.Contest, user: models.User) -> bool:
-    """Admins bypass. Otherwise must have an active registration, either
-    via a team they're in or a direct solo registration."""
+    """Admins bypass. Otherwise must have an active **non-disqualified**
+    registration, either via a team they're in or a direct solo
+    registration. A DQ'd registration must NOT grant access — the
+    same predicate guards problem-statement / instance downloads, so
+    a banned participant who keeps a stale registration row would
+    otherwise still read the contest material."""
     if user.is_admin:
         return True
-    if _user_registration(db, contest.id, user.id) is not None:
+    solo = _user_registration(db, contest.id, user.id)
+    if solo is not None and not solo.disqualified:
         return True
-    # Team registration check: is any team they belong to registered?
+    # Team registration check: is any team they belong to registered AND
+    # not disqualified?
     team_ids = [
         tm.team_id for tm in db.query(models.TeamMember)
         .filter(models.TeamMember.user_id == user.id).all()
@@ -694,6 +707,7 @@ def _user_is_participant(db, contest: models.Contest, user: models.User) -> bool
         .filter(
             models.ContestRegistration.contest_id == contest.id,
             models.ContestRegistration.team_id.in_(team_ids),
+            models.ContestRegistration.disqualified.is_(False),
         )
         .first()
     )
@@ -1981,6 +1995,10 @@ def rescore_contest(
     from ..scoreboard_cache import rebuild_for_contest
     rebuild_for_contest(db, contest_id)
     db.commit()
+    # Drop the response cache too — without this, every viewer sees
+    # the pre-rescore numbers for up to 2 s after the rebuild.
+    from ..scoreboard_response_cache import invalidate_contest
+    invalidate_contest(contest_id)
     return schemas.RescoreResult(total=total, succeeded=succeeded, failed=failed, unchanged=unchanged)
 
 

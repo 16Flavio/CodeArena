@@ -4,9 +4,21 @@ import { useTranslation } from 'react-i18next';
 import { Zap, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
 import { verifyEmail } from '../api';
 
+// Token preferred from the URL fragment (never reaches the server's
+// access logs, never leaks via Referer); fall back to the legacy
+// ``?token=`` query string for emails minted before the fragment
+// switch.
+function readVerifyToken(searchParams) {
+  const hash = (typeof window !== 'undefined' ? window.location.hash : '') || '';
+  const fragment = hash.startsWith('#') ? hash.slice(1) : hash;
+  const fromHash = new URLSearchParams(fragment).get('token');
+  if (fromHash) return fromHash;
+  return searchParams.get('token') || '';
+}
+
 export default function VerifyEmail() {
   const [params] = useSearchParams();
-  const token = params.get('token') || '';
+  const token = readVerifyToken(params);
   const [state, setState] = useState({ loading: true, ok: false, message: '' });
   const { t } = useTranslation();
 

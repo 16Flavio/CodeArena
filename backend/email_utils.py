@@ -32,7 +32,15 @@ def _frontend_base_url() -> str:
 
 
 def build_reset_url(raw_token: str) -> str:
-    return f"{_frontend_base_url()}/reset-password?token={raw_token}"
+    # Token in the URL fragment (after ``#``), NOT the query string.
+    # Browsers DO NOT send fragments to servers, so the token never
+    # ends up in:
+    # - nginx / Caddy access logs (the proxy sees only the path);
+    # - the ``Referer`` header sent to any external link the user
+    #   subsequently clicks while on the reset page;
+    # - the browser history's network tab.
+    # The frontend reads it from ``window.location.hash``.
+    return f"{_frontend_base_url()}/reset-password#token={raw_token}"
 
 
 def _print_stub(to_email: str, subject: str, body: str) -> None:
@@ -215,7 +223,9 @@ def send_join_request_email(
 
 
 def send_email_verification(to_email: str, raw_token: str) -> None:
-    url = f"{_frontend_base_url()}/verify-email?token={raw_token}"
+    # Same fragment-not-query reasoning as ``build_reset_url`` above —
+    # don't leak the verification token via Referer / proxy logs.
+    url = f"{_frontend_base_url()}/verify-email#token={raw_token}"
     body = (
         "Bonjour,\n\n"
         "Bienvenue sur CodeArena. Pour confirmer votre adresse email, "

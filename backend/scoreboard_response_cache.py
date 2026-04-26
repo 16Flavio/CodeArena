@@ -125,6 +125,18 @@ def clear() -> None:
         _CACHE.clear()
 
 
+def invalidate_contest(contest_id: int) -> None:
+    """Drop the four possible cache slots for ``contest_id``: output
+    + icpc, admin + public. Call this whenever a mutation is supposed
+    to be visible immediately rather than within the TTL window
+    (DQ/requalify, freeze toggle, rescore, judging override, ...).
+
+    Cheap in the common case (cache empty for this contest) — just
+    iterates a small dict under the lock."""
+    invalidate_prefix(("scoreboard.output", contest_id))
+    invalidate_prefix(("scoreboard.icpc", contest_id))
+
+
 def stats() -> dict:
     """Cheap introspection — useful from the admin debug endpoint or
     during a load test."""

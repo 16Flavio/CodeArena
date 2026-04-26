@@ -46,7 +46,13 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Sign a JWT for the bearer-auth flow. Always carries ``purpose``
+    so the routes that consume access tokens can distinguish them from
+    short-lived special-purpose tokens (the 2FA login challenge being
+    the obvious one). Callers that mint a non-``access`` token must
+    pass their own ``purpose`` in ``data`` — it overrides the default."""
     to_encode = data.copy()
+    to_encode.setdefault("purpose", "access")
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -63,6 +69,15 @@ def get_current_user(
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        # CRITICAL: ``purpose`` segregates token types. Without this
+        # check, a 2FA challenge token (which a user gets after only
+        # the password step) is accepted as a full session — bypassing
+        # the OTP entirely. Tokens minted by older releases lack the
+        # claim altogether; treat them as legacy access tokens so this
+        # patch doesn't kick everyone out at deploy time.
+        purpose = payload.get("purpose", "access")
+        if purpose != "access":
+            raise credentials_exception
         sub = payload.get("sub")
         if sub is None:
             raise credentials_exception
@@ -111,6 +126,11 @@ def get_current_user_from_query(
         )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        # Same purpose check as get_current_user — SSE callers must
+        # not be able to authenticate with a 2FA challenge token.
+        purpose = payload.get("purpose", "access")
+        if purpose != "access":
+            raise JWTError("wrong purpose")
         sub = payload.get("sub")
         if sub is None:
             raise JWTError("missing sub")

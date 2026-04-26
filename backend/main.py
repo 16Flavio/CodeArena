@@ -185,12 +185,26 @@ app = FastAPI(title="Contest Platform", version="1.0.0")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-_cors_origins_raw = os.environ.get("CORS_ORIGINS", "*").strip()
-_cors_origins = (
-    ["*"]
-    if _cors_origins_raw == "*"
-    else [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
-)
+# CORS — restrictive by default. The previous default ``"*"`` is a footgun
+# in production: any origin can pull data from the API. We now ship a dev-
+# safe default (localhost ports for `npm run dev` + `vite preview`), and the
+# operator must set CORS_ORIGINS explicitly in `.env` for prod (e.g. their
+# real frontend hostname). Setting CORS_ORIGINS=* is still possible but now
+# an opt-in.
+_DEV_DEFAULT_ORIGINS = [
+    "http://localhost",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+]
+_cors_origins_raw = os.environ.get("CORS_ORIGINS", "").strip()
+if not _cors_origins_raw:
+    _cors_origins = _DEV_DEFAULT_ORIGINS
+elif _cors_origins_raw == "*":
+    _cors_origins = ["*"]
+else:
+    _cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,

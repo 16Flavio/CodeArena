@@ -288,6 +288,26 @@ def import_domjudge_package(
     except zipfile.BadZipFile as e:
         raise ValueError(f"Not a valid ZIP file: {e}") from e
 
+    # Zip-bomb guard. Without this, ``zf.read(name)`` could decompress
+    # gigabytes of data into RAM (each call buffers the full member),
+    # OOM-killing the backend. We cap the *uncompressed* total at
+    # ~2 GB and the file count at ~50 k. A legitimate package with
+    # secret testcases easily fits inside both (largest we've seen
+    # is ~600 MB, ~10 k files).
+    _MAX_UNCOMPRESSED = 2 * 1024 * 1024 * 1024
+    _MAX_FILES = 50_000
+    infolist = zf.infolist()
+    if len(infolist) > _MAX_FILES:
+        raise ValueError(
+            f"Archive has too many entries ({len(infolist)} > {_MAX_FILES})"
+        )
+    total_uncompressed = sum(zi.file_size for zi in infolist)
+    if total_uncompressed > _MAX_UNCOMPRESSED:
+        raise ValueError(
+            f"Archive uncompressed size {total_uncompressed} exceeds the "
+            f"{_MAX_UNCOMPRESSED}-byte ceiling — possible zip bomb"
+        )
+
     # Contest-level metadata (optional — for v1 we keep the title/dates the
     # admin set; contest.yaml could override them in a future iteration).
 
@@ -378,7 +398,16 @@ def import_domjudge_package(
             # stable slug from the name so imports are still idempotent.
             raw_name = meta.get("name") or f"problem-{idx}"
             desired_ext = re.sub(r"[^a-zA-Z0-9_-]+", "-", str(raw_name)).strip("-").lower() or f"problem-{idx}"
-        external_id = _unique_ext(str(desired_ext)[:64])
+        # CRITICAL: external_id is later concatenated into a filesystem
+        # path (``dest_path = os.path.join(dest_dir, f"{external_id}.pdf")``).
+        # A malicious ``probid: "../../../etc/foo"`` would escape the
+        # destination directory. Whitelist alnum + ``_-`` only and strip
+        # anything else; the truncation alone (``[:64]``) doesn't kill
+        # ``..`` segments. We also forbid an empty result post-sanitisation.
+        sanitised = re.sub(r"[^a-zA-Z0-9_-]+", "-", str(desired_ext)).strip("-")
+        if not sanitised:
+            sanitised = f"problem-{idx}"
+        external_id = _unique_ext(sanitised[:64])
         if external_id != str(desired_ext)[:64]:
             report.skipped.append(
                 f"{desired_ext}: external id clash, imported as '{external_id}'"

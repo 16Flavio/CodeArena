@@ -41,7 +41,18 @@ def update_icpc_entry(
 ) -> None:
     """Re-derive the cached ICPC entry for the (scope, problem) cell from
     every submission in that scope. Idempotent — safe to call multiple
-    times, so rejudges and retries Just Work."""
+    times, so rejudges and retries Just Work.
+
+    Race-protected: two judging workers that flush their results at the
+    same instant for submissions sharing a (scope, problem) would
+    otherwise both see ``entry is None`` and INSERT twice. SQL UNIQUE
+    treats NULL as distinct, so the existing constraint doesn't catch
+    solo (team_id NULL) duplicates. SELECT FOR UPDATE on the contest
+    serialises every ICPC scoreboard write for this contest — coarse
+    but correct."""
+    db.query(models.Contest).filter(
+        models.Contest.id == contest.id,
+    ).with_for_update().first()
     team_id, user_id = _scope(sub)
 
     # Pull every submission in this scope on this problem, ordered by time.

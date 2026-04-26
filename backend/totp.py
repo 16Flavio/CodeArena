@@ -39,11 +39,13 @@ def otpauth_url(secret: str, *, account_name: str, issuer: str = "CodeArena") ->
     return pyotp.totp.TOTP(secret).provisioning_uri(name=account_name, issuer_name=issuer)
 
 
-def verify_code(secret: str, code: str, *, window: int = 2) -> bool:
-    """Verify a 6-digit TOTP code. ``window=2`` accepts ±60 seconds of
-    clock drift between the server and the user's phone — generous
-    enough that a slightly out-of-sync NTP doesn't lock the user out,
-    tight enough that the replay window stays small.
+def verify_code(secret: str, code: str, *, window: int = 1) -> bool:
+    """Verify a 6-digit TOTP code. ``window=1`` accepts ±30 seconds of
+    clock drift between the server and the user's phone — the RFC 6238
+    default. Tighter than ±60s: cuts the brute-force surface in half
+    and shrinks the replay window of an intercepted code. If users
+    routinely hit "code rejected" because their phone clock drifts,
+    they should re-sync NTP rather than have us widen the window.
 
     Strips spaces (some authenticator apps display the code as
     ``123 456`` for readability) before validating."""
