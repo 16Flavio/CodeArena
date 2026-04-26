@@ -1094,7 +1094,15 @@
       "manageWidgets": "Mes widgets",
       "manageWidgetsHint": "Créer / éditer les widgets interactifs disponibles dans les leçons.",
       "manageExercises": "Mes exercices",
-      "manageExercisesHint": "Créer et insérer des exercices de code dans cette leçon."
+      "manageExercisesHint": "Créer et insérer des exercices de code dans cette leçon.",
+      "hidePreview": "Masquer la prévisualisation",
+      "showPreview": "Afficher la prévisualisation",
+      "editSection": "Renommer la section",
+      "titleFr": "Titre FR",
+      "titleEn": "Titre EN",
+      "descFr": "Description (FR)",
+      "descEn": "Description (EN)",
+      "cancel": "Annuler"
     },
     "learningWidgets": {
       "title": "Mes widgets",

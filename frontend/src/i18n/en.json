@@ -1094,7 +1094,15 @@
       "manageWidgets": "My widgets",
       "manageWidgetsHint": "Create / edit the interactive widgets available in lessons.",
       "manageExercises": "My exercises",
-      "manageExercisesHint": "Create and insert code exercises in this lesson."
+      "manageExercisesHint": "Create and insert code exercises in this lesson.",
+      "hidePreview": "Hide preview",
+      "showPreview": "Show preview",
+      "editSection": "Rename section",
+      "titleFr": "Title FR",
+      "titleEn": "Title EN",
+      "descFr": "Description (FR)",
+      "descEn": "Description (EN)",
+      "cancel": "Cancel"
     },
     "learningWidgets": {
       "title": "My widgets",

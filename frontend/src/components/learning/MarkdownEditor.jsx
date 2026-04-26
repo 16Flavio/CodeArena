@@ -2,12 +2,14 @@ import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import CodeMirror from '@uiw/react-codemirror';
 import { markdown } from '@codemirror/lang-markdown';
+import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView, keymap } from '@codemirror/view';
 import {
   Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered,
   Link as LinkIcon, Image as ImageIcon, Code as CodeIcon,
   FileCode2, Sigma, Sparkles, Code2,
 } from 'lucide-react';
+import { useTheme } from '../../ThemeContext';
 
 // Wrap the current selection with prefix/suffix, or insert prefix
 // at cursor when nothing is selected. The optional ``placeholder`` is
@@ -92,8 +94,10 @@ function insertAtCursor(view, text) {
 export default function MarkdownEditor({
   value, onChange,
   onUploadImage, onPickWidget, onPickExercise,
+  height = '70vh',
 }) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const viewRef = useRef(null);
 
   const onCmCreate = useCallback((view) => {
@@ -223,13 +227,15 @@ export default function MarkdownEditor({
         )}
       </div>
 
-      {/* Editor */}
+      {/* Editor — switches to oneDark when the app is in dark mode so
+          the white-on-light-grey contrast issue goes away. */}
       <CodeMirror
         value={value}
         onChange={onChange}
         onCreateEditor={onCmCreate}
         extensions={cmExtensions}
-        height="600px"
+        theme={theme === 'dark' ? oneDark : 'light'}
+        height={height}
         basicSetup={{
           lineNumbers: false,
           foldGutter: false,

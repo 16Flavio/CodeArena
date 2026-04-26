@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   GraduationCap, Plus, Trash2, ChevronDown, ChevronRight,
-  FolderPlus, FilePlus, Save, Eye, Image as ImageIcon, Globe, Sparkles, FileDown,
+  FolderPlus, FilePlus, Save, Eye, EyeOff, Image as ImageIcon, Globe, Sparkles, FileDown, Maximize2, Minimize2, Pencil, X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../AuthContext';
@@ -44,6 +44,8 @@ export default function AdminLearning() {
   const [showCatalog, setShowCatalog] = useState(false);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
+  const [editingSection, setEditingSection] = useState(null);  // { id, title_fr, ... }
 
   useEffect(() => {
     if (!user?.is_admin) navigate('/dashboard');
@@ -314,12 +316,90 @@ export default function AdminLearning() {
                   {s.is_published ? t('admin.learning.published') : t('admin.learning.draft')}
                 </button>
                 <button
+                  onClick={() => setEditingSection({ ...s })}
+                  className="p-1.5 rounded hover:bg-violet-500/10 text-slate-400 hover:text-violet-600 dark:text-gray-500 dark:hover:text-violet-400"
+                  title={t('admin.learning.editSection')}
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button
                   onClick={() => handleDeleteSection(s)}
                   className="p-1.5 rounded hover:bg-red-500/10 text-slate-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
+              {editingSection?.id === s.id && (
+                <div className="border-t border-gray-100 dark:border-slate-700/50 px-3 py-3 space-y-2 bg-violet-50/30 dark:bg-violet-500/5">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      className="input-field text-sm"
+                      placeholder={t('admin.learning.titleFr')}
+                      value={editingSection.title_fr || ''}
+                      onChange={(e) => setEditingSection((p) => ({ ...p, title_fr: e.target.value }))}
+                    />
+                    <input
+                      className="input-field text-sm"
+                      placeholder={t('admin.learning.titleEn')}
+                      value={editingSection.title_en || ''}
+                      onChange={(e) => setEditingSection((p) => ({ ...p, title_en: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <textarea
+                      className="input-field text-sm h-16"
+                      placeholder={t('admin.learning.descFr')}
+                      value={editingSection.description_fr || ''}
+                      onChange={(e) => setEditingSection((p) => ({ ...p, description_fr: e.target.value }))}
+                    />
+                    <textarea
+                      className="input-field text-sm h-16"
+                      placeholder={t('admin.learning.descEn')}
+                      value={editingSection.description_en || ''}
+                      onChange={(e) => setEditingSection((p) => ({ ...p, description_en: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      className="input-field text-xs flex-1"
+                      placeholder="slug"
+                      value={editingSection.slug || ''}
+                      onChange={(e) => setEditingSection((p) => ({ ...p, slug: e.target.value }))}
+                    />
+                    <button
+                      onClick={async () => {
+                        try {
+                          await adminLearnUpdateSection(editingSection.id, {
+                            slug: editingSection.slug,
+                            title_fr: editingSection.title_fr,
+                            title_en: editingSection.title_en,
+                            description_fr: editingSection.description_fr || '',
+                            description_en: editingSection.description_en || '',
+                            order_idx: editingSection.order_idx ?? 0,
+                            is_published: !!editingSection.is_published,
+                          });
+                          toast.success(t('admin.learning.toastSaved'));
+                          setEditingSection(null);
+                          reloadSections();
+                        } catch (err) {
+                          toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+                        }
+                      }}
+                      className="btn-primary text-xs inline-flex items-center gap-1"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      {t('admin.learning.save')}
+                    </button>
+                    <button
+                      onClick={() => setEditingSection(null)}
+                      className="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-gray-200 inline-flex items-center gap-1"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      {t('admin.learning.cancel')}
+                    </button>
+                  </div>
+                </div>
+              )}
               {expandedSectionId === s.id && (
                 <div className="border-t border-gray-100 dark:border-slate-700/50 px-3 py-2 space-y-1">
                   {(lessonsBySection[s.id] || []).map((l) => (
@@ -424,12 +504,25 @@ export default function AdminLearning() {
                 onInsertDirective={(directive) => insertWidget(directive)}
               />
 
-              {/* Split editor + preview — markdown editor with full
-                  toolbar on the left, live preview on the right. */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {/* Toggle for the preview pane — hide it when you want
+                  the editor to take the full page width. */}
+              <div className="flex items-center justify-end">
+                <button
+                  onClick={() => setShowPreview((s) => !s)}
+                  className="text-xs px-2 py-1 rounded inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-gray-200"
+                  title={showPreview ? t('admin.learning.hidePreview') : t('admin.learning.showPreview')}
+                >
+                  {showPreview
+                    ? <><Minimize2 className="w-3.5 h-3.5" />{t('admin.learning.hidePreview')}</>
+                    : <><Maximize2 className="w-3.5 h-3.5" />{t('admin.learning.showPreview')}</>}
+                </button>
+              </div>
+
+              <div className={`grid gap-3 ${showPreview ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
                 <MarkdownEditor
                   value={editorContent}
                   onChange={(v) => setEditingLesson((p) => ({ ...p, [`content_${editLang}`]: v }))}
+                  height="calc(100vh - 360px)"
                   onUploadImage={async (file) => {
                     try {
                       const r = await adminLearnUploadAsset(editingLesson.id, file, 'image');
@@ -443,9 +536,14 @@ export default function AdminLearning() {
                   onPickWidget={() => setShowCatalog(true)}
                   onPickExercise={() => setShowExercisePicker(true)}
                 />
-                <div className="border border-gray-200 rounded-xl p-4 h-[660px] overflow-auto bg-white dark:bg-slate-900/30 dark:border-slate-700/50">
-                  <LessonMarkdown>{editorContent}</LessonMarkdown>
-                </div>
+                {showPreview && (
+                  <div
+                    className="border border-gray-200 rounded-xl p-4 overflow-auto bg-white dark:bg-slate-900/30 dark:border-slate-700/50"
+                    style={{ height: 'calc(100vh - 360px)' }}
+                  >
+                    <LessonMarkdown>{editorContent}</LessonMarkdown>
+                  </div>
+                )}
               </div>
             </div>
           )}
