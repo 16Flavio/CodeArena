@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
 import {
-  LayoutDashboard, Users, Shield, LogOut, Menu, Zap, Sun, Moon, Globe, KeyRound, Mail, UserCog, FileText, Building2, ShieldCheck,
+  LayoutDashboard, Users, Shield, LogOut, Menu, Zap, Sun, Moon, Globe, KeyRound, Mail, UserCog, FileText, Building2, ShieldCheck, GraduationCap,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -68,6 +68,7 @@ export default function Layout() {
     { to: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
     { to: '/teams', icon: Users, label: t('nav.teams'), badge: pendingRequests },
     { to: '/my-submissions', icon: FileText, label: t('nav.mySubmissions') },
+    { to: '/learn', icon: GraduationCap, label: t('nav.learn') },
   ];
 
   const linkClass = ({ isActive }) =>
@@ -120,14 +121,24 @@ export default function Layout() {
           ))}
 
           {user?.is_admin && (
-            <NavLink
-              to="/admin"
-              className={linkClass}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <Shield className="w-4 h-4" />
-              <span className="flex-1">{t('nav.admin')}</span>
-            </NavLink>
+            <>
+              <NavLink
+                to="/admin"
+                className={linkClass}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <Shield className="w-4 h-4" />
+                <span className="flex-1">{t('nav.admin')}</span>
+              </NavLink>
+              <NavLink
+                to="/admin/learning"
+                className={linkClass}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <GraduationCap className="w-4 h-4" />
+                <span className="flex-1">{t('admin.learning.title')}</span>
+              </NavLink>
+            </>
           )}
         </nav>
 

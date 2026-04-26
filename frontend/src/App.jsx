@@ -23,6 +23,9 @@ const Scoreboard = lazy(() => import('./pages/Scoreboard'));
 const Presentation = lazy(() => import('./pages/Presentation'));
 const Security = lazy(() => import('./pages/Security'));
 const Admin = lazy(() => import('./pages/Admin'));
+const Learn = lazy(() => import('./pages/Learn'));
+const LessonReader = lazy(() => import('./pages/LessonReader'));
+const AdminLearning = lazy(() => import('./pages/AdminLearning'));
 
 function RouteSpinner() {
   return (
@@ -61,6 +64,10 @@ export default function App() {
           <Route path="/scoreboard/:id/presentation" element={<Presentation />} />
           <Route path="/security" element={<Security />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/learn" element={<Learn />} />
+          <Route path="/learn/sections/:slug" element={<Learn />} />
+          <Route path="/learn/lessons/:lessonId" element={<LessonReader />} />
+          <Route path="/admin/learning" element={<AdminLearning />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

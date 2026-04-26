@@ -685,3 +685,132 @@ class IcpcScoreboardEntry(Base):
     )
 
 
+# ── Learning zone ─────────────────────────────────────────────────────────────
+# Theory-first pedagogical content separate from contests. Admins author
+# sections (categories) -> lessons (markdown bodies) and the frontend
+# renders them with custom widget directives. Bilingual at the column
+# level (FR + EN) so the platform reads identical regardless of which
+# language the viewer picked — no fallback needed at query time.
+
+class LearningSection(Base):
+    """A category of lessons (e.g. "Bases", "Structures de données",
+    "Compet prog"). Sections are ordered by ``order_idx`` for the
+    student-facing UI; admins drag-and-drop to reorder.
+
+    The published flag lets admins draft content for weeks before
+    revealing it. ``draft`` sections are listed only in the admin UI."""
+    __tablename__ = "learning_sections"
+
+    id = Column(Integer, primary_key=True, index=True)
+    slug = Column(String(80), unique=True, nullable=False, index=True)
+    order_idx = Column(Integer, default=0, nullable=False)
+    is_published = Column(Boolean, default=False, nullable=False)
+    # Bilingual content. Two columns rather than a JSON map: simpler
+    # SQL, sortable, and we only support FR + EN.
+    title_fr = Column(String(200), nullable=False)
+    title_en = Column(String(200), nullable=False)
+    description_fr = Column(Text, nullable=True)  # short markdown
+    description_en = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    lessons = relationship(
+        "Lesson", back_populates="section",
+        cascade="all, delete-orphan",
+        order_by="Lesson.order_idx",
+    )
+
+
+class Lesson(Base):
+    """A markdown lesson inside a section. ``content_*`` carries the
+    body in markdown with custom directives (e.g. ``:::viz-sort{...}``)
+    that the frontend resolves to React widgets.
+
+    ``exercise_problem_id`` optionally pins one ICPC-style ``Problem``
+    to the lesson — students reuse the existing submit pipeline to
+    practice. Practice submissions are flagged so they don't pollute
+    contest scoreboards."""
+    __tablename__ = "lessons"
+
+    id = Column(Integer, primary_key=True, index=True)
+    section_id = Column(
+        Integer, ForeignKey("learning_sections.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    slug = Column(String(80), nullable=False, index=True)
+    order_idx = Column(Integer, default=0, nullable=False)
+    is_published = Column(Boolean, default=False, nullable=False)
+    title_fr = Column(String(200), nullable=False)
+    title_en = Column(String(200), nullable=False)
+    content_fr = Column(Text, nullable=False, default="")
+    content_en = Column(Text, nullable=False, default="")
+    exercise_problem_id = Column(
+        Integer, ForeignKey("problems.id", ondelete="SET NULL"),
+        nullable=True, index=True,
+    )
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    section = relationship("LearningSection", back_populates="lessons")
+    assets = relationship(
+        "LessonAsset", back_populates="lesson",
+        cascade="all, delete-orphan",
+    )
+
+    __table_args__ = (
+        UniqueConstraint("section_id", "slug", name="uq_lesson_section_slug"),
+    )
+
+
+class LessonAsset(Base):
+    """Image / file attached to a lesson. Stored on disk under
+    ``uploads/learning/<lesson_id>/``; the row tracks the path + the
+    original filename for display.
+
+    ``kind`` is ``image`` for inline embedding (rendered via standard
+    markdown image syntax) or ``file`` for downloadable attachments
+    (PDFs, datasets, …). Animations are NOT assets — they're directives
+    rendered by the frontend widget registry, not files."""
+    __tablename__ = "lesson_assets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    lesson_id = Column(
+        Integer, ForeignKey("lessons.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    kind = Column(String(16), nullable=False, default="image")  # image | file
+    path = Column(String(500), nullable=False)
+    original_name = Column(String(255), nullable=False)
+    uploaded_at = Column(DateTime, default=utcnow, nullable=False)
+
+    lesson = relationship("Lesson", back_populates="assets")
+
+
+class LessonProgress(Base):
+    """Per-user completion state for a lesson. ``status`` distinguishes
+    "started" (the user opened the lesson) from "completed" (they
+    clicked the explicit "mark as completed" button at the bottom).
+
+    Only one row per (user, lesson) — re-completing a lesson updates
+    ``completed_at``; un-completing is fine, sets ``status="started"``."""
+    __tablename__ = "lesson_progress"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    lesson_id = Column(
+        Integer, ForeignKey("lessons.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    status = Column(String(16), nullable=False, default="started")  # started | completed
+    started_at = Column(DateTime, default=utcnow, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "lesson_id", name="uq_lesson_progress_user"),
+    )
+
+

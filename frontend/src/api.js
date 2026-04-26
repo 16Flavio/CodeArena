@@ -296,6 +296,35 @@ export const setMySoloAffiliation = (affiliation_id) =>
 export const setTeamAffiliation = (teamId, affiliation_id) =>
   api.post(`/icpc/teams/${teamId}/affiliation`, { affiliation_id });
 
+// Learning zone — student-facing
+export const learnListSections = () => api.get('/learning/sections');
+export const learnListLessons = (slug) => api.get(`/learning/sections/${encodeURIComponent(slug)}/lessons`);
+export const learnGetLesson = (id) => api.get(`/learning/lessons/${id}`);
+export const learnSetProgress = (id, status) =>
+  api.put(`/learning/lessons/${id}/progress`, { status });
+
+// Learning zone — admin-only
+export const adminLearnListSections = () => api.get('/admin/learning/sections');
+export const adminLearnCreateSection = (data) => api.post('/admin/learning/sections', data);
+export const adminLearnUpdateSection = (id, data) =>
+  api.put(`/admin/learning/sections/${id}`, data);
+export const adminLearnDeleteSection = (id) => api.delete(`/admin/learning/sections/${id}`);
+export const adminLearnListLessons = (sectionId) =>
+  api.get(`/admin/learning/sections/${sectionId}/lessons`);
+export const adminLearnCreateLesson = (sectionId, data) =>
+  api.post(`/admin/learning/sections/${sectionId}/lessons`, data);
+export const adminLearnUpdateLesson = (id, data) =>
+  api.put(`/admin/learning/lessons/${id}`, data);
+export const adminLearnDeleteLesson = (id) => api.delete(`/admin/learning/lessons/${id}`);
+export const adminLearnUploadAsset = (lessonId, file, kind = 'image') => {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('kind', kind);
+  return api.post(`/admin/learning/lessons/${lessonId}/assets`, fd);
+};
+export const adminLearnDeleteAsset = (assetId) =>
+  api.delete(`/admin/learning/assets/${assetId}`);
+
 // Jury verdict override
 export const overrideJudging = (judgingId, payload) =>
   api.post(`/icpc/judgings/${judgingId}/override`, payload);

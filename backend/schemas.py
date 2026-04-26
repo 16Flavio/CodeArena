@@ -916,3 +916,121 @@ class ScoringPresentationOut(BaseModel):
     final_state: ScoreboardOut
     instance_bests: list[ScoringInstanceBest] = []
     medals: list[ScoringMedalEntry] = []
+
+
+# ── Learning zone ─────────────────────────────────────────────────────────────
+
+class LearningSectionIn(BaseModel):
+    """Admin payload to create / update a section. ``slug`` must be
+    URL-safe; the frontend slugifies the title client-side but the
+    backend re-validates."""
+    slug: str
+    title_fr: str
+    title_en: str
+    description_fr: Optional[str] = None
+    description_en: Optional[str] = None
+    order_idx: int = 0
+    is_published: bool = False
+
+    @field_validator("slug")
+    @classmethod
+    def _slug_shape(cls, v: str) -> str:
+        v = (v or "").strip().lower()
+        import re
+        if not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?", v):
+            raise ValueError("slug doit être [a-z0-9-], 1-80 caractères")
+        return v
+
+
+class LearningSectionOut(BaseModel):
+    id: int
+    slug: str
+    order_idx: int
+    is_published: bool
+    title_fr: str
+    title_en: str
+    description_fr: Optional[str] = None
+    description_en: Optional[str] = None
+    lesson_count: int = 0
+    completed_count: int = 0  # for the calling user
+
+    class Config:
+        from_attributes = True
+
+
+class LessonIn(BaseModel):
+    """Admin payload for create / update."""
+    slug: str
+    title_fr: str
+    title_en: str
+    content_fr: str = ""
+    content_en: str = ""
+    order_idx: int = 0
+    is_published: bool = False
+    exercise_problem_id: Optional[int] = None
+
+    @field_validator("slug")
+    @classmethod
+    def _slug_shape(cls, v: str) -> str:
+        v = (v or "").strip().lower()
+        import re
+        if not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?", v):
+            raise ValueError("slug doit être [a-z0-9-], 1-80 caractères")
+        return v
+
+
+class LessonSummary(BaseModel):
+    """Listing entry — no body, cheap to fetch en masse."""
+    id: int
+    section_id: int
+    slug: str
+    order_idx: int
+    is_published: bool
+    title_fr: str
+    title_en: str
+    has_exercise: bool
+    progress_status: Optional[str] = None  # None | "started" | "completed"
+
+    class Config:
+        from_attributes = True
+
+
+class LessonAssetOut(BaseModel):
+    id: int
+    lesson_id: int
+    kind: str
+    url: str
+    original_name: str
+
+    class Config:
+        from_attributes = True
+
+
+class LessonOut(BaseModel):
+    """Full lesson payload — body included. Returned on GET /lessons/{id}."""
+    id: int
+    section_id: int
+    slug: str
+    order_idx: int
+    is_published: bool
+    title_fr: str
+    title_en: str
+    content_fr: str
+    content_en: str
+    exercise_problem_id: Optional[int] = None
+    progress_status: Optional[str] = None
+    assets: list[LessonAssetOut] = []
+
+    class Config:
+        from_attributes = True
+
+
+class LessonProgressIn(BaseModel):
+    status: str  # "started" | "completed"
+
+    @field_validator("status")
+    @classmethod
+    def _status_shape(cls, v: str) -> str:
+        if v not in ("started", "completed"):
+            raise ValueError("status doit être 'started' ou 'completed'")
+        return v
