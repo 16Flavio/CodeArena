@@ -53,7 +53,7 @@ def test_totp_setup_refused_when_already_enabled(client):
 
 
 def test_totp_disable_requires_password_and_code(client):
-    h = auth_header(client, "eve", password="pw")
+    h = auth_header(client, "eve", password="test-pw-123456")
     r = client.post("/api/auth/2fa/setup", headers=h)
     secret = r.json()["secret"]
     code = pyotp.TOTP(secret).now()
@@ -71,7 +71,7 @@ def test_totp_disable_requires_password_and_code(client):
     # Right password, wrong code.
     r = client.post(
         "/api/auth/2fa/disable",
-        json={"password": "pw", "code": "000000"},
+        json={"password": "test-pw-123456", "code": "000000"},
         headers=h,
     )
     assert r.status_code == 400
@@ -80,14 +80,14 @@ def test_totp_disable_requires_password_and_code(client):
     # Right password + right code → success.
     r = client.post(
         "/api/auth/2fa/disable",
-        json={"password": "pw", "code": pyotp.TOTP(secret).now()},
+        json={"password": "test-pw-123456", "code": pyotp.TOTP(secret).now()},
         headers=h,
     )
     assert r.status_code == 200, r.text
 
 
 def test_totp_disable_via_recovery_code(client):
-    h = auth_header(client, "frank", password="pw")
+    h = auth_header(client, "frank", password="test-pw-123456")
     r = client.post("/api/auth/2fa/setup", headers=h)
     secret = r.json()["secret"]
     code = pyotp.TOTP(secret).now()
@@ -97,7 +97,7 @@ def test_totp_disable_via_recovery_code(client):
     # Disable with a recovery code instead of a TOTP code.
     r = client.post(
         "/api/auth/2fa/disable",
-        json={"password": "pw", "code": recovery},
+        json={"password": "test-pw-123456", "code": recovery},
         headers=h,
     )
     assert r.status_code == 200
@@ -106,7 +106,7 @@ def test_totp_disable_via_recovery_code(client):
 # ─── Login flow with 2FA ─────────────────────────────────────────────────────
 
 
-def _enable_2fa_for(client, username, password="pw"):
+def _enable_2fa_for(client, username, password="test-pw-123456"):
     """Helper: register + enable 2FA, returning (header, secret, recovery_codes)."""
     h = auth_header(client, username, password=password)
     r = client.post("/api/auth/2fa/setup", headers=h)
@@ -119,7 +119,7 @@ def _enable_2fa_for(client, username, password="pw"):
 def test_login_with_2fa_returns_challenge(client):
     _enable_2fa_for(client, "gabriel")
     # Now login with password alone — should return TOTP_REQUIRED + challenge.
-    r = client.post("/api/auth/login", json={"username": "gabriel", "password": "pw"})
+    r = client.post("/api/auth/login", json={"username": "gabriel", "password": "test-pw-123456"})
     assert r.status_code == 401, r.text
     body = r.json()
     assert body["detail"]["code"] == "TOTP_REQUIRED"
@@ -128,7 +128,7 @@ def test_login_with_2fa_returns_challenge(client):
 
 def test_login_2fa_verify_with_totp_returns_token(client):
     _, secret, _ = _enable_2fa_for(client, "henri")
-    r = client.post("/api/auth/login", json={"username": "henri", "password": "pw"})
+    r = client.post("/api/auth/login", json={"username": "henri", "password": "test-pw-123456"})
     challenge = r.json()["detail"]["params"]["challenge_token"]
 
     code = pyotp.TOTP(secret).now()
@@ -142,7 +142,7 @@ def test_login_2fa_verify_with_totp_returns_token(client):
 
 def test_login_2fa_verify_with_recovery_code_consumes_it(client):
     _, _secret, recovery = _enable_2fa_for(client, "ivy")
-    r = client.post("/api/auth/login", json={"username": "ivy", "password": "pw"})
+    r = client.post("/api/auth/login", json={"username": "ivy", "password": "test-pw-123456"})
     challenge = r.json()["detail"]["params"]["challenge_token"]
     used = recovery[0]
 
@@ -154,7 +154,7 @@ def test_login_2fa_verify_with_recovery_code_consumes_it(client):
     assert r.status_code == 200
 
     # Reuse the same recovery code on a fresh challenge → fails.
-    r = client.post("/api/auth/login", json={"username": "ivy", "password": "pw"})
+    r = client.post("/api/auth/login", json={"username": "ivy", "password": "test-pw-123456"})
     challenge2 = r.json()["detail"]["params"]["challenge_token"]
     r = client.post(
         "/api/auth/2fa/login-verify",
@@ -168,7 +168,7 @@ def test_login_2fa_verify_locks_after_threshold_wrong_codes(client):
     """5 wrong TOTP codes → same lockout as /login (15 minutes).
     Defence against brute-force of the 6-digit code space."""
     _enable_2fa_for(client, "kelvin")
-    r = client.post("/api/auth/login", json={"username": "kelvin", "password": "pw"})
+    r = client.post("/api/auth/login", json={"username": "kelvin", "password": "test-pw-123456"})
     challenge = r.json()["detail"]["params"]["challenge_token"]
 
     # 5 wrong attempts = lockout.
@@ -201,7 +201,7 @@ def test_admin_can_force_disable_totp(client):
     """The "lost phone + lost recovery codes" escape hatch — admin
     wipes the user's 2FA state after offline identity check."""
     admin_h = auth_header(client, "rootadm")  # first user → admin
-    _, _, _ = _enable_2fa_for(client, "victim", password="pw")
+    _, _, _ = _enable_2fa_for(client, "victim", password="test-pw-123456")
     # Find victim's id.
     from backend import database, models
     s = database.SessionLocal()
@@ -217,7 +217,7 @@ def test_admin_can_force_disable_totp(client):
     assert r.json()["was_enabled"] is True
 
     # Victim can now log in with just username + password, no 2FA prompt.
-    r = client.post("/api/auth/login", json={"username": "victim", "password": "pw"})
+    r = client.post("/api/auth/login", json={"username": "victim", "password": "test-pw-123456"})
     assert r.status_code == 200
     assert "access_token" in r.json()
 

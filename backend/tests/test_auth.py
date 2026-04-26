@@ -1,9 +1,9 @@
 def test_register_and_login(client):
-    r = client.post("/api/auth/register", json={"username": "alice", "email": "a@x.com", "password": "pw"})
+    r = client.post("/api/auth/register", json={"username": "alice", "email": "a@x.com", "password": "test-pw-123456"})
     assert r.status_code == 200
     assert r.json()["is_admin"] is True  # first user becomes admin
 
-    r = client.post("/api/auth/login", json={"username": "alice", "password": "pw"})
+    r = client.post("/api/auth/login", json={"username": "alice", "password": "test-pw-123456"})
     assert r.status_code == 200
     assert "access_token" in r.json()
 
@@ -11,7 +11,7 @@ def test_register_and_login(client):
 def test_account_lockout_after_bad_passwords(client):
     """5 consecutive wrong passwords lock the account for 15 min; even a
     correct password during the lockout window is refused with 429."""
-    client.post("/api/auth/register", json={"username": "locky", "email": "l@x.com", "password": "correct"})
+    client.post("/api/auth/register", json={"username": "locky", "email": "l@x.com", "password": "correct-pw-12"})
     for _ in range(5):
         r = client.post("/api/auth/login", json={"username": "locky", "password": "wrong"})
         assert r.status_code == 401
@@ -32,13 +32,13 @@ def test_account_lockout_after_bad_passwords(client):
         db.commit()
     finally:
         db.close()
-    r = client.post("/api/auth/login", json={"username": "locky", "password": "correct"})
+    r = client.post("/api/auth/login", json={"username": "locky", "password": "correct-pw-12"})
     assert r.status_code == 200
 
 
 def test_duplicate_username_rejected(client):
-    client.post("/api/auth/register", json={"username": "a", "email": "a@x.com", "password": "pw"})
-    r = client.post("/api/auth/register", json={"username": "a", "email": "b@x.com", "password": "pw"})
+    client.post("/api/auth/register", json={"username": "a", "email": "a@x.com", "password": "test-pw-123456"})
+    r = client.post("/api/auth/register", json={"username": "a", "email": "b@x.com", "password": "test-pw-123456"})
     assert r.status_code == 400
 
 
@@ -48,7 +48,7 @@ def test_reset_password_flow(client):
     import secrets
     from datetime import datetime, timedelta, timezone
 
-    client.post("/api/auth/register", json={"username": "u", "email": "u@x.com", "password": "old"})
+    client.post("/api/auth/register", json={"username": "u", "email": "u@x.com", "password": "old-pw-1234"})
     # Backend sends a reset link via email; in tests we plant a token directly.
     r = client.post("/api/auth/forgot-password", json={"email": "u@x.com"})
     assert r.status_code == 200
@@ -79,9 +79,9 @@ def test_reset_password_flow(client):
         except StopIteration:
             pass
 
-    r = client.post("/api/auth/reset-password", json={"token": raw, "new_password": "newer"})
+    r = client.post("/api/auth/reset-password", json={"token": raw, "new_password": "newer-pw-1234"})
     assert r.status_code == 200, r.text
 
     # Old password no longer works; new one does.
-    assert client.post("/api/auth/login", json={"username": "u", "password": "old"}).status_code == 401
-    assert client.post("/api/auth/login", json={"username": "u", "password": "newer"}).status_code == 200
+    assert client.post("/api/auth/login", json={"username": "u", "password": "old-pw-1234"}).status_code == 401
+    assert client.post("/api/auth/login", json={"username": "u", "password": "newer-pw-1234"}).status_code == 200

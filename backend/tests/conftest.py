@@ -135,11 +135,14 @@ def client(monkeypatch):
     Base.metadata.drop_all(bind=engine)
 
 
-def auth_header(client, username, email=None, password="pw"):
+def auth_header(client, username, email=None, password="test-pw-123456"):
     """Register (if needed) then log in and return Authorization header dict.
     Also flips email_verified=True on the user so tests can exercise the
     verified-only endpoints (team/contest register) without going through
-    the real email flow."""
+    the real email flow.
+
+    Default password meets the production policy (>=10 chars, letter +
+    digit, not in the blocklist) so tests don't have to think about it."""
     if email is None:
         email = f"{username}@test.local"
     client.post("/api/auth/register", json={"username": username, "email": email, "password": password})

@@ -133,6 +133,30 @@ def toggle_admin(
     return user
 
 
+@router.put("/users/{user_id}/toggle-organizer", response_model=schemas.UserOut)
+def toggle_organizer(
+    user_id: int,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Promote / demote a user as organizer. Admin-only operation:
+    organizers cannot mint other organizers. An admin who's also an
+    organizer is allowed (the flags are independent), but organisers'
+    contest-level perms only kick in on the contests they created."""
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+    user.is_organizer = not bool(user.is_organizer)
+    audit(
+        db, action="toggle_organizer", actor=admin,
+        target_type="user", target_id=user.id,
+        detail=f"set is_organizer={user.is_organizer}",
+    )
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 @router.delete("/submissions/{submission_id}")
 def delete_submission(
     submission_id: int,

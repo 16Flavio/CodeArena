@@ -97,6 +97,53 @@ def require_admin(user: models.User = Depends(get_current_user)) -> models.User:
     return user
 
 
+def require_admin_or_organizer(user: models.User = Depends(get_current_user)) -> models.User:
+    """Gate for endpoints that any organizer can hit, even if the
+    actual ownership of the resource is checked further inside the
+    handler. ``require_admin`` is the stricter gate for system-wide
+    settings (user CRUD, language CRUD, audit log, ...) where an
+    organizer should NOT be allowed."""
+    if not (user.is_admin or user.is_organizer):
+        raise HTTPException(status_code=403, detail="Accès organisateur requis")
+    return user
+
+
+def can_manage_contest(user: models.User, contest: "models.Contest") -> bool:
+    """Return True iff ``user`` is allowed to mutate ``contest`` —
+    create instances, DQ participants, override verdicts, rescore.
+
+    Admins always pass. Organizers pass only when they CREATED the
+    contest. The ownership comes from ``Contest.created_by`` (FK to
+    users, populated at create time). A contest with NULL
+    ``created_by`` (legacy data, pre-organizer-role) is treated as
+    admin-only.
+    """
+    if user.is_admin:
+        return True
+    if not user.is_organizer:
+        return False
+    if contest is None or contest.created_by is None:
+        return False
+    return contest.created_by == user.id
+
+
+def require_contest_owner(
+    contest_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> models.User:
+    """FastAPI dependency that 403s unless the caller is admin OR the
+    contest's creator-and-organizer. Resolves the contest by id from
+    the path; the route function still receives the same ``contest_id``
+    parameter, so this dep is drop-in for ``require_admin``."""
+    contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
+    if contest is None:
+        raise HTTPException(status_code=404, detail="Concours introuvable")
+    if not can_manage_contest(user, contest):
+        raise HTTPException(status_code=403, detail="Vous ne gérez pas ce concours")
+    return user
+
+
 def require_verified(user: models.User = Depends(get_current_user)) -> models.User:
     """Gate for actions that require a confirmed email address. Admins are
     always allowed so a freshly-bootstrapped instance isn't locked out."""

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { Shield, ShieldOff, Trash2, KeyRound } from 'lucide-react';
-import { toggleAdmin, deleteUser, adminDisableTotp } from '../../api';
+import { Shield, ShieldOff, Trash2, KeyRound, UserCog } from 'lucide-react';
+import { toggleAdmin, toggleOrganizer, deleteUser, adminDisableTotp } from '../../api';
 import { useConfirm } from '../Confirm';
 import { extractErrorMessage } from '../../utils/apiError';
 
@@ -16,6 +16,16 @@ export default function UsersTab({ users, currentUser, onChange }) {
   const handleToggleAdmin = async (id) => {
     try {
       await toggleAdmin(id);
+      toast.success(t('admin.users.toastStatus'));
+      onChange?.();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+    }
+  };
+
+  const handleToggleOrganizer = async (id) => {
+    try {
+      await toggleOrganizer(id);
       toast.success(t('admin.users.toastStatus'));
       onChange?.();
     } catch (err) {
@@ -82,6 +92,10 @@ export default function UsersTab({ users, currentUser, onChange }) {
                 <td className="py-3 px-5">
                   {u.is_admin ? (
                     <span className="badge-admin">{t('admin.users.roleAdmin')}</span>
+                  ) : u.is_organizer ? (
+                    <span className="badge-admin" title={t('admin.users.roleOrganizerHint')}>
+                      {t('admin.users.roleOrganizer')}
+                    </span>
                   ) : (
                     <span className="badge-inactive">{t('admin.users.roleUser')}</span>
                   )}
@@ -108,6 +122,15 @@ export default function UsersTab({ users, currentUser, onChange }) {
                       >
                         {u.is_admin ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
                       </button>
+                      {!u.is_admin && (
+                        <button
+                          onClick={() => handleToggleOrganizer(u.id)}
+                          className="p-2 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-violet-500 transition-colors dark:hover:bg-slate-700/50 dark:text-gray-400 dark:hover:text-violet-400"
+                          title={u.is_organizer ? t('admin.users.removeOrganizer') : t('admin.users.makeOrganizer')}
+                        >
+                          <UserCog className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDelete(u.id, u.username)}
                         className="p-2 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors dark:text-gray-400 dark:hover:text-red-400"

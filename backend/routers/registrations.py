@@ -647,7 +647,7 @@ def list_registrations(
 def set_registration_disqualified(
     registration_id: int,
     payload: schemas.DisqualifyIn,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     r = db.query(models.ContestRegistration).filter(
@@ -655,6 +655,12 @@ def set_registration_disqualified(
     ).first()
     if not r:
         raise HTTPException(status_code=404, detail="Inscription introuvable")
+    # Sub-resource: registration belongs to a contest, but the URL has
+    # the registration id only. Look up the contest and gate manually.
+    from ..auth import can_manage_contest
+    contest = db.query(models.Contest).filter(models.Contest.id == r.contest_id).first()
+    if contest is None or not can_manage_contest(admin, contest):
+        raise HTTPException(status_code=403, detail="Vous ne gérez pas ce concours")
     r.disqualified = bool(payload.disqualified)
     r.disqualified_reason = (payload.reason or None) if r.disqualified else None
     # Mirror the DQ state into the contest_bans table so the sanction

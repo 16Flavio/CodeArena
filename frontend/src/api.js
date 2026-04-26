@@ -258,6 +258,7 @@ export const getMyRankings = () => api.get('/teams/my/rankings');
 // Admin
 export const getUsers = () => api.get('/admin/users');
 export const toggleAdmin = (id) => api.put(`/admin/users/${id}/toggle-admin`);
+export const toggleOrganizer = (id) => api.put(`/admin/users/${id}/toggle-organizer`);
 export const deleteUser = (id) => api.delete(`/admin/users/${id}`);
 // Admin escape hatch: wipe a user's 2FA state when they lost their
 // device + recovery codes. The admin verifies identity offline.

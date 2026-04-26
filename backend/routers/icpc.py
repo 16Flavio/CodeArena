@@ -1681,13 +1681,15 @@ def delete_affiliation(
 def override_judging(
     judging_id: int,
     payload: schemas.JudgingOverrideIn,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Admin forcibly changes the verdict on an existing judging. Does
-    NOT re-run the judger; just flips the stored verdict, stamps override
-    metadata, and re-materialises the ICPC scoreboard cell so the change
-    shows immediately.
+    """Admin / organizer forcibly changes the verdict on an existing
+    judging. Does NOT re-run the judger; just flips the stored verdict,
+    stamps override metadata, and re-materialises the ICPC scoreboard
+    cell so the change shows immediately. The owning contest decides
+    who is allowed to call this — admin always passes, organizers only
+    on contests they created.
 
     The original verdict isn't preserved in the Judging row — the audit
     log entry we emit is the paper trail."""
@@ -1702,6 +1704,9 @@ def override_judging(
     if not sub:
         raise HTTPException(status_code=404, detail="Soumission introuvable")
     contest = db.query(models.Contest).filter(models.Contest.id == sub.contest_id).first()
+    from ..auth import can_manage_contest
+    if contest is None or not can_manage_contest(admin, contest):
+        raise HTTPException(status_code=403, detail="Vous ne gérez pas ce concours")
     problem = db.query(models.Problem).filter(models.Problem.id == sub.problem_id).first() if sub.problem_id else None
 
     old_verdict = j.verdict

@@ -19,6 +19,12 @@ class User(Base):
     email = Column(String(100), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     is_admin = Column(Boolean, default=False)
+    # An "organizer" is a trusted user who can create + manage their
+    # OWN contests (CRUD instances, DQ participants, override verdicts,
+    # rescore) but cannot touch other organisers' contests, promote
+    # users, or change global settings. Lets you delegate contest ops
+    # without handing out full root.
+    is_organizer = Column(Boolean, default=False, nullable=False, server_default="0")
     created_at = Column(DateTime, default=utcnow)
     reset_token_hash = Column(String(64), nullable=True, index=True)
     reset_token_expires_at = Column(DateTime, nullable=True)

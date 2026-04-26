@@ -122,6 +122,7 @@ class UserOut(BaseModel):
     username: str
     email: str
     is_admin: bool
+    is_organizer: bool = False
     email_verified: bool = False
     totp_enabled: bool = False
     solo_affiliation_id: Optional[int] = None

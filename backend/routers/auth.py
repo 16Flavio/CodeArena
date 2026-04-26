@@ -15,6 +15,50 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 RESET_TOKEN_EXPIRE_HOURS = 1
 
+# Minimum policy. Conservative thresholds rather than something
+# zxcvbn-grade: we want a real floor (10 chars + diversity) without
+# imposing rules that frustrate users (mandatory symbols, frequent
+# rotation). The blocklist catches the absolute worst (top-of-leaks
+# passwords) so users who paste "password123" get rejected at register
+# time. Frontend has a strength meter — backend is the ultimate gate.
+PASSWORD_MIN_LENGTH = 10
+_PASSWORD_BLOCKLIST = frozenset(
+    p.lower() for p in (
+        "password", "password1", "password123", "password1234",
+        "qwerty", "qwerty123", "azerty", "azerty123",
+        "12345678", "123456789", "1234567890",
+        "letmein", "letmein123",
+        "welcome1", "welcome123",
+        "admin", "admin123", "administrator",
+        "iloveyou", "monkey123", "abc12345",
+        "codearena", "codearena1", "codearena123",
+    )
+)
+
+
+def _check_password_policy(password: str) -> None:
+    """Raise HTTPException 400 if ``password`` doesn't meet the policy.
+    Called by register / change-password / reset-password so all three
+    surfaces share one rule."""
+    pw = password or ""
+    if len(pw) < PASSWORD_MIN_LENGTH:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Le mot de passe doit contenir au moins {PASSWORD_MIN_LENGTH} caractères",
+        )
+    has_letter = any(c.isalpha() for c in pw)
+    has_digit = any(c.isdigit() for c in pw)
+    if not (has_letter and has_digit):
+        raise HTTPException(
+            status_code=400,
+            detail="Le mot de passe doit contenir au moins une lettre et un chiffre",
+        )
+    if pw.lower() in _PASSWORD_BLOCKLIST:
+        raise HTTPException(
+            status_code=400,
+            detail="Ce mot de passe est trop courant. Choisissez-en un autre.",
+        )
+
 
 def _hash_token(raw_token: str) -> str:
     return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
@@ -44,6 +88,7 @@ def register(
             status=400,
             message="This email is already registered",
         )
+    _check_password_policy(data.password)
 
     is_first_user = db.query(models.User).count() == 0
     user = models.User(
@@ -143,8 +188,7 @@ def change_password(
 ):
     if not verify_password(data.current_password, user.password_hash):
         raise HTTPException(status_code=400, detail="Mot de passe actuel incorrect")
-    if len(data.new_password) < 4:
-        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 4 caractères")
+    _check_password_policy(data.new_password)
     if data.new_password == data.current_password:
         raise HTTPException(status_code=400, detail="Le nouveau mot de passe doit être différent de l'ancien")
     user.password_hash = hash_password(data.new_password)
@@ -377,8 +421,7 @@ def reset_password(
 ):
     if not data.token or not data.new_password:
         raise HTTPException(status_code=400, detail="Le jeton et le nouveau mot de passe sont requis")
-    if len(data.new_password) < 4:
-        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 4 caractères")
+    _check_password_policy(data.new_password)
 
     token_hash = _hash_token(data.token)
     user = (

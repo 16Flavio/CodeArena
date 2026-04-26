@@ -171,7 +171,7 @@ def test_admin_unlock_user_clears_lockout(client):
     # Create a user via register (so their row exists).
     client.post(
         "/api/auth/register",
-        json={"username": "frank", "email": "frank@x.com", "password": "pw"},
+        json={"username": "frank", "email": "frank@x.com", "password": "test-pw-123456"},
     )
     # Manually force a lockout via the DB (the lockout flow needs the
     # rate limiter to be on, but it's disabled in tests).

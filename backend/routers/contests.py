@@ -18,7 +18,11 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from ..database import get_db
 from .. import models, schemas
-from ..auth import get_current_user, require_admin, get_current_user_from_query, require_verified
+from ..auth import (
+    get_current_user, require_admin, require_admin_or_organizer,
+    require_contest_owner, can_manage_contest,
+    get_current_user_from_query, require_verified,
+)
 from ..audit import record as audit
 from ..rate_limit import limiter
 from ..scoring_queue import enqueue_scoring
@@ -344,20 +348,24 @@ def list_contests(
 @router.post("", response_model=schemas.ContestOut)
 def create_contest(
     data: schemas.ContestCreate,
-    admin: models.User = Depends(require_admin),
+    user: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     contest = models.Contest(**data.model_dump())
+    # Stamp ownership so future require_contest_owner checks know who
+    # the organizer is. Admins still pass the check via is_admin even
+    # when ``created_by`` points elsewhere.
+    contest.created_by = user.id
     db.add(contest)
     db.flush()
     audit(
-        db, action="create_contest", actor=admin,
+        db, action="create_contest", actor=user,
         target_type="contest", target_id=contest.id,
         detail=f"title={contest.title!r}",
     )
     db.commit()
     db.refresh(contest)
-    return _serialize_contest(contest, admin)
+    return _serialize_contest(contest, user)
 
 
 @router.get("/my-submissions", response_model=list[schemas.MySubmissionOut])
@@ -457,7 +465,7 @@ def get_contest(
 def update_contest(
     contest_id: int,
     data: schemas.ContestUpdate,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_contest_owner),
     db: Session = Depends(get_db),
 ):
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
@@ -584,7 +592,7 @@ def update_contest(
 @router.delete("/{contest_id}")
 def delete_contest(
     contest_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_contest_owner),
     db: Session = Depends(get_db),
 ):
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
@@ -634,7 +642,7 @@ PDF_MAGIC = b"%PDF-"
 async def upload_problem_statement(
     contest_id: int,
     file: UploadFile = File(...),
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_contest_owner),
     db: Session = Depends(get_db),
 ):
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
@@ -746,7 +754,7 @@ def download_problem_statement(
 @router.delete("/{contest_id}/problem-statement", response_model=schemas.ContestOut)
 def delete_problem_statement(
     contest_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_contest_owner),
     db: Session = Depends(get_db),
 ):
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
@@ -808,7 +816,7 @@ async def create_instance(
     unlock_at_absolute: Optional[str] = Form(None),
     close_at_absolute: Optional[str] = Form(None),
     file: UploadFile = File(...),
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_contest_owner),
     db: Session = Depends(get_db),
 ):
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
@@ -869,21 +877,26 @@ async def update_instance(
     unlock_at_absolute: Optional[str] = Form(None),
     close_at_absolute: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Admin edit for an output-scoring instance (what users see as a
-    "problem"). Any field may be omitted to leave it unchanged. Sending
-    a new file replaces the stored input; existing submissions against
-    this instance are *not* auto-rescored — trigger rescore manually
-    after replacing the input if you want the new data applied to
-    prior submissions."""
+    """Admin / organizer edit for an output-scoring instance (what users
+    see as a "problem"). Any field may be omitted to leave it
+    unchanged. Sending a new file replaces the stored input; existing
+    submissions against this instance are *not* auto-rescored — trigger
+    rescore manually after replacing the input if you want the new
+    data applied to prior submissions."""
     instance = db.query(models.Instance).filter(models.Instance.id == instance_id).first()
     if not instance:
         raise HTTPException(status_code=404, detail="Instance introuvable")
     contest = db.query(models.Contest).filter(models.Contest.id == instance.contest_id).first()
     if not contest:
         raise HTTPException(status_code=404, detail="Concours introuvable")
+    # Sub-resource doesn't carry contest_id in its URL, so we look up
+    # the parent and gate manually. Same authorisation rules as the
+    # endpoints with explicit ``{contest_id}``.
+    if not can_manage_contest(admin, contest):
+        raise HTTPException(status_code=403, detail="Vous ne gérez pas ce concours")
 
     if name is not None:
         n = name.strip()
@@ -949,12 +962,15 @@ async def update_instance(
 @router.delete("/instances/{instance_id}")
 def delete_instance(
     instance_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     instance = db.query(models.Instance).filter(models.Instance.id == instance_id).first()
     if not instance:
         raise HTTPException(status_code=404, detail="Instance introuvable")
+    contest = db.query(models.Contest).filter(models.Contest.id == instance.contest_id).first()
+    if contest is None or not can_manage_contest(admin, contest):
+        raise HTTPException(status_code=403, detail="Vous ne gérez pas ce concours")
 
     if instance.file_path and os.path.exists(instance.file_path):
         os.remove(instance.file_path)
@@ -1638,7 +1654,7 @@ def list_hints(
 def create_hint(
     contest_id: int,
     payload: schemas.HintAdminIn,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_contest_owner),
     db: Session = Depends(get_db),
 ):
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
@@ -1661,12 +1677,15 @@ def create_hint(
 def update_hint(
     hint_id: int,
     payload: schemas.HintAdminIn,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     h = db.query(models.Hint).filter(models.Hint.id == hint_id).first()
     if not h:
         raise HTTPException(status_code=404, detail="Indice introuvable")
+    contest = db.query(models.Contest).filter(models.Contest.id == h.contest_id).first()
+    if contest is None or not can_manage_contest(admin, contest):
+        raise HTTPException(status_code=403, detail="Vous ne gérez pas ce concours")
     h.label = payload.label
     h.body = payload.body
     h.cost_fraction = max(0.0, min(1.0, payload.cost_fraction))
@@ -1679,12 +1698,15 @@ def update_hint(
 @router.delete("/hints/{hint_id}")
 def delete_hint(
     hint_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     h = db.query(models.Hint).filter(models.Hint.id == hint_id).first()
     if not h:
         raise HTTPException(status_code=404, detail="Indice introuvable")
+    contest = db.query(models.Contest).filter(models.Contest.id == h.contest_id).first()
+    if contest is None or not can_manage_contest(admin, contest):
+        raise HTTPException(status_code=403, detail="Vous ne gérez pas ce concours")
     db.delete(h)
     db.commit()
     return {"detail": "ok"}
@@ -1864,7 +1886,7 @@ def test_scoring(
     request: Request,
     contest_id: int,
     data: schemas.TestScoringRequest,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_contest_owner),
     db: Session = Depends(get_db),
 ):
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
@@ -1929,7 +1951,7 @@ def test_scoring(
 def rescore_contest(
     request: Request,
     contest_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_contest_owner),
     db: Session = Depends(get_db),
 ):
     """Re-run the (now-current) scoring script over every submission in this
@@ -2011,7 +2033,7 @@ def rescore_contest(
 @router.post("/{contest_id}/duplicate", response_model=schemas.ContestOut)
 def duplicate_contest(
     contest_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_contest_owner),
     db: Session = Depends(get_db),
 ):
     """Deep-copy a contest (instances included). Starts inactive and hidden
