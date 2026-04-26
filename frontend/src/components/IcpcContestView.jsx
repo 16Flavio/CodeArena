@@ -50,7 +50,9 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
   const [submitting, setSubmitting] = useState(false);
   const [currentJudging, setCurrentJudging] = useState(null);
   const [expandedTestcaseId, setExpandedTestcaseId] = useState(null); // testcase_id of the per-testcase chip whose stdout/stderr is open
-  const [recentSubId, setRecentSubId] = useState(null);
+  // ``setRecentSubId`` is the only side we read; the value itself is
+  // tracked elsewhere. Prefixed to opt out of no-unused-vars.
+  const [, setRecentSubId] = useState(null);
   const [clars, setClars] = useState([]);
   const [clarBody, setClarBody] = useState('');
 
@@ -698,7 +700,7 @@ function CopyablePre({ label, content, t }) {
 }
 
 
-function AnsweredBlock({ c, isAdmin, onSave, onToggle, onRemove, t }) {
+function AnsweredBlock({ c, isAdmin, onSave, onToggle, t }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(c.answer || '');
   const [vis, setVis] = useState(c.visibility);

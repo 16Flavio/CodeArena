@@ -1034,3 +1034,45 @@ class LessonProgressIn(BaseModel):
         if v not in ("started", "completed"):
             raise ValueError("status doit être 'started' ou 'completed'")
         return v
+
+
+class LearningWidgetIn(BaseModel):
+    """Admin payload for a custom widget.
+
+    ``name`` is the directive name (e.g. ``viz-binary-search``); used
+    in lesson markdown as ``:::name{...}`` and matched at render time.
+    Must be lowercase, [a-z0-9-], 2-80 chars."""
+    name: str
+    title_fr: str
+    title_en: str
+    description_fr: Optional[str] = None
+    description_en: Optional[str] = None
+    html_template: str = ""
+    params_schema: Optional[str] = None  # JSON string
+    example_params: Optional[str] = None  # JSON string
+    is_published: bool = False
+
+    @field_validator("name")
+    @classmethod
+    def _name_shape(cls, v: str) -> str:
+        v = (v or "").strip().lower()
+        import re
+        if not re.fullmatch(r"[a-z][a-z0-9-]{1,79}", v):
+            raise ValueError("name doit être [a-z0-9-] et commencer par une lettre, 2-80 caractères")
+        return v
+
+
+class LearningWidgetOut(BaseModel):
+    id: int
+    name: str
+    title_fr: str
+    title_en: str
+    description_fr: Optional[str] = None
+    description_en: Optional[str] = None
+    html_template: str
+    params_schema: Optional[str] = None
+    example_params: Optional[str] = None
+    is_published: bool
+
+    class Config:
+        from_attributes = True

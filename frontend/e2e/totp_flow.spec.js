@@ -12,7 +12,7 @@ import { createHmac } from 'node:crypto';
 const USER = {
   username: '2fa_user',
   email: '2fa@e2e.local',
-  password: 'totp-secret-pw',
+  password: 'totp-secret-pw-1',
 };
 
 // RFC 6238 TOTP — implemented inline so we don't depend on yet

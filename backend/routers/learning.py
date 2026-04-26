@@ -594,6 +594,116 @@ def admin_delete_asset(
     return {"detail": "ok"}
 
 
+# ── Custom widgets ────────────────────────────────────────────────────────────
+
+@student_router.get("/widgets", response_model=list[schemas.LearningWidgetOut])
+def list_published_widgets(
+    user: models.User = Depends(get_current_user),  # noqa: ARG001 — auth-walled
+    db: Session = Depends(get_db),
+):
+    """Listed by every lesson reader at boot — the frontend builds its
+    runtime widget registry from this. Drafts excluded."""
+    rows = (
+        db.query(models.LearningWidget)
+        .filter(models.LearningWidget.is_published.is_(True))
+        .order_by(models.LearningWidget.name)
+        .all()
+    )
+    return rows
+
+
+@admin_router.get("/widgets", response_model=list[schemas.LearningWidgetOut])
+def admin_list_widgets(
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return (
+        db.query(models.LearningWidget)
+        .order_by(models.LearningWidget.name)
+        .all()
+    )
+
+
+@admin_router.post("/widgets", response_model=schemas.LearningWidgetOut)
+def admin_create_widget(
+    data: schemas.LearningWidgetIn,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    if db.query(models.LearningWidget).filter(
+        models.LearningWidget.name == data.name,
+    ).first() is not None:
+        raise HTTPException(status_code=409, detail="Nom déjà utilisé")
+    widget = models.LearningWidget(created_by=admin.id, **data.model_dump())
+    db.add(widget)
+    audit(db, action="learning_widget_create", actor=admin,
+          target_type="learning_widget", target_id=0,
+          detail=f"name={data.name!r}")
+    db.commit()
+    db.refresh(widget)
+    return widget
+
+
+@admin_router.get("/widgets/{widget_id}", response_model=schemas.LearningWidgetOut)
+def admin_get_widget(
+    widget_id: int,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    w = db.query(models.LearningWidget).filter(
+        models.LearningWidget.id == widget_id,
+    ).first()
+    if not w:
+        raise HTTPException(status_code=404, detail="Widget introuvable")
+    return w
+
+
+@admin_router.put("/widgets/{widget_id}", response_model=schemas.LearningWidgetOut)
+def admin_update_widget(
+    widget_id: int,
+    data: schemas.LearningWidgetIn,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    w = db.query(models.LearningWidget).filter(
+        models.LearningWidget.id == widget_id,
+    ).first()
+    if not w:
+        raise HTTPException(status_code=404, detail="Widget introuvable")
+    if data.name != w.name and db.query(models.LearningWidget).filter(
+        models.LearningWidget.name == data.name,
+        models.LearningWidget.id != widget_id,
+    ).first() is not None:
+        raise HTTPException(status_code=409, detail="Nom déjà utilisé")
+    for key, value in data.model_dump().items():
+        setattr(w, key, value)
+    audit(db, action="learning_widget_update", actor=admin,
+          target_type="learning_widget", target_id=w.id,
+          detail=f"name={w.name!r}")
+    db.commit()
+    db.refresh(w)
+    return w
+
+
+@admin_router.delete("/widgets/{widget_id}")
+def admin_delete_widget(
+    widget_id: int,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    w = db.query(models.LearningWidget).filter(
+        models.LearningWidget.id == widget_id,
+    ).first()
+    if not w:
+        raise HTTPException(status_code=404, detail="Widget introuvable")
+    audit(db, action="learning_widget_delete", actor=admin,
+          target_type="learning_widget", target_id=w.id,
+          detail=f"name={w.name!r}")
+    db.delete(w)
+    db.commit()
+    return {"detail": "ok"}
+
+
 @admin_router.get("/export/latex")
 def admin_export_latex(
     lang: str = "fr",

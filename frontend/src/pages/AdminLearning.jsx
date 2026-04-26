@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -55,7 +55,18 @@ export default function AdminLearning() {
     }
   };
 
-  useEffect(() => { reloadSections(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await adminLearnListSections();
+        if (!cancelled) setSections(r.data || []);
+      } catch (err) {
+        if (!cancelled) toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [t]);
 
   const reloadLessons = async (sectionId) => {
     try {
@@ -204,24 +215,6 @@ export default function AdminLearning() {
     }
   };
 
-  const handleUploadHtml = async (e) => {
-    if (!editingLesson) return;
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const r = await adminLearnUploadAsset(editingLesson.id, file, 'file');
-      const directive = `\n\n:::widget-html{src="${r.data.url}" height="400" title="${file.name.replace(/"/g, '')}"}\n:::\n`;
-      setEditingLesson((prev) => ({
-        ...prev,
-        [`content_${editLang}`]: (prev[`content_${editLang}`] || '') + directive,
-      }));
-      toast.success(t('admin.learning.toastHtmlInserted'));
-    } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
-    } finally {
-      e.target.value = '';
-    }
-  };
 
   const handleExportLatex = async (lang) => {
     setExporting(true);
@@ -290,6 +283,14 @@ export default function AdminLearning() {
               </button>
             </div>
           </div>
+          <button
+            onClick={() => navigate('/admin/learning/widgets')}
+            className="btn-secondary inline-flex items-center gap-2"
+            title={t('admin.learning.manageWidgetsHint')}
+          >
+            <Sparkles className="w-4 h-4" />
+            {t('admin.learning.manageWidgets')}
+          </button>
           <button onClick={handleAddSection} className="btn-primary inline-flex items-center gap-2">
             <FolderPlus className="w-4 h-4" />
             {t('admin.learning.newSection')}
@@ -421,11 +422,6 @@ export default function AdminLearning() {
                   <ImageIcon className="w-3.5 h-3.5" />
                   {t('admin.learning.uploadImage')}
                   <input type="file" className="hidden" accept="image/*" onChange={handleUploadImage} />
-                </label>
-                <label className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-gray-200">
-                  <FileDown className="w-3.5 h-3.5 rotate-180" />
-                  {t('admin.learning.uploadHtml')}
-                  <input type="file" className="hidden" accept=".html,.htm,text/html" onChange={handleUploadHtml} />
                 </label>
                 <button
                   onClick={() => setShowCatalog(true)}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Play, Pause, RotateCcw, ChevronsRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -87,25 +87,33 @@ export default function SortViz({ algo = 'bubble', data = '[5,2,8,1,9,3]' }) {
   const generator = ALGOS[algo];
   const valid = parsed && generator;
 
-  const stepsRef = useRef([]);
+  // Materialise all steps in a memo — derived from the inputs, no
+  // ref involved. Reading a useRef during render is now flagged by
+  // react-hooks/refs (and rightfully so: refs aren't reactive). The
+  // memo value IS reactive on (parsed, generator) which is what we
+  // want.
+  const steps = useMemo(() => {
+    if (!valid) return [];
+    return Array.from(generator(parsed));
+  }, [parsed, generator, valid]);
+
   const [stepIdx, setStepIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
 
-  // Materialise all steps once — the input is small and it makes
-  // scrubbing back/forth trivial. If algos ever produce thousands of
-  // steps this should become lazy.
+  // Reset the playhead when the steps array changes (new algo / new
+  // data). React-hooks 7+ warns on setState-in-effect; left as a
+  // warning project-wide. The pattern is intentional here — stepIdx
+  // is genuinely stateful (the user scrubs / plays).
   useEffect(() => {
-    if (!valid) return;
-    stepsRef.current = Array.from(generator(parsed));
     setStepIdx(0);
     setPlaying(false);
-  }, [parsed, generator, valid]);
+  }, [steps]);
 
   useEffect(() => {
     if (!playing) return;
     const id = setInterval(() => {
       setStepIdx((i) => {
-        if (i >= stepsRef.current.length - 1) {
+        if (i >= steps.length - 1) {
           setPlaying(false);
           return i;
         }
@@ -113,7 +121,7 @@ export default function SortViz({ algo = 'bubble', data = '[5,2,8,1,9,3]' }) {
       });
     }, TICK_MS);
     return () => clearInterval(id);
-  }, [playing]);
+  }, [playing, steps.length]);
 
   if (!valid) {
     return (
@@ -123,7 +131,7 @@ export default function SortViz({ algo = 'bubble', data = '[5,2,8,1,9,3]' }) {
     );
   }
 
-  const step = stepsRef.current[stepIdx] ?? { array: parsed, compare: [], swap: [], note: '' };
+  const step = steps[stepIdx] ?? { array: parsed, compare: [], swap: [], note: '' };
   const max = Math.max(...step.array, 1);
 
   return (
@@ -133,7 +141,7 @@ export default function SortViz({ algo = 'bubble', data = '[5,2,8,1,9,3]' }) {
           {t('learn.widget.sortTitle')} · {algo}
         </div>
         <div className="text-xs text-slate-400 dark:text-gray-500">
-          {t('learn.widget.step', { current: stepIdx + 1, total: stepsRef.current.length })}
+          {t('learn.widget.step', { current: stepIdx + 1, total: steps.length })}
         </div>
       </div>
 
@@ -187,7 +195,7 @@ export default function SortViz({ algo = 'bubble', data = '[5,2,8,1,9,3]' }) {
         <button
           onClick={() => {
             setPlaying(false);
-            setStepIdx((i) => Math.min(stepsRef.current.length - 1, i + 1));
+            setStepIdx((i) => Math.min(steps.length - 1, i + 1));
           }}
           className="p-2 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-gray-200 dark:hover:bg-slate-600 transition-colors"
           aria-label={t('learn.widget.stepNext')}

@@ -814,3 +814,31 @@ class LessonProgress(Base):
     )
 
 
+class LearningWidget(Base):
+    """Admin-authored interactive widget. The body is HTML+JS the
+    admin types in the widget editor; the frontend renders it inside
+    a sandboxed iframe (no allow-same-origin → no access to the
+    parent's JWT/cookies). The directive ``name`` is referenced from
+    lesson markdown like ``:::name{param=value}`` and the params
+    are injected as ``window.__params`` before the body executes.
+
+    ``params_schema`` and ``example_params`` are JSON strings that
+    drive the catalog UI (param reference + ready-to-paste snippet)
+    so widgets are self-documenting."""
+    __tablename__ = "learning_widgets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(80), unique=True, nullable=False, index=True)
+    title_fr = Column(String(200), nullable=False)
+    title_en = Column(String(200), nullable=False)
+    description_fr = Column(Text, nullable=True)
+    description_en = Column(Text, nullable=True)
+    html_template = Column(Text, nullable=False, default="")
+    params_schema = Column(Text, nullable=True)   # JSON list of {name, description, example}
+    example_params = Column(Text, nullable=True)  # JSON object {param: value}
+    is_published = Column(Boolean, default=False, nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+

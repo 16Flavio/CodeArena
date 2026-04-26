@@ -1091,8 +1091,34 @@
       "exporting": "Exporting…",
       "exportHint": "Generate a ready-to-compile LaTeX project with every published lesson.",
       "toastExportOk": "Export downloaded",
-      "uploadHtml": "HTML animation",
-      "toastHtmlInserted": "HTML widget inserted"
+      "manageWidgets": "My widgets",
+      "manageWidgetsHint": "Create / edit the interactive widgets available in lessons."
+    },
+    "learningWidgets": {
+      "title": "My widgets",
+      "backToLearning": "Back to learning zone",
+      "newWidget": "New widget",
+      "empty": "No custom widgets yet. Create one to extend the catalog.",
+      "promptTitle": "Widget title?",
+      "titleFr": "Title (FR)",
+      "titleEn": "Title (EN)",
+      "descFr": "Description (FR) — shown in the catalog",
+      "descEn": "Description (EN)",
+      "namePlaceholder": "Identifier (e.g. viz-bst)",
+      "htmlTemplate": "HTML / JS template",
+      "preview": "Live preview (with example_params)",
+      "paramsSchema": "Parameter schema (JSON)",
+      "exampleParams": "Example parameters (JSON)",
+      "helpHint": "The template can read window.__params to access the directive's parameters. The code runs inside a sandboxed iframe — no access to the parent's localStorage or cookies.",
+      "save": "Save",
+      "published": "Published",
+      "draft": "Draft",
+      "selectHint": "Pick a widget on the left to edit it, or create a new one.",
+      "confirmDelete": "Delete the widget \"{{name}}\"? Lessons using it will show the directive as plain text.",
+      "toastCreated": "Widget created",
+      "toastSaved": "Widget saved",
+      "toastDeleted": "Widget deleted",
+      "toastFailed": "Something went wrong"
     }
   },
   "packages": {
@@ -1162,14 +1188,10 @@
         "sortDescription": "Step-by-step animation of a sorting algorithm (bubble, insertion, selection) on a small array.",
         "sortParamAlgo": "Algorithm to animate",
         "sortParamData": "Array of integers to sort (JSON)",
-        "htmlLabel": "Custom HTML / JS animation",
-        "htmlDescription": "Embed a self-contained HTML file (Three.js, p5.js, Canvas, …) inside a sandboxed iframe. No access to the user session.",
-        "htmlParamSrc": "URL of the uploaded HTML file",
-        "htmlParamHeight": "Height in pixels (e.g. 400) or percentage",
-        "htmlParamTitle": "Accessible title (screen reader)"
+        "customBadge": "Custom"
       },
-      "htmlInvalid": "Invalid HTML widget: src missing or outside uploads.",
-      "htmlIframeTitle": "Interactive animation"
+      "customEmpty": "Empty widget — the author hasn't set a template yet.",
+      "customIframeTitle": "Interactive widget"
     }
   }
 }

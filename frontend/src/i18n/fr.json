@@ -1091,8 +1091,34 @@
       "exporting": "Export en cours…",
       "exportHint": "Génère un projet LaTeX prêt à compiler avec tout le contenu publié.",
       "toastExportOk": "Export téléchargé",
-      "uploadHtml": "Animation HTML",
-      "toastHtmlInserted": "Widget HTML inséré"
+      "manageWidgets": "Mes widgets",
+      "manageWidgetsHint": "Créer / éditer les widgets interactifs disponibles dans les leçons."
+    },
+    "learningWidgets": {
+      "title": "Mes widgets",
+      "backToLearning": "Retour à la zone pédagogique",
+      "newWidget": "Nouveau widget",
+      "empty": "Aucun widget custom pour l'instant. Crée-en un pour étendre le catalogue.",
+      "promptTitle": "Titre du widget ?",
+      "titleFr": "Titre (FR)",
+      "titleEn": "Titre (EN)",
+      "descFr": "Description (FR) — affichée dans le catalogue",
+      "descEn": "Description (EN)",
+      "namePlaceholder": "Identifiant (ex: viz-bst)",
+      "htmlTemplate": "Template HTML / JS",
+      "preview": "Aperçu live (avec example_params)",
+      "paramsSchema": "Schéma des paramètres (JSON)",
+      "exampleParams": "Paramètres d'exemple (JSON)",
+      "helpHint": "Le template peut lire window.__params pour récupérer les paramètres passés dans la directive. Le code tourne dans une iframe sandboxée — pas d'accès au localStorage / cookies du parent.",
+      "save": "Enregistrer",
+      "published": "Publié",
+      "draft": "Brouillon",
+      "selectHint": "Sélectionne un widget à gauche pour l'éditer, ou crée-en un nouveau.",
+      "confirmDelete": "Supprimer le widget « {{name}} » ? Les leçons qui l'utilisent verront la directive en texte brut.",
+      "toastCreated": "Widget créé",
+      "toastSaved": "Widget enregistré",
+      "toastDeleted": "Widget supprimé",
+      "toastFailed": "Une erreur est survenue"
     }
   },
   "packages": {
@@ -1162,14 +1188,10 @@
         "sortDescription": "Animation pas-à-pas d'un algorithme de tri (bubble, insertion, selection) sur un petit tableau.",
         "sortParamAlgo": "Algorithme à animer",
         "sortParamData": "Tableau d'entiers à trier (JSON)",
-        "htmlLabel": "Animation HTML / JS personnalisée",
-        "htmlDescription": "Embed un fichier HTML autonome (Three.js, p5.js, Canvas, …) dans une iframe sandboxée. Aucun accès à la session utilisateur.",
-        "htmlParamSrc": "URL du fichier HTML uploadé",
-        "htmlParamHeight": "Hauteur en pixels (ex : 400) ou pourcentage",
-        "htmlParamTitle": "Titre accessible (lecteur d'écran)"
+        "customBadge": "Custom"
       },
-      "htmlInvalid": "Widget HTML invalide : src manquant ou hors uploads.",
-      "htmlIframeTitle": "Animation interactive"
+      "customEmpty": "Widget vide — l'auteur n'a pas encore défini de template.",
+      "customIframeTitle": "Widget interactif"
     }
   }
 }

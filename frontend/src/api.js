@@ -330,6 +330,17 @@ export const adminLearnExportLatex = (lang = 'fr') =>
     timeout: 60000,
   });
 
+// Custom widgets — student-facing list (used to hydrate the runtime
+// registry) + admin CRUD.
+export const learnListWidgets = () => api.get('/learning/widgets');
+export const adminLearnListWidgets = () => api.get('/admin/learning/widgets');
+export const adminLearnCreateWidget = (data) => api.post('/admin/learning/widgets', data);
+export const adminLearnGetWidget = (id) => api.get(`/admin/learning/widgets/${id}`);
+export const adminLearnUpdateWidget = (id, data) =>
+  api.put(`/admin/learning/widgets/${id}`, data);
+export const adminLearnDeleteWidget = (id) =>
+  api.delete(`/admin/learning/widgets/${id}`);
+
 // Jury verdict override
 export const overrideJudging = (judgingId, payload) =>
   api.post(`/icpc/judgings/${judgingId}/override`, payload);

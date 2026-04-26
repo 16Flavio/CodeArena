@@ -1,5 +1,4 @@
 import SortViz from './SortViz';
-import HtmlEmbed from './HtmlEmbed';
 
 /**
  * Registry of all available widgets, with self-describing metadata.
@@ -43,28 +42,5 @@ export const WIDGET_REGISTRY = {
       },
     ],
     snippet: ':::viz-sort{algo="bubble" data="[5,2,8,1,9,3]"}\n:::',
-  },
-  'widget-html': {
-    component: HtmlEmbed,
-    label: 'learn.widget.catalog.htmlLabel',
-    description: 'learn.widget.catalog.htmlDescription',
-    params: [
-      {
-        name: 'src',
-        description: 'learn.widget.catalog.htmlParamSrc',
-        example: '/api/learning/assets/12/3-anim.html',
-      },
-      {
-        name: 'height',
-        description: 'learn.widget.catalog.htmlParamHeight',
-        example: '400',
-      },
-      {
-        name: 'title',
-        description: 'learn.widget.catalog.htmlParamTitle',
-        example: 'BST animation',
-      },
-    ],
-    snippet: ':::widget-html{src="/api/learning/assets/<lesson_id>/<asset_id>-fichier.html" height="400" title="Mon animation"}\n:::',
   },
 };

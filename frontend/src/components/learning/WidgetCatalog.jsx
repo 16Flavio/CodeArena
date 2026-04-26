@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Copy, Check, X, Sparkles } from 'lucide-react';
 import { WIDGET_REGISTRY } from './widgets/registry';
+import { loadWidgets, getCachedSync, subscribe } from './widgetsStore';
 
 // Modal-style catalog of available learning widgets. Lives next to the
 // admin editor; opens via a "Widgets disponibles" button. Each entry is
@@ -14,10 +15,49 @@ import { WIDGET_REGISTRY } from './widgets/registry';
 export default function WidgetCatalog({ open, onClose, onInsert }) {
   const { t } = useTranslation();
   const [copiedKey, setCopiedKey] = useState(null);
+  const [dbWidgets, setDbWidgets] = useState(() => getCachedSync() || []);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadWidgets().then((list) => { if (!cancelled) setDbWidgets(list); });
+    const unsub = subscribe((list) => { if (!cancelled) setDbWidgets(list); });
+    return () => { cancelled = true; unsub(); };
+  }, []);
 
   if (!open) return null;
 
-  const entries = Object.entries(WIDGET_REGISTRY);
+  // Merge registry: built-ins first, then DB widgets that aren't
+  // shadowed. Each entry shape:
+  //   { component? (built-in only), label, description, params,
+  //     snippet, source: 'builtin' | 'custom' }
+  const entries = [];
+  for (const [name, entry] of Object.entries(WIDGET_REGISTRY)) {
+    entries.push([name, { ...entry, source: 'builtin' }]);
+  }
+  const builtinNames = new Set(Object.keys(WIDGET_REGISTRY));
+  for (const w of dbWidgets) {
+    if (builtinNames.has(w.name)) continue;
+    let params = [];
+    let exampleAttrs = '';
+    try {
+      params = JSON.parse(w.params_schema || '[]') || [];
+    } catch { /* ignore malformed */ }
+    try {
+      const obj = JSON.parse(w.example_params || '{}') || {};
+      exampleAttrs = Object.entries(obj).map(([k, v]) => `${k}="${v}"`).join(' ');
+    } catch { /* ignore malformed */ }
+    entries.push([w.name, {
+      label: w.title_fr || w.title_en || w.name,
+      description: w.description_fr || w.description_en || '',
+      params: params.map((p) => ({
+        name: p.name || '',
+        description: p.description || '',
+        example: p.example || '',
+      })),
+      snippet: `:::${w.name}${exampleAttrs ? `{${exampleAttrs}}` : ''}\n:::`,
+      source: 'custom',
+    }]);
+  }
 
   const handleCopy = async (key, snippet) => {
     try {
@@ -62,21 +102,31 @@ export default function WidgetCatalog({ open, onClose, onInsert }) {
             </p>
           )}
 
-          {entries.map(([key, entry]) => (
+          {entries.map(([key, entry]) => {
+            // Built-in entries store i18n keys; custom entries store
+            // already-translated strings. The ``source`` flag chooses.
+            const label = entry.source === 'custom' ? entry.label : t(entry.label);
+            const desc = entry.source === 'custom' ? entry.description : t(entry.description);
+            return (
             <div
               key={key}
               className="border border-gray-200 dark:border-slate-700/50 rounded-xl p-4 space-y-3"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
-                  <div className="font-semibold text-slate-900 dark:text-white">
-                    {t(entry.label)}
+                  <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                    {label}
+                    {entry.source === 'custom' && (
+                      <span className="text-[10px] uppercase tracking-wide bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 px-1.5 py-0.5 rounded">
+                        {t('learn.widget.catalog.customBadge')}
+                      </span>
+                    )}
                   </div>
                   <code className="text-xs text-violet-600 dark:text-violet-400">
                     :::{key}{'{...}'}
                   </code>
                   <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
-                    {t(entry.description)}
+                    {desc}
                   </p>
                 </div>
                 <div className="flex gap-2 shrink-0">
@@ -118,7 +168,7 @@ export default function WidgetCatalog({ open, onClose, onInsert }) {
                             {p.name}
                           </td>
                           <td className="py-1.5 pr-3 text-slate-600 dark:text-gray-300">
-                            {t(p.description)}
+                            {entry.source === 'custom' ? p.description : t(p.description)}
                           </td>
                           <td className="py-1.5 font-mono text-slate-400 dark:text-gray-500 align-top">
                             {p.example}
@@ -134,7 +184,8 @@ export default function WidgetCatalog({ open, onClose, onInsert }) {
                 <code>{entry.snippet}</code>
               </pre>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
