@@ -39,6 +39,34 @@ else:
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, **_engine_kwargs)
 
+# Boot-time diagnostic — echoes the DB URL the backend resolved to,
+# plus, for SQLite, whether the file path is writable. Saves a lot of
+# guesswork when a deploy / CI run mysteriously fails with
+# "readonly database" or "no such file": the next line up in the
+# stdout tells you whether we even pointed at the right path.
+def _log_db_target() -> None:
+    log = logging.getLogger("contest.db")
+    log.info("Database URL: %s", SQLALCHEMY_DATABASE_URL)
+    if not _is_sqlite:
+        return
+    # SQLAlchemy URL ``sqlite:///foo.db`` → relative ``foo.db``;
+    # ``sqlite:////tmp/foo.db`` → absolute ``/tmp/foo.db``.
+    raw = SQLALCHEMY_DATABASE_URL[len("sqlite:///"):]
+    if raw.startswith(":memory:"):
+        log.info("SQLite is in-memory; no file to check.")
+        return
+    db_path = raw if raw.startswith("/") else os.path.join(os.getcwd(), raw)
+    db_dir = os.path.dirname(db_path) or "."
+    log.info(
+        "SQLite path: %s (file exists=%s, dir=%s, dir_writable=%s)",
+        db_path, os.path.exists(db_path), db_dir, os.access(db_dir, os.W_OK),
+    )
+    if os.path.exists(db_path):
+        log.info("File writable=%s", os.access(db_path, os.W_OK))
+
+
+_log_db_target()
+
 
 @event.listens_for(Engine, "connect")
 def _enable_sqlite_foreign_keys(dbapi_connection, _connection_record):

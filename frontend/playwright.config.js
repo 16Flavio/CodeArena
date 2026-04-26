@@ -7,7 +7,7 @@
 import { defineConfig, devices } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
-import { rmSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, chmodSync, writeFileSync, accessSync, constants } from 'node:fs';
 import { tmpdir } from 'node:os';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -17,23 +17,36 @@ const repoRoot = resolve(__dirname, '..');
 const BACKEND_PORT = 8001;
 const FRONTEND_PORT = 5174;
 
-// Dedicated SQLite file for E2E. Lives under the OS temp dir rather
-// than inside the repo: ``/tmp`` is unconditionally writable on every
-// CI runner we ship to, while a path inside the checked-out tree can
-// surprise us with mode bits inherited from git or with a directory
-// the runner user happens not to own.
-//
-// Wiped synchronously at config-load time so it's gone *before*
-// Playwright launches the backend webServer — globalSetup runs too
-// late (webServer starts first), and on Windows the running uvicorn
-// would hold a file lock that prevents the delete.
-const E2E_DIR = join(tmpdir(), 'codearena-e2e');
+// Dedicated SQLite file for E2E. ``mkdtempSync`` creates a UNIQUE
+// directory under the OS temp folder for each playwright invocation,
+// so there is zero chance of a stale journal/WAL from a previous run
+// being picked up. The directory is owned by the runner user (chmod
+// 0700 by default) and we additionally chmod 0755 below to be sure
+// SQLite can create + lock journal files.
+const E2E_DIR = mkdtempSync(join(tmpdir(), 'codearena-e2e-'));
+chmodSync(E2E_DIR, 0o755);
 const E2E_DB_PATH = join(E2E_DIR, 'e2e.db');
-mkdirSync(E2E_DIR, { recursive: true });
-for (const p of [E2E_DB_PATH, `${E2E_DB_PATH}-journal`, `${E2E_DB_PATH}-wal`, `${E2E_DB_PATH}-shm`]) {
-  try { rmSync(p, { force: true }); } catch { /* ignore */ }
+
+// Sanity: the dir IS writable. Catches the (theoretical) case where
+// `mkdtempSync` succeeded but the runner umask stripped write
+// permission. Crash early with a clear message if so.
+try {
+  writeFileSync(join(E2E_DIR, '.writable-probe'), 'ok');
+  accessSync(E2E_DIR, constants.W_OK);
+} catch (err) {
+  throw new Error(
+    `E2E temp dir ${E2E_DIR} is not writable (${err.message}). ` +
+    `Investigate runner perms / umask.`,
+  );
 }
+
 const DATABASE_URL = `sqlite:///${E2E_DB_PATH.replace(/\\/g, '/')}`;
+// Echo what we resolved to so the GitHub Actions log makes the
+// next failure (if any) easy to triage.
+process.stdout.write(
+  `[playwright config] E2E_DIR=${E2E_DIR}\n` +
+  `[playwright config] DATABASE_URL=${DATABASE_URL}\n`,
+);
 
 export default defineConfig({
   testDir: './e2e',
