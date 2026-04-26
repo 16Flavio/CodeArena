@@ -14,7 +14,9 @@ import {
   adminLearnUploadAsset, adminLearnExportLatex,
 } from '../api';
 import LessonMarkdown from '../components/learning/LessonMarkdown';
+import MarkdownEditor from '../components/learning/MarkdownEditor';
 import WidgetCatalog from '../components/learning/WidgetCatalog';
+import ExercisePickerModal from '../components/learning/ExercisePickerModal';
 
 // Slug helper — keeps the admin from having to type a URL-safe id.
 function slugify(s) {
@@ -40,6 +42,7 @@ export default function AdminLearning() {
   const [editingLesson, setEditingLesson] = useState(null); // { ...lessonData, _sectionId }
   const [editLang, setEditLang] = useState('fr');
   const [showCatalog, setShowCatalog] = useState(false);
+  const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
@@ -193,25 +196,6 @@ export default function AdminLearning() {
       reloadLessons(sectionId);
     } catch (err) {
       toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
-    }
-  };
-
-  const handleUploadImage = async (e) => {
-    if (!editingLesson) return;
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const r = await adminLearnUploadAsset(editingLesson.id, file, 'image');
-      const md = `\n\n![${file.name}](${r.data.url})\n`;
-      setEditingLesson((prev) => ({
-        ...prev,
-        [`content_${editLang}`]: (prev[`content_${editLang}`] || '') + md,
-      }));
-      toast.success(t('admin.learning.toastImageInserted'));
-    } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
-    } finally {
-      e.target.value = '';
     }
   };
 
@@ -416,23 +400,15 @@ export default function AdminLearning() {
                 </button>
               </div>
 
-              {/* Toolbar */}
-              <div className="flex items-center gap-2 flex-wrap text-xs">
-                <label className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-gray-200">
-                  <ImageIcon className="w-3.5 h-3.5" />
-                  {t('admin.learning.uploadImage')}
-                  <input type="file" className="hidden" accept="image/*" onChange={handleUploadImage} />
-                </label>
+              <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-600">
+                <span>{t('admin.learning.langCurrent', { lang: editLang.toUpperCase() })}</span>
                 <button
-                  onClick={() => setShowCatalog(true)}
-                  className="px-2 py-1 rounded bg-violet-100 hover:bg-violet-200 text-violet-700 inline-flex items-center gap-1 dark:bg-violet-500/20 dark:text-violet-300"
+                  onClick={() => setShowExercisePicker(true)}
+                  className="ml-auto px-2 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-700 inline-flex items-center gap-1 dark:bg-amber-500/20 dark:text-amber-300"
+                  title={t('admin.learning.manageExercisesHint')}
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  {t('admin.learning.openCatalog')}
+                  {t('admin.learning.manageExercises')}
                 </button>
-                <span className="text-slate-400 dark:text-gray-600 ml-2">
-                  {t('admin.learning.langCurrent', { lang: editLang.toUpperCase() })}
-                </span>
               </div>
 
               <WidgetCatalog
@@ -441,15 +417,33 @@ export default function AdminLearning() {
                 onInsert={insertWidget}
               />
 
-              {/* Split editor + preview */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <textarea
+              <ExercisePickerModal
+                open={showExercisePicker}
+                onClose={() => setShowExercisePicker(false)}
+                lessonId={editingLesson.id}
+                onInsertDirective={(directive) => insertWidget(directive)}
+              />
+
+              {/* Split editor + preview — markdown editor with full
+                  toolbar on the left, live preview on the right. */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <MarkdownEditor
                   value={editorContent}
-                  onChange={(e) => setEditingLesson((p) => ({ ...p, [`content_${editLang}`]: e.target.value }))}
-                  className="input-field font-mono text-sm h-[600px] resize-none"
-                  placeholder={t('admin.learning.contentPlaceholder')}
+                  onChange={(v) => setEditingLesson((p) => ({ ...p, [`content_${editLang}`]: v }))}
+                  onUploadImage={async (file) => {
+                    try {
+                      const r = await adminLearnUploadAsset(editingLesson.id, file, 'image');
+                      toast.success(t('admin.learning.toastImageInserted'));
+                      return `![${file.name}](${r.data.url})`;
+                    } catch (err) {
+                      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+                      return '';
+                    }
+                  }}
+                  onPickWidget={() => setShowCatalog(true)}
+                  onPickExercise={() => setShowExercisePicker(true)}
                 />
-                <div className="border border-gray-200 rounded-xl p-4 h-[600px] overflow-auto bg-white dark:bg-slate-900/30 dark:border-slate-700/50">
+                <div className="border border-gray-200 rounded-xl p-4 h-[660px] overflow-auto bg-white dark:bg-slate-900/30 dark:border-slate-700/50">
                   <LessonMarkdown>{editorContent}</LessonMarkdown>
                 </div>
               </div>

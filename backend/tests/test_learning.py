@@ -131,3 +131,95 @@ def test_invalid_slug_rejected(client):
     payload = _section_payload(slug="Bad Slug With Spaces!")
     r = client.post("/api/admin/learning/sections", json=payload, headers=admin)
     assert r.status_code == 422  # Pydantic validation
+
+
+def _make_published_lesson(client, admin):
+    sid = client.post(
+        "/api/admin/learning/sections", json=_section_payload(), headers=admin,
+    ).json()["id"]
+    lid = client.post(
+        f"/api/admin/learning/sections/{sid}/lessons",
+        json=_lesson_payload(), headers=admin,
+    ).json()["id"]
+    return lid
+
+
+def test_exercise_crud_and_run(client):
+    admin = auth_header(client, "root")
+    lid = _make_published_lesson(client, admin)
+
+    # Create an exercise that echoes stdin to stdout.
+    payload = {
+        "title_fr": "Echo", "title_en": "Echo",
+        "prompt_fr": "Lis stdin et écris-le sur stdout.",
+        "prompt_en": "Read stdin and write it to stdout.",
+        "language": "py3",
+        "starter_code": "import sys\nprint(sys.stdin.read(), end='')\n",
+        "test_cases": [
+            {"input": "hello\n", "expected": "hello\n", "is_sample": True},
+            {"input": "world", "expected": "world", "is_sample": False},
+        ],
+        "time_limit_ms": 5000,
+    }
+    r = client.post(
+        f"/api/admin/learning/lessons/{lid}/exercises",
+        json=payload, headers=admin,
+    )
+    assert r.status_code == 200, r.text
+    ex = r.json()
+    assert ex["language"] == "py3"
+    assert len(ex["test_cases"]) == 2
+
+    # Student fetches → hidden test redacted (only the count remains).
+    alice = auth_header(client, "alice")
+    r = client.get(f"/api/learning/exercises/{ex['id']}", headers=alice)
+    assert r.status_code == 200
+    pub = r.json()
+    assert len(pub["sample_test_cases"]) == 1
+    assert pub["hidden_count"] == 1
+
+    # Run with the starter code (which echoes correctly) — both tests pass.
+    r = client.post(
+        f"/api/learning/exercises/{ex['id']}/run",
+        json={"code": payload["starter_code"], "language": "py3"},
+        headers=alice,
+    )
+    assert r.status_code == 200, r.text
+    res = r.json()
+    assert res["all_passed"] is True
+    assert len(res["results"]) == 2
+    # Hidden test result hides input/expected.
+    hidden = next(r for r in res["results"] if not r["is_sample"])
+    assert hidden["input"] == ""
+    assert hidden["expected"] == ""
+    assert hidden["passed"] is True
+
+    # Run with wrong code → fails on the very first test.
+    r = client.post(
+        f"/api/learning/exercises/{ex['id']}/run",
+        json={"code": "print('nope')\n", "language": "py3"},
+        headers=alice,
+    )
+    assert r.status_code == 200
+    res = r.json()
+    assert res["all_passed"] is False
+    sample_res = next(r for r in res["results"] if r["is_sample"])
+    assert sample_res["passed"] is False
+    # Sample shows the actual output for debug.
+    assert "nope" in sample_res["actual"]
+
+
+def test_exercise_admin_only_writes(client):
+    auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    payload = {
+        "title_fr": "x", "title_en": "x",
+        "prompt_fr": "", "prompt_en": "",
+        "language": "py3", "starter_code": "",
+        "test_cases": [], "time_limit_ms": 1000,
+    }
+    r = client.post(
+        "/api/admin/learning/lessons/1/exercises",
+        json=payload, headers=alice,
+    )
+    assert r.status_code in (401, 403)

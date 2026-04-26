@@ -1092,7 +1092,9 @@
       "exportHint": "Generate a ready-to-compile LaTeX project with every published lesson.",
       "toastExportOk": "Export downloaded",
       "manageWidgets": "My widgets",
-      "manageWidgetsHint": "Create / edit the interactive widgets available in lessons."
+      "manageWidgetsHint": "Create / edit the interactive widgets available in lessons.",
+      "manageExercises": "My exercises",
+      "manageExercisesHint": "Create and insert code exercises in this lesson."
     },
     "learningWidgets": {
       "title": "My widgets",
@@ -1188,10 +1190,76 @@
         "sortDescription": "Step-by-step animation of a sorting algorithm (bubble, insertion, selection) on a small array.",
         "sortParamAlgo": "Algorithm to animate",
         "sortParamData": "Array of integers to sort (JSON)",
-        "customBadge": "Custom"
+        "customBadge": "Custom",
+        "exerciseLabel": "Interactive code exercise",
+        "exerciseDescription": "Opens a code editor inside the lesson; the code runs against tests and the result is shown inline.",
+        "exerciseParamId": "Exercise id (created via the My exercises modal)"
       },
       "customEmpty": "Empty widget — the author hasn't set a template yet.",
-      "customIframeTitle": "Interactive widget"
+      "customIframeTitle": "Interactive widget",
+      "exercise": {
+        "defaultTitle": "Exercise",
+        "samples": "Samples",
+        "input": "Input",
+        "expected": "Expected output",
+        "actual": "Your output",
+        "run": "Run",
+        "running": "Running…",
+        "allPassed": "All tests pass",
+        "someFailed": "Some tests fail",
+        "sampleN": "Sample #{{n}}",
+        "hiddenN": "Hidden test #{{n}}",
+        "hiddenCount": "+{{count}} hidden test(s) will be evaluated",
+        "compileOutput": "Compile output",
+        "invalid": "Invalid exercise widget: missing id.",
+        "loadFailed": "Could not load the exercise",
+        "runFailed": "Run failed"
+      }
     }
+  },
+  "mdEditor": {
+    "bold": "Bold",
+    "boldPlaceholder": "bold text",
+    "italic": "Italic",
+    "italicPlaceholder": "italic text",
+    "list": "Bullet list",
+    "orderedList": "Numbered list",
+    "link": "Link",
+    "linkPrompt": "Link URL:",
+    "linkText": "text",
+    "image": "Image (upload)",
+    "codeInline": "Inline code",
+    "codeBlock": "Code block",
+    "math": "Math formula",
+    "exercise": "Code exercise",
+    "widget": "Interactive widget",
+    "dndHint": "Drop an image here to upload"
+  },
+  "exercisePicker": {
+    "title": "Lesson exercises",
+    "new": "New exercise",
+    "untitled": "(untitled)",
+    "loading": "Loading…",
+    "empty": "No exercises yet. Create the first one!",
+    "selectHint": "Pick an exercise on the left, or create a new one.",
+    "titleFr": "Title (FR)",
+    "titleEn": "Title (EN)",
+    "promptFr": "Prompt (FR)",
+    "promptEn": "Prompt (EN)",
+    "starterCode": "Starter code",
+    "timeLimit": "Time limit (ms)",
+    "testCases": "Test cases",
+    "addTest": "Add test",
+    "sample": "Visible",
+    "input": "Stdin",
+    "expected": "Expected stdout",
+    "save": "Save",
+    "insert": "Insert into lesson",
+    "insertHint": "Insert the directive into markdown",
+    "saved": "Exercise saved",
+    "saveFailed": "Save failed",
+    "loadFailed": "Could not load exercises",
+    "deleted": "Exercise deleted",
+    "confirmDelete": "Delete this exercise?"
   }
 }

@@ -1092,7 +1092,9 @@
       "exportHint": "Génère un projet LaTeX prêt à compiler avec tout le contenu publié.",
       "toastExportOk": "Export téléchargé",
       "manageWidgets": "Mes widgets",
-      "manageWidgetsHint": "Créer / éditer les widgets interactifs disponibles dans les leçons."
+      "manageWidgetsHint": "Créer / éditer les widgets interactifs disponibles dans les leçons.",
+      "manageExercises": "Mes exercices",
+      "manageExercisesHint": "Créer et insérer des exercices de code dans cette leçon."
     },
     "learningWidgets": {
       "title": "Mes widgets",
@@ -1188,10 +1190,76 @@
         "sortDescription": "Animation pas-à-pas d'un algorithme de tri (bubble, insertion, selection) sur un petit tableau.",
         "sortParamAlgo": "Algorithme à animer",
         "sortParamData": "Tableau d'entiers à trier (JSON)",
-        "customBadge": "Custom"
+        "customBadge": "Custom",
+        "exerciseLabel": "Exercice de code interactif",
+        "exerciseDescription": "Ouvre un éditeur de code dans la leçon ; le code est exécuté contre des tests et le résultat s'affiche en place.",
+        "exerciseParamId": "ID de l'exercice (créé via la modale Mes exercices)"
       },
       "customEmpty": "Widget vide — l'auteur n'a pas encore défini de template.",
-      "customIframeTitle": "Widget interactif"
+      "customIframeTitle": "Widget interactif",
+      "exercise": {
+        "defaultTitle": "Exercice",
+        "samples": "Exemples",
+        "input": "Entrée",
+        "expected": "Sortie attendue",
+        "actual": "Ta sortie",
+        "run": "Lancer",
+        "running": "Exécution…",
+        "allPassed": "Tous les tests passent",
+        "someFailed": "Certains tests échouent",
+        "sampleN": "Exemple #{{n}}",
+        "hiddenN": "Test caché #{{n}}",
+        "hiddenCount": "+{{count}} test(s) caché(s) seront évalués",
+        "compileOutput": "Sortie de compilation",
+        "invalid": "Widget exercice invalide : id manquant.",
+        "loadFailed": "Impossible de charger l'exercice",
+        "runFailed": "Échec de l'exécution"
+      }
     }
+  },
+  "mdEditor": {
+    "bold": "Gras",
+    "boldPlaceholder": "texte en gras",
+    "italic": "Italique",
+    "italicPlaceholder": "texte en italique",
+    "list": "Liste à puces",
+    "orderedList": "Liste numérotée",
+    "link": "Lien",
+    "linkPrompt": "URL du lien :",
+    "linkText": "texte",
+    "image": "Image (upload)",
+    "codeInline": "Code inline",
+    "codeBlock": "Bloc de code",
+    "math": "Formule mathématique",
+    "exercise": "Exercice de code",
+    "widget": "Widget interactif",
+    "dndHint": "Glisse une image ici pour l'uploader"
+  },
+  "exercisePicker": {
+    "title": "Exercices de la leçon",
+    "new": "Nouvel exercice",
+    "untitled": "(sans titre)",
+    "loading": "Chargement…",
+    "empty": "Aucun exercice. Crée le premier !",
+    "selectHint": "Sélectionne un exercice à gauche, ou crée-en un nouveau.",
+    "titleFr": "Titre (FR)",
+    "titleEn": "Titre (EN)",
+    "promptFr": "Énoncé (FR)",
+    "promptEn": "Énoncé (EN)",
+    "starterCode": "Code de départ",
+    "timeLimit": "Limite de temps (ms)",
+    "testCases": "Cas de test",
+    "addTest": "Ajouter un test",
+    "sample": "Visible",
+    "input": "Entrée stdin",
+    "expected": "Sortie attendue stdout",
+    "save": "Enregistrer",
+    "insert": "Insérer dans la leçon",
+    "insertHint": "Insérer la directive dans le markdown",
+    "saved": "Exercice enregistré",
+    "saveFailed": "Échec de l'enregistrement",
+    "loadFailed": "Impossible de charger les exercices",
+    "deleted": "Exercice supprimé",
+    "confirmDelete": "Supprimer cet exercice ?"
   }
 }

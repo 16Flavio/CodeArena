@@ -330,6 +330,19 @@ export const adminLearnExportLatex = (lang = 'fr') =>
     timeout: 60000,
   });
 
+// Lesson exercises — inline coding tasks.
+export const learnGetExercise = (id) => api.get(`/learning/exercises/${id}`);
+export const learnRunExercise = (id, code, language = '') =>
+  api.post(`/learning/exercises/${id}/run`, { code, language }, { timeout: 60000 });
+export const adminLearnListExercises = (lessonId) =>
+  api.get(`/admin/learning/lessons/${lessonId}/exercises`);
+export const adminLearnCreateExercise = (lessonId, data) =>
+  api.post(`/admin/learning/lessons/${lessonId}/exercises`, data);
+export const adminLearnUpdateExercise = (id, data) =>
+  api.put(`/admin/learning/exercises/${id}`, data);
+export const adminLearnDeleteExercise = (id) =>
+  api.delete(`/admin/learning/exercises/${id}`);
+
 // Custom widgets — student-facing list (used to hydrate the runtime
 // registry) + admin CRUD.
 export const learnListWidgets = () => api.get('/learning/widgets');

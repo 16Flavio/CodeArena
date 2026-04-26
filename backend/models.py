@@ -814,6 +814,42 @@ class LessonProgress(Base):
     )
 
 
+class LessonExercise(Base):
+    """Inline coding exercise embedded in a lesson via the
+    ``:::exercise{id=N}`` directive. Lighter than a full ``Problem``:
+    no contest, no deadlines, no scoreboard — just a code editor +
+    test cases the student can iterate against until everything
+    turns green.
+
+    ``test_cases`` is a JSON list of ``{"input": str, "expected": str,
+    "is_sample": bool}``. Sample testcases are shown to the student;
+    hidden ones are summarised (X passed / Y failed) without
+    revealing the inputs. ``time_limit_ms`` caps each run (default
+    2 s — generous for pedagogical exercises).
+
+    The exercise belongs to a single lesson; deleting the lesson
+    cascades to delete the exercise. Storing the test cases as JSON
+    avoids a second table for what is typically <10 cases.
+    """
+    __tablename__ = "lesson_exercises"
+
+    id = Column(Integer, primary_key=True, index=True)
+    lesson_id = Column(
+        Integer, ForeignKey("lessons.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    title_fr = Column(String(200), nullable=False, default="")
+    title_en = Column(String(200), nullable=False, default="")
+    prompt_fr = Column(Text, nullable=False, default="")  # markdown
+    prompt_en = Column(Text, nullable=False, default="")
+    language = Column(String(16), nullable=False, default="py3")
+    starter_code = Column(Text, nullable=False, default="")
+    test_cases = Column(Text, nullable=False, default="[]")  # JSON
+    time_limit_ms = Column(Integer, nullable=False, default=2000)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+
 class LearningWidget(Base):
     """Admin-authored interactive widget. The body is HTML+JS the
     admin types in the widget editor; the frontend renders it inside

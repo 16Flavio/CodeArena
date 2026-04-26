@@ -594,6 +594,267 @@ def admin_delete_asset(
     return {"detail": "ok"}
 
 
+# ── Inline exercises ──────────────────────────────────────────────────────────
+
+import json as _json
+
+
+def _exercise_to_admin(ex: models.LessonExercise) -> schemas.LessonExerciseOut:
+    try:
+        cases = _json.loads(ex.test_cases or "[]")
+    except _json.JSONDecodeError:
+        cases = []
+    cases = [
+        schemas.LessonExerciseTestCase(
+            input=str(c.get("input", "")),
+            expected=str(c.get("expected", "")),
+            is_sample=bool(c.get("is_sample", True)),
+        )
+        for c in cases if isinstance(c, dict)
+    ]
+    return schemas.LessonExerciseOut(
+        id=ex.id, lesson_id=ex.lesson_id,
+        title_fr=ex.title_fr or "", title_en=ex.title_en or "",
+        prompt_fr=ex.prompt_fr or "", prompt_en=ex.prompt_en or "",
+        language=ex.language, starter_code=ex.starter_code or "",
+        test_cases=cases, time_limit_ms=ex.time_limit_ms,
+    )
+
+
+def _exercise_to_public(ex: models.LessonExercise) -> schemas.LessonExercisePublicOut:
+    full = _exercise_to_admin(ex)
+    samples = [c for c in full.test_cases if c.is_sample]
+    hidden = sum(1 for c in full.test_cases if not c.is_sample)
+    return schemas.LessonExercisePublicOut(
+        id=full.id, lesson_id=full.lesson_id,
+        title_fr=full.title_fr, title_en=full.title_en,
+        prompt_fr=full.prompt_fr, prompt_en=full.prompt_en,
+        language=full.language, starter_code=full.starter_code,
+        sample_test_cases=samples, hidden_count=hidden,
+        time_limit_ms=full.time_limit_ms,
+    )
+
+
+@student_router.get("/exercises/{exercise_id}", response_model=schemas.LessonExercisePublicOut)
+def get_exercise(
+    exercise_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Fetch an exercise's prompt + sample tests for the student UI.
+    Hidden tests are NOT included in the response."""
+    ex = db.query(models.LessonExercise).filter(
+        models.LessonExercise.id == exercise_id,
+    ).first()
+    if not ex:
+        raise HTTPException(status_code=404, detail="Exercice introuvable")
+    # Gate on the parent lesson's published flag (admins bypass).
+    lesson = db.query(models.Lesson).filter(models.Lesson.id == ex.lesson_id).first()
+    if not lesson or (not lesson.is_published and not user.is_admin):
+        raise HTTPException(status_code=404, detail="Exercice introuvable")
+    return _exercise_to_public(ex)
+
+
+@student_router.post("/exercises/{exercise_id}/run", response_model=schemas.LessonExerciseRunOut)
+def run_exercise(
+    exercise_id: int,
+    payload: schemas.LessonExerciseRunIn,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Compile + run the student's code against every test case in the
+    exercise. Returns per-case verdicts (sample inputs visible, hidden
+    inputs redacted). Reuses ``icpc_runner`` so the sandbox + verdict
+    logic is the same as a real ICPC submission."""
+    ex = db.query(models.LessonExercise).filter(
+        models.LessonExercise.id == exercise_id,
+    ).first()
+    if not ex:
+        raise HTTPException(status_code=404, detail="Exercice introuvable")
+    lesson = db.query(models.Lesson).filter(models.Lesson.id == ex.lesson_id).first()
+    if not lesson or (not lesson.is_published and not user.is_admin):
+        raise HTTPException(status_code=404, detail="Exercice introuvable")
+
+    language_id = (payload.language or ex.language or "py3").strip()
+    lang = db.query(models.Language).filter(
+        models.Language.id == language_id,
+        models.Language.enabled.is_(True),
+    ).first()
+    if not lang:
+        raise HTTPException(status_code=400, detail=f"Langage inconnu : {language_id}")
+
+    code = (payload.code or "").strip()
+    if not code:
+        raise HTTPException(status_code=400, detail="Le code est vide")
+    if len(code) > 64 * 1024:
+        raise HTTPException(status_code=400, detail="Code trop volumineux (cap 64 KB)")
+
+    try:
+        cases = _json.loads(ex.test_cases or "[]")
+    except _json.JSONDecodeError:
+        cases = []
+    if not isinstance(cases, list):
+        cases = []
+
+    import tempfile
+    from .. import icpc_runner
+
+    results: list[schemas.LessonExerciseRunResult] = []
+    compile_output = ""
+    all_passed = True
+    with tempfile.TemporaryDirectory(prefix="lex-") as workdir:
+        compile_res = icpc_runner.compile_source(
+            language_id=lang.id, compile_cmd=lang.compile_cmd or "",
+            source_code=code, workdir=workdir,
+        )
+        compile_output = compile_res.compile_output or ""
+        if compile_res.verdict != "AC":
+            # Compile failed — every test counts as failed and we
+            # return immediately so the student sees the diagnostic.
+            for c in cases:
+                results.append(schemas.LessonExerciseRunResult(
+                    is_sample=bool(c.get("is_sample", True)),
+                    passed=False,
+                    input=str(c.get("input", "")) if c.get("is_sample", True) else "",
+                    expected=str(c.get("expected", "")) if c.get("is_sample", True) else "",
+                    actual="", runtime_ms=0,
+                    error=compile_output or "compile failed",
+                ))
+            return schemas.LessonExerciseRunOut(
+                all_passed=False,
+                compile_output=compile_output,
+                results=results,
+            )
+
+        for c in cases:
+            if not isinstance(c, dict):
+                continue
+            stdin = str(c.get("input", ""))
+            expected = str(c.get("expected", ""))
+            is_sample = bool(c.get("is_sample", True))
+            run_res = icpc_runner.run_against_testcase(
+                language_id=lang.id, run_cmd=lang.run_cmd or "",
+                workdir=workdir, stdin=stdin,
+                time_limit_ms=ex.time_limit_ms,
+                memory_limit_mb=int(os.environ.get("SCORING_MEMORY_MB", "256")),
+                time_factor=float(lang.time_factor or 1.0),
+            )
+            actual = run_res.stdout or ""
+            error = ""
+            if run_res.verdict == "AC":
+                passed = icpc_runner.check_output(actual, expected, kind="diff", epsilon=None)
+            else:
+                passed = False
+                error = (run_res.stderr or run_res.verdict)[:1000]
+            if not passed:
+                all_passed = False
+            results.append(schemas.LessonExerciseRunResult(
+                is_sample=is_sample,
+                passed=passed,
+                input=stdin if is_sample else "",
+                expected=expected if is_sample else "",
+                actual=actual[:4000] if is_sample else "",
+                runtime_ms=run_res.runtime_ms or 0,
+                error=error if is_sample else ("" if passed else "test failed"),
+            ))
+
+    return schemas.LessonExerciseRunOut(
+        all_passed=all_passed,
+        compile_output=compile_output,
+        results=results,
+    )
+
+
+# Admin CRUD for exercises.
+
+@admin_router.get("/lessons/{lesson_id}/exercises", response_model=list[schemas.LessonExerciseOut])
+def admin_list_exercises(
+    lesson_id: int,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    rows = (
+        db.query(models.LessonExercise)
+        .filter(models.LessonExercise.lesson_id == lesson_id)
+        .order_by(models.LessonExercise.id)
+        .all()
+    )
+    return [_exercise_to_admin(r) for r in rows]
+
+
+@admin_router.post("/lessons/{lesson_id}/exercises", response_model=schemas.LessonExerciseOut)
+def admin_create_exercise(
+    lesson_id: int,
+    data: schemas.LessonExerciseIn,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    if not db.query(models.Lesson).filter(models.Lesson.id == lesson_id).first():
+        raise HTTPException(status_code=404, detail="Leçon introuvable")
+    ex = models.LessonExercise(
+        lesson_id=lesson_id,
+        title_fr=data.title_fr, title_en=data.title_en,
+        prompt_fr=data.prompt_fr, prompt_en=data.prompt_en,
+        language=data.language, starter_code=data.starter_code,
+        test_cases=_json.dumps([c.model_dump() for c in data.test_cases]),
+        time_limit_ms=data.time_limit_ms,
+    )
+    db.add(ex)
+    audit(db, action="lesson_exercise_create", actor=admin,
+          target_type="lesson_exercise", target_id=0,
+          detail=f"lesson_id={lesson_id}")
+    db.commit()
+    db.refresh(ex)
+    return _exercise_to_admin(ex)
+
+
+@admin_router.put("/exercises/{exercise_id}", response_model=schemas.LessonExerciseOut)
+def admin_update_exercise(
+    exercise_id: int,
+    data: schemas.LessonExerciseIn,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    ex = db.query(models.LessonExercise).filter(
+        models.LessonExercise.id == exercise_id,
+    ).first()
+    if not ex:
+        raise HTTPException(status_code=404, detail="Exercice introuvable")
+    ex.title_fr = data.title_fr
+    ex.title_en = data.title_en
+    ex.prompt_fr = data.prompt_fr
+    ex.prompt_en = data.prompt_en
+    ex.language = data.language
+    ex.starter_code = data.starter_code
+    ex.test_cases = _json.dumps([c.model_dump() for c in data.test_cases])
+    ex.time_limit_ms = data.time_limit_ms
+    audit(db, action="lesson_exercise_update", actor=admin,
+          target_type="lesson_exercise", target_id=ex.id,
+          detail=f"lesson_id={ex.lesson_id}")
+    db.commit()
+    db.refresh(ex)
+    return _exercise_to_admin(ex)
+
+
+@admin_router.delete("/exercises/{exercise_id}")
+def admin_delete_exercise(
+    exercise_id: int,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    ex = db.query(models.LessonExercise).filter(
+        models.LessonExercise.id == exercise_id,
+    ).first()
+    if not ex:
+        raise HTTPException(status_code=404, detail="Exercice introuvable")
+    audit(db, action="lesson_exercise_delete", actor=admin,
+          target_type="lesson_exercise", target_id=ex.id,
+          detail=f"lesson_id={ex.lesson_id}")
+    db.delete(ex)
+    db.commit()
+    return {"detail": "ok"}
+
+
 # ── Custom widgets ────────────────────────────────────────────────────────────
 
 @student_router.get("/widgets", response_model=list[schemas.LearningWidgetOut])

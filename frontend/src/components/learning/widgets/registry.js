@@ -1,4 +1,5 @@
 import SortViz from './SortViz';
+import Exercise from './Exercise';
 
 /**
  * Registry of all available widgets, with self-describing metadata.
@@ -42,5 +43,18 @@ export const WIDGET_REGISTRY = {
       },
     ],
     snippet: ':::viz-sort{algo="bubble" data="[5,2,8,1,9,3]"}\n:::',
+  },
+  'exercise': {
+    component: Exercise,
+    label: 'learn.widget.catalog.exerciseLabel',
+    description: 'learn.widget.catalog.exerciseDescription',
+    params: [
+      {
+        name: 'id',
+        description: 'learn.widget.catalog.exerciseParamId',
+        example: '1',
+      },
+    ],
+    snippet: ':::exercise{id="<exercice_id>"}\n:::',
   },
 };

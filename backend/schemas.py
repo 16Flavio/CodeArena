@@ -1036,6 +1036,97 @@ class LessonProgressIn(BaseModel):
         return v
 
 
+class LessonExerciseTestCase(BaseModel):
+    """One test case in an exercise. ``is_sample`` controls whether the
+    student sees the input/expected (sample) or only a pass/fail
+    (hidden — typical for "are you cheating?" guards)."""
+    input: str = ""
+    expected: str = ""
+    is_sample: bool = True
+
+
+class LessonExerciseIn(BaseModel):
+    """Admin payload for create / update."""
+    title_fr: str = ""
+    title_en: str = ""
+    prompt_fr: str = ""
+    prompt_en: str = ""
+    language: str = "py3"
+    starter_code: str = ""
+    test_cases: list[LessonExerciseTestCase] = []
+    time_limit_ms: int = 2000
+
+    @field_validator("time_limit_ms")
+    @classmethod
+    def _time_limit_shape(cls, v: int) -> int:
+        # Cap to keep a misconfigured exercise from soaking the worker.
+        if v < 100:
+            return 100
+        if v > 30_000:
+            return 30_000
+        return v
+
+
+class LessonExerciseOut(BaseModel):
+    """Returned to admins for editing — full content. Student-facing
+    listings come through ``LessonExercisePublicOut`` which redacts
+    hidden test cases."""
+    id: int
+    lesson_id: int
+    title_fr: str
+    title_en: str
+    prompt_fr: str
+    prompt_en: str
+    language: str
+    starter_code: str
+    test_cases: list[LessonExerciseTestCase]
+    time_limit_ms: int
+
+    class Config:
+        from_attributes = True
+
+
+class LessonExercisePublicOut(BaseModel):
+    """Student view: hidden test cases are stripped. Only their existence
+    is signalled via ``hidden_count`` so the UI can say "12 hidden tests
+    will run after you click Run"."""
+    id: int
+    lesson_id: int
+    title_fr: str
+    title_en: str
+    prompt_fr: str
+    prompt_en: str
+    language: str
+    starter_code: str
+    sample_test_cases: list[LessonExerciseTestCase]
+    hidden_count: int
+    time_limit_ms: int
+
+
+class LessonExerciseRunIn(BaseModel):
+    code: str
+    language: str = ""  # if empty, fall back to the exercise's stored language
+
+
+class LessonExerciseRunResult(BaseModel):
+    """One testcase outcome. ``input`` / ``expected`` are blanked out
+    for hidden tests so the student can't reverse-engineer them by
+    diffing the response."""
+    is_sample: bool
+    passed: bool
+    input: str = ""
+    expected: str = ""
+    actual: str = ""
+    runtime_ms: int = 0
+    error: str = ""
+
+
+class LessonExerciseRunOut(BaseModel):
+    all_passed: bool
+    compile_output: str = ""
+    results: list[LessonExerciseRunResult]
+
+
 class LearningWidgetIn(BaseModel):
     """Admin payload for a custom widget.
 
