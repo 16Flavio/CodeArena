@@ -19,7 +19,7 @@ from typing import Optional
 from fastapi import (
     APIRouter, Depends, File, Form, HTTPException, UploadFile,
 )
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session, joinedload
 
 from ..auth import get_current_user, require_admin
@@ -592,3 +592,38 @@ def admin_delete_asset(
     db.delete(asset)
     db.commit()
     return {"detail": "ok"}
+
+
+@admin_router.get("/export/latex")
+def admin_export_latex(
+    lang: str = "fr",
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Stream a self-contained .zip of the published syllabus as a
+    LaTeX project — main.tex + sections/*.tex + assets/ + README.
+
+    The admin chooses which language's content to export via the
+    ``?lang=fr|en`` query param. Drafts are excluded — the export
+    represents the syllabus the public sees today.
+
+    Heavy operation (rebuilds the whole thing in memory) so we audit
+    every call. For our scale (≤ 100 lessons) the in-memory approach
+    is fine; if a syllabus ever passes a few hundred MB we'd switch
+    to streaming a generator."""
+    from .. import learning_export as _lx
+    from urllib.parse import urlparse
+    site_url = os.environ.get("FRONTEND_URL", "").strip()
+    data = _lx.build_export_zip(db, lang=lang, site_url=site_url)
+    audit(db, action="learning_export_latex", actor=admin,
+          target_type="learning", target_id=0,
+          detail=f"lang={lang} bytes={len(data)}")
+    db.commit()
+    filename = f"codearena-syllabus-{lang}-{datetime.now(timezone.utc).strftime('%Y%m%d')}.zip"
+    return Response(
+        content=data,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )

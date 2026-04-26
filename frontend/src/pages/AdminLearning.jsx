@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   GraduationCap, Plus, Trash2, ChevronDown, ChevronRight,
-  FolderPlus, FilePlus, Save, Eye, Image as ImageIcon, Globe, Sparkles,
+  FolderPlus, FilePlus, Save, Eye, Image as ImageIcon, Globe, Sparkles, FileDown,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../AuthContext';
@@ -11,7 +11,7 @@ import { useConfirm } from '../components/Confirm';
 import {
   adminLearnListSections, adminLearnCreateSection, adminLearnUpdateSection, adminLearnDeleteSection,
   adminLearnListLessons, adminLearnCreateLesson, adminLearnUpdateLesson, adminLearnDeleteLesson,
-  adminLearnUploadAsset,
+  adminLearnUploadAsset, adminLearnExportLatex,
 } from '../api';
 import LessonMarkdown from '../components/learning/LessonMarkdown';
 import WidgetCatalog from '../components/learning/WidgetCatalog';
@@ -40,6 +40,7 @@ export default function AdminLearning() {
   const [editingLesson, setEditingLesson] = useState(null); // { ...lessonData, _sectionId }
   const [editLang, setEditLang] = useState('fr');
   const [showCatalog, setShowCatalog] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (!user?.is_admin) navigate('/dashboard');
@@ -203,6 +204,48 @@ export default function AdminLearning() {
     }
   };
 
+  const handleUploadHtml = async (e) => {
+    if (!editingLesson) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const r = await adminLearnUploadAsset(editingLesson.id, file, 'file');
+      const directive = `\n\n:::widget-html{src="${r.data.url}" height="400" title="${file.name.replace(/"/g, '')}"}\n:::\n`;
+      setEditingLesson((prev) => ({
+        ...prev,
+        [`content_${editLang}`]: (prev[`content_${editLang}`] || '') + directive,
+      }));
+      toast.success(t('admin.learning.toastHtmlInserted'));
+    } catch (err) {
+      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const handleExportLatex = async (lang) => {
+    setExporting(true);
+    try {
+      const r = await adminLearnExportLatex(lang);
+      // r.data is a Blob (responseType: 'blob' in api.js).
+      const blob = new Blob([r.data], { type: 'application/zip' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      link.download = `codearena-syllabus-${lang}-${today}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success(t('admin.learning.toastExportOk'));
+    } catch (err) {
+      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const insertWidget = (snippet) => {
     if (!editingLesson) return;
     setEditingLesson((prev) => ({
@@ -221,10 +264,37 @@ export default function AdminLearning() {
           <GraduationCap className="w-8 h-8 text-violet-500" />
           {t('admin.learning.title')}
         </h1>
-        <button onClick={handleAddSection} className="btn-primary inline-flex items-center gap-2">
-          <FolderPlus className="w-4 h-4" />
-          {t('admin.learning.newSection')}
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="relative group">
+            <button
+              disabled={exporting}
+              className="btn-secondary inline-flex items-center gap-2"
+              title={t('admin.learning.exportHint')}
+            >
+              <FileDown className="w-4 h-4" />
+              {exporting ? t('admin.learning.exporting') : t('admin.learning.export')}
+            </button>
+            {/* Lightweight dropdown — hover/focus reveals language picker. */}
+            <div className="absolute right-0 mt-1 hidden group-hover:block group-focus-within:block bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden z-10 min-w-[160px]">
+              <button
+                onClick={() => handleExportLatex('fr')}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-700"
+              >
+                LaTeX · FR
+              </button>
+              <button
+                onClick={() => handleExportLatex('en')}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-700"
+              >
+                LaTeX · EN
+              </button>
+            </div>
+          </div>
+          <button onClick={handleAddSection} className="btn-primary inline-flex items-center gap-2">
+            <FolderPlus className="w-4 h-4" />
+            {t('admin.learning.newSection')}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -351,6 +421,11 @@ export default function AdminLearning() {
                   <ImageIcon className="w-3.5 h-3.5" />
                   {t('admin.learning.uploadImage')}
                   <input type="file" className="hidden" accept="image/*" onChange={handleUploadImage} />
+                </label>
+                <label className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-gray-200">
+                  <FileDown className="w-3.5 h-3.5 rotate-180" />
+                  {t('admin.learning.uploadHtml')}
+                  <input type="file" className="hidden" accept=".html,.htm,text/html" onChange={handleUploadHtml} />
                 </label>
                 <button
                   onClick={() => setShowCatalog(true)}

@@ -1086,7 +1086,13 @@
       "toastDeleted": "Deleted",
       "toastImageInserted": "Image inserted into markdown",
       "toastFailed": "Something went wrong",
-      "openCatalog": "Available widgets"
+      "openCatalog": "Available widgets",
+      "export": "Export",
+      "exporting": "Exporting…",
+      "exportHint": "Generate a ready-to-compile LaTeX project with every published lesson.",
+      "toastExportOk": "Export downloaded",
+      "uploadHtml": "HTML animation",
+      "toastHtmlInserted": "HTML widget inserted"
     }
   },
   "packages": {
@@ -1155,8 +1161,15 @@
         "sortLabel": "Sort visualizer",
         "sortDescription": "Step-by-step animation of a sorting algorithm (bubble, insertion, selection) on a small array.",
         "sortParamAlgo": "Algorithm to animate",
-        "sortParamData": "Array of integers to sort (JSON)"
-      }
+        "sortParamData": "Array of integers to sort (JSON)",
+        "htmlLabel": "Custom HTML / JS animation",
+        "htmlDescription": "Embed a self-contained HTML file (Three.js, p5.js, Canvas, …) inside a sandboxed iframe. No access to the user session.",
+        "htmlParamSrc": "URL of the uploaded HTML file",
+        "htmlParamHeight": "Height in pixels (e.g. 400) or percentage",
+        "htmlParamTitle": "Accessible title (screen reader)"
+      },
+      "htmlInvalid": "Invalid HTML widget: src missing or outside uploads.",
+      "htmlIframeTitle": "Interactive animation"
     }
   }
 }

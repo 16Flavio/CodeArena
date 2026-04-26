@@ -324,6 +324,11 @@ export const adminLearnUploadAsset = (lessonId, file, kind = 'image') => {
 };
 export const adminLearnDeleteAsset = (assetId) =>
   api.delete(`/admin/learning/assets/${assetId}`);
+export const adminLearnExportLatex = (lang = 'fr') =>
+  api.get(`/admin/learning/export/latex?lang=${encodeURIComponent(lang)}`, {
+    responseType: 'blob',
+    timeout: 60000,
+  });
 
 // Jury verdict override
 export const overrideJudging = (judgingId, payload) =>

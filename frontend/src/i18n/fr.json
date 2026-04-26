@@ -1086,7 +1086,13 @@
       "toastDeleted": "Supprimé",
       "toastImageInserted": "Image insérée dans le markdown",
       "toastFailed": "Une erreur est survenue",
-      "openCatalog": "Widgets disponibles"
+      "openCatalog": "Widgets disponibles",
+      "export": "Exporter",
+      "exporting": "Export en cours…",
+      "exportHint": "Génère un projet LaTeX prêt à compiler avec tout le contenu publié.",
+      "toastExportOk": "Export téléchargé",
+      "uploadHtml": "Animation HTML",
+      "toastHtmlInserted": "Widget HTML inséré"
     }
   },
   "packages": {
@@ -1155,8 +1161,15 @@
         "sortLabel": "Visualisation de tri",
         "sortDescription": "Animation pas-à-pas d'un algorithme de tri (bubble, insertion, selection) sur un petit tableau.",
         "sortParamAlgo": "Algorithme à animer",
-        "sortParamData": "Tableau d'entiers à trier (JSON)"
-      }
+        "sortParamData": "Tableau d'entiers à trier (JSON)",
+        "htmlLabel": "Animation HTML / JS personnalisée",
+        "htmlDescription": "Embed un fichier HTML autonome (Three.js, p5.js, Canvas, …) dans une iframe sandboxée. Aucun accès à la session utilisateur.",
+        "htmlParamSrc": "URL du fichier HTML uploadé",
+        "htmlParamHeight": "Hauteur en pixels (ex : 400) ou pourcentage",
+        "htmlParamTitle": "Titre accessible (lecteur d'écran)"
+      },
+      "htmlInvalid": "Widget HTML invalide : src manquant ou hors uploads.",
+      "htmlIframeTitle": "Animation interactive"
     }
   }
 }
