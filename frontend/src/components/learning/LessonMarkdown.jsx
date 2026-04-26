@@ -1,11 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import remarkDirective from 'remark-directive';
+import rehypeKatex from 'rehype-katex';
 import { visit } from 'unist-util-visit';
 import { WIDGET_REGISTRY } from './widgets/registry';
 import CustomWidget from './CustomWidget';
 import { loadWidgets, getCachedSync, subscribe } from './widgetsStore';
+
+// remark-math + rehype-katex render LaTeX-like math:
+//   - inline: $E = mc^2$
+//   - block:  $$\int_0^1 x^2\,dx = \tfrac{1}{3}$$
+// KaTeX CSS is imported once globally in index.css.
+const REHYPE_PLUGINS = [rehypeKatex];
 
 // Two layers of widgets:
 //   1. Built-in (WIDGET_REGISTRY) — React components like SortViz.
@@ -117,7 +125,7 @@ export default function LessonMarkdown({ children }) {
   }, [dbWidgets]);
 
   const remarkPlugins = useMemo(
-    () => [remarkGfm, remarkDirective, buildPlugin(knownDirectives)],
+    () => [remarkGfm, remarkMath, remarkDirective, buildPlugin(knownDirectives)],
     [knownDirectives],
   );
 
@@ -125,6 +133,7 @@ export default function LessonMarkdown({ children }) {
     <div className="prose prose-slate max-w-none dark:prose-invert">
       <ReactMarkdown
         remarkPlugins={remarkPlugins}
+        rehypePlugins={REHYPE_PLUGINS}
         components={widgetComponents}
       >
         {children || ''}
