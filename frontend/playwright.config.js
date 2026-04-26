@@ -1,13 +1,14 @@
 // Playwright smoke-test config. Runs a dedicated backend + frontend pair
 // on non-default ports so it doesn't collide with `npm run dev`.
 //
-// Each run starts from an empty SQLite file (the `globalSetup` below
-// deletes it), which lets tests rely on "first user becomes admin" to
-// bootstrap auth without hand-maintained fixtures.
+// Each run starts from an empty SQLite file (deleted at config-load
+// time below), which lets tests rely on "first user becomes admin"
+// to bootstrap auth without hand-maintained fixtures.
 import { defineConfig, devices } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, join } from 'node:path';
 import { rmSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -16,12 +17,18 @@ const repoRoot = resolve(__dirname, '..');
 const BACKEND_PORT = 8001;
 const FRONTEND_PORT = 5174;
 
-// Dedicated SQLite file for E2E. Wipe it synchronously at config-load
-// time so it's gone *before* Playwright launches the backend webServer —
-// globalSetup runs too late (webServer starts first), and on Windows the
-// running uvicorn would hold a file lock that prevents the delete.
-const E2E_DIR = resolve(__dirname, 'e2e');
-const E2E_DB_PATH = resolve(E2E_DIR, 'e2e.db');
+// Dedicated SQLite file for E2E. Lives under the OS temp dir rather
+// than inside the repo: ``/tmp`` is unconditionally writable on every
+// CI runner we ship to, while a path inside the checked-out tree can
+// surprise us with mode bits inherited from git or with a directory
+// the runner user happens not to own.
+//
+// Wiped synchronously at config-load time so it's gone *before*
+// Playwright launches the backend webServer — globalSetup runs too
+// late (webServer starts first), and on Windows the running uvicorn
+// would hold a file lock that prevents the delete.
+const E2E_DIR = join(tmpdir(), 'codearena-e2e');
+const E2E_DB_PATH = join(E2E_DIR, 'e2e.db');
 mkdirSync(E2E_DIR, { recursive: true });
 for (const p of [E2E_DB_PATH, `${E2E_DB_PATH}-journal`, `${E2E_DB_PATH}-wal`, `${E2E_DB_PATH}-shm`]) {
   try { rmSync(p, { force: true }); } catch { /* ignore */ }
