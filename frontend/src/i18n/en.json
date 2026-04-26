@@ -1060,6 +1060,33 @@
       "filterAction": "Action…",
       "filterActor": "Actor…",
       "filterTarget": "Target type…"
+    },
+    "learning": {
+      "title": "Learning zone",
+      "newSection": "New section",
+      "newLesson": "+ New lesson",
+      "emptyHint": "Create your first section to start publishing content.",
+      "promptSectionTitle": "Section title?",
+      "promptLessonTitle": "Lesson title?",
+      "confirmDeleteSection": "Delete section \"{{title}}\" and all its lessons?",
+      "confirmDeleteLesson": "Delete lesson \"{{title}}\"?",
+      "togglePublish": "Toggle published / draft",
+      "published": "Published",
+      "draft": "Draft",
+      "selectLesson": "Pick a lesson in the tree to edit it.",
+      "lessonTitle": "Lesson title",
+      "editLanguage": "Edit language",
+      "save": "Save",
+      "uploadImage": "Image",
+      "insertSortViz": "+ Sort animation",
+      "langCurrent": "Editing in {{lang}}",
+      "contentPlaceholder": "Write your lesson in markdown. Insert animated widgets from the toolbar.",
+      "toastCreated": "Created",
+      "toastSaved": "Saved",
+      "toastDeleted": "Deleted",
+      "toastImageInserted": "Image inserted into markdown",
+      "toastFailed": "Something went wrong",
+      "openCatalog": "Available widgets"
     }
   },
   "packages": {
@@ -1116,33 +1143,20 @@
       "pause": "Pause",
       "stepNext": "Step forward",
       "reset": "Restart",
-      "sortInvalid": "Invalid widget: algo={{algo}} data={{data}}"
+      "sortInvalid": "Invalid widget: algo={{algo}} data={{data}}",
+      "catalog": {
+        "title": "Available widgets",
+        "intro": "Pick a widget and click \"Insert\". The directive is appended to the end of the lesson currently open in the editor. Parameters go inside the curly braces.",
+        "empty": "No widgets available.",
+        "parameters": "Parameters",
+        "copy": "Copy",
+        "copied": "Copied",
+        "insert": "Insert",
+        "sortLabel": "Sort visualizer",
+        "sortDescription": "Step-by-step animation of a sorting algorithm (bubble, insertion, selection) on a small array.",
+        "sortParamAlgo": "Algorithm to animate",
+        "sortParamData": "Array of integers to sort (JSON)"
+      }
     }
-  },
-  "admin.learning": {
-    "title": "Learning zone",
-    "newSection": "New section",
-    "newLesson": "+ New lesson",
-    "emptyHint": "Create your first section to start publishing content.",
-    "promptSectionTitle": "Section title?",
-    "promptLessonTitle": "Lesson title?",
-    "confirmDeleteSection": "Delete section \"{{title}}\" and all its lessons?",
-    "confirmDeleteLesson": "Delete lesson \"{{title}}\"?",
-    "togglePublish": "Toggle published / draft",
-    "published": "Published",
-    "draft": "Draft",
-    "selectLesson": "Pick a lesson in the tree to edit it.",
-    "lessonTitle": "Lesson title",
-    "editLanguage": "Edit language",
-    "save": "Save",
-    "uploadImage": "Image",
-    "insertSortViz": "+ Sort animation",
-    "langCurrent": "Editing in {{lang}}",
-    "contentPlaceholder": "Write your lesson in markdown. Insert animated widgets from the toolbar.",
-    "toastCreated": "Created",
-    "toastSaved": "Saved",
-    "toastDeleted": "Deleted",
-    "toastImageInserted": "Image inserted into markdown",
-    "toastFailed": "Something went wrong"
   }
 }

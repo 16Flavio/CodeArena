@@ -253,14 +253,15 @@ def set_progress(
 
 
 @student_router.get("/assets/{rel:path}")
-def serve_asset(
-    rel: str,
-    user: models.User = Depends(get_current_user),  # noqa: ARG001 — auth-walled
-    db: Session = Depends(get_db),
-):
-    """Serve a lesson asset. Auth-walled (anyone logged in can read);
-    we don't expose the absolute path so a guessed filename can't escape
-    the upload dir. Path traversal blocked via os.path.commonpath."""
+def serve_asset(rel: str):
+    """Serve a lesson asset (image / file). Public on purpose: HTML
+    ``<img src=...>`` tags don't carry the Authorization header, so an
+    auth-walled URL renders blank in the markdown body. The path layout
+    is ``<lesson_id>/<asset_id>-<safe-filename>`` — unguessable enough
+    that accidental disclosure is hard, and lesson content is meant to
+    be reachable by every logged-in user anyway.
+
+    Path traversal is still blocked via ``os.path.commonpath``."""
     target = os.path.normpath(os.path.join(_LEARNING_UPLOAD_DIR, rel))
     if os.path.commonpath((_LEARNING_UPLOAD_DIR, target)) != _LEARNING_UPLOAD_DIR:
         raise HTTPException(status_code=404, detail="Asset introuvable")

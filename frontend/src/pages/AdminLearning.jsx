@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   GraduationCap, Plus, Trash2, ChevronDown, ChevronRight,
-  FolderPlus, FilePlus, Save, Eye, Image as ImageIcon, Globe,
+  FolderPlus, FilePlus, Save, Eye, Image as ImageIcon, Globe, Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../AuthContext';
@@ -14,6 +14,7 @@ import {
   adminLearnUploadAsset,
 } from '../api';
 import LessonMarkdown from '../components/learning/LessonMarkdown';
+import WidgetCatalog from '../components/learning/WidgetCatalog';
 
 // Slug helper — keeps the admin from having to type a URL-safe id.
 function slugify(s) {
@@ -38,6 +39,7 @@ export default function AdminLearning() {
   const [lessonsBySection, setLessonsBySection] = useState({});
   const [editingLesson, setEditingLesson] = useState(null); // { ...lessonData, _sectionId }
   const [editLang, setEditLang] = useState('fr');
+  const [showCatalog, setShowCatalog] = useState(false);
 
   useEffect(() => {
     if (!user?.is_admin) navigate('/dashboard');
@@ -351,15 +353,22 @@ export default function AdminLearning() {
                   <input type="file" className="hidden" accept="image/*" onChange={handleUploadImage} />
                 </label>
                 <button
-                  onClick={() => insertWidget(':::viz-sort{algo="bubble" data="[5,2,8,1,9,3]"}\n:::')}
-                  className="px-2 py-1 rounded bg-violet-100 hover:bg-violet-200 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300"
+                  onClick={() => setShowCatalog(true)}
+                  className="px-2 py-1 rounded bg-violet-100 hover:bg-violet-200 text-violet-700 inline-flex items-center gap-1 dark:bg-violet-500/20 dark:text-violet-300"
                 >
-                  {t('admin.learning.insertSortViz')}
+                  <Sparkles className="w-3.5 h-3.5" />
+                  {t('admin.learning.openCatalog')}
                 </button>
                 <span className="text-slate-400 dark:text-gray-600 ml-2">
                   {t('admin.learning.langCurrent', { lang: editLang.toUpperCase() })}
                 </span>
               </div>
+
+              <WidgetCatalog
+                open={showCatalog}
+                onClose={() => setShowCatalog(false)}
+                onInsert={insertWidget}
+              />
 
               {/* Split editor + preview */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

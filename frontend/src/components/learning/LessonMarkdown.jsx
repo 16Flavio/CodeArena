@@ -2,12 +2,10 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkDirective from 'remark-directive';
 import { visit } from 'unist-util-visit';
-import SortViz from './widgets/SortViz';
+import { WIDGET_REGISTRY } from './widgets/registry';
 
-// Registry of widget directives. Add a new widget by:
-//   1. Build the React component under widgets/.
-//   2. Pick a directive name (e.g. ``viz-bst``).
-//   3. Add an entry below mapping the directive name to the component.
+// Widget registry lives in ./widgets/registry.js and is shared with
+// the admin catalog UI (so adding a widget there documents itself).
 //
 // The directive syntax is the standard remark-directive container form:
 //
@@ -16,9 +14,6 @@ import SortViz from './widgets/SortViz';
 //
 // Inline form ``::viz-sort{...}`` and leaf form ``:::viz-sort{...}``
 // without a closing fence both work — we accept all three.
-const WIDGETS = {
-  'viz-sort': SortViz,
-};
 
 /**
  * remark plugin: rewrite directive nodes into a custom HTML-like node
@@ -36,7 +31,7 @@ function remarkLearningWidgets() {
         node.type === 'leafDirective' ||
         node.type === 'textDirective'
       ) {
-        if (!Object.prototype.hasOwnProperty.call(WIDGETS, node.name)) {
+        if (!Object.prototype.hasOwnProperty.call(WIDGET_REGISTRY, node.name)) {
           // Unknown directive — render as plain text so authors see
           // their typo rather than silently dropping content.
           return;
@@ -56,10 +51,13 @@ function remarkLearningWidgets() {
 // the directive's attributes as props. Whatever the directive author
 // wrote in ``key="value"`` arrives here as ``props.key === "value"``.
 const widgetComponents = Object.fromEntries(
-  Object.entries(WIDGETS).map(([name, Component]) => [
-    `learning-${name}`,
-    (props) => <Component {...props} />,
-  ]),
+  Object.entries(WIDGET_REGISTRY).map(([name, entry]) => {
+    const Component = entry.component;
+    return [
+      `learning-${name}`,
+      (props) => <Component {...props} />,
+    ];
+  }),
 );
 
 const REMARK_PLUGINS = [remarkGfm, remarkDirective, remarkLearningWidgets];

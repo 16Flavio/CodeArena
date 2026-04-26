@@ -1060,6 +1060,33 @@
       "filterAction": "Action…",
       "filterActor": "Acteur…",
       "filterTarget": "Type cible…"
+    },
+    "learning": {
+      "title": "Zone pédagogique",
+      "newSection": "Nouvelle section",
+      "newLesson": "+ Nouvelle leçon",
+      "emptyHint": "Crée ta première section pour commencer à publier du contenu.",
+      "promptSectionTitle": "Titre de la section ?",
+      "promptLessonTitle": "Titre de la leçon ?",
+      "confirmDeleteSection": "Supprimer la section « {{title}} » et toutes ses leçons ?",
+      "confirmDeleteLesson": "Supprimer la leçon « {{title}} » ?",
+      "togglePublish": "Basculer publié / brouillon",
+      "published": "Publié",
+      "draft": "Brouillon",
+      "selectLesson": "Sélectionne une leçon dans l'arbre pour l'éditer.",
+      "lessonTitle": "Titre de la leçon",
+      "editLanguage": "Langue d'édition",
+      "save": "Enregistrer",
+      "uploadImage": "Image",
+      "insertSortViz": "+ Tri animé",
+      "langCurrent": "Édition en {{lang}}",
+      "contentPlaceholder": "Écris ta leçon en markdown. Insère un widget animé via la barre d'outils.",
+      "toastCreated": "Créé",
+      "toastSaved": "Enregistré",
+      "toastDeleted": "Supprimé",
+      "toastImageInserted": "Image insérée dans le markdown",
+      "toastFailed": "Une erreur est survenue",
+      "openCatalog": "Widgets disponibles"
     }
   },
   "packages": {
@@ -1116,33 +1143,20 @@
       "pause": "Pause",
       "stepNext": "Étape suivante",
       "reset": "Recommencer",
-      "sortInvalid": "Widget invalide : algo={{algo}} data={{data}}"
+      "sortInvalid": "Widget invalide : algo={{algo}} data={{data}}",
+      "catalog": {
+        "title": "Widgets disponibles",
+        "intro": "Sélectionne un widget puis clique sur \"Insérer\". La directive est ajoutée à la fin de la leçon en cours d'édition. Les paramètres se définissent dans les accolades.",
+        "empty": "Aucun widget disponible.",
+        "parameters": "Paramètres",
+        "copy": "Copier",
+        "copied": "Copié",
+        "insert": "Insérer",
+        "sortLabel": "Visualisation de tri",
+        "sortDescription": "Animation pas-à-pas d'un algorithme de tri (bubble, insertion, selection) sur un petit tableau.",
+        "sortParamAlgo": "Algorithme à animer",
+        "sortParamData": "Tableau d'entiers à trier (JSON)"
+      }
     }
-  },
-  "admin.learning": {
-    "title": "Zone pédagogique",
-    "newSection": "Nouvelle section",
-    "newLesson": "+ Nouvelle leçon",
-    "emptyHint": "Crée ta première section pour commencer à publier du contenu.",
-    "promptSectionTitle": "Titre de la section ?",
-    "promptLessonTitle": "Titre de la leçon ?",
-    "confirmDeleteSection": "Supprimer la section « {{title}} » et toutes ses leçons ?",
-    "confirmDeleteLesson": "Supprimer la leçon « {{title}} » ?",
-    "togglePublish": "Basculer publié / brouillon",
-    "published": "Publié",
-    "draft": "Brouillon",
-    "selectLesson": "Sélectionne une leçon dans l'arbre pour l'éditer.",
-    "lessonTitle": "Titre de la leçon",
-    "editLanguage": "Langue d'édition",
-    "save": "Enregistrer",
-    "uploadImage": "Image",
-    "insertSortViz": "+ Tri animé",
-    "langCurrent": "Édition en {{lang}}",
-    "contentPlaceholder": "Écris ta leçon en markdown. Insère un widget animé via la barre d'outils.",
-    "toastCreated": "Créé",
-    "toastSaved": "Enregistré",
-    "toastDeleted": "Supprimé",
-    "toastImageInserted": "Image insérée dans le markdown",
-    "toastFailed": "Une erreur est survenue"
   }
 }
