@@ -528,13 +528,36 @@ async def _run(args: argparse.Namespace, run_id: str, metrics: Metrics) -> int:
                                 int(len(sb_lat_sorted) * 0.95))]
         print(f"Scoreboard p95: {p95:.0f}ms")
 
-    if err_rate > 0.05:
-        print("\n⚠️  Error rate above 5%. The deployment may not be ready.")
+    # Verdict — fail loud on anything that would degrade the contest UX.
+    # Bar is set for "200 active users on a real contest", not "we got
+    # zero exceptions". Latency tail is what kills perceived freshness.
+    issues: list[str] = []
+    if err_rate > 0.01:
+        issues.append(f"error rate {err_rate * 100:.2f}% > 1%")
+    if submit_lat:
+        sub_p95 = submit_lat_sorted[min(len(submit_lat_sorted) - 1,
+                                        int(len(submit_lat_sorted) * 0.95))]
+        sub_p99 = submit_lat_sorted[min(len(submit_lat_sorted) - 1,
+                                        int(len(submit_lat_sorted) * 0.99))]
+        if sub_p95 > 500:
+            issues.append(f"submit p95 {sub_p95:.0f}ms > 500ms")
+        if sub_p99 > 2000:
+            issues.append(f"submit p99 {sub_p99:.0f}ms > 2000ms")
+    if sb_lat:
+        sb_p95 = sb_lat_sorted[min(len(sb_lat_sorted) - 1,
+                                   int(len(sb_lat_sorted) * 0.95))]
+        sb_p99 = sb_lat_sorted[min(len(sb_lat_sorted) - 1,
+                                   int(len(sb_lat_sorted) * 0.99))]
+        if sb_p95 > 1000:
+            issues.append(f"scoreboard p95 {sb_p95:.0f}ms > 1000ms")
+        if sb_p99 > 2000:
+            issues.append(f"scoreboard p99 {sb_p99:.0f}ms > 2000ms")
+    if issues:
+        print("\n⚠️  Healthcheck failed — the deployment is NOT ready for prod load:")
+        for s in issues:
+            print(f"   - {s}")
         return 1
-    if submit_lat and submit_lat_sorted[int(len(submit_lat_sorted) * 0.95)] > 5000:
-        print("\n⚠️  Submit p95 > 5s. Investigate scoring queue / DB pool.")
-        return 1
-    print("\n✅ No alarming red flags.")
+    print("\n✅ All healthcheck thresholds met.")
     return 0
 
 

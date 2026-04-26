@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session, joinedload
 from ..auth import get_current_user, get_current_user_from_query, require_admin
 from ..database import get_db
 from ..rate_limit import limiter
+from ..scoreboard_response_cache import get_or_compute as _cache_get_or_compute
 from .. import models, schemas
 from .contests import (
     _aware, _is_contest_visible, _is_scoreboard_frozen,
@@ -42,10 +43,18 @@ def get_scoreboard(
     the function pretends the caller is a regular non-admin participant
     even if they're actually an admin — used by the post-contest
     presentation flow to obtain the "audience-visible frozen view"
-    without conjuring a fake User object."""
+    without conjuring a fake User object.
+
+    The heavy build is wrapped in a per-process TTL cache keyed on
+    ``(contest_id, audience)`` where ``audience`` is ``"admin"`` for
+    callers that see through the freeze and ``"public"`` for everyone
+    else. Two cache slots per contest, regardless of viewer count —
+    hint-cost penalties and per-row visibility don't depend on the
+    *viewer*, only on the row's owner. The visibility / 404 check
+    runs on every request and is *not* cached so a freshly-hidden
+    contest 404s immediately."""
     contest = (
         db.query(models.Contest)
-        .options(joinedload(models.Contest.instances))
         .filter(models.Contest.id == contest_id)
         .first()
     )
@@ -57,6 +66,32 @@ def get_scoreboard(
     if not _is_contest_visible(contest, now, is_admin=is_admin):
         raise HTTPException(status_code=404, detail="Concours introuvable")
 
+    audience = "admin" if is_admin else "public"
+    return _cache_get_or_compute(
+        ("scoreboard.output", contest_id, audience),
+        lambda: _build_scoreboard(contest_id, is_admin=is_admin, db=db),
+    )
+
+
+def _build_scoreboard(
+    contest_id: int, *, is_admin: bool, db: Session,
+) -> schemas.ScoreboardOut:
+    """Heavy lift behind ``get_scoreboard``. Pure function of
+    ``(contest_id, is_admin, current DB state)`` — no per-viewer state,
+    safe to share across every caller in the same audience class."""
+    contest = (
+        db.query(models.Contest)
+        .options(joinedload(models.Contest.instances))
+        .filter(models.Contest.id == contest_id)
+        .first()
+    )
+    # Caller already validated the contest exists + is visible. We
+    # re-fetch with instances loaded so the heavy joinedload doesn't
+    # run on every visibility check.
+    if not contest:  # pragma: no cover — defensive
+        raise HTTPException(status_code=404, detail="Concours introuvable")
+
+    now = _utcnow()
     frozen = _is_scoreboard_frozen(contest, now, is_admin=is_admin)
     cutoff = _aware(contest.freeze_scoreboard_at) if frozen else None
 

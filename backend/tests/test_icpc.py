@@ -1084,6 +1084,11 @@ def test_affiliation_crud_and_scoreboard_badge(client):
 
     # Delete sets FK to NULL (scoreboard still renders, no affiliation badge).
     assert client.delete(f"/api/icpc/affiliations/{uliege_id}", headers=admin).status_code == 200
+    # The scoreboard response cache has a 2s TTL — force a refresh so the
+    # next GET reflects the FK change. In production the staleness is
+    # accepted (operators see the change within 2 seconds of the delete).
+    from backend import scoreboard_response_cache as _sb_cache
+    _sb_cache.clear()
     r = client.get(f"/api/contests/{cid}/icpc-scoreboard", headers=alice)
     alice_row = next(row for row in r.json()["rows"] if row["team_name"] == "alice")
     assert alice_row["affiliation_id"] is None

@@ -20,6 +20,7 @@ from ..auth import get_current_user, get_current_user_from_query, require_admin,
 from ..audit import record as audit
 from ..database import get_db
 from ..rate_limit import limiter
+from ..scoreboard_response_cache import get_or_compute as _cache_get_or_compute
 from ..scoring_queue import enqueue_scoring
 from .. import models, schemas
 from .contests import (
@@ -702,14 +703,33 @@ def icpc_scoreboard(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """ICPC scoreboard. Wrapped in the same per-process TTL cache as
+    the output-scoring scoreboard; see
+    ``backend/scoreboard_response_cache.py`` for the rationale."""
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
     if not contest or not _is_contest_visible(contest, _utcnow(), is_admin=bool(user.is_admin)):
         raise HTTPException(status_code=404, detail="Concours introuvable")
     if contest.kind != "icpc":
         raise HTTPException(status_code=400, detail="Ce concours n'est pas en mode ICPC")
 
-    now = _utcnow()
     is_admin = bool(user.is_admin)
+    audience = "admin" if is_admin else "public"
+    return _cache_get_or_compute(
+        ("scoreboard.icpc", contest_id, audience),
+        lambda: _build_icpc_scoreboard(contest_id, is_admin=is_admin, db=db),
+    )
+
+
+def _build_icpc_scoreboard(
+    contest_id: int, *, is_admin: bool, db: Session,
+) -> schemas.IcpcScoreboardOut:
+    """Heavy compute for ``icpc_scoreboard``. Same per-audience
+    contract as the output scoreboard — no per-viewer state."""
+    contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
+    if not contest:  # pragma: no cover — defensive (visibility checked upstream)
+        raise HTTPException(status_code=404, detail="Concours introuvable")
+
+    now = _utcnow()
     frozen = _is_scoreboard_frozen(contest, now, is_admin=is_admin)
     cutoff = _aware(contest.freeze_scoreboard_at) if frozen else None
 

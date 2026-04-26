@@ -32,6 +32,12 @@ def client(monkeypatch):
     from backend.database import Base, get_db
     from backend.rate_limit import limiter
 
+    # The scoreboard response cache is module-level state — without an
+    # explicit reset it leaks between tests, so a contest #1 from test
+    # A would serve a stale payload to test B's contest #1.
+    from backend import scoreboard_response_cache as _sb_cache
+    _sb_cache.clear()
+
     # `main` imports .env via python-dotenv, which can re-introduce the
     # SCORING_MODE and SMTP_* vars. Force them back off after the import
     # so (a) scoring takes the subprocess fallback, and (b) no test
