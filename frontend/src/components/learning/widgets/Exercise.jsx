@@ -5,6 +5,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { python } from '@codemirror/lang-python';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { learnGetExercise, learnRunExercise } from '../../../api';
+import LessonMarkdown from '../LessonMarkdown';
 
 /**
  * `:::exercise{id="42"}`
@@ -106,8 +107,8 @@ export default function Exercise({ id }) {
       </div>
 
       {prompt && (
-        <div className="px-5 py-3 border-b border-gray-200 text-sm text-slate-700 dark:border-slate-700/50 dark:text-gray-300 whitespace-pre-wrap">
-          {prompt}
+        <div className="px-5 py-3 border-b border-gray-200 text-sm dark:border-slate-700/50">
+          <LessonMarkdown>{prompt}</LessonMarkdown>
         </div>
       )}
 
