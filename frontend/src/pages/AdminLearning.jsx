@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
-  GraduationCap, Plus, Trash2, ChevronDown, ChevronRight,
+  GraduationCap, Plus, Trash2, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight,
   FolderPlus, FilePlus, Save, Eye, EyeOff, Image as ImageIcon, Globe, Sparkles, FileDown, Maximize2, Minimize2, Pencil, X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -46,6 +46,7 @@ export default function AdminLearning() {
   const [exporting, setExporting] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [editingSection, setEditingSection] = useState(null);  // { id, title_fr, ... }
+  const [treeCollapsed, setTreeCollapsed] = useState(false);
 
   useEffect(() => {
     if (!user?.is_admin) navigate('/dashboard');
@@ -284,9 +285,34 @@ export default function AdminLearning() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Tree of sections + lessons */}
-        <div className="lg:col-span-4 space-y-3">
+      <div className={`grid grid-cols-1 gap-6 ${treeCollapsed ? 'lg:grid-cols-[40px_1fr]' : 'lg:grid-cols-12'}`}>
+        {/* Tree of sections + lessons. Collapsed = a thin rail with a
+            single chevron-right button to expand. Helps when the
+            admin wants the editor to take the full width. */}
+        {treeCollapsed ? (
+          <div className="hidden lg:flex flex-col items-center pt-2">
+            <button
+              onClick={() => setTreeCollapsed(false)}
+              className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 dark:hover:bg-slate-800/50 dark:text-gray-400 dark:hover:text-gray-200"
+              title={t('admin.learning.expandTree')}
+            >
+              <ChevronsRight className="w-4 h-4" />
+            </button>
+          </div>
+        ) : null}
+        <div className={`${treeCollapsed ? 'hidden' : 'lg:col-span-4'} space-y-3`}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs uppercase tracking-wide font-semibold text-slate-500 dark:text-gray-400">
+              {t('admin.learning.tree')}
+            </span>
+            <button
+              onClick={() => setTreeCollapsed(true)}
+              className="hidden lg:inline-flex p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 dark:hover:bg-slate-800/50 dark:text-gray-500 dark:hover:text-gray-200"
+              title={t('admin.learning.collapseTree')}
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </button>
+          </div>
           {sections.length === 0 && (
             <div className="glass-card p-6 text-center text-sm text-slate-500 dark:text-gray-400">
               {t('admin.learning.emptyHint')}
@@ -442,7 +468,7 @@ export default function AdminLearning() {
         </div>
 
         {/* Editor + preview */}
-        <div className="lg:col-span-8">
+        <div className={treeCollapsed ? '' : 'lg:col-span-8'}>
           {!editingLesson ? (
             <div className="glass-card p-12 text-center">
               <p className="text-slate-500 dark:text-gray-400">{t('admin.learning.selectLesson')}</p>

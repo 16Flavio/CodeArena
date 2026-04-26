@@ -393,7 +393,10 @@
     "changeAffiliation": "Changer d'affiliation",
     "resendVerification": "Renvoyer l'email de vérification",
     "unverifiedTitle": "Votre email n'est pas encore vérifié",
-    "toastVerificationSent": "Email envoyé"
+    "toastVerificationSent": "Email envoyé",
+    "collapseSidebar": "Replier le menu",
+    "expandSidebar": "Déplier le menu",
+    "account": "Mon compte"
   },
   "accountModal": {
     "passwordTitle": "Changer de mot de passe",
@@ -414,13 +417,26 @@
     "toastPasswordUpdated": "Mot de passe mis à jour",
     "toastUsernameEmpty": "Le nom d'utilisateur ne peut pas être vide",
     "toastUsernameUpdated": "Nom d'utilisateur mis à jour",
-    "toastFailed": "Échec",
+    "toastFailed": "Une erreur est survenue",
     "affiliationTitle": "Changer d'affiliation",
     "affiliationField": "Votre école / organisation",
-    "affiliationNone": "— aucune —",
+    "affiliationNone": "— Aucune —",
     "affiliationEmpty": "Aucune affiliation disponible. Demandez à un admin d'en créer.",
-    "affiliationHint": "Affichée à côté de votre nom sur le tableau ICPC quand vous participez en solo.",
-    "toastAffiliationSaved": "Affiliation mise à jour"
+    "affiliationHint": "Choisis l'établissement / organisation que tu représentes en mode solo. Apparaît dans le scoreboard ICPC.",
+    "toastAffiliationSaved": "Affiliation mise à jour",
+    "title": "Mon compte",
+    "tabPassword": "Mot de passe",
+    "tabUsername": "Nom d'utilisateur",
+    "tabAffiliation": "Affiliation",
+    "tabSecurity": "Sécurité (2FA)",
+    "savePassword": "Mettre à jour",
+    "saveUsername": "Mettre à jour",
+    "saveAffiliation": "Enregistrer",
+    "affiliationLabel": "Affiliation",
+    "securityTitle": "Sécurité du compte",
+    "securityEnabled": "L'authentification à deux facteurs (2FA) est active. Pour la désactiver ou changer ton authenticator, ouvre la page de sécurité.",
+    "securityDisabled": "L'authentification à deux facteurs n'est pas active. La page de sécurité te guide pour la mettre en place avec ton application Google Auth / Authy.",
+    "openSecurityPage": "Ouvrir la page Sécurité"
   },
   "auth": {
     "welcomeBack": "Bon retour",
@@ -1102,7 +1118,10 @@
       "titleEn": "Titre EN",
       "descFr": "Description (FR)",
       "descEn": "Description (EN)",
-      "cancel": "Annuler"
+      "cancel": "Annuler",
+      "tree": "Sections",
+      "collapseTree": "Replier l'arborescence",
+      "expandTree": "Déplier l'arborescence"
     },
     "learningWidgets": {
       "title": "Mes widgets",

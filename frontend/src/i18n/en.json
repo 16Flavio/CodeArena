@@ -393,7 +393,10 @@
     "changeAffiliation": "Change affiliation",
     "resendVerification": "Resend verification email",
     "unverifiedTitle": "Your email isn't verified yet",
-    "toastVerificationSent": "Email sent"
+    "toastVerificationSent": "Email sent",
+    "collapseSidebar": "Collapse menu",
+    "expandSidebar": "Expand menu",
+    "account": "My account"
   },
   "accountModal": {
     "passwordTitle": "Change password",
@@ -414,13 +417,26 @@
     "toastPasswordUpdated": "Password updated",
     "toastUsernameEmpty": "Username cannot be empty",
     "toastUsernameUpdated": "Username updated",
-    "toastFailed": "Failed",
+    "toastFailed": "Something went wrong",
     "affiliationTitle": "Change affiliation",
     "affiliationField": "Your school / organisation",
-    "affiliationNone": "— none —",
+    "affiliationNone": "— None —",
     "affiliationEmpty": "No affiliations are available yet. Ask an admin to add one.",
-    "affiliationHint": "Shown next to your name on the ICPC scoreboard when you compete solo.",
-    "toastAffiliationSaved": "Affiliation updated"
+    "affiliationHint": "Pick the school / organisation you represent in solo mode. Appears on the ICPC scoreboard.",
+    "toastAffiliationSaved": "Affiliation updated",
+    "title": "My account",
+    "tabPassword": "Password",
+    "tabUsername": "Username",
+    "tabAffiliation": "Affiliation",
+    "tabSecurity": "Security (2FA)",
+    "savePassword": "Update",
+    "saveUsername": "Update",
+    "saveAffiliation": "Save",
+    "affiliationLabel": "Affiliation",
+    "securityTitle": "Account security",
+    "securityEnabled": "Two-factor authentication (2FA) is active. To disable it or change your authenticator, open the security page.",
+    "securityDisabled": "Two-factor authentication is not active. The security page guides you to set it up with your Google Authenticator / Authy app.",
+    "openSecurityPage": "Open security page"
   },
   "auth": {
     "welcomeBack": "Welcome back",
@@ -1102,7 +1118,10 @@
       "titleEn": "Title EN",
       "descFr": "Description (FR)",
       "descEn": "Description (EN)",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "tree": "Sections",
+      "collapseTree": "Collapse tree",
+      "expandTree": "Expand tree"
     },
     "learningWidgets": {
       "title": "My widgets",
