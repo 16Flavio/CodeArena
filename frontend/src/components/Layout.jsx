@@ -262,8 +262,6 @@ export default function Layout() {
             <LogOut className="w-4 h-4" />
             {!collapsed && t('nav.signOut')}
           </button>
-
-          {showAccountModal && <AccountModal onClose={() => setShowAccountModal(false)} />}
         </div>
       </aside>
 
@@ -308,6 +306,12 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Sibling of the <aside> — NOT a child. Rendering inside the
+          sidebar would inherit its transform-induced containing block,
+          which clips the modal's ``fixed inset-0`` to a 256-px slice
+          and makes it look like nothing happened on click. */}
+      {showAccountModal && <AccountModal onClose={() => setShowAccountModal(false)} />}
     </div>
   );
 }
