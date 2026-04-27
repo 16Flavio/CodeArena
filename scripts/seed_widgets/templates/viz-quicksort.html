@@ -1,0 +1,196 @@
+<style>
+  .qs-ctrl { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+  .qs-ctrl button { padding: 4px 10px; cursor: pointer; }
+  .qs-ctrl button:disabled { opacity: 0.5; cursor: default; }
+  .qs-ctrl input[type="text"] { padding: 3px 6px; width: 220px; font-family: monospace; font-size: 13px; }
+  .qs-ctrl input[type="range"] { vertical-align: middle; }
+  .qs-info { font-family: monospace; font-size: 12px; color: #6366f1; min-height: 16px; }
+  .qs-bars { display: flex; gap: 3px; align-items: flex-end; height: 220px; padding: 6px 0; }
+  .qs-bar { flex: 1 0 0; min-width: 18px; background: #cbd5e1; border-radius: 3px 3px 0 0; position: relative; transition: background 0.18s, height 0.25s, color 0.18s; }
+  .qs-bar > span { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); font-size: 11px; padding: 0 2px; color: #475569; font-family: monospace; }
+  .qs-bar.active   { background: #93c5fd; }
+  .qs-bar.le-pivot { background: #10b981; }   /* dans la zone <= pivot */
+  .qs-bar.gt-pivot { background: #94a3b8; }   /* dans la zone > pivot (déjà scanné) */
+  .qs-bar.cur      { outline: 2px solid #f59e0b; outline-offset: 2px; }   /* j */
+  .qs-bar.boundary { outline: 2px dashed #6366f1; outline-offset: 2px; }  /* i */
+  .qs-bar.pivot    { background: #ef4444; }
+  .qs-bar.placed   { background: #ef4444; outline: 2px solid #b91c1c; outline-offset: 2px; }
+  .qs-bar.sorted   { background: #14532d; }
+  .qs-bar > span { font-weight: 600; }
+  .qs-bar.pivot > span, .qs-bar.placed > span, .qs-bar.sorted > span { color: white; bottom: 4px; top: auto; }
+  .qs-bar.le-pivot > span, .qs-bar.gt-pivot > span { color: white; bottom: 4px; top: auto; }
+  .qs-meta { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; margin-top: 8px; color: #64748b; }
+  .qs-meta b { color: #0f172a; }
+  @media (prefers-color-scheme: dark) {
+    .qs-bar { background: #475569; }
+    .qs-bar > span { color: #e2e8f0; }
+    .qs-meta { color: #94a3b8; }
+    .qs-meta b { color: #e2e8f0; }
+  }
+</style>
+<div class="qs-ctrl">
+  <label>tableau <input type="text" id="data" /></label>
+  <button id="reset">load</button>
+  <button id="step">step</button>
+  <button id="run">run</button>
+  <button id="pause" disabled>pause</button>
+  <label>vitesse <input type="range" id="speed" min="80" max="800" value="350" /></label>
+</div>
+<div class="qs-info" id="info">cliquez sur <b>step</b> ou <b>run</b></div>
+<div class="qs-bars" id="bars"></div>
+<div class="qs-meta">
+  <span>profondeur de pile : <b id="depth">0</b></span>
+  <span>swaps : <b id="nswaps">0</b></span>
+  <span>comparaisons : <b id="ncmp">0</b></span>
+  <span>fenêtre courante : <b id="window">—</b></span>
+</div>
+<script>
+(function () {
+  var params  = window.__params || {};
+  var raw     = (params.data || '8,3,5,1,9,2,7,4,6').toString();
+  var dataEl  = document.getElementById('data');
+  dataEl.value = raw.replace(/[\[\]\s]/g, '');
+
+  var steps = [];
+  var idx = 0;
+  var max = 1;
+  var sortedSet = new Set();
+  var nSwaps = 0;
+  var nCmp   = 0;
+  var timer = null;
+
+  function buildSteps(arr) {
+    var a = arr.slice();
+    var out = [];
+    function qs(lo, hi, depth) {
+      if (lo > hi) return;
+      if (lo === hi) {
+        out.push({ kind: 'singleton', lo: lo, hi: hi, i: lo, j: lo, pivotIdx: -1, depth: depth, snap: a.slice() });
+        return;
+      }
+      var pivotIdx = hi;
+      var i = lo;
+      out.push({ kind: 'enter', lo: lo, hi: hi, i: i, j: lo, pivotIdx: pivotIdx, depth: depth, snap: a.slice() });
+      for (var j = lo; j < hi; j++) {
+        out.push({ kind: 'compare', lo: lo, hi: hi, i: i, j: j, pivotIdx: pivotIdx, depth: depth, snap: a.slice() });
+        if (a[j] <= a[pivotIdx]) {
+          if (i !== j) {
+            var t = a[i]; a[i] = a[j]; a[j] = t;
+            out.push({ kind: 'swap', lo: lo, hi: hi, i: i, j: j, pivotIdx: pivotIdx, depth: depth, snap: a.slice() });
+          }
+          i++;
+        }
+      }
+      // place pivot at i
+      var t2 = a[i]; a[i] = a[hi]; a[hi] = t2;
+      out.push({ kind: 'place', lo: lo, hi: hi, i: i, j: hi, pivotIdx: i, depth: depth, snap: a.slice(), placedAt: i });
+      qs(lo, i - 1, depth + 1);
+      qs(i + 1, hi, depth + 1);
+    }
+    qs(0, a.length - 1, 0);
+    out.push({ kind: 'done', lo: 0, hi: a.length - 1, i: -1, j: -1, pivotIdx: -1, depth: 0, snap: a.slice() });
+    return out;
+  }
+
+  function load() {
+    pause();
+    var arr = dataEl.value.split(/[^\-0-9]+/).filter(function (s) { return s.length; }).map(Number);
+    if (arr.length === 0) arr = [3, 1, 4, 1, 5];
+    steps = buildSteps(arr);
+    idx = 0;
+    sortedSet = new Set();
+    nSwaps = 0;
+    nCmp = 0;
+    max = Math.max.apply(null, arr.map(function (x) { return Math.abs(x); }).concat([1]));
+    document.getElementById('info').textContent = 'tableau chargé (' + steps.length + ' étapes pré-calculées)';
+    render(steps[0]);
+    refreshMeta(steps[0]);
+  }
+
+  function step() {
+    if (idx >= steps.length - 1) return;
+    idx++;
+    var s = steps[idx];
+    if (s.kind === 'swap') nSwaps++;
+    if (s.kind === 'compare') nCmp++;
+    if (s.kind === 'place')  sortedSet.add(s.i);
+    if (s.kind === 'singleton') sortedSet.add(s.i);
+    if (s.kind === 'done') {
+      // mark everything sorted
+      for (var k = 0; k < s.snap.length; k++) sortedSet.add(k);
+    }
+    var msg;
+    switch (s.kind) {
+      case 'enter':     msg = 'partition de [' + s.lo + ', ' + s.hi + '] — pivot = a[' + s.pivotIdx + '] = ' + s.snap[s.pivotIdx]; break;
+      case 'compare':   msg = 'compare a[' + s.j + '] = ' + s.snap[s.j] + ' au pivot ' + s.snap[s.pivotIdx]; break;
+      case 'swap':      msg = 'swap a[' + s.i + '] ↔ a[' + s.j + ']'; break;
+      case 'place':     msg = 'pivot placé en position ' + s.i + ' — récursion sur [' + s.lo + ',' + (s.i - 1) + '] et [' + (s.i + 1) + ',' + s.hi + ']'; break;
+      case 'singleton': msg = 'singleton en ' + s.i + ' — déjà trié'; break;
+      case 'done':      msg = 'tri terminé — ' + nCmp + ' comparaisons, ' + nSwaps + ' swaps'; break;
+    }
+    document.getElementById('info').textContent = msg;
+    render(s);
+    refreshMeta(s);
+    if (idx >= steps.length - 1) pause();
+  }
+
+  function run() {
+    if (timer) return;
+    document.getElementById('run').disabled = true;
+    document.getElementById('pause').disabled = false;
+    var speed = +document.getElementById('speed').value;
+    var tick = function () {
+      step();
+      if (idx >= steps.length - 1) { pause(); return; }
+      timer = setTimeout(tick, speed);
+    };
+    timer = setTimeout(tick, speed);
+  }
+
+  function pause() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    document.getElementById('run').disabled = false;
+    document.getElementById('pause').disabled = true;
+  }
+
+  function render(s) {
+    var bars = document.getElementById('bars');
+    var arr = s.snap;
+    var html = '';
+    for (var k = 0; k < arr.length; k++) {
+      var v = arr[k];
+      var h = Math.max(2, (Math.abs(v) / max) * 95);
+      var cls = 'qs-bar';
+      var inWindow = k >= s.lo && k <= s.hi;
+      if (sortedSet.has(k)) cls += ' sorted';
+      else if (s.kind === 'place' && k === s.i) cls += ' placed';
+      else if (k === s.pivotIdx && s.kind !== 'done') cls += ' pivot';
+      else if (s.kind === 'compare' || s.kind === 'swap') {
+        if (inWindow && k < s.i) cls += ' le-pivot';
+        else if (inWindow && k > s.i && k < s.j) cls += ' gt-pivot';
+        else if (inWindow && k >= s.j && k !== s.pivotIdx) cls += ' active';
+      } else if (inWindow && s.kind === 'enter') {
+        cls += ' active';
+      }
+      if (s.kind !== 'done' && (s.kind === 'compare' || s.kind === 'swap') && k === s.j) cls += ' cur';
+      if (s.kind !== 'done' && (s.kind === 'compare' || s.kind === 'swap') && k === s.i) cls += ' boundary';
+      html += '<div class="' + cls + '" style="height:' + h + '%"><span>' + v + '</span></div>';
+    }
+    bars.innerHTML = html;
+  }
+
+  function refreshMeta(s) {
+    document.getElementById('depth').textContent = s.depth;
+    document.getElementById('nswaps').textContent = nSwaps;
+    document.getElementById('ncmp').textContent = nCmp;
+    document.getElementById('window').textContent = (s.kind === 'done') ? '—' : '[' + s.lo + ', ' + s.hi + ']';
+  }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', step);
+  document.getElementById('run').addEventListener('click', run);
+  document.getElementById('pause').addEventListener('click', pause);
+
+  load();
+})();
+</script>

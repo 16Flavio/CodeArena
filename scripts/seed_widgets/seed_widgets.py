@@ -27,7 +27,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 WIDGETS = [
     {
-        "name": "viz-bigO",
+        "name": "viz-big-o",
         "title_fr": "Comparaison des courbes de complexité",
         "title_en": "Big-O growth curves",
         "description_fr": (
@@ -39,7 +39,7 @@ WIDGETS = [
             "Plots $1$, $\\log n$, $n$, $n \\log n$, $n^2$, $2^n$ on the same "
             "axes. Slider to tune $n_{\\max}$, toggle for log Y-axis."
         ),
-        "template_file": "viz-bigO.html",
+        "template_file": "viz-big-o.html",
         "params_schema": [],
         "example_params": {},
     },
@@ -103,6 +103,31 @@ WIDGETS = [
             {"name": "data", "description": "valeurs initiales à insérer (CSV)", "example": "5,12,3,8,17,9"},
         ],
         "example_params": {"data": "5,12,3,8,17,9"},
+    },
+    {
+        "name": "viz-quicksort",
+        "title_fr": "Tri rapide complet (vue d'ensemble)",
+        "title_en": "Full quicksort (bird's-eye view)",
+        "description_fr": (
+            "Anime un tri rapide **complet** sur un tableau : chaque appel "
+            "récursif choisit un pivot (rouge), partitionne autour, puis "
+            "récurse sur les deux sous-tableaux. Affiche la profondeur de "
+            "pile, le nombre de comparaisons et de swaps cumulés. "
+            "Complémentaire de `viz-partition` qui zoome sur **une seule** "
+            "partition Lomuto pas à pas."
+        ),
+        "description_en": (
+            "Animates a **full** quicksort run on an array: every recursive "
+            "call picks a pivot (red), partitions around it, then recurses "
+            "into both subarrays. Shows recursion depth and cumulative "
+            "comparison/swap counts. Complementary to `viz-partition` which "
+            "zooms onto a **single** Lomuto partition step-by-step."
+        ),
+        "template_file": "viz-quicksort.html",
+        "params_schema": [
+            {"name": "data", "description": "tableau à trier (CSV)", "example": "8,3,5,1,9,2,7,4,6"},
+        ],
+        "example_params": {"data": "8,3,5,1,9,2,7,4,6"},
     },
     {
         "name": "viz-partition",
