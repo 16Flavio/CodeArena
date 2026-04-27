@@ -79,6 +79,15 @@ $$f(n) = \omega(g(n)) \iff \forall\, c > 0,\ \exists\, n_0,\ \forall n \ge n_0,\
 | $f = o(g)$ | $f$ negligible vs $g$ | $f < g$ |
 | $f = \omega(g)$ | $f$ strictly dominates $g$ | $f > g$ |
 
+### Visualise the orders of magnitude
+
+:::viz-bigO
+:::
+
+Drag the slider: while $n$ stays small, $n^2$ barely dominates
+$n \log n$; once $n$ hits a few dozens, the gap explodes. That's
+exactly why we bother with $O$ instead of just saying "faster".
+
 ### Worked proof: $3n^2 + 5n + 7 = O(n^2)$
 
 Find $c$ and $n_0$ such that $\forall n \ge n_0,\ 3n^2 + 5n + 7 \le c\,n^2$.

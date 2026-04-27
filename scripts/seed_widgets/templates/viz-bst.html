@@ -1,0 +1,107 @@
+<style>
+  .bst-ctrl { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+  .bst-ctrl input { width: 80px; padding: 3px 6px; }
+  .bst-ctrl button { padding: 4px 10px; cursor: pointer; }
+  .bst-info { font-family: monospace; font-size: 12px; color: #6366f1; }
+  .bst-svg { width: 100%; display: block; height: auto; }
+  .bst-edge { stroke: #94a3b8; stroke-width: 1.6; fill: none; }
+  .bst-node circle { fill: #6366f1; stroke: #4338ca; stroke-width: 1; transition: fill 0.25s; }
+  .bst-node.fresh circle { fill: #f59e0b; stroke: #b45309; }
+  .bst-node text { fill: white; font-family: system-ui; font-size: 13px; font-weight: 600; }
+  .bst-empty { color: #94a3b8; padding: 30px; text-align: center; font-style: italic; }
+</style>
+<div class="bst-ctrl">
+  <label>clé <input type="number" id="k" value="50" /></label>
+  <button id="ins">insérer</button>
+  <button id="reset">reset</button>
+  <span class="bst-info" id="info"></span>
+</div>
+<svg class="bst-svg" id="svg" viewBox="0 0 600 320"></svg>
+<script>
+(function () {
+  var params = window.__params || {};
+  var rawKeys = (params.keys || '').toString();
+  var initial = rawKeys.split(/[^\-0-9]+/).filter(function (s) { return s.length; }).map(Number);
+
+  var root = null;
+  var freshKey = null;
+
+  function insert(node, k) {
+    if (node === null) return { k: k, l: null, r: null };
+    if (k < node.k) node.l = insert(node.l, k);
+    else if (k > node.k) node.r = insert(node.r, k);
+    return node;
+  }
+
+  function depth(node) {
+    if (!node) return 0;
+    return 1 + Math.max(depth(node.l), depth(node.r));
+  }
+
+  function layout(node, x, y, dx) {
+    if (!node) return { nodes: [], edges: [] };
+    var nodes = [{ x: x, y: y, k: node.k }];
+    var edges = [];
+    var cdx = Math.max(28, dx / 2);
+    if (node.l) {
+      edges.push({ x1: x, y1: y, x2: x - dx, y2: y + 60 });
+      var sub = layout(node.l, x - dx, y + 60, cdx);
+      nodes = nodes.concat(sub.nodes);
+      edges = edges.concat(sub.edges);
+    }
+    if (node.r) {
+      edges.push({ x1: x, y1: y, x2: x + dx, y2: y + 60 });
+      var sub = layout(node.r, x + dx, y + 60, cdx);
+      nodes = nodes.concat(sub.nodes);
+      edges = edges.concat(sub.edges);
+    }
+    return { nodes: nodes, edges: edges };
+  }
+
+  function render() {
+    var svg = document.getElementById('svg');
+    if (!root) {
+      svg.innerHTML = '<text x="300" y="160" text-anchor="middle" fill="#94a3b8" font-size="14" font-style="italic">arbre vide</text>';
+      return;
+    }
+    var d = depth(root);
+    var H = Math.max(160, 30 + d * 60 + 30);
+    var W = 600;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    var l = layout(root, W / 2, 30, W / 4);
+    var html = '';
+    for (var i = 0; i < l.edges.length; i++) {
+      var e = l.edges[i];
+      html += '<line class="bst-edge" x1="' + e.x1 + '" y1="' + e.y1 + '" x2="' + e.x2 + '" y2="' + e.y2 + '"/>';
+    }
+    for (var i = 0; i < l.nodes.length; i++) {
+      var n = l.nodes[i];
+      var freshCls = (n.k === freshKey) ? ' fresh' : '';
+      html += '<g class="bst-node' + freshCls + '">' +
+              '<circle cx="' + n.x + '" cy="' + n.y + '" r="18"/>' +
+              '<text x="' + n.x + '" y="' + (n.y + 4) + '" text-anchor="middle">' + n.k + '</text>' +
+              '</g>';
+    }
+    svg.innerHTML = html;
+  }
+
+  document.getElementById('ins').addEventListener('click', function () {
+    var k = parseInt(document.getElementById('k').value, 10);
+    if (isNaN(k)) return;
+    root = insert(root, k);
+    freshKey = k;
+    document.getElementById('info').textContent = 'inséré : ' + k + ' (hauteur = ' + depth(root) + ')';
+    render();
+  });
+
+  document.getElementById('reset').addEventListener('click', function () {
+    root = null;
+    freshKey = null;
+    document.getElementById('info').textContent = '';
+    render();
+  });
+
+  for (var i = 0; i < initial.length; i++) root = insert(root, initial[i]);
+  render();
+})();
+</script>

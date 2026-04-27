@@ -1,0 +1,87 @@
+<style>
+  .ht-ctrl { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+  .ht-ctrl input[type="number"] { width: 80px; padding: 3px 6px; }
+  .ht-ctrl select, .ht-ctrl button { padding: 4px 10px; cursor: pointer; }
+  .ht-status { font-family: monospace; font-size: 12px; color: #6366f1; }
+  .ht-table { display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-start; }
+  .ht-bucket { min-width: 56px; }
+  .ht-bucket-head { padding: 4px 8px; background: #e2e8f0; text-align: center; font-weight: 600; font-size: 12px; border-radius: 4px 4px 0 0; }
+  .ht-bucket-list { padding: 4px; background: #f1f5f9; border-radius: 0 0 4px 4px; min-height: 28px; display: flex; flex-direction: column; gap: 3px; align-items: stretch; }
+  .ht-key { padding: 2px 6px; background: #6366f1; color: white; border-radius: 3px; font-size: 12px; text-align: center; animation: ht-fadein 0.3s ease-out; }
+  .ht-key.collide { background: #ef4444; }
+  @keyframes ht-fadein { from { opacity: 0; transform: scale(0.6);} to { opacity: 1; transform: scale(1);} }
+  @media (prefers-color-scheme: dark) {
+    .ht-bucket-head { background: #334155; color: #e2e8f0; }
+    .ht-bucket-list { background: #1e293b; }
+  }
+</style>
+<div class="ht-ctrl">
+  <label>m <input type="number" id="m" value="7" min="2" max="24" /></label>
+  <label>clé <input type="number" id="k" value="42" /></label>
+  <button id="ins">insérer</button>
+  <button id="reset">reset</button>
+  <span class="ht-status" id="status"></span>
+</div>
+<div class="ht-table" id="tbl"></div>
+<script>
+(function () {
+  var params = window.__params || {};
+  var rawKeys = (params.keys || '').toString();
+  var initial = rawKeys.split(/[^\-0-9]+/).filter(function (s) { return s.length; }).map(Number);
+  var mEl = document.getElementById('m');
+  var kEl = document.getElementById('k');
+  var statusEl = document.getElementById('status');
+  var tblEl = document.getElementById('tbl');
+  var m = parseInt(mEl.value, 10);
+  var buckets = [];
+  var lastInsertedAt = -1;
+
+  function reset() {
+    m = parseInt(mEl.value, 10);
+    if (!(m >= 2 && m <= 24)) m = 7;
+    buckets = [];
+    for (var i = 0; i < m; i++) buckets.push([]);
+    lastInsertedAt = -1;
+    statusEl.textContent = '';
+    render();
+  }
+
+  function hash(k, m) {
+    // Multiplicative hash, deterministic and reasonable for small demos.
+    var x = ((k * 2654435761) >>> 0);
+    return x % m;
+  }
+
+  function insert(k) {
+    var idx = hash(k, m);
+    var collide = buckets[idx].length > 0 && buckets[idx].indexOf(k) === -1;
+    if (buckets[idx].indexOf(k) === -1) buckets[idx].push(k);
+    lastInsertedAt = idx;
+    statusEl.textContent = 'h(' + k + ') = ' + idx + (collide ? ' (collision)' : '');
+    render();
+  }
+
+  function render() {
+    var html = '';
+    for (var i = 0; i < buckets.length; i++) {
+      var bucketKeys = buckets[i].map(function (key, j) {
+        var collideCls = (i === lastInsertedAt && j === buckets[i].length - 1 && buckets[i].length >= 2) ? ' collide' : '';
+        return '<div class="ht-key' + collideCls + '">' + key + '</div>';
+      }).join('');
+      html += '<div class="ht-bucket"><div class="ht-bucket-head">' + i + '</div>' +
+              '<div class="ht-bucket-list">' + bucketKeys + '</div></div>';
+    }
+    tblEl.innerHTML = html;
+  }
+
+  mEl.addEventListener('change', reset);
+  document.getElementById('reset').addEventListener('click', reset);
+  document.getElementById('ins').addEventListener('click', function () {
+    var v = parseInt(kEl.value, 10);
+    if (!isNaN(v)) insert(v);
+  });
+
+  reset();
+  for (var i = 0; i < initial.length; i++) insert(initial[i]);
+})();
+</script>

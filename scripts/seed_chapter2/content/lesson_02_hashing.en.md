@@ -72,6 +72,12 @@ When $\alpha = O(1)$, `lookup` is $\Theta(1)$ in expectation. To
 keep $\alpha$ bounded, **resize** the table (cf. dynamic array,
 ch. 1).
 
+:::viz-hash-table{keys="5,12,19,7,42,26,33"}
+:::
+
+Play with it: insert more keys, change $m$. The smaller $m$, the
+longer the chains; collisions are highlighted in red.
+
 ### Open addressing (linear probing)
 
 Store directly in the array; on collision, probe the next cell:

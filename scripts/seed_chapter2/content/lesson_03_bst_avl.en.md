@@ -39,6 +39,14 @@ def insert(root, k):
 > BST degenerates into a chain, $h = n$, every operation
 > $\Theta(n)$. Worst case — frequent in practice (sorted inputs).
 
+:::viz-bst{keys="50,30,70,20,40,60,80"}
+:::
+
+Reset, then insert $1, 2, 3, 4, 5$ one by one — the tree degenerates
+to a chain (height $5$). Now reset and insert a balanced BST like
+`4,2,6,1,3,5,7`: height $3$. Same $n = 7$, same keys, **radically
+different height depending on insertion order**.
+
 ---
 
 ## 3.2 — Rotations

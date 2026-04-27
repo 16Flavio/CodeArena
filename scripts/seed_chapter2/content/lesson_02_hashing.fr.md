@@ -75,6 +75,13 @@ Quand $\alpha = O(1)$, on a `lookup` en $\Theta(1)$ en espérance.
 Pour maintenir $\alpha$ borné, on **redimensionne** la table (cf.
 tableau dynamique du ch. 1).
 
+:::viz-hash-table{keys="5,12,19,7,42,26,33"}
+:::
+
+Joue avec : insère plusieurs clés, change $m$. Plus $m$ est petit,
+plus tu vois s'allonger les chaînes ; les collisions sont colorées
+en rouge.
+
 ### Adressage ouvert (sondage linéaire)
 
 On stocke directement dans le tableau ; en cas de collision, on

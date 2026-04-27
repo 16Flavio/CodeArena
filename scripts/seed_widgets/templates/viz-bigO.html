@@ -1,0 +1,97 @@
+<style>
+  .ctrl { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; font-size: 13px; }
+  .ctrl input[type="range"] { vertical-align: middle; }
+  canvas { width: 100%; max-width: 100%; display: block; background: transparent; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; margin-top: 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .swatch { display: inline-block; width: 12px; height: 3px; border-radius: 2px; }
+  .nval { font-weight: 600; min-width: 40px; display: inline-block; }
+</style>
+<div class="ctrl">
+  <label>n max <input type="range" min="10" max="200" value="50" id="rng" /></label>
+  <span class="nval" id="nval">50</span>
+  <label><input type="checkbox" id="logy" /> échelle log Y</label>
+</div>
+<canvas id="cv" width="600" height="280"></canvas>
+<div class="legend" id="legend"></div>
+<script>
+(function () {
+  var fns = [
+    { name: '1',       fn: function (n) { return 1; },                          color: '#94a3b8' },
+    { name: 'log n',   fn: function (n) { return Math.max(0.01, Math.log2(n)); }, color: '#3b82f6' },
+    { name: 'n',       fn: function (n) { return n; },                          color: '#10b981' },
+    { name: 'n log n', fn: function (n) { return n * Math.max(0.01, Math.log2(n)); }, color: '#f59e0b' },
+    { name: 'n²',      fn: function (n) { return n * n; },                      color: '#ef4444' },
+    { name: '2ⁿ',      fn: function (n) { return Math.min(1e18, Math.pow(2, n)); }, color: '#a855f7' },
+  ];
+  var cv     = document.getElementById('cv');
+  var ctx    = cv.getContext('2d');
+  var rng    = document.getElementById('rng');
+  var nval   = document.getElementById('nval');
+  var logy   = document.getElementById('logy');
+  var legend = document.getElementById('legend');
+  legend.innerHTML = fns.map(function (f) {
+    return '<span><span class="swatch" style="background:' + f.color + '"></span>' + f.name + '</span>';
+  }).join('');
+
+  function isDark() {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  function draw() {
+    var N = parseInt(rng.value, 10);
+    nval.textContent = N;
+    // Resize canvas to its CSS box
+    var W = cv.clientWidth || 600;
+    var H = 280;
+    if (cv.width !== W) cv.width = W;
+    if (cv.height !== H) cv.height = H;
+    ctx.clearRect(0, 0, W, H);
+    var pad = { l: 36, r: 12, t: 10, b: 24 };
+    var w = W - pad.l - pad.r;
+    var h = H - pad.t - pad.b;
+    var dark = isDark();
+    // Find max y across visible curves
+    var maxY = 0;
+    for (var i = 0; i < fns.length; i++) {
+      for (var n = 1; n <= N; n++) maxY = Math.max(maxY, fns[i].fn(n));
+    }
+    if (logy.checked) maxY = Math.log10(maxY + 1);
+    if (maxY <= 0) maxY = 1;
+    // Axes
+    ctx.strokeStyle = dark ? 'rgba(148,163,184,0.4)' : 'rgba(100,116,139,0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, pad.t + h); ctx.lineTo(pad.l + w, pad.t + h);
+    ctx.stroke();
+    // Curves
+    ctx.lineWidth = 2;
+    for (var i = 0; i < fns.length; i++) {
+      var f = fns[i];
+      ctx.strokeStyle = f.color;
+      ctx.beginPath();
+      var first = true;
+      for (var n = 1; n <= N; n++) {
+        var y = f.fn(n);
+        if (logy.checked) y = Math.log10(y + 1);
+        var px = pad.l + (n - 1) / Math.max(1, (N - 1)) * w;
+        var py = pad.t + h - (y / maxY) * h;
+        if (py < pad.t) py = pad.t;
+        if (first) { ctx.moveTo(px, py); first = false; }
+        else       { ctx.lineTo(px, py); }
+      }
+      ctx.stroke();
+    }
+    // Labels
+    ctx.fillStyle = dark ? '#94a3b8' : '#64748b';
+    ctx.font = '11px system-ui';
+    ctx.fillText('n', pad.l + w - 8, pad.t + h + 16);
+    ctx.fillText(logy.checked ? 'log T(n)' : 'T(n)', 4, pad.t + 8);
+  }
+
+  rng.addEventListener('input', draw);
+  logy.addEventListener('change', draw);
+  window.addEventListener('resize', draw);
+  draw();
+})();
+</script>

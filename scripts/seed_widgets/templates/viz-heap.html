@@ -1,0 +1,132 @@
+<style>
+  .hp-ctrl { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+  .hp-ctrl input { width: 80px; padding: 3px 6px; }
+  .hp-ctrl button { padding: 4px 10px; cursor: pointer; }
+  .hp-info { font-family: monospace; font-size: 12px; color: #6366f1; }
+  .hp-svg { width: 100%; display: block; height: auto; }
+  .hp-edge { stroke: #94a3b8; stroke-width: 1.6; fill: none; }
+  .hp-node circle { fill: #ef4444; stroke: #b91c1c; stroke-width: 1; transition: fill 0.25s; }
+  .hp-node.fresh circle { fill: #f59e0b; stroke: #b45309; }
+  .hp-node text { fill: white; font-family: system-ui; font-size: 13px; font-weight: 600; }
+  .hp-array { font-family: monospace; padding: 6px 10px; background: #f1f5f9; border-radius: 4px; margin-top: 8px; font-size: 13px; word-break: break-all; }
+  @media (prefers-color-scheme: dark) { .hp-array { background: #1e293b; } }
+</style>
+<div class="hp-ctrl">
+  <label>x <input type="number" id="x" value="42" /></label>
+  <button id="ins">insert</button>
+  <button id="ex">extract-max</button>
+  <button id="reset">reset</button>
+  <span class="hp-info" id="info"></span>
+</div>
+<svg class="hp-svg" id="svg" viewBox="0 0 600 280"></svg>
+<div class="hp-array" id="arr">[ ]</div>
+<script>
+(function () {
+  var params = window.__params || {};
+  var rawData = (params.data || '').toString();
+  var initial = rawData.split(/[^\-0-9]+/).filter(function (s) { return s.length; }).map(Number);
+  var heap = [];
+  var fresh = -1;
+
+  function siftUp(i) {
+    while (i > 0) {
+      var p = (i - 1) >> 1;
+      if (heap[p] < heap[i]) {
+        var t = heap[p]; heap[p] = heap[i]; heap[i] = t;
+        i = p;
+      } else break;
+    }
+  }
+
+  function siftDown(i) {
+    var n = heap.length;
+    while (true) {
+      var l = 2 * i + 1, r = 2 * i + 2, big = i;
+      if (l < n && heap[l] > heap[big]) big = l;
+      if (r < n && heap[r] > heap[big]) big = r;
+      if (big === i) break;
+      var t = heap[i]; heap[i] = heap[big]; heap[big] = t;
+      i = big;
+    }
+  }
+
+  function insert(x) {
+    heap.push(x);
+    fresh = heap.length - 1;
+    siftUp(heap.length - 1);
+    // After siftUp, fresh's index may have moved. Track by scanning.
+    fresh = heap.indexOf(x);
+    document.getElementById('info').textContent = 'insert(' + x + ') — taille = ' + heap.length;
+    render();
+  }
+
+  function extract() {
+    if (heap.length === 0) {
+      document.getElementById('info').textContent = 'tas vide';
+      return;
+    }
+    var top = heap[0];
+    var last = heap.pop();
+    if (heap.length > 0) { heap[0] = last; siftDown(0); }
+    fresh = -1;
+    document.getElementById('info').textContent = 'extract → ' + top + ' (taille = ' + heap.length + ')';
+    render();
+  }
+
+  function reset() {
+    heap = [];
+    fresh = -1;
+    document.getElementById('info').textContent = '';
+    render();
+  }
+
+  function render() {
+    var svg = document.getElementById('svg');
+    var arrEl = document.getElementById('arr');
+    arrEl.textContent = '[' + heap.join(', ') + ']';
+    if (heap.length === 0) {
+      svg.innerHTML = '<text x="300" y="140" text-anchor="middle" fill="#94a3b8" font-size="14" font-style="italic">tas vide</text>';
+      return;
+    }
+    var lvls = Math.floor(Math.log2(heap.length)) + 1;
+    var H = Math.max(140, 30 + lvls * 60 + 20);
+    var W = 600;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    var html = '';
+    for (var i = 0; i < heap.length; i++) {
+      var lvl = Math.floor(Math.log2(i + 1));
+      var firstAtLvl = (1 << lvl) - 1;
+      var idxInLvl = i - firstAtLvl;
+      var cntLvl = 1 << lvl;
+      var x = W * (idxInLvl + 1) / (cntLvl + 1);
+      var y = 30 + lvl * 60;
+      if (i > 0) {
+        var p = (i - 1) >> 1;
+        var plvl = Math.floor(Math.log2(p + 1));
+        var pfirst = (1 << plvl) - 1;
+        var pidx = p - pfirst;
+        var pcnt = 1 << plvl;
+        var px = W * (pidx + 1) / (pcnt + 1);
+        var py = 30 + plvl * 60;
+        html += '<line class="hp-edge" x1="' + px + '" y1="' + py + '" x2="' + x + '" y2="' + y + '"/>';
+      }
+      var freshCls = (i === fresh) ? ' fresh' : '';
+      html += '<g class="hp-node' + freshCls + '">' +
+              '<circle cx="' + x + '" cy="' + y + '" r="18"/>' +
+              '<text x="' + x + '" y="' + (y + 4) + '" text-anchor="middle">' + heap[i] + '</text>' +
+              '</g>';
+    }
+    svg.innerHTML = html;
+  }
+
+  document.getElementById('ins').addEventListener('click', function () {
+    var v = parseInt(document.getElementById('x').value, 10);
+    if (!isNaN(v)) insert(v);
+  });
+  document.getElementById('ex').addEventListener('click', extract);
+  document.getElementById('reset').addEventListener('click', reset);
+
+  for (var i = 0; i < initial.length; i++) insert(initial[i]);
+  render();
+})();
+</script>

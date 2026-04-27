@@ -43,6 +43,14 @@ def insert(root, k):
 > $\Theta(n)$. C'est le pire cas — fréquent en pratique (entrées
 > triées).
 
+:::viz-bst{keys="50,30,70,20,40,60,80"}
+:::
+
+Reset, puis insère $1, 2, 3, 4, 5$ un par un — l'arbre dégénère en
+chaîne (hauteur $5$). Maintenant reset et insère un BST équilibré
+comme `4,2,6,1,3,5,7` : hauteur $3$. Même $n = 7$, même clés,
+**hauteur radicalement différente selon l'ordre d'insertion**.
+
 ---
 
 ## 3.2 — Rotations
