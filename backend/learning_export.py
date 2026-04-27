@@ -55,14 +55,22 @@ def _latex_escape(text: str) -> str:
     return text
 
 
-# Inline regex patterns. Order matters: bold/italic before ``, otherwise
-# ``\textbf{*}`` collides with ``*`` inside code spans.
+# Inline regex patterns. Order matters: math first so its body isn't
+# escaped, code second so its body isn't molested by bold/italic, then
+# the rest.
 #
 # Inline code uses ``\texttt{...}`` rather than ``\verb`` because ``\verb``
 # is a fragile command — illegal inside the argument of another command
 # (``\subsection``, ``\href``, ``\textbf``...). ``\texttt`` is robust
 # everywhere; we just escape the LaTeX-special chars inside.
 _INLINE_PATTERNS = [
+    # Math display ``$$...$$`` and inline ``$...$`` — body is passed
+    # through unchanged. Display first so ``$$`` isn't split as two
+    # adjacent inline empties. Multi-line bodies survive because by the
+    # time we get here paragraphs have been joined with spaces (cf.
+    # markdown_to_latex's paragraph collector).
+    (re.compile(r"\$\$([^$]+)\$\$"), lambda m: "$$" + m.group(1) + "$$"),
+    (re.compile(r"\$([^$\n]+)\$"),   lambda m: "$" + m.group(1) + "$"),
     (re.compile(r"`([^`\n]+)`"), lambda m: r"\texttt{" + _latex_escape(m.group(1)) + "}"),
     # Bold + italic combined
     (re.compile(r"\*\*\*([^*\n]+)\*\*\*"), lambda m: r"\textbf{\textit{" + _latex_escape(m.group(1)) + "}}"),
