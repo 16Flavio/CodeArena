@@ -57,9 +57,13 @@ def _latex_escape(text: str) -> str:
 
 # Inline regex patterns. Order matters: bold/italic before ``, otherwise
 # ``\textbf{*}`` collides with ``*`` inside code spans.
+#
+# Inline code uses ``\texttt{...}`` rather than ``\verb`` because ``\verb``
+# is a fragile command — illegal inside the argument of another command
+# (``\subsection``, ``\href``, ``\textbf``...). ``\texttt`` is robust
+# everywhere; we just escape the LaTeX-special chars inside.
 _INLINE_PATTERNS = [
-    # Inline code first so its contents aren't molested by the others.
-    (re.compile(r"`([^`\n]+)`"), lambda m: r"\verb|" + m.group(1).replace("|", "│") + "|"),
+    (re.compile(r"`([^`\n]+)`"), lambda m: r"\texttt{" + _latex_escape(m.group(1)) + "}"),
     # Bold + italic combined
     (re.compile(r"\*\*\*([^*\n]+)\*\*\*"), lambda m: r"\textbf{\textit{" + _latex_escape(m.group(1)) + "}}"),
     (re.compile(r"\*\*([^*\n]+)\*\*"), lambda m: r"\textbf{" + _latex_escape(m.group(1)) + "}"),
@@ -152,13 +156,19 @@ def _parse_directive_attrs(raw: str) -> dict[str, str]:
 
 def _render_widget(name: str, attrs: dict[str, str], lesson_url: str) -> str:
     """A widget directive becomes a call to ``\learnwidget``. The
-    main.tex defines this macro; redefine it to customise rendering."""
+    main.tex defines this macro; redefine it to customise rendering.
+
+    The URL goes through ``\href`` in the macro body — hyperref handles
+    its own escaping, so we pass the URL **raw** (escaping ``_`` to
+    ``\_`` would break the link). Args have already been escaped at
+    construction so we don't double-escape them either.
+    """
     args = ", ".join(
         f"{_latex_escape(k)}={_latex_escape(v)}" for k, v in attrs.items()
     ) or "—"
     return (
         r"\learnwidget{" + _latex_escape(name) + "}{"
-        + _latex_escape(args) + "}{" + _latex_escape(lesson_url) + "}"
+        + args + "}{" + lesson_url + "}"
     )
 
 
@@ -314,6 +324,66 @@ _PREAMBLE = r"""\documentclass[11pt,a4paper]{article}
 \usepackage{float}
 \usepackage{enumitem}
 \usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+%% Unicode math symbols frequently typed in lessons. ``inputenc`` covers
+%% accented Latin glyphs but not these. ``\ensuremath`` makes them work
+%% in both text and math context, so a stray ``≤`` mid-paragraph no
+%% longer triggers ``Missing $ inserted``. Extend the list when an
+%% author types a new symbol that pdflatex chokes on.
+\DeclareUnicodeCharacter{2264}{\ensuremath{\le}}
+\DeclareUnicodeCharacter{2265}{\ensuremath{\ge}}
+\DeclareUnicodeCharacter{2260}{\ensuremath{\ne}}
+\DeclareUnicodeCharacter{2248}{\ensuremath{\approx}}
+\DeclareUnicodeCharacter{2261}{\ensuremath{\equiv}}
+\DeclareUnicodeCharacter{00B1}{\ensuremath{\pm}}
+\DeclareUnicodeCharacter{00D7}{\ensuremath{\times}}
+\DeclareUnicodeCharacter{00F7}{\ensuremath{\div}}
+\DeclareUnicodeCharacter{00B7}{\ensuremath{\cdot}}
+\DeclareUnicodeCharacter{2192}{\ensuremath{\rightarrow}}
+\DeclareUnicodeCharacter{2190}{\ensuremath{\leftarrow}}
+\DeclareUnicodeCharacter{21D2}{\ensuremath{\Rightarrow}}
+\DeclareUnicodeCharacter{21D4}{\ensuremath{\Leftrightarrow}}
+\DeclareUnicodeCharacter{2200}{\ensuremath{\forall}}
+\DeclareUnicodeCharacter{2203}{\ensuremath{\exists}}
+\DeclareUnicodeCharacter{2208}{\ensuremath{\in}}
+\DeclareUnicodeCharacter{2209}{\ensuremath{\notin}}
+\DeclareUnicodeCharacter{222A}{\ensuremath{\cup}}
+\DeclareUnicodeCharacter{2229}{\ensuremath{\cap}}
+\DeclareUnicodeCharacter{2282}{\ensuremath{\subset}}
+\DeclareUnicodeCharacter{2286}{\ensuremath{\subseteq}}
+\DeclareUnicodeCharacter{221E}{\ensuremath{\infty}}
+\DeclareUnicodeCharacter{221A}{\ensuremath{\sqrt{}}}
+\DeclareUnicodeCharacter{2211}{\ensuremath{\sum}}
+\DeclareUnicodeCharacter{220F}{\ensuremath{\prod}}
+\DeclareUnicodeCharacter{222B}{\ensuremath{\int}}
+\DeclareUnicodeCharacter{2207}{\ensuremath{\nabla}}
+\DeclareUnicodeCharacter{2202}{\ensuremath{\partial}}
+\DeclareUnicodeCharacter{00B2}{\ensuremath{^2}}
+\DeclareUnicodeCharacter{00B3}{\ensuremath{^3}}
+\DeclareUnicodeCharacter{0394}{\ensuremath{\Delta}}
+\DeclareUnicodeCharacter{0398}{\ensuremath{\Theta}}
+\DeclareUnicodeCharacter{039B}{\ensuremath{\Lambda}}
+\DeclareUnicodeCharacter{03A0}{\ensuremath{\Pi}}
+\DeclareUnicodeCharacter{03A3}{\ensuremath{\Sigma}}
+\DeclareUnicodeCharacter{03A6}{\ensuremath{\Phi}}
+\DeclareUnicodeCharacter{03A9}{\ensuremath{\Omega}}
+\DeclareUnicodeCharacter{03B1}{\ensuremath{\alpha}}
+\DeclareUnicodeCharacter{03B2}{\ensuremath{\beta}}
+\DeclareUnicodeCharacter{03B3}{\ensuremath{\gamma}}
+\DeclareUnicodeCharacter{03B4}{\ensuremath{\delta}}
+\DeclareUnicodeCharacter{03B5}{\ensuremath{\varepsilon}}
+\DeclareUnicodeCharacter{03B8}{\ensuremath{\theta}}
+\DeclareUnicodeCharacter{03BB}{\ensuremath{\lambda}}
+\DeclareUnicodeCharacter{03BC}{\ensuremath{\mu}}
+\DeclareUnicodeCharacter{03C0}{\ensuremath{\pi}}
+\DeclareUnicodeCharacter{03C1}{\ensuremath{\rho}}
+\DeclareUnicodeCharacter{03C3}{\ensuremath{\sigma}}
+\DeclareUnicodeCharacter{03C6}{\ensuremath{\varphi}}
+\DeclareUnicodeCharacter{03C8}{\ensuremath{\psi}}
+\DeclareUnicodeCharacter{03C9}{\ensuremath{\omega}}
+\DeclareUnicodeCharacter{25A1}{\ensuremath{\square}}
 
 \hypersetup{
   colorlinks=true,
