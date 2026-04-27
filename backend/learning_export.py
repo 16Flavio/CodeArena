@@ -331,7 +331,7 @@ _PREAMBLE = r"""\documentclass[11pt,a4paper]{article}
     \par\smallskip
     Paramètres : \texttt{#2}
     \par\smallskip
-    \href{#3}{Voir l'animation \rightarrow{}}
+    \href{#3}{Voir l'animation $\rightarrow$}
   \end{tcolorbox}
 }
 
