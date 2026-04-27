@@ -1,20 +1,24 @@
 <style>
-  .ctrl { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
-  .ctrl input[type="range"] { vertical-align: middle; }
   canvas { width: 100%; max-width: 100%; display: block; background: transparent; }
-  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; margin-top: 6px; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; margin-top: 6px;
+            justify-content: center; color: #64748b; }
   .legend span { display: inline-flex; align-items: center; gap: 4px; }
-  .swatch { display: inline-block; width: 12px; height: 3px; border-radius: 2px; }
-  .nval { font-weight: 600; min-width: 40px; display: inline-block; color: #7c3aed; }
-  @media (prefers-color-scheme: dark) { .nval { color: #c4b5fd; } }
+  .swatch { display: inline-block; width: 14px; height: 3px; border-radius: 2px; }
+  .nval { font-weight: 700; color: #7c3aed; min-width: 36px; display: inline-block; text-align: right; }
+  @media (prefers-color-scheme: dark) {
+    .legend { color: #94a3b8; }
+    .nval { color: #c4b5fd; }
+  }
 </style>
-<div class="ctrl">
-  <label>n max <input type="range" min="10" max="200" value="50" id="rng" /></label>
-  <span class="nval" id="nval">50</span>
-  <label><input type="checkbox" id="logy" /> échelle log Y</label>
+<div class="stage">
+  <canvas id="cv" width="600" height="280"></canvas>
+  <div class="legend" id="legend"></div>
 </div>
-<canvas id="cv" width="600" height="280"></canvas>
-<div class="legend" id="legend"></div>
+<div class="controls">
+  <label class="field">n max <input type="range" min="10" max="200" value="50" id="rng" /></label>
+  <span class="nval" id="nval">50</span>
+  <label class="field"><input type="checkbox" id="logy" /> log Y</label>
+</div>
 <script>
 (function () {
   var fns = [

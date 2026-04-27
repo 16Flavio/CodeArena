@@ -1,21 +1,24 @@
 <style>
-  .bst-ctrl { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
-  .bst-ctrl input { width: 80px; }
-  .bst-svg { width: 100%; display: block; height: auto; }
+  .bst-svg { width: 100%; display: block; height: 280px; }
   .bst-edge { stroke: #94a3b8; stroke-width: 1.6; fill: none; }
   .bst-node circle { fill: #8b5cf6; stroke: #6d28d9; stroke-width: 1; transition: fill 0.25s; }
   .bst-node.fresh circle { fill: #f97316; stroke: #c2410c; }
   .bst-node text { fill: white; font-family: system-ui; font-size: 13px; font-weight: 600; }
 </style>
-<div class="bst-ctrl">
-  <label>clé <input type="number" id="k" value="50" /></label>
-  <button class="btn-primary" id="ins">insérer</button>
-  <button class="btn-secondary" id="reset">reset</button>
-  <span class="info-line" id="info"></span>
+<div class="stage">
+  <svg class="bst-svg" id="svg" viewBox="0 0 600 280" preserveAspectRatio="xMidYMid meet"></svg>
 </div>
-<svg class="bst-svg" id="svg" viewBox="0 0 600 320"></svg>
+<div class="info-line" id="info">&nbsp;</div>
+<div class="controls">
+  <label class="field">clé <input type="number" id="k" value="50" /></label>
+  <button class="btn-icon-primary"   id="ins"   title="insérer"></button>
+  <button class="btn-icon-secondary" id="reset" title="reset"></button>
+</div>
 <script>
 (function () {
+  document.getElementById('ins').innerHTML   = window.__svg('plus');
+  document.getElementById('reset').innerHTML = window.__svg('reset');
+
   var params = window.__params || {};
   var rawKeys = (params.keys || '').toString();
   var initial = rawKeys.split(/[^\-0-9]+/).filter(function (s) { return s.length; }).map(Number);
@@ -58,7 +61,8 @@
   function render() {
     var svg = document.getElementById('svg');
     if (!root) {
-      svg.innerHTML = '<text x="300" y="160" text-anchor="middle" fill="#94a3b8" font-size="14" font-style="italic">arbre vide</text>';
+      svg.setAttribute('viewBox', '0 0 600 280');
+      svg.innerHTML = '<text x="300" y="140" text-anchor="middle" fill="#94a3b8" font-size="14" font-style="italic">arbre vide</text>';
       return;
     }
     var d = depth(root);
@@ -94,7 +98,7 @@
   document.getElementById('reset').addEventListener('click', function () {
     root = null;
     freshKey = null;
-    document.getElementById('info').textContent = '';
+    document.getElementById('info').innerHTML = '&nbsp;';
     render();
   });
 

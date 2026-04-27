@@ -26,35 +26,76 @@ CASES = [
     {"name": "viz-quicksort",   "params": {"data": "8,3,5,1,9,2,7,4,6"},      "title": "Tri rapide complet (vue d'ensemble)"},
 ]
 
-# Mirror of the CSS preamble injected by CustomWidget.jsx so the local
-# preview matches what users see in production.
+# Mirror of the CSS preamble + icon helper injected by CustomWidget.jsx
+# so the local preview matches production exactly.
 COMMON_STYLE = """
 html, body { margin: 0; padding: 0; height: 100%; box-sizing: border-box; }
 *, *::before, *::after { box-sizing: inherit; }
 body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
        color: #0f172a; background: transparent; padding: 14px 16px; font-size: 13px; }
-.btn-primary, .btn-secondary {
-  padding: 6px 12px; border: 0; border-radius: 8px; font-size: 13px;
-  font-family: inherit; cursor: pointer; line-height: 1.2;
+.stage { width: 100%; }
+.controls {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; margin-top: 14px; flex-wrap: wrap;
+}
+.controls > .group { display: inline-flex; align-items: center; gap: 6px; }
+.btn-icon, .btn-icon-primary, .btn-icon-secondary {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; padding: 0; border: 0; border-radius: 8px;
+  cursor: pointer; line-height: 1;
   transition: background-color 0.18s, color 0.18s, opacity 0.18s;
 }
-.btn-primary { background: #8b5cf6; color: #fff; }
-.btn-primary:hover:not(:disabled)   { background: #7c3aed; }
-.btn-secondary { background: #e2e8f0; color: #334155; }
-.btn-secondary:hover:not(:disabled) { background: #cbd5e1; }
-.btn-primary:disabled, .btn-secondary:disabled { opacity: 0.5; cursor: default; }
-.form-input, input[type="number"], input[type="text"] {
-  padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px;
-  background: #fff; color: #0f172a; font: inherit;
+.btn-icon-primary   { background: #8b5cf6; color: #fff; }
+.btn-icon-primary:hover:not(:disabled)   { background: #7c3aed; }
+.btn-icon-secondary { background: #e2e8f0; color: #334155; }
+.btn-icon-secondary:hover:not(:disabled) { background: #cbd5e1; }
+.btn-icon-primary:disabled, .btn-icon-secondary:disabled { opacity: 0.5; cursor: default; }
+.btn-icon-primary svg, .btn-icon-secondary svg { width: 16px; height: 16px; display: block; }
+.form-input, input[type="number"], input[type="text"], input[type="range"] {
+  padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 6px;
+  background: #fff; color: #0f172a; font: inherit; height: 32px;
 }
+input[type="range"] { padding: 0; min-width: 110px; height: 32px; background: transparent; border: 0; }
 .form-input:focus, input[type="number"]:focus, input[type="text"]:focus {
   outline: 2px solid #c4b5fd; outline-offset: -1px;
 }
+label.field { display: inline-flex; align-items: center; gap: 6px;
+              font-size: 12px; color: #475569; }
+label.field input[type="number"], label.field input[type="text"] { width: 80px; }
 .meta-row { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px;
-            color: #64748b; margin-top: 8px; }
+            color: #64748b; margin-top: 10px; justify-content: center; }
 .meta-row b { color: #0f172a; font-weight: 600; }
 .info-line { font-family: ui-monospace, "SF Mono", Menlo, monospace;
-             font-size: 12px; color: #7c3aed; min-height: 16px; }
+             font-size: 12px; color: #7c3aed; min-height: 16px;
+             text-align: center; margin-top: 10px; }
+@media (prefers-color-scheme: dark) {
+  body { color: #e2e8f0; }
+  .btn-icon-secondary { background: #334155; color: #e5e7eb; }
+  .btn-icon-secondary:hover:not(:disabled) { background: #475569; }
+  .form-input, input[type="number"], input[type="text"] {
+    background: #1e293b; border-color: #475569; color: #e2e8f0;
+  }
+  label.field { color: #94a3b8; }
+  .meta-row { color: #94a3b8; }
+  .meta-row b { color: #f1f5f9; }
+  .info-line { color: #c4b5fd; }
+}
+"""
+
+ICON_HELPER = """
+window.__icons = {
+  play:   '<polygon points="6 3 20 12 6 21 6 3"/>',
+  pause:  '<rect width="4" height="16" x="6" y="4"/><rect width="4" height="16" x="14" y="4"/>',
+  step:   '<path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/>',
+  reset:  '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+  plus:   '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  minus:  '<path d="M5 12h14"/>',
+  load:   '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>'
+};
+window.__svg = function (name) {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+    + (window.__icons[name] || '') + '</svg>';
+};
 """
 
 
@@ -63,6 +104,7 @@ def build_iframe_srcdoc(template: str, params: dict) -> str:
         '<!DOCTYPE html><html lang="fr"><head>'
         '<meta charset="utf-8" />'
         f'<style>{COMMON_STYLE}</style>'
+        f'<script>{ICON_HELPER}</script>'
         '</head><body>'
         f'<script>window.__params = {json.dumps(params)};</script>'
         f'\n{template}'

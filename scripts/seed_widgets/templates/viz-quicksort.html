@@ -1,7 +1,4 @@
 <style>
-  .qs-ctrl { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
-  .qs-ctrl input[type="text"] { width: 220px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
-  .qs-ctrl input[type="range"] { vertical-align: middle; }
   .qs-bars { display: flex; gap: 3px; align-items: flex-end; height: 220px; padding: 6px 0; }
   .qs-bar { flex: 1 0 0; min-width: 18px; background: #94a3b8; border-radius: 4px 4px 0 0;
             position: relative;
@@ -10,11 +7,11 @@
                    font-size: 11px; padding: 0 2px; color: #475569;
                    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 600; }
   .qs-bar.active   { background: #c4b5fd; }
-  .qs-bar.le-pivot { background: #a855f7; }   /* zone <= pivot (compare-violet) */
+  .qs-bar.le-pivot { background: #a855f7; }
   .qs-bar.gt-pivot { background: #94a3b8; }
-  .qs-bar.cur      { outline: 2px solid #8b5cf6; outline-offset: 2px; }   /* j */
-  .qs-bar.boundary { outline: 2px dashed #f97316; outline-offset: 2px; }  /* i */
-  .qs-bar.pivot    { background: #f97316; }                                /* pivot orange */
+  .qs-bar.cur      { outline: 2px solid #8b5cf6; outline-offset: 2px; }
+  .qs-bar.boundary { outline: 2px dashed #f97316; outline-offset: 2px; }
+  .qs-bar.pivot    { background: #f97316; }
   .qs-bar.placed   { background: #f97316; outline: 2px solid #c2410c; outline-offset: 2px; }
   .qs-bar.sorted   { background: #15803d; }
   .qs-bar.pivot > span, .qs-bar.placed > span, .qs-bar.sorted > span,
@@ -24,24 +21,31 @@
     .qs-bar > span { color: #e2e8f0; }
   }
 </style>
-<div class="qs-ctrl">
-  <label>tableau <input type="text" id="data" /></label>
-  <button class="btn-secondary" id="reset">load</button>
-  <button class="btn-primary"   id="step">step</button>
-  <button class="btn-primary"   id="run">run</button>
-  <button class="btn-secondary" id="pause" disabled>pause</button>
-  <label>vitesse <input type="range" id="speed" min="80" max="800" value="350" /></label>
+<div class="stage">
+  <div class="qs-bars" id="bars"></div>
 </div>
-<div class="info-line" id="info">cliquez sur <b>step</b> ou <b>run</b></div>
-<div class="qs-bars" id="bars"></div>
+<div class="info-line" id="info">cliquez sur step ou run</div>
 <div class="meta-row">
-  <span>profondeur de pile : <b id="depth">0</b></span>
+  <span>profondeur : <b id="depth">0</b></span>
   <span>swaps : <b id="nswaps">0</b></span>
   <span>comparaisons : <b id="ncmp">0</b></span>
   <span>fenêtre : <b id="window">—</b></span>
 </div>
+<div class="controls">
+  <label class="field">tableau <input type="text" id="data" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step"  title="step"></button>
+  <button class="btn-icon-primary"   id="run"   title="run"></button>
+  <button class="btn-icon-secondary" id="pause" title="pause" disabled></button>
+  <label class="field">vitesse <input type="range" id="speed" min="80" max="800" value="350" /></label>
+</div>
 <script>
 (function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML  = window.__svg('step');
+  document.getElementById('run').innerHTML   = window.__svg('play');
+  document.getElementById('pause').innerHTML = window.__svg('pause');
+
   var params  = window.__params || {};
   var raw     = (params.data || '8,3,5,1,9,2,7,4,6').toString();
   var dataEl  = document.getElementById('data');
@@ -97,7 +101,7 @@
     nSwaps = 0;
     nCmp = 0;
     max = Math.max.apply(null, arr.map(function (x) { return Math.abs(x); }).concat([1]));
-    document.getElementById('info').textContent = 'tableau chargé (' + steps.length + ' étapes pré-calculées)';
+    document.getElementById('info').textContent = 'tableau chargé (' + steps.length + ' étapes)';
     render(steps[0]);
     refreshMeta(steps[0]);
   }
@@ -115,12 +119,12 @@
     }
     var msg;
     switch (s.kind) {
-      case 'enter':     msg = 'partition de [' + s.lo + ', ' + s.hi + '] — pivot = a[' + s.pivotIdx + '] = ' + s.snap[s.pivotIdx]; break;
-      case 'compare':   msg = 'compare a[' + s.j + '] = ' + s.snap[s.j] + ' au pivot ' + s.snap[s.pivotIdx]; break;
+      case 'enter':     msg = 'partition [' + s.lo + ', ' + s.hi + '] — pivot = ' + s.snap[s.pivotIdx]; break;
+      case 'compare':   msg = 'compare a[' + s.j + '] = ' + s.snap[s.j] + ' au pivot'; break;
       case 'swap':      msg = 'swap a[' + s.i + '] ↔ a[' + s.j + ']'; break;
-      case 'place':     msg = 'pivot placé en position ' + s.i + ' — récursion sur [' + s.lo + ',' + (s.i - 1) + '] et [' + (s.i + 1) + ',' + s.hi + ']'; break;
-      case 'singleton': msg = 'singleton en ' + s.i + ' — déjà trié'; break;
-      case 'done':      msg = 'tri terminé — ' + nCmp + ' comparaisons, ' + nSwaps + ' swaps'; break;
+      case 'place':     msg = 'pivot placé en ' + s.i + ' — récursion sur [' + s.lo + ',' + (s.i - 1) + '] et [' + (s.i + 1) + ',' + s.hi + ']'; break;
+      case 'singleton': msg = 'singleton en ' + s.i; break;
+      case 'done':      msg = 'tri terminé — ' + nCmp + ' cmp, ' + nSwaps + ' swaps'; break;
     }
     document.getElementById('info').textContent = msg;
     render(s);

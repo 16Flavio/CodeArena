@@ -1,7 +1,6 @@
 <style>
-  .ht-ctrl { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
-  .ht-ctrl input[type="number"] { width: 80px; }
-  .ht-table { display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-start; }
+  .ht-table { display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-start;
+              justify-content: center; padding: 4px 0; }
   .ht-bucket { min-width: 56px; }
   .ht-bucket-head { padding: 4px 8px; background: #e2e8f0; text-align: center; font-weight: 600;
                     font-size: 12px; border-radius: 6px 6px 0 0; color: #334155; }
@@ -16,16 +15,21 @@
     .ht-bucket-list { background: #1e293b; }
   }
 </style>
-<div class="ht-ctrl">
-  <label>m <input type="number" id="m" value="7" min="2" max="24" /></label>
-  <label>clé <input type="number" id="k" value="42" /></label>
-  <button class="btn-primary" id="ins">insérer</button>
-  <button class="btn-secondary" id="reset">reset</button>
-  <span class="info-line" id="status"></span>
+<div class="stage">
+  <div class="ht-table" id="tbl"></div>
 </div>
-<div class="ht-table" id="tbl"></div>
+<div class="info-line" id="status">&nbsp;</div>
+<div class="controls">
+  <label class="field">m <input type="number" id="m" value="7" min="2" max="24" /></label>
+  <label class="field">clé <input type="number" id="k" value="42" /></label>
+  <button class="btn-icon-primary"   id="ins"   title="insérer la clé"></button>
+  <button class="btn-icon-secondary" id="reset" title="reset"></button>
+</div>
 <script>
 (function () {
+  document.getElementById('ins').innerHTML   = window.__svg('plus');
+  document.getElementById('reset').innerHTML = window.__svg('reset');
+
   var params = window.__params || {};
   var rawKeys = (params.keys || '').toString();
   var initial = rawKeys.split(/[^\-0-9]+/).filter(function (s) { return s.length; }).map(Number);
@@ -43,7 +47,7 @@
     buckets = [];
     for (var i = 0; i < m; i++) buckets.push([]);
     lastInsertedAt = -1;
-    statusEl.textContent = '';
+    statusEl.innerHTML = '&nbsp;';
     render();
   }
 
@@ -57,7 +61,7 @@
     var collide = buckets[idx].length > 0 && buckets[idx].indexOf(k) === -1;
     if (buckets[idx].indexOf(k) === -1) buckets[idx].push(k);
     lastInsertedAt = idx;
-    statusEl.textContent = 'h(' + k + ') = ' + idx + (collide ? ' (collision)' : '');
+    statusEl.textContent = 'h(' + k + ') = ' + idx + (collide ? ' — collision' : '');
     render();
   }
 

@@ -1,11 +1,9 @@
 <style>
-  .pt-ctrl { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
-  .pt-ctrl label { display: inline-flex; align-items: center; gap: 4px; }
-  .pt-ctrl input[type="text"] { width: 220px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .pt-stage { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 0; }
   .pt-row { display: flex; gap: 4px; flex-wrap: nowrap; overflow-x: auto; padding: 6px 0; }
-  .pt-cell { min-width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  .pt-cell { min-width: 36px; height: 40px; display: flex; align-items: center; justify-content: center;
              border-radius: 6px; background: #cbd5e1; color: #334155;
-             font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 600;
+             font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 700;
              transition: all 0.25s; }
   .pt-cell.le { background: #a855f7; color: white; }
   .pt-cell.gt { background: #94a3b8; color: white; }
@@ -19,17 +17,23 @@
     .pt-pointers { color: #c4b5fd; }
   }
 </style>
-<div class="pt-ctrl">
-  <label>tableau <input type="text" id="data" value="3,7,1,8,4,2,5" /></label>
-  <button class="btn-secondary" id="reset">load</button>
-  <button class="btn-primary"   id="step">step</button>
-  <button class="btn-primary"   id="run">run</button>
+<div class="stage pt-stage">
+  <div class="pt-pointers" id="ptrs"></div>
+  <div class="pt-row" id="row"></div>
 </div>
-<div class="info-line" id="info">cliquez sur <b>step</b> pour avancer d'une comparaison</div>
-<div class="pt-pointers" id="ptrs"></div>
-<div class="pt-row" id="row"></div>
+<div class="info-line" id="info">cliquez sur step pour avancer d'une comparaison</div>
+<div class="controls">
+  <label class="field">tableau <input type="text" id="data" value="3,7,1,8,4,2,5" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step"  title="step"></button>
+  <button class="btn-icon-primary"   id="run"   title="run"></button>
+</div>
 <script>
 (function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML  = window.__svg('step');
+  document.getElementById('run').innerHTML   = window.__svg('play');
+
   var params = window.__params || {};
   var rawData = (params.data || '3,7,1,8,4,2,5').toString();
   var dataInput = document.getElementById('data');
@@ -51,9 +55,7 @@
     }
     pivot = arr[n - 1];
     pivotIdx = n - 1;
-    i = 0;
-    j = 0;
-    done = false;
+    i = 0; j = 0; done = false;
     step1 = 'compare';
     document.getElementById('info').textContent = 'pivot = a[' + (n - 1) + '] = ' + pivot;
     render();
@@ -76,7 +78,7 @@
         i++;
         document.getElementById('info').textContent = 'a[' + j + '] = ' + arr[i - 1] + ' ≤ pivot — swap puis i++';
       } else {
-        document.getElementById('info').textContent = 'a[' + j + '] = ' + arr[j] + ' > pivot — on avance j';
+        document.getElementById('info').textContent = 'a[' + j + '] = ' + arr[j] + ' > pivot — j++';
       }
       j++;
       render();
