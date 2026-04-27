@@ -35,6 +35,13 @@ def quicksort(A, lo=0, hi=None):
         quicksort(A, p + 1, hi)
 ```
 
+:::viz-partition{data="3,7,1,8,4,2,5"}
+:::
+
+`step` advances **one comparison**; `i` (boundary between $\le$ pivot
+and $>$ pivot) and `j` (the scanner) are shown below the cells. When
+`j` reaches the end, the red pivot is swapped to position `i`.
+
 ### Worst case: $\Theta(n^2)$
 
 If every recursive pivot is the smallest (or largest) element — for
@@ -44,6 +51,15 @@ $n-1, 0$ split. The recurrence
 $$T(n) = T(n-1) + \Theta(n)$$
 
 gives $T(n) = \Theta(n^2)$.
+
+**Bird's-eye view** — the animation below runs a **full** quicksort:
+you see red pivots being placed one by one, recursions stacking up,
+and the call-stack depth growing. Try loading `1,2,3,4,5,6,7,8`
+(already sorted) to visualise the worst case — the stack walks down
+like a staircase.
+
+:::viz-quicksort{data="8,3,5,1,9,2,7,4,6"}
+:::
 
 ### Average case: $\Theta(n \log n)$ — expectation proof
 

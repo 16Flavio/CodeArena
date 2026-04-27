@@ -36,6 +36,14 @@ def quicksort(A, lo=0, hi=None):
         quicksort(A, p + 1, hi)
 ```
 
+:::viz-partition{data="3,7,1,8,4,2,5"}
+:::
+
+`step` avance d'**une comparaison** ; `i` (frontière entre $\le$
+pivot et $>$ pivot) et `j` (le scan) sont affichés en dessous des
+cellules. Quand `j` atteint la fin, le pivot rouge est swap à la
+position `i`.
+
 ### Pire cas : $\Theta(n^2)$
 
 Si à chaque récursion le pivot est l'élément le plus petit (ou le
@@ -45,6 +53,15 @@ dernier — on obtient une partition de taille $n-1, 0$. La récurrence
 $$T(n) = T(n-1) + \Theta(n)$$
 
 donne $T(n) = \Theta(n^2)$.
+
+**Vue d'ensemble** — l'animation ci-dessous lance un tri rapide
+**complet** : tu vois les pivots rouges se placer un par un, les
+récursions s'enchaîner, et la profondeur de pile grimper. Charge
+`1,2,3,4,5,6,7,8` (déjà trié) pour visualiser le pire cas — la pile
+descend en escalier.
+
+:::viz-quicksort{data="8,3,5,1,9,2,7,4,6"}
+:::
 
 ### Cas moyen : $\Theta(n \log n)$ — preuve par espérance
 
