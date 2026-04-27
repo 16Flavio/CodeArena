@@ -1,22 +1,22 @@
 <style>
-  .hp-ctrl { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
-  .hp-ctrl input { width: 80px; padding: 3px 6px; }
-  .hp-ctrl button { padding: 4px 10px; cursor: pointer; }
-  .hp-info { font-family: monospace; font-size: 12px; color: #6366f1; }
+  .hp-ctrl { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+  .hp-ctrl input { width: 80px; }
   .hp-svg { width: 100%; display: block; height: auto; }
   .hp-edge { stroke: #94a3b8; stroke-width: 1.6; fill: none; }
-  .hp-node circle { fill: #ef4444; stroke: #b91c1c; stroke-width: 1; transition: fill 0.25s; }
-  .hp-node.fresh circle { fill: #f59e0b; stroke: #b45309; }
+  .hp-node circle { fill: #8b5cf6; stroke: #6d28d9; stroke-width: 1; transition: fill 0.25s; }
+  .hp-node.fresh circle { fill: #f97316; stroke: #c2410c; }
   .hp-node text { fill: white; font-family: system-ui; font-size: 13px; font-weight: 600; }
-  .hp-array { font-family: monospace; padding: 6px 10px; background: #f1f5f9; border-radius: 4px; margin-top: 8px; font-size: 13px; word-break: break-all; }
-  @media (prefers-color-scheme: dark) { .hp-array { background: #1e293b; } }
+  .hp-array { font-family: ui-monospace, "SF Mono", Menlo, monospace; padding: 6px 10px;
+              background: #f1f5f9; border-radius: 6px; margin-top: 8px; font-size: 13px;
+              word-break: break-all; color: #334155; }
+  @media (prefers-color-scheme: dark) { .hp-array { background: #1e293b; color: #e2e8f0; } }
 </style>
 <div class="hp-ctrl">
   <label>x <input type="number" id="x" value="42" /></label>
-  <button id="ins">insert</button>
-  <button id="ex">extract-max</button>
-  <button id="reset">reset</button>
-  <span class="hp-info" id="info"></span>
+  <button class="btn-primary" id="ins">insert</button>
+  <button class="btn-primary" id="ex">extract-max</button>
+  <button class="btn-secondary" id="reset">reset</button>
+  <span class="info-line" id="info"></span>
 </div>
 <svg class="hp-svg" id="svg" viewBox="0 0 600 280"></svg>
 <div class="hp-array" id="arr">[ ]</div>
@@ -54,7 +54,6 @@
     heap.push(x);
     fresh = heap.length - 1;
     siftUp(heap.length - 1);
-    // After siftUp, fresh's index may have moved. Track by scanning.
     fresh = heap.indexOf(x);
     document.getElementById('info').textContent = 'insert(' + x + ') — taille = ' + heap.length;
     render();

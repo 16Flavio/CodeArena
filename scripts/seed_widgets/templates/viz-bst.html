@@ -1,20 +1,17 @@
 <style>
-  .bst-ctrl { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
-  .bst-ctrl input { width: 80px; padding: 3px 6px; }
-  .bst-ctrl button { padding: 4px 10px; cursor: pointer; }
-  .bst-info { font-family: monospace; font-size: 12px; color: #6366f1; }
+  .bst-ctrl { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+  .bst-ctrl input { width: 80px; }
   .bst-svg { width: 100%; display: block; height: auto; }
   .bst-edge { stroke: #94a3b8; stroke-width: 1.6; fill: none; }
-  .bst-node circle { fill: #6366f1; stroke: #4338ca; stroke-width: 1; transition: fill 0.25s; }
-  .bst-node.fresh circle { fill: #f59e0b; stroke: #b45309; }
+  .bst-node circle { fill: #8b5cf6; stroke: #6d28d9; stroke-width: 1; transition: fill 0.25s; }
+  .bst-node.fresh circle { fill: #f97316; stroke: #c2410c; }
   .bst-node text { fill: white; font-family: system-ui; font-size: 13px; font-weight: 600; }
-  .bst-empty { color: #94a3b8; padding: 30px; text-align: center; font-style: italic; }
 </style>
 <div class="bst-ctrl">
   <label>clé <input type="number" id="k" value="50" /></label>
-  <button id="ins">insérer</button>
-  <button id="reset">reset</button>
-  <span class="bst-info" id="info"></span>
+  <button class="btn-primary" id="ins">insérer</button>
+  <button class="btn-secondary" id="reset">reset</button>
+  <span class="info-line" id="info"></span>
 </div>
 <svg class="bst-svg" id="svg" viewBox="0 0 600 320"></svg>
 <script>
@@ -90,7 +87,7 @@
     if (isNaN(k)) return;
     root = insert(root, k);
     freshKey = k;
-    document.getElementById('info').textContent = 'inséré : ' + k + ' (hauteur = ' + depth(root) + ')';
+    document.getElementById('info').textContent = 'inséré : ' + k + ' — hauteur = ' + depth(root);
     render();
   });
 

@@ -1,30 +1,31 @@
 <style>
-  .pt-ctrl { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; font-size: 13px; }
-  .pt-ctrl button { padding: 4px 10px; cursor: pointer; }
-  .pt-ctrl button:disabled { opacity: 0.5; cursor: default; }
+  .pt-ctrl { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
   .pt-ctrl label { display: inline-flex; align-items: center; gap: 4px; }
-  .pt-ctrl input[type="text"] { padding: 3px 6px; width: 200px; font-family: monospace; }
-  .pt-info { font-family: monospace; font-size: 12px; color: #6366f1; min-height: 16px; }
+  .pt-ctrl input[type="text"] { width: 220px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
   .pt-row { display: flex; gap: 4px; flex-wrap: nowrap; overflow-x: auto; padding: 6px 0; }
-  .pt-cell { min-width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 4px; background: #e2e8f0; font-family: monospace; font-weight: 600; transition: all 0.25s; }
-  .pt-cell.le { background: #10b981; color: white; }
-  .pt-cell.gt { background: #cbd5e1; }
-  .pt-cell.pivot { background: #ef4444; color: white; outline: 2px solid #b91c1c; outline-offset: 2px; }
-  .pt-cell.cur { outline: 2px solid #6366f1; outline-offset: 2px; }
-  .pt-pointers { display: flex; gap: 4px; font-family: monospace; font-size: 11px; height: 16px; }
-  .pt-ptr { min-width: 36px; text-align: center; color: #6366f1; font-weight: 700; }
+  .pt-cell { min-width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+             border-radius: 6px; background: #cbd5e1; color: #334155;
+             font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 600;
+             transition: all 0.25s; }
+  .pt-cell.le { background: #a855f7; color: white; }
+  .pt-cell.gt { background: #94a3b8; color: white; }
+  .pt-cell.pivot { background: #f97316; color: white; outline: 2px solid #c2410c; outline-offset: 2px; }
+  .pt-cell.cur { outline: 2px solid #8b5cf6; outline-offset: 2px; }
+  .pt-pointers { display: flex; gap: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace;
+                 font-size: 11px; height: 16px; color: #7c3aed; }
+  .pt-ptr { min-width: 36px; text-align: center; font-weight: 700; }
   @media (prefers-color-scheme: dark) {
-    .pt-cell { background: #334155; color: #e2e8f0; }
-    .pt-cell.gt { background: #475569; }
+    .pt-cell { background: #475569; color: #e2e8f0; }
+    .pt-pointers { color: #c4b5fd; }
   }
 </style>
 <div class="pt-ctrl">
   <label>tableau <input type="text" id="data" value="3,7,1,8,4,2,5" /></label>
-  <button id="reset">load</button>
-  <button id="step">step</button>
-  <button id="run">run</button>
+  <button class="btn-secondary" id="reset">load</button>
+  <button class="btn-primary"   id="step">step</button>
+  <button class="btn-primary"   id="run">run</button>
 </div>
-<div class="pt-info" id="info">cliquez sur "step" pour avancer d'une comparaison</div>
+<div class="info-line" id="info">cliquez sur <b>step</b> pour avancer d'une comparaison</div>
 <div class="pt-pointers" id="ptrs"></div>
 <div class="pt-row" id="row"></div>
 <script>
@@ -37,12 +38,17 @@
   var arr = [];
   var i = 0, j = 0, n = 0, pivot = 0, pivotIdx = -1;
   var done = false;
-  var step1 = null;  // 'compare' | 'swap_iJ' | 'incr_i' | 'place_pivot' | 'finished'
+  var step1 = null;
 
   function load() {
     arr = dataInput.value.split(/[^\-0-9]+/).filter(function (s) { return s.length; }).map(Number);
     n = arr.length;
-    if (n < 2) { i = 0; j = 0; pivotIdx = n - 1; pivot = arr[n - 1]; done = true; render(); document.getElementById('info').textContent = 'tableau trop petit'; return; }
+    if (n < 2) {
+      i = 0; j = 0; pivotIdx = n - 1; pivot = arr[n - 1]; done = true;
+      render();
+      document.getElementById('info').textContent = 'tableau trop petit';
+      return;
+    }
     pivot = arr[n - 1];
     pivotIdx = n - 1;
     i = 0;
@@ -57,7 +63,6 @@
     if (done) return;
     if (step1 === 'compare') {
       if (j >= n - 1) {
-        // place pivot at i
         var t = arr[i]; arr[i] = arr[n - 1]; arr[n - 1] = t;
         pivotIdx = i;
         done = true;
@@ -67,12 +72,11 @@
         return;
       }
       if (arr[j] <= pivot) {
-        // swap a[i], a[j], then i++
         if (i !== j) { var t = arr[i]; arr[i] = arr[j]; arr[j] = t; }
         i++;
-        document.getElementById('info').textContent = 'a[' + j + ']=' + arr[i - 1] + ' ≤ pivot — swap puis i++';
+        document.getElementById('info').textContent = 'a[' + j + '] = ' + arr[i - 1] + ' ≤ pivot — swap puis i++';
       } else {
-        document.getElementById('info').textContent = 'a[' + j + ']=' + arr[j] + ' > pivot — on avance j';
+        document.getElementById('info').textContent = 'a[' + j + '] = ' + arr[j] + ' > pivot — on avance j';
       }
       j++;
       render();

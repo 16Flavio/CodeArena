@@ -1,48 +1,44 @@
 <style>
-  .qs-ctrl { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; }
-  .qs-ctrl button { padding: 4px 10px; cursor: pointer; }
-  .qs-ctrl button:disabled { opacity: 0.5; cursor: default; }
-  .qs-ctrl input[type="text"] { padding: 3px 6px; width: 220px; font-family: monospace; font-size: 13px; }
+  .qs-ctrl { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+  .qs-ctrl input[type="text"] { width: 220px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
   .qs-ctrl input[type="range"] { vertical-align: middle; }
-  .qs-info { font-family: monospace; font-size: 12px; color: #6366f1; min-height: 16px; }
   .qs-bars { display: flex; gap: 3px; align-items: flex-end; height: 220px; padding: 6px 0; }
-  .qs-bar { flex: 1 0 0; min-width: 18px; background: #cbd5e1; border-radius: 3px 3px 0 0; position: relative; transition: background 0.18s, height 0.25s, color 0.18s; }
-  .qs-bar > span { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); font-size: 11px; padding: 0 2px; color: #475569; font-family: monospace; }
-  .qs-bar.active   { background: #93c5fd; }
-  .qs-bar.le-pivot { background: #10b981; }   /* dans la zone <= pivot */
-  .qs-bar.gt-pivot { background: #94a3b8; }   /* dans la zone > pivot (déjà scanné) */
-  .qs-bar.cur      { outline: 2px solid #f59e0b; outline-offset: 2px; }   /* j */
-  .qs-bar.boundary { outline: 2px dashed #6366f1; outline-offset: 2px; }  /* i */
-  .qs-bar.pivot    { background: #ef4444; }
-  .qs-bar.placed   { background: #ef4444; outline: 2px solid #b91c1c; outline-offset: 2px; }
-  .qs-bar.sorted   { background: #14532d; }
-  .qs-bar > span { font-weight: 600; }
-  .qs-bar.pivot > span, .qs-bar.placed > span, .qs-bar.sorted > span { color: white; bottom: 4px; top: auto; }
+  .qs-bar { flex: 1 0 0; min-width: 18px; background: #94a3b8; border-radius: 4px 4px 0 0;
+            position: relative;
+            transition: background 0.18s, height 0.25s, color 0.18s, outline-color 0.18s; }
+  .qs-bar > span { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+                   font-size: 11px; padding: 0 2px; color: #475569;
+                   font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 600; }
+  .qs-bar.active   { background: #c4b5fd; }
+  .qs-bar.le-pivot { background: #a855f7; }   /* zone <= pivot (compare-violet) */
+  .qs-bar.gt-pivot { background: #94a3b8; }
+  .qs-bar.cur      { outline: 2px solid #8b5cf6; outline-offset: 2px; }   /* j */
+  .qs-bar.boundary { outline: 2px dashed #f97316; outline-offset: 2px; }  /* i */
+  .qs-bar.pivot    { background: #f97316; }                                /* pivot orange */
+  .qs-bar.placed   { background: #f97316; outline: 2px solid #c2410c; outline-offset: 2px; }
+  .qs-bar.sorted   { background: #15803d; }
+  .qs-bar.pivot > span, .qs-bar.placed > span, .qs-bar.sorted > span,
   .qs-bar.le-pivot > span, .qs-bar.gt-pivot > span { color: white; bottom: 4px; top: auto; }
-  .qs-meta { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; margin-top: 8px; color: #64748b; }
-  .qs-meta b { color: #0f172a; }
   @media (prefers-color-scheme: dark) {
     .qs-bar { background: #475569; }
     .qs-bar > span { color: #e2e8f0; }
-    .qs-meta { color: #94a3b8; }
-    .qs-meta b { color: #e2e8f0; }
   }
 </style>
 <div class="qs-ctrl">
   <label>tableau <input type="text" id="data" /></label>
-  <button id="reset">load</button>
-  <button id="step">step</button>
-  <button id="run">run</button>
-  <button id="pause" disabled>pause</button>
+  <button class="btn-secondary" id="reset">load</button>
+  <button class="btn-primary"   id="step">step</button>
+  <button class="btn-primary"   id="run">run</button>
+  <button class="btn-secondary" id="pause" disabled>pause</button>
   <label>vitesse <input type="range" id="speed" min="80" max="800" value="350" /></label>
 </div>
-<div class="qs-info" id="info">cliquez sur <b>step</b> ou <b>run</b></div>
+<div class="info-line" id="info">cliquez sur <b>step</b> ou <b>run</b></div>
 <div class="qs-bars" id="bars"></div>
-<div class="qs-meta">
+<div class="meta-row">
   <span>profondeur de pile : <b id="depth">0</b></span>
   <span>swaps : <b id="nswaps">0</b></span>
   <span>comparaisons : <b id="ncmp">0</b></span>
-  <span>fenêtre courante : <b id="window">—</b></span>
+  <span>fenêtre : <b id="window">—</b></span>
 </div>
 <script>
 (function () {
@@ -81,7 +77,6 @@
           i++;
         }
       }
-      // place pivot at i
       var t2 = a[i]; a[i] = a[hi]; a[hi] = t2;
       out.push({ kind: 'place', lo: lo, hi: hi, i: i, j: hi, pivotIdx: i, depth: depth, snap: a.slice(), placedAt: i });
       qs(lo, i - 1, depth + 1);
@@ -116,7 +111,6 @@
     if (s.kind === 'place')  sortedSet.add(s.i);
     if (s.kind === 'singleton') sortedSet.add(s.i);
     if (s.kind === 'done') {
-      // mark everything sorted
       for (var k = 0; k < s.snap.length; k++) sortedSet.add(k);
     }
     var msg;

@@ -1,14 +1,15 @@
 <style>
-  .ht-ctrl { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; font-size: 13px; }
-  .ht-ctrl input[type="number"] { width: 80px; padding: 3px 6px; }
-  .ht-ctrl select, .ht-ctrl button { padding: 4px 10px; cursor: pointer; }
-  .ht-status { font-family: monospace; font-size: 12px; color: #6366f1; }
+  .ht-ctrl { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+  .ht-ctrl input[type="number"] { width: 80px; }
   .ht-table { display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-start; }
   .ht-bucket { min-width: 56px; }
-  .ht-bucket-head { padding: 4px 8px; background: #e2e8f0; text-align: center; font-weight: 600; font-size: 12px; border-radius: 4px 4px 0 0; }
-  .ht-bucket-list { padding: 4px; background: #f1f5f9; border-radius: 0 0 4px 4px; min-height: 28px; display: flex; flex-direction: column; gap: 3px; align-items: stretch; }
-  .ht-key { padding: 2px 6px; background: #6366f1; color: white; border-radius: 3px; font-size: 12px; text-align: center; animation: ht-fadein 0.3s ease-out; }
-  .ht-key.collide { background: #ef4444; }
+  .ht-bucket-head { padding: 4px 8px; background: #e2e8f0; text-align: center; font-weight: 600;
+                    font-size: 12px; border-radius: 6px 6px 0 0; color: #334155; }
+  .ht-bucket-list { padding: 4px; background: #f1f5f9; border-radius: 0 0 6px 6px; min-height: 28px;
+                    display: flex; flex-direction: column; gap: 3px; }
+  .ht-key { padding: 2px 6px; background: #8b5cf6; color: white; border-radius: 4px;
+            font-size: 12px; text-align: center; animation: ht-fadein 0.3s ease-out; }
+  .ht-key.collide { background: #f97316; }
   @keyframes ht-fadein { from { opacity: 0; transform: scale(0.6);} to { opacity: 1; transform: scale(1);} }
   @media (prefers-color-scheme: dark) {
     .ht-bucket-head { background: #334155; color: #e2e8f0; }
@@ -18,9 +19,9 @@
 <div class="ht-ctrl">
   <label>m <input type="number" id="m" value="7" min="2" max="24" /></label>
   <label>clé <input type="number" id="k" value="42" /></label>
-  <button id="ins">insérer</button>
-  <button id="reset">reset</button>
-  <span class="ht-status" id="status"></span>
+  <button class="btn-primary" id="ins">insérer</button>
+  <button class="btn-secondary" id="reset">reset</button>
+  <span class="info-line" id="status"></span>
 </div>
 <div class="ht-table" id="tbl"></div>
 <script>
@@ -47,7 +48,6 @@
   }
 
   function hash(k, m) {
-    // Multiplicative hash, deterministic and reasonable for small demos.
     var x = ((k * 2654435761) >>> 0);
     return x % m;
   }
