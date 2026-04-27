@@ -61,6 +61,12 @@ Total cost:
 
 $$T(n) = \sum_{i=0}^{n-1} i = \frac{n(n-1)}{2} = \Theta(n^2).$$
 
+**Visual example**: selection sort has exactly this triangular nested
+structure, hence its quadratic complexity.
+
+:::viz-sort{algo="selection" data="[5,2,8,1,9,3,7,4]"}
+:::
+
 ### Multiplicative loop
 
 ```python

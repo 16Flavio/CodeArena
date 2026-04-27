@@ -62,6 +62,13 @@ Coût total :
 
 $$T(n) = \sum_{i=0}^{n-1} i = \frac{n(n-1)}{2} = \Theta(n^2).$$
 
+**Exemple visuel** : le tri par sélection a exactement cette
+structure de boucle imbriquée triangulaire, d'où sa complexité
+quadratique.
+
+:::viz-sort{algo="selection" data="[5,2,8,1,9,3,7,4]"}
+:::
+
 ### Boucle multiplicative
 
 ```python

@@ -184,6 +184,13 @@ smallest — global invariant holds. $\square$
 | Mergesort | $n \log n$ | $n \log n$ | $O(n)$ | yes |
 | Quicksort | $n^2$ | $n \log n$ | $O(\log n)$ | no |
 
+**For comparison**, here's an insertion sort on the same data. Run
+it and notice the number of operations: it doesn't come close to
+heapsort on large inputs.
+
+:::viz-sort{algo="insertion" data="[7,3,9,1,5,8,2,6,4]"}
+:::
+
 ---
 
 ## 4.6 — Exercises

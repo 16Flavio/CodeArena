@@ -191,6 +191,13 @@ petit — d'où l'invariant satisfait globalement. $\square$
 | Mergesort | $n \log n$ | $n \log n$ | $O(n)$ | oui |
 | Quicksort | $n^2$ | $n \log n$ | $O(\log n)$ | non |
 
+**Pour comparer**, voici un tri par insertion sur les mêmes données.
+Lance-le et observe la quantité d'opérations : il n'arrive pas à la
+cheville d'un heapsort sur de grandes entrées.
+
+:::viz-sort{algo="insertion" data="[7,3,9,1,5,8,2,6,4]"}
+:::
+
 ---
 
 ## 4.6 — Exercices
