@@ -85,3 +85,44 @@ def test_reset_password_flow(client):
     # Old password no longer works; new one does.
     assert client.post("/api/auth/login", json={"username": "u", "password": "old-pw-1234"}).status_code == 401
     assert client.post("/api/auth/login", json={"username": "u", "password": "newer-pw-1234"}).status_code == 200
+
+
+def test_change_username_requires_current_password_field(client):
+    """Pin the request shape used by the frontend. AccountModal once
+    sent ``{password, new_username}`` instead of ``{current_password,
+    new_username}`` and the resulting 422 validation array, piped
+    straight into a toast, blanked the whole page in production."""
+    client.post("/api/auth/register", json={
+        "username": "renamer", "email": "r@x.com", "password": "good-pw-123456",
+    })
+    tok = client.post("/api/auth/login", json={
+        "username": "renamer", "password": "good-pw-123456",
+    }).json()["access_token"]
+    h = {"Authorization": f"Bearer {tok}"}
+
+    # Wrong field name → 422 (Pydantic validation), NOT 200.
+    r = client.post(
+        "/api/auth/change-username",
+        json={"password": "good-pw-123456", "new_username": "renamed"},
+        headers=h,
+    )
+    assert r.status_code == 422
+
+    # Right field name → 200, username actually changes.
+    r = client.post(
+        "/api/auth/change-username",
+        json={"current_password": "good-pw-123456", "new_username": "renamed"},
+        headers=h,
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["username"] == "renamed"
+
+    # Wrong current_password → 400 with a STRING detail (not an array)
+    # so the frontend toast renders cleanly even without normalisation.
+    r = client.post(
+        "/api/auth/change-username",
+        json={"current_password": "bad", "new_username": "again"},
+        headers=h,
+    )
+    assert r.status_code == 400
+    assert isinstance(r.json()["detail"], str)

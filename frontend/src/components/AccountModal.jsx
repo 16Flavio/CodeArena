@@ -183,7 +183,7 @@ function UsernameTab({ onClose }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await changeUsername({ password: pw, new_username: next });
+      await changeUsername({ current_password: pw, new_username: next });
       // Optimistic local update — next /me fetch will canonicalise.
       setUser?.((u) => (u ? { ...u, username: next } : u));
       toast.success(t('accountModal.toastUsernameUpdated'));

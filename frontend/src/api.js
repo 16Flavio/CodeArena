@@ -15,9 +15,39 @@ api.interceptors.request.use((config) => {
 // identical toasts on screen.
 let last429ToastAt = 0;
 
+// FastAPI returns 422 with ``detail`` as an *array* of validation
+// objects (``[{loc, msg, type}, ...]``). Most call sites pipe
+// ``err.response.data.detail`` straight into ``toast.error()``, which
+// in turn passes it as React children — and React throws "Objects are
+// not valid as a React child" on raw objects, blanking the whole
+// page when no error boundary catches it (real bug report:
+// AccountModal's wrong-field-name change-username crash). We
+// normalize ``detail`` to a string here once, so every call site
+// stays safe without having to remember.
+function _normaliseErrorDetail(err) {
+  const detail = err?.response?.data?.detail;
+  if (detail === undefined || typeof detail === 'string') return;
+  if (Array.isArray(detail)) {
+    err.response.data.detail = detail
+      .map((e) => (e && typeof e === 'object' && typeof e.msg === 'string')
+        ? e.msg
+        : String(e))
+      .join('; ');
+    return;
+  }
+  if (detail !== null && typeof detail === 'object') {
+    err.response.data.detail = (typeof detail.msg === 'string')
+      ? detail.msg
+      : JSON.stringify(detail);
+    return;
+  }
+  err.response.data.detail = String(detail);
+}
+
 api.interceptors.response.use(
   (res) => res,
   (err) => {
+    _normaliseErrorDetail(err);
     if (err.response?.status === 401) {
       clearToken();
       if (window.location.pathname !== '/login') {
