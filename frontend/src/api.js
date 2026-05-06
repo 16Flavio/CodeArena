@@ -15,33 +15,27 @@ api.interceptors.request.use((config) => {
 // identical toasts on screen.
 let last429ToastAt = 0;
 
-// FastAPI returns 422 with ``detail`` as an *array* of validation
-// objects (``[{loc, msg, type}, ...]``). Most call sites pipe
+// FastAPI's 422 returns ``detail`` as an *array* of validation objects
+// (``[{loc, msg, type}, ...]``). Most call sites pipe
 // ``err.response.data.detail`` straight into ``toast.error()``, which
-// in turn passes it as React children — and React throws "Objects are
-// not valid as a React child" on raw objects, blanking the whole
-// page when no error boundary catches it (real bug report:
-// AccountModal's wrong-field-name change-username crash). We
-// normalize ``detail`` to a string here once, so every call site
-// stays safe without having to remember.
+// passes it as React children — and React throws "Objects are not
+// valid as a React child" on raw objects, blanking the whole page
+// when no error boundary catches it (real bug report: AccountModal's
+// wrong-field-name change-username crash). Collapse the array to a
+// readable string once, so every call site stays safe.
+//
+// Object-shape ``detail`` (e.g. the TOTP_REQUIRED challenge: ``{code:
+// "TOTP_REQUIRED", params: {challenge_token: "..."}}``) is *intentional
+// structured data* — the login UI reads ``detail.code`` to pivot to
+// the TOTP form. We must leave it alone. Likewise plain strings.
 function _normaliseErrorDetail(err) {
   const detail = err?.response?.data?.detail;
-  if (detail === undefined || typeof detail === 'string') return;
-  if (Array.isArray(detail)) {
-    err.response.data.detail = detail
-      .map((e) => (e && typeof e === 'object' && typeof e.msg === 'string')
-        ? e.msg
-        : String(e))
-      .join('; ');
-    return;
-  }
-  if (detail !== null && typeof detail === 'object') {
-    err.response.data.detail = (typeof detail.msg === 'string')
-      ? detail.msg
-      : JSON.stringify(detail);
-    return;
-  }
-  err.response.data.detail = String(detail);
+  if (!Array.isArray(detail)) return;
+  err.response.data.detail = detail
+    .map((e) => (e && typeof e === 'object' && typeof e.msg === 'string')
+      ? e.msg
+      : String(e))
+    .join('; ');
 }
 
 api.interceptors.response.use(
