@@ -216,23 +216,47 @@ def _read(zf: zipfile.ZipFile, path: str) -> Optional[bytes]:
 
 def _find_pdf(zf: zipfile.ZipFile, problem_root: str) -> Optional[str]:
     """Look for a statement PDF. Canonical location is
-    ``<problem_root>/problem_statement/*.pdf`` (Kattis), but legacy
-    DOMjudge packages drop ``problem.pdf`` at the problem root. Accept
-    either."""
+    ``<problem_root>/problem_statement/problem(.<lang>).pdf`` (Kattis),
+    but legacy DOMjudge packages drop ``problem.pdf`` at the problem
+    root. Both layouts are handled.
+
+    Kattis packages frequently ship figure PDFs alongside the rendered
+    statement (e.g. ``problem_statement/tree.pdf`` next to
+    ``problem_statement/problem.en.pdf``). Returning the first match
+    would surface a figure as the "statement" and users would see only
+    the graph. We rank candidates so the rendered statement always
+    wins; the file size is used as a tie-breaker because figures are
+    typically a few KB while a real statement is hundreds of KB."""
     want = f"{problem_root}/" if problem_root else ""
-    candidates = []
-    for name in zf.namelist():
+    statement_re = re.compile(r"^problem(?:\.[A-Za-z0-9_-]+)?\.pdf$", re.IGNORECASE)
+
+    def _rank(rel: str) -> int:
+        # Lower rank = better candidate.
+        base = rel.rsplit("/", 1)[-1]
+        in_statement_dir = rel.startswith("problem_statement/")
+        if in_statement_dir and statement_re.match(base):
+            return 0
+        if not in_statement_dir and "/" not in rel and statement_re.match(base):
+            return 1  # legacy DOMjudge problem.pdf at root
+        if in_statement_dir:
+            return 2  # other PDF inside problem_statement/ — likely a figure
+        if "/" not in rel:
+            return 3  # other PDF at the problem root
+        return 4
+
+    sized: list[tuple[int, int, str]] = []  # (rank, -size, name)
+    for info in zf.infolist():
+        name = info.filename
         if not name.lower().endswith(".pdf"):
             continue
         if not name.startswith(want):
             continue
         rel = name[len(want):]
-        # Prefer problem_statement/*.pdf; accept a PDF at the root too.
-        if rel.startswith("problem_statement/"):
-            return name
-        if "/" not in rel:
-            candidates.append(name)
-    return candidates[0] if candidates else None
+        sized.append((_rank(rel), -info.file_size, name))
+    if not sized:
+        return None
+    sized.sort()
+    return sized[0][2]
 
 
 def _testcase_pairs(zf: zipfile.ZipFile, problem_root: str) -> list[tuple[str, bool, str, str]]:

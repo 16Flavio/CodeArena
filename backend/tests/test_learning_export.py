@@ -14,7 +14,7 @@ def test_basic_inline_formatting():
     out = markdown_to_latex(md)
     assert r"\textbf{world}" in out
     assert r"\textit{italic}" in out
-    assert r"\verb|code|" in out
+    assert r"\texttt{code}" in out
     assert r"\href{https://x}" in out
 
 

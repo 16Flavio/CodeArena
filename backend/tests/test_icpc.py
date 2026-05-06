@@ -925,6 +925,58 @@ def test_domjudge_package_import(client):
     assert problems[0]["memory_limit_mb"] == 128
 
 
+def test_import_prefers_statement_pdf_over_figure(client):
+    """Kattis packages frequently ship figure PDFs (e.g. ``tree.pdf``)
+    next to the rendered statement (``problem.en.pdf``) in the
+    ``problem_statement/`` directory. The importer must surface the
+    statement, not a figure, otherwise users see a graph instead of
+    the problem text."""
+    admin = auth_header(client, "root")
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    cid = client.post(
+        "/api/contests",
+        json={
+            "title": "ICPC-PDF-Pick",
+            "is_active": True,
+            "start_time": _iso(now - timedelta(minutes=5)),
+            "end_time": _iso(now + timedelta(hours=1)),
+            "participation_mode": "solo",
+            "kind": "icpc",
+            "scoring_script": "score = 0",
+        },
+        headers=admin,
+    ).json()["id"]
+
+    statement_bytes = b"%PDF-1.4\n%full-statement\n" + b"x" * 4096
+    figure_bytes = b"%PDF-1.4\n%figure\n"
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("problem-graph/problem.yaml",
+                    "name: Graph\nlabel: A\nprobid: graph\n"
+                    "validation: default\nlimits:\n  time: 1\n  memory: 128\n")
+        # Figure is listed first on purpose — the old code picked the
+        # first match in zip order and would have surfaced this PDF.
+        zf.writestr("problem-graph/problem_statement/tree-figure.pdf", figure_bytes)
+        zf.writestr("problem-graph/problem_statement/problem.en.pdf", statement_bytes)
+        zf.writestr("problem-graph/data/sample/001.in", "1\n")
+        zf.writestr("problem-graph/data/sample/001.ans", "1\n")
+    buf.seek(0)
+
+    r = client.post(
+        f"/api/contests/{cid}/import-domjudge-package",
+        headers=admin,
+        files={"file": ("pkg.zip", buf, "application/zip")},
+    )
+    assert r.status_code == 200, r.text
+
+    pid = client.get(f"/api/contests/{cid}/problems", headers=admin).json()[0]["id"]
+    token = admin["Authorization"].split(" ", 1)[1]
+    r = client.get(f"/api/contests/{cid}/problems/{pid}/statement?token={token}")
+    assert r.status_code == 200, r.text
+    assert r.content == statement_bytes, "figure was served instead of the statement"
+
+
 def test_compiled_c_interactor(client):
     """Admin picks a C-language interactor: the runner must compile it
     and run the binary, reading the testcase via INTERACTOR_INPUT_FILE.
