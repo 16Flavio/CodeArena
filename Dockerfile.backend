@@ -30,6 +30,12 @@ COPY backend /app/backend
 # Alembic config lives at the repo root; copy it so `alembic upgrade head`
 # works from /app inside the container.
 COPY alembic.ini /app/alembic.ini
+# Seed scripts (Learn-section content). They import ``backend.models``
+# and ``backend.database``, so they need the backend Python environment
+# and the configured DATABASE_URL — easiest to run via
+# ``docker compose exec backend python scripts/seed_chapterN/...``.
+# Image cost is tiny (markdown + small Python files).
+COPY scripts /app/scripts
 
 # Uploads and DB persist via named volumes mounted at /app/uploads and /app (contest.db).
 # Uploads directory is at /app/backend/uploads because
