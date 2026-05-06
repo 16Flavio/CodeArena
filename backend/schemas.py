@@ -588,6 +588,12 @@ class ProblemOut(BaseModel):
     interactor_language: str = "py3"
     order_idx: int = 0
     has_statement_pdf: bool = False
+    # File mtime (int seconds). Used by the frontend as a cache-buster
+    # query param so the URL is stable while the PDF is unchanged but
+    # flips on an admin replace — defeats stale browser cache entries
+    # that accumulated before we deployed ``Cache-Control: no-store`` on
+    # the download endpoint.
+    statement_pdf_version: int | None = None
     sample_testcases: list[TestcaseOut] = []
     scoring_mode: str = "icpc"
 

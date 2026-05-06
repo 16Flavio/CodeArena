@@ -102,6 +102,12 @@ def _problem_to_out(p: models.Problem, *, samples: list[models.Testcase]) -> sch
     never be sent over the wire with the problem list — a 50 MB JSON
     response would freeze any browser. Use a separate admin endpoint if
     you need to inspect secret testcase data."""
+    statement_pdf_version: Optional[int] = None
+    if p.statement_pdf_path:
+        try:
+            statement_pdf_version = int(os.path.getmtime(p.statement_pdf_path))
+        except OSError:
+            statement_pdf_version = None
     return schemas.ProblemOut(
         id=p.id, contest_id=p.contest_id, external_id=p.external_id,
         label=p.label, color=p.color or "", name=p.name,
@@ -112,6 +118,7 @@ def _problem_to_out(p: models.Problem, *, samples: list[models.Testcase]) -> sch
         interactor_language=p.interactor_language or "py3",
         order_idx=p.order_idx,
         has_statement_pdf=bool(p.statement_pdf_path),
+        statement_pdf_version=statement_pdf_version,
         scoring_mode=p.scoring_mode or "icpc",
         sample_testcases=[
             schemas.TestcaseOut(

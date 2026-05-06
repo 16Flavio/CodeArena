@@ -532,6 +532,7 @@ def test_admin_problem_statement_upload_replace_delete(client):
     # Initially no PDF.
     plist = client.get(f"/api/contests/{cid}/problems", headers=admin).json()
     assert plist[0]["has_statement_pdf"] is False
+    assert plist[0]["statement_pdf_version"] is None
 
     # Upload.
     pdf_v1 = b"%PDF-1.4\n%v1\n" + b"a" * 256
@@ -542,13 +543,20 @@ def test_admin_problem_statement_upload_replace_delete(client):
     )
     assert r.status_code == 200, r.text
     assert r.json()["has_statement_pdf"] is True
+    v1 = r.json()["statement_pdf_version"]
+    assert isinstance(v1, int) and v1 > 0
 
     token = admin["Authorization"].split(" ", 1)[1]
     r = client.get(f"/api/contests/{cid}/problems/{pid}/statement?token={token}")
     assert r.status_code == 200
     assert r.content == pdf_v1
 
-    # Replace — the old file must be cleared and the new one served.
+    # Replace — the old file must be cleared, the new one served, AND
+    # the cache-buster version must flip so contestants whose browser
+    # cached the previous PDF (from before Cache-Control: no-store
+    # rolled out) are forced onto a fresh URL.
+    import time as _time
+    _time.sleep(1.1)  # mtime is second-precision; force a different value
     pdf_v2 = b"%PDF-1.4\n%v2\n" + b"b" * 512
     r = client.post(
         f"/api/icpc/problems/{pid}/statement",
@@ -556,6 +564,8 @@ def test_admin_problem_statement_upload_replace_delete(client):
         files={"file": ("statement.pdf", pdf_v2, "application/pdf")},
     )
     assert r.status_code == 200
+    v2 = r.json()["statement_pdf_version"]
+    assert v2 != v1, "statement_pdf_version did not flip on replace"
     r = client.get(f"/api/contests/{cid}/problems/{pid}/statement?token={token}")
     assert r.content == pdf_v2
 

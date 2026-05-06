@@ -282,7 +282,15 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                       <a
                         // Token goes in the query string because <a href>
                         // opens in a new tab without Authorization headers.
-                        href={`/api/contests/${contest.id}/problems/${activeProblem.id}/statement?token=${encodeURIComponent(getToken() || '')}`}
+                        // ``v=`` is the file's mtime — stable while the PDF is
+                        // unchanged (so the browser can re-use the response
+                        // across reloads), but flips on an admin replace so
+                        // any cached entry from a previous version is bypassed.
+                        // Without this the URL was static and contestants
+                        // kept seeing the pre-replace PDF from heuristic
+                        // browser cache (no-store on the response only takes
+                        // effect once the server is actually consulted).
+                        href={`/api/contests/${contest.id}/problems/${activeProblem.id}/statement?token=${encodeURIComponent(getToken() || '')}&v=${activeProblem.statement_pdf_version || 0}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="btn-secondary text-xs"

@@ -595,20 +595,18 @@ function StatementPdfControls({ problem, contestId, onChanged, t, confirm }) {
   const [busy, setBusy] = useState(false);
 
   const openPreview = () => {
-    // <a href> opens in a new tab without an Authorization header, so the
-    // statement endpoint accepts the JWT via ?token=. Same pattern the
-    // contestant view uses.
+    // <a href> opens in a new tab without an Authorization header, so
+    // the statement endpoint accepts the JWT via ?token=. Same pattern
+    // the contestant view uses.
     //
-    // Cache-busting query param: ``Date.now()`` makes every admin View
-    // URL unique, so even browser cache entries that survived from
-    // before we deployed the server-side ``Cache-Control: no-store``
-    // header (still floating around in users' caches with heuristic
-    // freshness from Last-Modified) cannot be reused. Using
-    // ``Date.now()`` directly at click time — not a state value — also
-    // sidesteps any closure-staleness edge case where a stale render
-    // captured an older buster.
+    // ``v=`` is the file mtime exposed by the API. Stable while the PDF
+    // is unchanged (so admins benefit from HTTP caching across clicks)
+    // but flips on every replace, so a freshly uploaded PDF cannot be
+    // shadowed by a stale browser cache entry from before we deployed
+    // ``Cache-Control: no-store`` on the download endpoint.
     const token = getToken() || '';
-    const url = `/api/contests/${contestId}/problems/${problem.id}/statement?token=${encodeURIComponent(token)}&v=${Date.now()}`;
+    const v = problem.statement_pdf_version || 0;
+    const url = `/api/contests/${contestId}/problems/${problem.id}/statement?token=${encodeURIComponent(token)}&v=${v}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
