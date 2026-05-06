@@ -204,11 +204,21 @@ def get_problem_statement(
     # triggering a download; most viewers still show a save button in
     # their toolbar. ``filename=`` keeps a sensible default if the user
     # does choose to save.
+    #
+    # Cache-Control: the file path is keyed by problem id and the disk
+    # file is overwritten on admin replace. Without an explicit policy
+    # browsers apply heuristic freshness (often minutes/hours from
+    # Last-Modified) and serve the previous PDF after a replace —
+    # exactly the "I uploaded but I still see the old one" report. We
+    # let the browser cache but force a revalidation on every view; the
+    # FileResponse handles If-Modified-Since automatically and returns
+    # 304 when the file is unchanged.
     return FileResponse(
         p.statement_pdf_path,
         media_type="application/pdf",
         filename=f"{p.label}-{p.external_id}.pdf",
         content_disposition_type="inline",
+        headers={"Cache-Control": "no-cache, must-revalidate"},
     )
 
 

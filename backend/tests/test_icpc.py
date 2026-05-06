@@ -515,6 +515,10 @@ def test_problem_statement_pdf_endpoint(client, tmp_path, monkeypatch):
     assert r.content.startswith(b"%PDF")
     # inline → browser renders the PDF in-tab rather than forcing a download.
     assert r.headers["content-disposition"].startswith("inline")
+    # Cache-Control must force revalidation. Without it the browser's PDF
+    # viewer applied heuristic freshness and kept showing the previous
+    # PDF for minutes after an admin replace.
+    assert "no-cache" in r.headers.get("cache-control", "").lower()
 
 
 def test_admin_problem_statement_upload_replace_delete(client):
