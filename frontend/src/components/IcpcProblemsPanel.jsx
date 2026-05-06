@@ -593,21 +593,22 @@ function TestcaseForm({ draft, setDraft, onSave, onCancel, t }) {
 function StatementPdfControls({ problem, contestId, onChanged, t, confirm }) {
   const fileInputRef = useRef(null);
   const [busy, setBusy] = useState(false);
-  // Bumped after each successful upload. Appended to the preview URL so
-  // the browser's PDF viewer treats the next View click as a fresh
-  // resource — without this, Chrome's heuristic cache rendered the old
-  // PDF for minutes after a replace even though the file on disk had
-  // changed (the URL was identical, since the path is keyed by
-  // problem.id and the disk file is overwritten in place).
-  const [cacheBust, setCacheBust] = useState(0);
 
   const openPreview = () => {
     // <a href> opens in a new tab without an Authorization header, so the
     // statement endpoint accepts the JWT via ?token=. Same pattern the
     // contestant view uses.
+    //
+    // Cache-busting query param: ``Date.now()`` makes every admin View
+    // URL unique, so even browser cache entries that survived from
+    // before we deployed the server-side ``Cache-Control: no-store``
+    // header (still floating around in users' caches with heuristic
+    // freshness from Last-Modified) cannot be reused. Using
+    // ``Date.now()`` directly at click time — not a state value — also
+    // sidesteps any closure-staleness edge case where a stale render
+    // captured an older buster.
     const token = getToken() || '';
-    const buster = cacheBust ? `&v=${cacheBust}` : '';
-    const url = `/api/contests/${contestId}/problems/${problem.id}/statement?token=${encodeURIComponent(token)}${buster}`;
+    const url = `/api/contests/${contestId}/problems/${problem.id}/statement?token=${encodeURIComponent(token)}&v=${Date.now()}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
@@ -624,7 +625,6 @@ function StatementPdfControls({ problem, contestId, onChanged, t, confirm }) {
     setBusy(true);
     try {
       await uploadIcpcProblemStatement(problem.id, file);
-      setCacheBust(Date.now());
       toast.success(t('icpcProblems.pdfUploaded'));
       onChanged();
     } catch (err) {

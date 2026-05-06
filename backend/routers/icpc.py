@@ -206,19 +206,21 @@ def get_problem_statement(
     # does choose to save.
     #
     # Cache-Control: the file path is keyed by problem id and the disk
-    # file is overwritten on admin replace. Without an explicit policy
-    # browsers apply heuristic freshness (often minutes/hours from
-    # Last-Modified) and serve the previous PDF after a replace —
-    # exactly the "I uploaded but I still see the old one" report. We
-    # let the browser cache but force a revalidation on every view; the
-    # FileResponse handles If-Modified-Since automatically and returns
-    # 304 when the file is unchanged.
+    # file is overwritten on admin replace. ``no-cache, must-revalidate``
+    # was insufficient in practice — Chrome's PDF viewer still rendered
+    # the previous PDF after a replace, presumably because of an
+    # internal heuristic cache that ignores must-revalidate when the
+    # response is rendered through pdfium. ``no-store`` is the
+    # belt-and-braces option: nothing along the way (browser, viewer,
+    # any future shared cache) is allowed to stash the response. The
+    # bandwidth cost is acceptable — statements are at most a few MB
+    # and views are infrequent.
     return FileResponse(
         p.statement_pdf_path,
         media_type="application/pdf",
         filename=f"{p.label}-{p.external_id}.pdf",
         content_disposition_type="inline",
-        headers={"Cache-Control": "no-cache, must-revalidate"},
+        headers={"Cache-Control": "no-store, max-age=0"},
     )
 
 
@@ -259,17 +261,24 @@ async def upload_problem_statement_pdf(
             except OSError:
                 pass
 
-    with open(new_path, "wb") as f:
+    # Atomic rename so a concurrent reader never observes a half-written
+    # PDF (FileResponse opens the file for streaming and would otherwise
+    # serve a truncated body if the reader landed mid-write).
+    tmp_path = new_path + ".tmp"
+    with open(tmp_path, "wb") as f:
         f.write(content)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp_path, new_path)
     p.statement_pdf_path = new_path
-    db.commit()
-    db.refresh(p)
-
     audit(
         db, action="icpc_problem_statement_upload", actor=admin,
         target_type="problem", target_id=p.id,
         detail=f"size={len(content)}",
     )
+    db.commit()
+    db.refresh(p)
+
     samples = (
         db.query(models.Testcase)
         .filter(models.Testcase.problem_id == p.id, models.Testcase.is_sample.is_(True))
@@ -294,13 +303,12 @@ def delete_problem_statement_pdf(
         except OSError:
             pass
     p.statement_pdf_path = None
-    db.commit()
-    db.refresh(p)
-
     audit(
         db, action="icpc_problem_statement_delete", actor=admin,
         target_type="problem", target_id=p.id,
     )
+    db.commit()
+    db.refresh(p)
     samples = (
         db.query(models.Testcase)
         .filter(models.Testcase.problem_id == p.id, models.Testcase.is_sample.is_(True))

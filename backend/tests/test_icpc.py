@@ -515,10 +515,12 @@ def test_problem_statement_pdf_endpoint(client, tmp_path, monkeypatch):
     assert r.content.startswith(b"%PDF")
     # inline → browser renders the PDF in-tab rather than forcing a download.
     assert r.headers["content-disposition"].startswith("inline")
-    # Cache-Control must force revalidation. Without it the browser's PDF
-    # viewer applied heuristic freshness and kept showing the previous
-    # PDF for minutes after an admin replace.
-    assert "no-cache" in r.headers.get("cache-control", "").lower()
+    # Cache-Control must disable caching outright. Plain
+    # ``no-cache, must-revalidate`` was insufficient — Chrome's PDF
+    # viewer kept showing the previous PDF after an admin replace, so
+    # we send ``no-store`` to forbid any cache (browser, viewer or
+    # shared) from stashing the response.
+    assert "no-store" in r.headers.get("cache-control", "").lower()
 
 
 def test_admin_problem_statement_upload_replace_delete(client):
@@ -580,6 +582,21 @@ def test_admin_problem_statement_upload_replace_delete(client):
     assert r.json()["has_statement_pdf"] is False
     r = client.get(f"/api/contests/{cid}/problems/{pid}/statement?token={token}")
     assert r.status_code == 404
+
+    # Delete-then-upload — the user-reported flow. After a delete the
+    # admin uploads a different PDF; the GET must serve the freshly
+    # uploaded bytes, not anything left over from before.
+    pdf_v3 = b"%PDF-1.4\n%v3-after-delete\n" + b"c" * 1024
+    r = client.post(
+        f"/api/icpc/problems/{pid}/statement",
+        headers=admin,
+        files={"file": ("statement.pdf", pdf_v3, "application/pdf")},
+    )
+    assert r.status_code == 200
+    assert r.json()["has_statement_pdf"] is True
+    r = client.get(f"/api/contests/{cid}/problems/{pid}/statement?token={token}")
+    assert r.status_code == 200
+    assert r.content == pdf_v3, "stale PDF served after delete-then-upload"
 
 
 def test_problem_editor_updates_label_checker_and_epsilon(client):
