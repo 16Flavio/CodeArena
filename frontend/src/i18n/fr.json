@@ -258,7 +258,16 @@
     "scoringModeSubtasksHint": "Exécute chaque test. Regroupe par Groupe ; attribue les points d'un groupe si tous ses tests passent.",
     "tcInputField": "Entrée",
     "tcExpectedField": "Sortie attendue",
-    "toastTcSaved": "Test enregistré"
+    "toastTcSaved": "Test enregistré",
+    "pdfView": "Voir l'énoncé PDF",
+    "pdfUpload": "Téléverser un PDF d'énoncé",
+    "pdfReplace": "Remplacer le PDF d'énoncé",
+    "pdfRemove": "Supprimer le PDF d'énoncé",
+    "pdfUploaded": "PDF d'énoncé enregistré",
+    "pdfDeleted": "PDF d'énoncé supprimé",
+    "pdfNotPdf": "Le fichier doit être un PDF",
+    "pdfUploadFailed": "Échec du téléversement du PDF",
+    "pdfConfirmDelete": "Supprimer le PDF d'énoncé du problème {{label}} ({{name}}) ?"
   },
   "adminHints": {
     "heading": "Indices (admin)",

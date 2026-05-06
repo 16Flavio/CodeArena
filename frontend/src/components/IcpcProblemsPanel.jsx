@@ -1,16 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   Code, Trash2, RefreshCw, Clock, Cpu, Edit, Save, X, Plus, ChevronDown, ChevronUp,
-  MessageCircle, FileDown,
+  MessageCircle, FileDown, FileText, Upload, FileX,
 } from 'lucide-react';
 import {
   listIcpcProblems, deleteIcpcProblem, updateIcpcProblem, createIcpcProblem,
   listIcpcTestcases, addIcpcTestcase, updateIcpcTestcase, deleteIcpcTestcase,
   exportIcpcProblem,
+  uploadIcpcProblemStatement, deleteIcpcProblemStatement,
 } from '../api';
 import { textOn } from '../utils/contrast';
+import { getToken } from '../utils/tokenStore';
 import { useConfirm } from './Confirm';
 
 const CHECKER_KINDS = [
@@ -243,6 +245,13 @@ export default function IcpcProblemsPanel({ contestId }) {
                     >
                       <Edit className="w-3.5 h-3.5" />
                     </button>
+                    <StatementPdfControls
+                      problem={p}
+                      contestId={contestId}
+                      onChanged={refresh}
+                      t={t}
+                      confirm={confirm}
+                    />
                     <button
                       type="button"
                       onClick={async () => {
@@ -577,5 +586,106 @@ function TestcaseForm({ draft, setDraft, onSave, onCancel, t }) {
         </button>
       </div>
     </div>
+  );
+}
+
+
+function StatementPdfControls({ problem, contestId, onChanged, t, confirm }) {
+  const fileInputRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+
+  const openPreview = () => {
+    // <a href> opens in a new tab without an Authorization header, so the
+    // statement endpoint accepts the JWT via ?token=. Same pattern the
+    // contestant view uses.
+    const token = getToken() || '';
+    const url = `/api/contests/${contestId}/problems/${problem.id}/statement?token=${encodeURIComponent(token)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const onPick = () => fileInputRef.current?.click();
+
+  const onFileChosen = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.type && file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      toast.error(t('icpcProblems.pdfNotPdf'));
+      return;
+    }
+    setBusy(true);
+    try {
+      await uploadIcpcProblemStatement(problem.id, file);
+      toast.success(t('icpcProblems.pdfUploaded'));
+      onChanged();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || t('icpcProblems.pdfUploadFailed'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onRemove = async () => {
+    const ok = await confirm({
+      message: t('icpcProblems.pdfConfirmDelete', { label: problem.label, name: problem.name }),
+      danger: true,
+    });
+    if (!ok) return;
+    setBusy(true);
+    try {
+      await deleteIcpcProblemStatement(problem.id);
+      toast.success(t('icpcProblems.pdfDeleted'));
+      onChanged();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/pdf,.pdf"
+        className="hidden"
+        onChange={onFileChosen}
+      />
+      {problem.has_statement_pdf && (
+        <button
+          type="button"
+          onClick={openPreview}
+          disabled={busy}
+          className="p-1.5 rounded hover:bg-gray-100 text-slate-400 hover:text-emerald-500 dark:hover:bg-slate-700/50 dark:hover:text-emerald-400 flex-shrink-0 disabled:opacity-50"
+          title={t('icpcProblems.pdfView')}
+          aria-label={t('icpcProblems.pdfView')}
+        >
+          <FileText className="w-3.5 h-3.5" />
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={onPick}
+        disabled={busy}
+        className="p-1.5 rounded hover:bg-gray-100 text-slate-400 hover:text-violet-500 dark:hover:bg-slate-700/50 dark:hover:text-violet-400 flex-shrink-0 disabled:opacity-50"
+        title={problem.has_statement_pdf ? t('icpcProblems.pdfReplace') : t('icpcProblems.pdfUpload')}
+        aria-label={problem.has_statement_pdf ? t('icpcProblems.pdfReplace') : t('icpcProblems.pdfUpload')}
+      >
+        <Upload className="w-3.5 h-3.5" />
+      </button>
+      {problem.has_statement_pdf && (
+        <button
+          type="button"
+          onClick={onRemove}
+          disabled={busy}
+          className="p-1.5 rounded hover:bg-red-500/10 text-slate-400 hover:text-red-500 flex-shrink-0 dark:text-gray-500 dark:hover:text-red-400 disabled:opacity-50"
+          title={t('icpcProblems.pdfRemove')}
+          aria-label={t('icpcProblems.pdfRemove')}
+        >
+          <FileX className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </>
   );
 }

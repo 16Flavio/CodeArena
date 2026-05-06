@@ -212,6 +212,94 @@ def get_problem_statement(
     )
 
 
+@global_router.post("/problems/{problem_id}/statement", response_model=schemas.ProblemOut)
+async def upload_problem_statement_pdf(
+    problem_id: int,
+    file: UploadFile = File(...),
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin uploads a statement PDF for a single ICPC problem.
+
+    Stored under ``uploads/icpc-statements/contest-<cid>/problem-<pid>.pdf``
+    so the path is stable across external_id renames (the importer keys by
+    external_id, but admins can rename mid-contest)."""
+    p = db.query(models.Problem).filter(models.Problem.id == problem_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Problème introuvable")
+
+    from ..upload_utils import read_upload_capped
+    PDF_MAX_BYTES = 10 * 1024 * 1024  # 10 MB — same ceiling as the contest-level statement.
+    content = await read_upload_capped(file, PDF_MAX_BYTES)
+    if len(content) == 0:
+        raise HTTPException(status_code=400, detail="Le fichier téléversé est vide")
+    if not content.startswith(b"%PDF-"):
+        raise HTTPException(status_code=400, detail="Le fichier ne semble pas être un PDF")
+
+    dest_dir = os.path.join(UPLOAD_DIR, "icpc-statements", f"contest-{p.contest_id}")
+    os.makedirs(dest_dir, exist_ok=True)
+    new_path = os.path.join(dest_dir, f"problem-{p.id}.pdf")
+
+    # Wipe the previous file. Includes both the legacy importer path
+    # (keyed by external_id) and any prior admin upload.
+    for stale in {p.statement_pdf_path, new_path}:
+        if stale and os.path.exists(stale):
+            try:
+                os.remove(stale)
+            except OSError:
+                pass
+
+    with open(new_path, "wb") as f:
+        f.write(content)
+    p.statement_pdf_path = new_path
+    db.commit()
+    db.refresh(p)
+
+    audit(
+        db, action="icpc_problem_statement_upload", actor=admin,
+        target_type="problem", target_id=p.id,
+        detail=f"size={len(content)}",
+    )
+    samples = (
+        db.query(models.Testcase)
+        .filter(models.Testcase.problem_id == p.id, models.Testcase.is_sample.is_(True))
+        .order_by(models.Testcase.rank, models.Testcase.id)
+        .all()
+    )
+    return _problem_to_out(p, samples=samples)
+
+
+@global_router.delete("/problems/{problem_id}/statement", response_model=schemas.ProblemOut)
+def delete_problem_statement_pdf(
+    problem_id: int,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    p = db.query(models.Problem).filter(models.Problem.id == problem_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Problème introuvable")
+    if p.statement_pdf_path and os.path.exists(p.statement_pdf_path):
+        try:
+            os.remove(p.statement_pdf_path)
+        except OSError:
+            pass
+    p.statement_pdf_path = None
+    db.commit()
+    db.refresh(p)
+
+    audit(
+        db, action="icpc_problem_statement_delete", actor=admin,
+        target_type="problem", target_id=p.id,
+    )
+    samples = (
+        db.query(models.Testcase)
+        .filter(models.Testcase.problem_id == p.id, models.Testcase.is_sample.is_(True))
+        .order_by(models.Testcase.rank, models.Testcase.id)
+        .all()
+    )
+    return _problem_to_out(p, samples=samples)
+
+
 @router.post("/{contest_id}/problems", response_model=schemas.ProblemOut)
 def create_problem(
     contest_id: int,

@@ -517,6 +517,67 @@ def test_problem_statement_pdf_endpoint(client, tmp_path, monkeypatch):
     assert r.headers["content-disposition"].startswith("inline")
 
 
+def test_admin_problem_statement_upload_replace_delete(client):
+    """Admin can attach, replace, and remove a statement PDF via the
+    dedicated per-problem endpoint — no DOMjudge package re-import needed."""
+    admin = auth_header(client, "root")
+    cid, pid = _make_icpc_contest(client, admin, title="ICPC-PDF-Admin")
+
+    # Initially no PDF.
+    plist = client.get(f"/api/contests/{cid}/problems", headers=admin).json()
+    assert plist[0]["has_statement_pdf"] is False
+
+    # Upload.
+    pdf_v1 = b"%PDF-1.4\n%v1\n" + b"a" * 256
+    r = client.post(
+        f"/api/icpc/problems/{pid}/statement",
+        headers=admin,
+        files={"file": ("statement.pdf", pdf_v1, "application/pdf")},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["has_statement_pdf"] is True
+
+    token = admin["Authorization"].split(" ", 1)[1]
+    r = client.get(f"/api/contests/{cid}/problems/{pid}/statement?token={token}")
+    assert r.status_code == 200
+    assert r.content == pdf_v1
+
+    # Replace — the old file must be cleared and the new one served.
+    pdf_v2 = b"%PDF-1.4\n%v2\n" + b"b" * 512
+    r = client.post(
+        f"/api/icpc/problems/{pid}/statement",
+        headers=admin,
+        files={"file": ("statement.pdf", pdf_v2, "application/pdf")},
+    )
+    assert r.status_code == 200
+    r = client.get(f"/api/contests/{cid}/problems/{pid}/statement?token={token}")
+    assert r.content == pdf_v2
+
+    # Reject non-PDF payloads (magic bytes are checked).
+    r = client.post(
+        f"/api/icpc/problems/{pid}/statement",
+        headers=admin,
+        files={"file": ("evil.pdf", b"<html>not a pdf</html>", "application/pdf")},
+    )
+    assert r.status_code == 400
+
+    # Non-admin can't upload.
+    alice = auth_header(client, "alice")
+    r = client.post(
+        f"/api/icpc/problems/{pid}/statement",
+        headers=alice,
+        files={"file": ("statement.pdf", pdf_v1, "application/pdf")},
+    )
+    assert r.status_code in (401, 403)
+
+    # Delete — endpoint clears the row, GET 404s afterwards.
+    r = client.delete(f"/api/icpc/problems/{pid}/statement", headers=admin)
+    assert r.status_code == 200
+    assert r.json()["has_statement_pdf"] is False
+    r = client.get(f"/api/contests/{cid}/problems/{pid}/statement?token={token}")
+    assert r.status_code == 404
+
+
 def test_problem_editor_updates_label_checker_and_epsilon(client):
     admin = auth_header(client, "root")
     cid, pid = _make_icpc_contest(client, admin, title="ICPC-Edit")

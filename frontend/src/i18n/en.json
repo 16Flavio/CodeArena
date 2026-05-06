@@ -258,7 +258,16 @@
     "scoringModeSubtasksHint": "Run every testcase. Group testcases by Group; award a group's points iff every case in it passes.",
     "tcInputField": "Input",
     "tcExpectedField": "Expected output",
-    "toastTcSaved": "Testcase saved"
+    "toastTcSaved": "Testcase saved",
+    "pdfView": "View statement PDF",
+    "pdfUpload": "Upload statement PDF",
+    "pdfReplace": "Replace statement PDF",
+    "pdfRemove": "Delete statement PDF",
+    "pdfUploaded": "Statement PDF saved",
+    "pdfDeleted": "Statement PDF removed",
+    "pdfNotPdf": "File must be a PDF",
+    "pdfUploadFailed": "Failed to upload the PDF",
+    "pdfConfirmDelete": "Remove the statement PDF for problem {{label}} ({{name}})?"
   },
   "adminHints": {
     "heading": "Hints (admin)",

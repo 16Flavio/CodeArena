@@ -187,6 +187,15 @@ export const deleteIcpcProblem = (problemId) =>
   api.delete(`/icpc/problems/${problemId}`);
 export const updateIcpcProblem = (problemId, data) =>
   api.patch(`/icpc/problems/${problemId}`, data);
+export const uploadIcpcProblemStatement = (problemId, file) => {
+  const fd = new FormData();
+  fd.append('file', file);
+  return api.post(`/icpc/problems/${problemId}/statement`, fd, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+export const deleteIcpcProblemStatement = (problemId) =>
+  api.delete(`/icpc/problems/${problemId}/statement`);
 export const addIcpcTestcase = (problemId, data) =>
   api.post(`/icpc/problems/${problemId}/testcases`, data);
 export const listIcpcTestcases = (problemId) =>
