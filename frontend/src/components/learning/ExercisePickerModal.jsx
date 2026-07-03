@@ -6,6 +6,7 @@ import {
   adminLearnListExercises, adminLearnCreateExercise,
   adminLearnUpdateExercise, adminLearnDeleteExercise,
 } from '../../api';
+import { extractErrorMessage } from '../../utils/apiError';
 
 const DEFAULT_TEST_CASE = { input: '', expected: '', is_sample: true };
 
@@ -38,7 +39,7 @@ export default function ExercisePickerModal({ open, onClose, lessonId, onInsertD
         const r = await adminLearnListExercises(lessonId);
         if (!cancelled) setExercises(r.data || []);
       } catch (err) {
-        if (!cancelled) toast.error(err.response?.data?.detail || t('exercisePicker.loadFailed'));
+        if (!cancelled) toast.error(extractErrorMessage(err, t('exercisePicker.loadFailed')));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -51,7 +52,7 @@ export default function ExercisePickerModal({ open, onClose, lessonId, onInsertD
       const r = await adminLearnListExercises(lessonId);
       setExercises(r.data || []);
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('exercisePicker.loadFailed'));
+      toast.error(extractErrorMessage(err, t('exercisePicker.loadFailed')));
     }
   };
 
@@ -93,7 +94,7 @@ export default function ExercisePickerModal({ open, onClose, lessonId, onInsertD
       setEditing(saved);
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('exercisePicker.saveFailed'));
+      toast.error(extractErrorMessage(err, t('exercisePicker.saveFailed')));
     }
   };
 
@@ -105,7 +106,7 @@ export default function ExercisePickerModal({ open, onClose, lessonId, onInsertD
       if (editing?.id === ex.id) setEditing(null);
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('exercisePicker.saveFailed'));
+      toast.error(extractErrorMessage(err, t('exercisePicker.saveFailed')));
     }
   };
 

@@ -4,6 +4,7 @@ import { Cpu, RefreshCw, AlertCircle, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getScoringStats, triggerAdminDigest } from '../api';
 import { formatDateTime } from '../utils/datetime';
+import { extractErrorMessage } from '../utils/apiError';
 
 export default function ScoringPanel() {
   const { t } = useTranslation();
@@ -39,7 +40,7 @@ export default function ScoringPanel() {
                 const r = await triggerAdminDigest();
                 toast.success(t('admin.scoring.digestSent', { count: r.data?.recipients || 0 }));
               } catch (err) {
-                toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+                toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
               }
             }}
             className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"

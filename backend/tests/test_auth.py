@@ -87,6 +87,84 @@ def test_reset_password_flow(client):
     assert client.post("/api/auth/login", json={"username": "u", "password": "newer-pw-1234"}).status_code == 200
 
 
+def test_change_password_revokes_other_sessions(client):
+    """Changing the password bumps ``token_version``: every token minted
+    before is dead, and the response carries a fresh token so the
+    caller's own session survives."""
+    client.post("/api/auth/register", json={
+        "username": "rev", "email": "rev@x.com", "password": "old-pw-123456",
+    })
+    old_tok = client.post("/api/auth/login", json={
+        "username": "rev", "password": "old-pw-123456",
+    }).json()["access_token"]
+    # Simulate a second session (e.g. a stolen remember-me token).
+    stolen_tok = client.post("/api/auth/login", json={
+        "username": "rev", "password": "old-pw-123456",
+    }).json()["access_token"]
+    h_old = {"Authorization": f"Bearer {old_tok}"}
+    assert client.get("/api/auth/me", headers=h_old).status_code == 200
+
+    r = client.post(
+        "/api/auth/change-password",
+        json={"current_password": "old-pw-123456", "new_password": "new-pw-123456"},
+        headers=h_old,
+    )
+    assert r.status_code == 200, r.text
+    fresh_tok = r.json()["access_token"]
+
+    # Both pre-change tokens are revoked; the fresh one works.
+    assert client.get("/api/auth/me", headers=h_old).status_code == 401
+    assert client.get(
+        "/api/auth/me", headers={"Authorization": f"Bearer {stolen_tok}"}
+    ).status_code == 401
+    assert client.get(
+        "/api/auth/me", headers={"Authorization": f"Bearer {fresh_tok}"}
+    ).status_code == 200
+
+
+def test_reset_password_revokes_sessions(client):
+    """A password reset ("someone may have my password") kills every
+    outstanding session."""
+    import hashlib
+    import secrets
+    from datetime import datetime, timedelta, timezone
+
+    client.post("/api/auth/register", json={
+        "username": "rst", "email": "rst@x.com", "password": "old-pw-123456",
+    })
+    tok = client.post("/api/auth/login", json={
+        "username": "rst", "password": "old-pw-123456",
+    }).json()["access_token"]
+    h = {"Authorization": f"Bearer {tok}"}
+    assert client.get("/api/auth/me", headers=h).status_code == 200
+
+    # Plant a reset token directly, like test_reset_password_flow.
+    raw = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(raw.encode()).hexdigest()
+    from backend.main import app
+    from backend.database import get_db as orig_get_db
+
+    gen = app.dependency_overrides.get(orig_get_db, orig_get_db)()
+    session = next(gen)
+    try:
+        from backend import models
+
+        user = session.query(models.User).filter(models.User.email == "rst@x.com").first()
+        user.reset_token_hash = token_hash
+        user.reset_token_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        session.commit()
+    finally:
+        try:
+            next(gen)
+        except StopIteration:
+            pass
+
+    r = client.post("/api/auth/reset-password", json={"token": raw, "new_password": "newer-pw-1234"})
+    assert r.status_code == 200, r.text
+    # The session from before the reset is dead.
+    assert client.get("/api/auth/me", headers=h).status_code == 401
+
+
 def test_change_username_requires_current_password_field(client):
     """Pin the request shape used by the frontend. AccountModal once
     sent ``{password, new_username}`` instead of ``{current_password,

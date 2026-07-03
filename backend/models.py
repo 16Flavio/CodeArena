@@ -37,6 +37,13 @@ class User(Base):
     # passes, without revealing whether the password was correct.
     failed_login_count = Column(Integer, default=0, nullable=False)
     locked_until = Column(DateTime, nullable=True)
+    # Session revocation counter. Every access/stream token embeds this
+    # value as a ``tv`` claim at mint time and ``get_current_user``
+    # rejects tokens whose claim doesn't match — so bumping it kills all
+    # outstanding sessions at once (done on password change/reset).
+    # Tokens minted before this column existed carry no claim and are
+    # treated as tv=0, so the deploy itself logs nobody out.
+    token_version = Column(Integer, default=0, nullable=False, server_default="0")
     # For contests in solo mode, the user's affiliation is taken from this
     # column instead of their team's.
     solo_affiliation_id = Column(Integer, ForeignKey("affiliations.id", ondelete="SET NULL"), nullable=True)

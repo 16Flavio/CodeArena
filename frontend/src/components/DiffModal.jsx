@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { getSubmissionContent } from '../api';
 import { diffLines } from '../utils/diff';
 import { formatDateTime } from '../utils/datetime';
+import { extractErrorMessage } from '../utils/apiError';
 
 export default function DiffModal({ leftId, rightId, onClose }) {
   const { t } = useTranslation();
@@ -19,7 +20,7 @@ export default function DiffModal({ leftId, rightId, onClose }) {
         if (!cancelled) {
           setState({
             loading: false, left: null, right: null,
-            error: err.response?.data?.detail || t('diff.loadFailed'),
+            error: extractErrorMessage(err, t('diff.loadFailed')),
           });
         }
       });

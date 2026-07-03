@@ -117,6 +117,14 @@ class SimpleMessage(BaseModel):
     detail: str
 
 
+class ChangePasswordOut(BaseModel):
+    detail: str
+    # Fresh session token: changing the password bumps ``token_version``
+    # (revoking every outstanding token), so the caller needs a
+    # replacement or they'd be logged out by their own change.
+    access_token: str
+
+
 class UserOut(BaseModel):
     id: int
     username: str

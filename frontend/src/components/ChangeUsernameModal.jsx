@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { changeUsername } from '../api';
 import { useAuth } from '../AuthContext';
 import { getToken, tokenIsPersistent } from '../utils/tokenStore';
+import { extractErrorMessage } from '../utils/apiError';
 
 export default function ChangeUsernameModal({ onClose }) {
   const { t } = useTranslation();
@@ -32,7 +33,7 @@ export default function ChangeUsernameModal({ onClose }) {
       toast.success(t('accountModal.toastUsernameUpdated'));
       onClose();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('accountModal.toastFailed'));
+      toast.error(extractErrorMessage(err, t('accountModal.toastFailed')));
     } finally {
       setSubmitting(false);
     }

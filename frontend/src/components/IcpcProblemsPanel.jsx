@@ -14,6 +14,7 @@ import {
 } from '../api';
 import { textOn } from '../utils/contrast';
 import { useConfirm } from './Confirm';
+import { extractErrorMessage } from '../utils/apiError';
 
 const CHECKER_KINDS = [
   { value: 'tokens', labelKey: 'icpcProblems.checkerTokens' },
@@ -145,7 +146,7 @@ export default function IcpcProblemsPanel({ contestId }) {
       setDraft(null);
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 
@@ -159,7 +160,7 @@ export default function IcpcProblemsPanel({ contestId }) {
       await deleteIcpcProblem(p.id);
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 
@@ -266,7 +267,7 @@ export default function IcpcProblemsPanel({ contestId }) {
                           a.remove();
                           URL.revokeObjectURL(url);
                         } catch (err) {
-                          toast.error(err.response?.data?.detail || t('icpcProblems.exportFailed'));
+                          toast.error(extractErrorMessage(err, t('icpcProblems.exportFailed')));
                         }
                       }}
                       className="p-1.5 rounded hover:bg-gray-100 text-slate-400 hover:text-sky-500 dark:hover:bg-slate-700/50 dark:hover:text-sky-400 flex-shrink-0"
@@ -467,7 +468,7 @@ function TestcaseEditor({ problemId, t }) {
       refresh();
       toast.success(t('icpcProblems.toastTcSaved'));
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
   const remove = async (tc) => {
@@ -480,7 +481,7 @@ function TestcaseEditor({ problemId, t }) {
       await deleteIcpcTestcase(tc.id);
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 
@@ -618,7 +619,7 @@ function StatementPdfControls({ problem, contestId, onChanged, t, confirm }) {
       toast.success(t('icpcProblems.pdfUploaded'));
       onChanged();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('icpcProblems.pdfUploadFailed'));
+      toast.error(extractErrorMessage(err, t('icpcProblems.pdfUploadFailed')));
     } finally {
       setBusy(false);
     }
@@ -636,7 +637,7 @@ function StatementPdfControls({ problem, contestId, onChanged, t, confirm }) {
       toast.success(t('icpcProblems.pdfDeleted'));
       onChanged();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     } finally {
       setBusy(false);
     }

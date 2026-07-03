@@ -9,6 +9,8 @@ import { Link } from 'react-router-dom';
 import {
   changePassword, changeUsername, listAffiliations, setMySoloAffiliation,
 } from '../api';
+import { setToken, tokenIsPersistent } from '../utils/tokenStore';
+import { extractErrorMessage } from '../utils/apiError';
 
 // Single, centered, comfortable place to manage account-level settings.
 // Replaces the 3 cramped sidebar buttons (password / username /
@@ -100,11 +102,14 @@ function PasswordTab({ onClose }) {
     }
     setSubmitting(true);
     try {
-      await changePassword({ current_password: form.current, new_password: form.next });
+      const { data } = await changePassword({ current_password: form.current, new_password: form.next });
+      // The backend revokes every outstanding session (token_version
+      // bump) and hands back a fresh token so THIS session survives.
+      if (data?.access_token) setToken(data.access_token, { remember: tokenIsPersistent() });
       toast.success(t('accountModal.toastPasswordUpdated'));
       onClose?.();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('accountModal.toastFailed'));
+      toast.error(extractErrorMessage(err, t('accountModal.toastFailed')));
     } finally {
       setSubmitting(false);
     }
@@ -189,7 +194,7 @@ function UsernameTab({ onClose }) {
       toast.success(t('accountModal.toastUsernameUpdated'));
       onClose?.();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('accountModal.toastFailed'));
+      toast.error(extractErrorMessage(err, t('accountModal.toastFailed')));
     } finally {
       setSubmitting(false);
     }
@@ -257,7 +262,7 @@ function AffiliationTab({ onClose }) {
       toast.success(t('accountModal.toastAffiliationUpdated'));
       onClose?.();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('accountModal.toastFailed'));
+      toast.error(extractErrorMessage(err, t('accountModal.toastFailed')));
     } finally {
       setSubmitting(false);
     }

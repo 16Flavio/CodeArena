@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { forgotPassword } from '../api';
 import { Zap, Mail, CheckCircle, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { extractErrorMessage } from '../utils/apiError';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -18,7 +19,7 @@ export default function ForgotPassword() {
       await forgotPassword({ email });
       setSent(true);
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('auth.somethingWentWrong'));
+      toast.error(extractErrorMessage(err, t('auth.somethingWentWrong')));
     } finally {
       setLoading(false);
     }

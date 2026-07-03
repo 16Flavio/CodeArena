@@ -89,11 +89,20 @@ def get_current_user(
         if sub is None:
             raise credentials_exception
         user_id = int(sub)
+        token_version = int(payload.get("tv", 0))
     except (JWTError, ValueError):
         raise credentials_exception
 
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if user is None:
+        raise credentials_exception
+    # Session revocation: the token must carry the user's CURRENT
+    # ``token_version`` (``tv`` claim, minted at login). Password change
+    # or reset bumps the column, instantly invalidating every token
+    # minted before — the only kill switch for a stolen 30-day
+    # remember-me token short of rotating SECRET_KEY. Legacy tokens
+    # without the claim count as tv=0.
+    if token_version != (user.token_version or 0):
         raise credentials_exception
     return user
 
@@ -191,13 +200,16 @@ def get_current_user_from_query(
         if sub is None:
             raise JWTError("missing sub")
         user_id = int(sub)
+        token_version = int(payload.get("tv", 0))
     except (JWTError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Identifiants d'authentification invalides",
         )
     user = db.query(models.User).filter(models.User.id == user_id).first()
-    if user is None:
+    # Same ``tv`` revocation check as get_current_user — stream tickets
+    # minted from a since-revoked session must die with it.
+    if user is None or token_version != (user.token_version or 0):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Identifiants d'authentification invalides",

@@ -10,6 +10,7 @@ import { useAuth } from '../AuthContext';
 import { getIcpcPresentation, getScoringPresentation, getContest } from '../api';
 import { textOn } from '../utils/contrast';
 import { formatScore } from '../utils/format';
+import { extractErrorMessage } from '../utils/apiError';
 
 const ROW_HEIGHT = 56; // px — kept in sync with row CSS
 const REVEAL_FLIP_MS = 280;
@@ -187,7 +188,7 @@ function IcpcPresentationFlow() {
     getIcpcPresentation(id)
       .then((r) => setData(r.data))
       .catch((err) => {
-        toast.error(err.response?.data?.detail || t('presentation.loadFailed'));
+        toast.error(extractErrorMessage(err, t('presentation.loadFailed')));
         navigate(`/scoreboard/${id}`);
       });
   }, [id, navigate, t]);
@@ -996,7 +997,7 @@ function ScoringPresentationFlow() {
     getScoringPresentation(id)
       .then((r) => setData(r.data))
       .catch((err) => {
-        toast.error(err.response?.data?.detail || t('presentation.loadFailed'));
+        toast.error(extractErrorMessage(err, t('presentation.loadFailed')));
         navigate(`/scoreboard/${id}`);
       });
   }, [id, navigate, t]);

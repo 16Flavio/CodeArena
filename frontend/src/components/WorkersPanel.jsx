@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { Cpu, RefreshCw } from 'lucide-react';
 import { getScoringWorkers, requeueFailedJobs } from '../api';
 import { formatDateTime } from '../utils/datetime';
+import { extractErrorMessage } from '../utils/apiError';
 
 export default function WorkersPanel() {
   const { t } = useTranslation();
@@ -19,7 +20,7 @@ export default function WorkersPanel() {
     setLoading(true);
     getScoringWorkers()
       .then((r) => setState(r.data))
-      .catch((err) => toast.error(err.response?.data?.detail || t('workers.loadFailed')))
+      .catch((err) => toast.error(extractErrorMessage(err, t('workers.loadFailed'))))
       .finally(() => setLoading(false));
   };
 
@@ -39,7 +40,7 @@ export default function WorkersPanel() {
       toast.success(t('workers.requeueFailedOk', { n: r.data?.requeued ?? 0 }));
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('workers.loadFailed'));
+      toast.error(extractErrorMessage(err, t('workers.loadFailed')));
     } finally {
       setRequeuing(false);
     }

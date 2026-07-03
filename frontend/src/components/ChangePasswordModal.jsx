@@ -3,6 +3,8 @@ import { X, Eye, EyeOff, KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { changePassword } from '../api';
+import { setToken, tokenIsPersistent } from '../utils/tokenStore';
+import { extractErrorMessage } from '../utils/apiError';
 
 export default function ChangePasswordModal({ onClose }) {
   const { t } = useTranslation();
@@ -22,14 +24,17 @@ export default function ChangePasswordModal({ onClose }) {
     }
     setSubmitting(true);
     try {
-      await changePassword({
+      const { data } = await changePassword({
         current_password: form.current_password,
         new_password: form.new_password,
       });
+      // The backend revokes every outstanding session (token_version
+      // bump) and hands back a fresh token so THIS session survives.
+      if (data?.access_token) setToken(data.access_token, { remember: tokenIsPersistent() });
       toast.success(t('accountModal.toastPasswordUpdated'));
       onClose();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('accountModal.toastFailed'));
+      toast.error(extractErrorMessage(err, t('accountModal.toastFailed')));
     } finally {
       setSubmitting(false);
     }

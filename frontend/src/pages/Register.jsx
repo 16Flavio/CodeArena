@@ -7,6 +7,7 @@ import { Zap, Eye, EyeOff, Sun, Moon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import PasswordStrength from '../components/PasswordStrength';
+import { extractErrorMessage } from '../utils/apiError';
 
 export default function Register() {
   const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '' });
@@ -48,7 +49,7 @@ export default function Register() {
       toast.success(t('auth.accountCreated'));
       navigate('/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('auth.registerFailed'));
+      toast.error(extractErrorMessage(err, t('auth.registerFailed')));
     } finally {
       setLoading(false);
     }
