@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, R
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session, joinedload
 
-from ..auth import get_current_user, get_current_user_from_query, require_admin, require_verified
+from ..auth import get_current_user, get_current_user_from_query, require_admin, require_admin_or_organizer, require_verified
 from ..audit import record as audit
 from ..database import get_db
 from ..rate_limit import limiter
@@ -1473,12 +1473,22 @@ def create_clarification(
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
     if not contest:
         raise HTTPException(status_code=404, detail="Concours introuvable")
-    team = db.query(models.TeamMember).filter(models.TeamMember.user_id == user.id).first()
+    # Only participants may open a clarification — otherwise any verified
+    # user could post into any visible contest.
+    if not _user_is_participant(db, contest, user):
+        raise HTTPException(status_code=403, detail="Réservé aux participants de ce concours")
+    # Attribute it to the team the user is registered WITH for THIS contest,
+    # not an unrelated global membership. Solo participants have no team.
+    from_team_id = None
+    for m in db.query(models.TeamMember).filter(models.TeamMember.user_id == user.id).all():
+        if _team_registration(db, contest_id, m.team_id) is not None:
+            from_team_id = m.team_id
+            break
     c = models.Clarification(
         contest_id=contest_id,
         problem_id=payload.problem_id,
         from_user_id=user.id,
-        from_team_id=team.team_id if team else None,
+        from_team_id=from_team_id,
         body=payload.body.strip()[:4000],
         visibility="private",
     )
@@ -1794,7 +1804,7 @@ def delete_affiliation(
 def override_judging(
     judging_id: int,
     payload: schemas.JudgingOverrideIn,
-    admin: models.User = Depends(get_current_user),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     """Admin / organizer forcibly changes the verdict on an existing

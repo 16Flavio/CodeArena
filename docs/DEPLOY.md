@@ -12,21 +12,48 @@ bash start.sh
 # Build images + start everything (backend, frontend, backup sidecar).
 docker compose up -d --build
 
-# Optional: build the sandbox image used by SCORING_MODE=docker.
-docker compose --profile build-only build scoring-image
+# Build BOTH sandbox images used by SCORING_MODE=docker:
+#   * scoring-image   — Python-only, for output-scoring validators.
+#   * icpc-sandbox    — g++/gcc/javac/python3, for ICPC compile+run.
+docker compose --profile build-only build scoring-image icpc-sandbox
 ```
 
 Frontend → `http://localhost`. API → `http://localhost:8000`.
 
 ### Turning on isolated scoring
 
-1. Build the sandbox image (above).
-2. In `.env` set `SCORING_MODE=docker`.
-3. `docker compose up -d backend` to restart the backend.
+**Strongly recommended before any contest where contestants submit source
+code (ICPC problems).** In the default `subprocess` mode, contestant code
+runs on the worker host — the env is scrubbed of secrets and POSIX rlimits
+apply, but there is **no network or filesystem isolation**. Docker mode puts
+each compile+run inside a throwaway, network-less container.
 
-The backend mounts the host Docker socket so it can spawn sibling containers.
-Each submission runs with `--network=none --read-only --memory=256m --cpus=0.5
---cap-drop=ALL`, as a non-root UID, with a tmpfs `/tmp` and no swap.
+1. Build both sandbox images (above).
+2. Create the shared judge workdir on the host and set it in `.env`:
+   ```bash
+   sudo mkdir -p /judge-work && sudo chmod 0777 /judge-work
+   # .env
+   JUDGE_WORKDIR=/judge-work        # MUST be an absolute path; mounted
+                                    # host↔container at the same path.
+   SCORING_MODE=docker
+   ```
+3. `docker compose up -d backend worker` to restart with the new config.
+
+Each submission's compile and run happen in a sibling container with
+`--network=none --read-only --cap-drop=ALL --security-opt no-new-privileges
+--pids-limit=128 --memory --cpus`, as a non-root UID (1997), with a tmpfs
+`/tmp`, no swap, and a coreutils `timeout` enforcing the wall limit. The
+backend/worker mount the host Docker socket to spawn these siblings.
+
+**Caveats to validate in staging first** (`backend/icpc_sandbox.py`):
+- **Interactive** problems are *not yet* containerised — they still run the
+  contestant program as a host subprocess. Prefer batch problems, or keep the
+  worker itself on an isolated host, until this is wired.
+- Container startup adds latency; TLE is enforced by the in-container
+  `timeout` (not wall-clock measured across startup), but validate your time
+  limits against the sandbox image before the contest.
+- The Docker socket mount grants root-equivalent on the host — run this on a
+  single-tenant contest box only.
 
 ## Switching to PostgreSQL
 
@@ -219,6 +246,9 @@ no rebuild needed unless noted.
 | `DB_MAX_OVERFLOW`           | `15`    | Burst connections per backend worker (above pool_size).           |
 | `WORKER_DB_POOL_SIZE`       | `2`     | DB pool per scoring worker (single-threaded, low need).           |
 | `SCORING_WORKER_REPLICAS`   | `1`     | Number of RQ scoring workers. Bump for high submit rate.          |
+| `SCORING_MODE`              | `subprocess` | `docker` isolates each compile/run in a container (see above). |
+| `SCORING_ICPC_IMAGE`        | `codearena-icpc-sandbox:latest` | Toolchain sandbox image for ICPC docker mode. |
+| `JUDGE_WORKDIR`             | `/judge-work` | Abs path mounted host↔container at the SAME path for the ICPC sandbox. |
 | `POSTGRES_MAX_CONNECTIONS`  | `200`   | Postgres connection ceiling. Recreate the postgres container.     |
 | `POSTGRES_SHARED_BUFFERS`   | `256MB` | Postgres page cache. Recreate the postgres container.             |
 

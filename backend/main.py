@@ -160,13 +160,22 @@ _seed_languages()
 
 
 def _warn_insecure_scoring() -> None:
-    """Loud warning on boot if the scoring sandbox isn't Docker. Admin-
-    authored scripts (scoring, output validators, ICPC interactors) are
-    user-controlled code; running them in a host subprocess is fine for
-    a single-admin classroom but inappropriate for anything public."""
+    """Loud warning on boot if the scoring sandbox isn't Docker.
+
+    Two classes of user-controlled code run here: organizer-authored scripts
+    (scoring / output validators / ICPC interactors — organizers are trusted
+    to author these for contests they own) and, more importantly, CONTESTANT-
+    submitted source in ICPC problems. In docker mode both the output-scoring
+    path and the ICPC batch compile+run are isolated in throwaway containers;
+    in subprocess mode they run on the host with only an env scrub + rlimits
+    (fine for a trusted classroom, not for anything public)."""
     mode = (os.environ.get("SCORING_MODE") or "").lower()
     if mode == "docker":
-        log.info("Scoring sandbox: docker mode (isolated containers)")
+        log.info(
+            "Scoring sandbox: docker mode — output-scoring and ICPC batch "
+            "compile/run run in isolated containers (interactive ICPC still "
+            "uses a host subprocess; prefer batch problems)."
+        )
         return
     banner = "=" * 72
     log.warning(

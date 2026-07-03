@@ -16,7 +16,7 @@ import os
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 
-from ..auth import get_current_user, require_admin, require_verified
+from ..auth import get_current_user, require_admin, require_admin_or_organizer, require_verified
 from ..audit import record as audit
 from ..database import get_db
 from .. import models, schemas
@@ -647,7 +647,7 @@ def list_registrations(
 def set_registration_disqualified(
     registration_id: int,
     payload: schemas.DisqualifyIn,
-    admin: models.User = Depends(get_current_user),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     r = db.query(models.ContestRegistration).filter(

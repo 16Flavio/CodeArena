@@ -32,6 +32,12 @@ services:
       SCORING_TIMEOUT_SECONDS: ${SCORING_TIMEOUT_SECONDS:-30}
       SCORING_MODE: ${SCORING_MODE:-subprocess}
       SCORING_IMAGE: ${SCORING_IMAGE:-codearena-scoring:latest}
+      # Toolchain image + shared judge workdir for the containerised ICPC
+      # sandbox (SCORING_MODE=docker). SCORING_WORKDIR must be a path that is
+      # IDENTICAL on host and inside the container (see the volume below), so
+      # the sibling sandbox container can bind-mount it at the same path.
+      SCORING_ICPC_IMAGE: ${SCORING_ICPC_IMAGE:-codearena-icpc-sandbox:latest}
+      SCORING_WORKDIR: ${JUDGE_WORKDIR:-/judge-work}
       SCORING_MEMORY_MB: ${SCORING_MEMORY_MB:-256}
       SCORING_CPUS: ${SCORING_CPUS:-0.5}
       # Composed URL uses the postgres service below. Override DATABASE_URL
@@ -53,6 +59,11 @@ services:
       # on the host — acceptable for a single-tenant contest server where
       # the backend is the only trusted app on the box.
       - /var/run/docker.sock:/var/run/docker.sock
+      # Shared judge workdir, mounted at the SAME absolute path on host and in
+      # the container so the ICPC sandbox's sibling containers can bind-mount
+      # each per-submission subdir at an identical path (no in-command path
+      # rewriting). Only needed for SCORING_MODE=docker.
+      - ${JUDGE_WORKDIR:-/judge-work}:${JUDGE_WORKDIR:-/judge-work}
     # Internal only — Caddy is the one public-facing service. For local dev
     # without Caddy, add `ports: - "8000:8000"`.
     expose:
@@ -185,11 +196,15 @@ services:
       SCORING_TIMEOUT_SECONDS: ${SCORING_TIMEOUT_SECONDS:-30}
       SCORING_MODE: ${SCORING_MODE:-subprocess}
       SCORING_IMAGE: ${SCORING_IMAGE:-codearena-scoring:latest}
+      SCORING_ICPC_IMAGE: ${SCORING_ICPC_IMAGE:-codearena-icpc-sandbox:latest}
+      SCORING_WORKDIR: ${JUDGE_WORKDIR:-/judge-work}
       SCORING_MEMORY_MB: ${SCORING_MEMORY_MB:-256}
       SCORING_CPUS: ${SCORING_CPUS:-0.5}
     volumes:
       - ${UPLOADS_DIR:-./uploads}:/app/backend/uploads
       - /var/run/docker.sock:/var/run/docker.sock
+      # Same-path shared judge workdir — see the backend service for why.
+      - ${JUDGE_WORKDIR:-/judge-work}:${JUDGE_WORKDIR:-/judge-work}
     command: [ "python", "-m", "backend.worker" ]
     restart: unless-stopped
 
@@ -201,6 +216,18 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.scoring
+    profiles: [ "build-only" ]
+    command: [ "true" ]
+
+  icpc-sandbox:
+    # Build-only helper for the containerised ICPC judging sandbox
+    # (SCORING_MODE=docker). Carries g++, gcc, javac, python3. Build with:
+    #   docker compose --profile build-only build icpc-sandbox
+    # then tag/point SCORING_ICPC_IMAGE at it. Never runs as a service.
+    image: ${SCORING_ICPC_IMAGE:-codearena-icpc-sandbox:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile.icpc-sandbox
     profiles: [ "build-only" ]
     command: [ "true" ]
 

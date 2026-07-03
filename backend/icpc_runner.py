@@ -3,19 +3,31 @@
 Compiles (if needed) then runs a team's source against each testcase of a
 Problem, returning per-testcase verdicts: AC / WA / TLE / MLE / RE / CE.
 
-Runs on the same host as the RQ worker. Two isolation modes:
+Runs on the same host as the RQ worker via subprocess, with these bounds
+on the untrusted contestant process:
 
-  * ``SCORING_MODE=docker`` — each compile + run lives inside a throwaway
-    container. Recommended in production. Requires the ``codearena-scoring``
-    image to have g++, gcc, javac, python3 installed.
-  * default subprocess — same-host subprocess with an OS-level time limit
-    (POSIX ulimit RLIMIT_AS + wall-clock kill). Fine for class-scale use
-    but no network / fs isolation beyond what the scoring script sees.
+  * a scrubbed environment (``_sandbox_env``) — the child never inherits
+    the worker's secrets (SECRET_KEY, DATABASE_URL, SMTP creds). Leaking
+    SECRET_KEY would let a submission forge admin JWTs.
+  * POSIX resource caps (``_child_rlimits``): address space, CPU time,
+    process count (fork-bomb guard), and file size (disk-fill guard).
+  * a wall-clock timeout kill.
+
+IMPORTANT — this path does NOT provide network or filesystem isolation.
+Unlike the output-scoring path (``scoring_docker.py``), ``SCORING_MODE``
+is not honoured here: contestant code can still open sockets and read any
+file the worker user can. For anything beyond a trusted classroom, run the
+worker itself inside a locked-down container (``--network=none``, read-only
+rootfs, non-root uid, bind-mounting only the judge workdir). See
+docs/DEPLOY.md. Wiring per-run containers in here needs a toolchain image
+(g++, gcc, javac, python3) — the stock ``codearena-scoring`` image is
+Python-only.
 
 This module intentionally does not import FastAPI — it's called from the
 worker process."""
 from __future__ import annotations
 
+import logging
 import os
 import re
 import shlex
@@ -24,6 +36,10 @@ import subprocess
 import tempfile
 from dataclasses import dataclass
 from typing import Optional
+
+from . import icpc_sandbox
+
+log = logging.getLogger("contest.icpc_runner")
 
 
 # ── Verdict constants — match DOMjudge's short codes ──────────────────────────
@@ -101,26 +117,114 @@ def check_output(team_out: str, expected: str, kind: str, epsilon: Optional[floa
 
 # ── Subprocess execution ──────────────────────────────────────────────────────
 
-def _run_shell(cmd: str, *, cwd: str, stdin: Optional[str], timeout_s: float, memory_mb: int) -> tuple[int, str, str, int]:
-    """Run ``cmd`` with a wall-clock timeout and memory cap. Returns
-    ``(exit_code, stdout, stderr, elapsed_ms)``."""
-    env = os.environ.copy()
-    env["SCORING_MEMORY_MB"] = str(memory_mb)
-    env["SCORING_TIMEOUT_SECONDS"] = str(int(timeout_s) + 1)
+# The child inherits ONLY these (secret-free) variables from the worker's
+# environment — enough for the interpreter/compiler to start, nothing more.
+# Everything else is withheld, so a submission running ``print(os.environ)``
+# / ``getenv`` can't exfiltrate a platform secret. The withheld set includes
+# SECRET_KEY (JWT forgery → admin), DATABASE_URL, SMTP creds, REDIS_URL,
+# SENTRY_DSN, POSTGRES_*. This is an allowlist (fail-closed): a secret added
+# to the environment later stays hidden unless someone adds its name here.
+# Matching is case-insensitive so Windows' ``SystemRoot`` is captured as-is.
+_ENV_ALLOWLIST = frozenset({
+    # POSIX runtime
+    "PATH", "HOME", "LANG", "LC_ALL", "LC_CTYPE", "LC_NUMERIC", "TMPDIR",
+    "TZ", "TERM", "USER", "LOGNAME", "SHELL", "LD_LIBRARY_PATH",
+    # Windows runtime (dev boxes) — needed for the interpreter/compiler to
+    # even start; none of these carry app secrets.
+    "SYSTEMROOT", "WINDIR", "PATHEXT", "TEMP", "TMP", "COMSPEC", "SYSTEMDRIVE",
+    "NUMBER_OF_PROCESSORS", "PROCESSOR_ARCHITECTURE", "OS",
+    "APPDATA", "LOCALAPPDATA", "USERPROFILE",
+})
 
-    # On POSIX, preexec_fn can set RLIMIT_AS — on Windows/dev we skip it.
-    preexec = None
+
+def _sandbox_env(**extra: str) -> dict:
+    """Minimal, scrubbed environment for a sandboxed child. Inherits only
+    the secret-free allowlist above; never the full ``os.environ``."""
+    env = {k: v for k, v in os.environ.items() if k.upper() in _ENV_ALLOWLIST}
+    env.update({k: v for k, v in extra.items() if v is not None})
+    return env
+
+
+def _child_rlimits(memory_mb: int, cpu_s: int):
+    """Return a POSIX ``preexec_fn`` capping the child's address space, CPU
+    time, process count (fork-bomb guard) and single-file size (disk-fill
+    guard). Returns ``None`` on Windows/dev where ``resource`` is absent —
+    the wall-clock timeout is then the only bound.
+
+    Note: RLIMIT_NPROC is enforced per real-uid and is a no-op when the
+    worker runs as root, so it is best-effort defence-in-depth, not a
+    substitute for running the worker under a non-root, containerised uid."""
     try:
         import resource  # type: ignore
-
-        def _limits():  # pragma: no cover — only runs on POSIX children
-            mem_bytes = memory_mb * 1024 * 1024
-            resource.setrlimit(resource.RLIMIT_AS, (mem_bytes, mem_bytes))
-            resource.setrlimit(resource.RLIMIT_CPU, (int(timeout_s) + 1, int(timeout_s) + 2))
-
-        preexec = _limits
     except ImportError:
-        pass
+        return None
+
+    def _apply():  # pragma: no cover — only runs in POSIX children
+        mem_bytes = memory_mb * 1024 * 1024
+        resource.setrlimit(resource.RLIMIT_AS, (mem_bytes, mem_bytes))
+        resource.setrlimit(resource.RLIMIT_CPU, (cpu_s, cpu_s + 1))
+        try:
+            resource.setrlimit(resource.RLIMIT_NPROC, (256, 256))
+        except (ValueError, OSError):
+            pass
+        try:
+            fsize = 256 * 1024 * 1024  # 256 MB per file
+            resource.setrlimit(resource.RLIMIT_FSIZE, (fsize, fsize))
+        except (ValueError, OSError):
+            pass
+
+    return _apply
+
+
+_DOCKER_MODE: Optional[bool] = None
+
+
+def _use_docker() -> bool:
+    """True when ``SCORING_MODE=docker`` and the Docker daemon is reachable.
+    Cached per process — otherwise every compile/run would shell out to
+    ``docker version``. A worker restart re-evaluates (e.g. after the daemon
+    comes up)."""
+    global _DOCKER_MODE
+    if (os.environ.get("SCORING_MODE") or "").lower() != "docker":
+        return False
+    if _DOCKER_MODE is None:
+        _DOCKER_MODE = icpc_sandbox.docker_available()
+        if not _DOCKER_MODE:
+            log.warning(
+                "SCORING_MODE=docker but the Docker daemon is unreachable; "
+                "ICPC judging is falling back to a host subprocess (NOT isolated)."
+            )
+    return _DOCKER_MODE
+
+
+def _python_bin() -> str:
+    """Which interpreter ``{python}`` expands to. In the sandbox container it
+    is the image's ``python3``; on the host it is whatever runs the worker."""
+    if _use_docker():
+        return "python3"
+    import sys as _sys
+    return _sys.executable or "python3"
+
+
+def _run_shell(cmd: str, *, cwd: str, stdin: Optional[str], timeout_s: float, memory_mb: int) -> tuple[int, str, str, int]:
+    """Run ``cmd`` with a wall-clock timeout and memory cap. Returns
+    ``(exit_code, stdout, stderr, elapsed_ms)``.
+
+    In docker mode the command runs inside an isolated sibling container
+    (no network, read-only rootfs, non-root uid); otherwise it runs as a
+    host subprocess bounded only by the env scrub + POSIX rlimits below."""
+    if _use_docker():
+        return icpc_sandbox.run_in_container(
+            cmd, workdir=cwd, stdin=stdin, timeout_s=timeout_s,
+            memory_mb=memory_mb, cpus=os.environ.get("SCORING_CPUS", "1.0"),
+        )
+
+    env = _sandbox_env(
+        SCORING_MEMORY_MB=str(memory_mb),
+        SCORING_TIMEOUT_SECONDS=str(int(timeout_s) + 1),
+    )
+    # POSIX resource caps; None on Windows/dev (wall-clock kill only).
+    preexec = _child_rlimits(memory_mb, int(timeout_s) + 1)
 
     import time as _t
     t0 = _t.monotonic()
@@ -145,15 +249,14 @@ def _run_shell(cmd: str, *, cwd: str, stdin: Optional[str], timeout_s: float, me
 # ── Compile + run helpers ─────────────────────────────────────────────────────
 
 def _expand(cmd: str, *, src: str, exe: str, workdir: str) -> str:
-    # {python} → the interpreter currently running the worker. Keeps dev
-    # machines (which may only have `python`, not `python3`) and the
-    # production Docker image (which has python3 but not python) both happy.
-    import sys as _sys
+    # {python} → the right interpreter for where the command will run:
+    # ``python3`` inside the sandbox image, else the worker's own executable
+    # (dev machines may only have `python`, not `python3`).
     return (
         cmd.replace("{src}", src)
            .replace("{exe}", exe)
            .replace("{workdir}", workdir)
-           .replace("{python}", _sys.executable or "python3")
+           .replace("{python}", _python_bin())
     )
 
 
@@ -208,7 +311,11 @@ def run_against_testcase(
     rc, out, err, elapsed_ms = _run_shell(
         cmd, cwd=workdir, stdin=stdin, timeout_s=wall, memory_mb=memory_limit_mb,
     )
-    if rc == -9 or elapsed_ms > int(time_limit_ms * time_factor):
+    # rc in TIMEOUT_RCS covers both the subprocess wall-kill (-9) and the
+    # container's coreutils ``timeout`` (124/137). The elapsed>limit fallback
+    # is only trustworthy for the subprocess path — in docker mode container
+    # startup jitter inflates elapsed_ms, so we rely on the rc there.
+    if rc in icpc_sandbox.TIMEOUT_RCS or (not _use_docker() and elapsed_ms > int(time_limit_ms * time_factor)):
         return RunResult(verdict=TLE, runtime_ms=elapsed_ms, stderr=err[:1000])
     # Linux OOM killers show up as various signals; treat any non-zero exit
     # other than the exact RLIMIT_AS OOM (often 137 / -9) as RE. Memory-kill
@@ -301,9 +408,13 @@ def _run_interactive(
     user_cmd = _expand(run_cmd, src=src_path, exe=exe_path, workdir=workdir)
     wall = max(0.2, (time_limit_ms / 1000.0) * max(1.0, time_factor))
 
-    env = os.environ.copy()
-    env["SCORING_MEMORY_MB"] = str(memory_limit_mb)
-    env["SCORING_TIMEOUT_SECONDS"] = str(int(wall) + 1)
+    env = _sandbox_env(
+        SCORING_MEMORY_MB=str(memory_limit_mb),
+        SCORING_TIMEOUT_SECONDS=str(int(wall) + 1),
+    )
+    # Same resource caps as the batch path — the interactive path previously
+    # applied none, leaving MLE/fork-bombs unbounded for interactive problems.
+    child_preexec = _child_rlimits(memory_limit_mb, int(wall) + 1)
 
     use_python_wrapper = interactor_run_cmd_str is None
     if use_python_wrapper:
@@ -355,12 +466,14 @@ def _run_interactive(
             stdin=a_r, stdout=b_w, stderr=subprocess.PIPE,
             cwd=workdir, env=env, shell=(os.name == "nt"),
             close_fds=True,
+            preexec_fn=child_preexec,
         )
         interactor = subprocess.Popen(
             interactor_argv,
             stdin=b_r, stdout=a_w, stderr=subprocess.PIPE,
             cwd=interactor_cwd, env=env, shell=interactor_shell,
             close_fds=True,
+            preexec_fn=child_preexec,
         )
     except Exception as e:  # noqa: BLE001
         for fd in (a_r, a_w, b_r, b_w):
@@ -453,7 +566,18 @@ def judge(
     in a sibling workdir using ``interactor_compile_cmd`` and invokes it
     with ``interactor_run_cmd``; the compiled interactor reads the testcase
     via ``INTERACTOR_INPUT_FILE`` / ``INTERACTOR_EXPECTED_FILE`` env paths."""
-    with tempfile.TemporaryDirectory(prefix="icpc-judge-") as workdir:
+    # In docker mode the workdir must live where the sandbox container can
+    # bind-mount it at the same absolute path (SCORING_WORKDIR, e.g.
+    # /judge-work shared host↔worker). Otherwise the OS default temp dir.
+    _wd_parent = os.environ.get("SCORING_WORKDIR") or None
+    with tempfile.TemporaryDirectory(prefix="icpc-judge-", dir=_wd_parent) as workdir:
+        if _use_docker():
+            # The sandbox runs as a non-root uid; let it write build
+            # artefacts into the bind-mounted workdir.
+            try:
+                os.chmod(workdir, 0o777)
+            except OSError:
+                pass
         compile_res = compile_source(language_id, compile_cmd, source_code, workdir=workdir)
         if compile_res.verdict == CE:
             return CE, compile_res.compile_output, []
@@ -461,6 +585,16 @@ def judge(
         runs: list[tuple[int, RunResult, bool]] = []
         overall = AC
         is_interactive = (checker_kind or "").lower() == "interactive" and interactor_script
+        if is_interactive and _use_docker():
+            # The interactive path uses host pipes between two processes and
+            # is not yet wired through the container sandbox — it still runs
+            # the contestant program as a host subprocess (env-scrubbed +
+            # rlimited, but not network/fs-isolated). Track as a follow-up.
+            log.warning(
+                "Interactive problem judged in SCORING_MODE=docker but the "
+                "interactive path is NOT containerised; contestant code ran "
+                "as a host subprocess. Prefer batch problems until wired."
+            )
         passes = max(1, int(num_passes or 1))
 
         # Prepare the interactor once per judge() call. Python interactors
