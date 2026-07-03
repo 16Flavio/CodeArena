@@ -155,3 +155,123 @@ def test_list_submissions_team_idor_blocked(client):
     # Bob (a member) is allowed to list his own team's submissions.
     r = client.get(f"/api/contests/{cid}/submissions?team_id={bob_team['id']}", headers=bob)
     assert r.status_code == 200, r.text
+
+
+# ── Interactive judging: expected output must not leak to the contestant ──────
+
+def _wait_verdict(client, hdr, sid, attempts=60):
+    import time
+    for _ in range(attempts):
+        r = client.get(f"/api/contests/submissions/{sid}/judging", headers=hdr)
+        if r.status_code == 200 and r.json().get("verdict") != "pending":
+            return r.json()["verdict"]
+        time.sleep(0.1)
+    raise AssertionError("judging did not finish")
+
+
+def test_interactor_expected_output_not_in_user_env(client):
+    """An interactive problem's expected answer is handed to the interactor
+    process only. A contestant program that scrapes os.environ for it must
+    NOT be able to (previously INTERACTOR_PAYLOAD, with expected_output, was
+    shared with the user program)."""
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    cid = client.post(
+        "/api/contests",
+        json={
+            "title": "Interactive-Secret", "is_active": True,
+            "start_time": _iso(now - timedelta(minutes=5)),
+            "end_time": _iso(now + timedelta(hours=1)),
+            "participation_mode": "solo", "kind": "icpc",
+            "scoring_script": "score = 0",
+        },
+        headers=admin,
+    ).json()["id"]
+
+    # Interactor accepts only the exact expected_output it was given.
+    interactor = (
+        "import sys\n"
+        "print('go', flush=True)\n"
+        "ans = sys.stdin.readline().strip()\n"
+        "verdict('AC') if ans == expected_output.strip() else verdict('WA', 'nope')\n"
+    )
+    pid = client.post(
+        f"/api/contests/{cid}/problems",
+        json={
+            "external_id": "secret", "label": "A", "name": "Secret",
+            "time_limit_ms": 3000, "memory_limit_mb": 256,
+            "checker_kind": "interactive", "interactor_script": interactor,
+            "num_passes": 1,
+        },
+        headers=admin,
+    ).json()["id"]
+    client.post(
+        f"/api/icpc/problems/{pid}/testcases",
+        json={"rank": 0, "is_sample": True, "input_data": "q",
+              "expected_output": "S3CRET-ANSWER", "points": 1},
+        headers=admin,
+    )
+    client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
+
+    # Cheater: try to recover the expected answer from the environment and
+    # echo it back. With the leak closed it finds nothing → WA.
+    cheater = (
+        "import os, sys, json\n"
+        "sys.stdin.readline()\n"
+        "leak = ''\n"
+        "for v in os.environ.values():\n"
+        "    if 'S3CRET-ANSWER' in v:\n"
+        "        leak = 'S3CRET-ANSWER'\n"
+        "try:\n"
+        "    leak = leak or json.loads(os.environ.get('INTERACTOR_PAYLOAD','')).get('expected_output','')\n"
+        "except Exception:\n"
+        "    pass\n"
+        "print(leak, flush=True)\n"
+    )
+    sid = client.post(
+        f"/api/contests/{cid}/problems/{pid}/submit",
+        headers=alice, data={"language": "py3", "source": cheater},
+    ).json()["id"]
+    assert _wait_verdict(client, alice, sid) == "WA"
+
+
+# ── Low-severity hardening ───────────────────────────────────────────────────
+
+def test_client_ip_ignores_forwarded_header_without_proxy_trust(monkeypatch):
+    """X-Forwarded-For is attacker-controlled unless a trusted proxy is
+    declared, so the recorded submitter IP must be the socket peer by
+    default and only follow XFF when TRUST_PROXY_HEADERS is set."""
+    from backend.routers.contests import _client_ip
+
+    class _Req:
+        def __init__(self, peer, headers):
+            self.client = type("C", (), {"host": peer})()
+            self.headers = headers
+
+    req = _Req("10.0.0.9", {"x-forwarded-for": "1.2.3.4"})
+    monkeypatch.delenv("TRUST_PROXY_HEADERS", raising=False)
+    assert _client_ip(req) == "10.0.0.9"          # forged header ignored
+    monkeypatch.setenv("TRUST_PROXY_HEADERS", "1")
+    assert _client_ip(req) == "1.2.3.4"           # honoured behind trusted proxy
+
+
+def test_metrics_token_gate(client, monkeypatch):
+    monkeypatch.delenv("METRICS_TOKEN", raising=False)
+    assert client.get("/api/metrics").status_code == 200      # open by default
+    monkeypatch.setenv("METRICS_TOKEN", "s3kret")
+    assert client.get("/api/metrics").status_code == 401      # locked, no token
+    assert client.get("/api/metrics", headers={"X-Metrics-Token": "s3kret"}).status_code == 200
+    assert client.get("/api/metrics?token=s3kret").status_code == 200
+    assert client.get("/api/metrics?token=wrong").status_code == 401
+
+
+def test_login_unknown_user_returns_401(client):
+    """The dummy-hash timing-equalisation path must not change the observable
+    outcome: a nonexistent username still fails with 401."""
+    auth_header(client, "root")  # bootstrap so the DB isn't empty
+    r = client.post(
+        "/api/auth/login",
+        json={"username": "ghost-does-not-exist", "password": "irrelevant-123456"},
+    )
+    assert r.status_code == 401

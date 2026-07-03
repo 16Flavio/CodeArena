@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, 
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas
-from ..auth import hash_password, verify_password, create_access_token, get_current_user
+from ..auth import hash_password, verify_password, create_access_token, get_current_user, _DUMMY_PASSWORD_HASH
 from ..errors import ErrorCode, raise_error
 from ..email_utils import send_password_reset_email, send_email_verification
 from ..rate_limit import limiter
@@ -211,6 +211,12 @@ LOCKOUT_DURATION = 15 * 60  # seconds
 def login(request: Request, data: schemas.UserLogin, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == data.username).first()
     now = datetime.now(timezone.utc)
+
+    if user is None:
+        # Equalize timing with the wrong-password path: bcrypt is the slow
+        # part, so verifying against a dummy hash stops an attacker from
+        # distinguishing "no such user" (fast) from "wrong password" (slow).
+        verify_password(data.password, _DUMMY_PASSWORD_HASH)
 
     # Refuse early if the account is locked, *before* touching the hash
     # — same response shape as a wrong password, so we don't leak "this

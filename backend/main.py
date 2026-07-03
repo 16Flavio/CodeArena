@@ -2,6 +2,7 @@ import json
 import logging
 import logging.config
 import os
+import secrets
 import time
 from datetime import datetime, timezone
 from threading import Lock, Thread
@@ -172,9 +173,8 @@ def _warn_insecure_scoring() -> None:
     mode = (os.environ.get("SCORING_MODE") or "").lower()
     if mode == "docker":
         log.info(
-            "Scoring sandbox: docker mode — output-scoring and ICPC batch "
-            "compile/run run in isolated containers (interactive ICPC still "
-            "uses a host subprocess; prefer batch problems)."
+            "Scoring sandbox: docker mode — output-scoring and ICPC "
+            "compile/run (batch and interactive) run in isolated containers."
         )
         return
     banner = "=" * 72
@@ -336,12 +336,24 @@ def health():
 
 
 @app.get("/api/metrics")
-def metrics():
+def metrics(request: Request):
     """Lightweight internal metrics. Not a full Prometheus endpoint —
     returns JSON so an external scraper / cron can shape it as needed.
 
     Exposes request volume + latency averages and a snapshot of scoring
-    queue health (uses the same stats as the admin dashboard)."""
+    queue health (uses the same stats as the admin dashboard).
+
+    Access: open by default (backwards-compatible with existing scrapers).
+    If ``METRICS_TOKEN`` is set, the caller must present it via the
+    ``X-Metrics-Token`` header or a ``?token=`` query param — lets an
+    operator lock the endpoint without wiring full admin auth into a
+    scraper."""
+    required = (os.environ.get("METRICS_TOKEN") or "").strip()
+    if required:
+        supplied = request.headers.get("x-metrics-token") or request.query_params.get("token") or ""
+        if not secrets.compare_digest(supplied, required):
+            from fastapi import HTTPException
+            raise HTTPException(status_code=401, detail="Invalid metrics token")
     with _metrics_lock:
         reqs = dict(_metrics["requests_by_status_class"])
         total = _metrics["requests_total"]

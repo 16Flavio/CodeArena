@@ -369,6 +369,81 @@ sys.exit(ns["_verdict_code"])
 """
 
 
+# Orchestrator run INSIDE the sandbox container for interactive problems.
+# It wires the user program and the interactor over OS pipes — the same
+# scheme as the host path, but executed within the network-less, read-only
+# container so the contestant program is isolated. It reads a JSON payload
+# (path in argv[1]) and normalises the verdict to an exit code:
+#   0 = AC, 42 = WA, 1 = RE, 124 = TLE.
+# The interactor-only env (which carries the testcase + EXPECTED output) is
+# applied to the interactor process ONLY, never to the user program.
+_INTERACTIVE_ORCHESTRATOR = r'''
+import json, os, subprocess, sys
+
+p = json.load(open(sys.argv[1]))
+mem_mb = int(p.get("mem_mb") or 0)
+
+
+def _user_limits():  # runs in the forked user child, before exec
+    if not mem_mb:
+        return
+    try:
+        import resource
+        b = mem_mb * 1024 * 1024
+        resource.setrlimit(resource.RLIMIT_AS, (b, b))
+        resource.setrlimit(resource.RLIMIT_NPROC, (256, 256))
+    except Exception:
+        pass
+
+
+a_r, a_w = os.pipe()   # interactor stdout -> user stdin
+b_r, b_w = os.pipe()   # user stdout -> interactor stdin
+inter_env = dict(os.environ)
+inter_env.update(p.get("interactor_env") or {})
+try:
+    user = subprocess.Popen(
+        p["user_argv"], stdin=a_r, stdout=b_w, stderr=subprocess.PIPE,
+        cwd=p.get("user_cwd") or None, close_fds=True, preexec_fn=_user_limits,
+    )
+    inter = subprocess.Popen(
+        p["interactor_argv"], stdin=b_r, stdout=a_w, stderr=subprocess.PIPE,
+        cwd=p.get("interactor_cwd") or None, env=inter_env, close_fds=True,
+    )
+except Exception as e:
+    sys.stderr.write("spawn failed: %r\n" % (e,))
+    sys.exit(3)
+for fd in (a_r, a_w, b_r, b_w):
+    try:
+        os.close(fd)
+    except OSError:
+        pass
+try:
+    rc = inter.wait(timeout=float(p["wall_s"]))
+except subprocess.TimeoutExpired:
+    for pr in (inter, user):
+        try:
+            pr.kill()
+        except Exception:
+            pass
+    sys.exit(124)
+try:
+    user.wait(timeout=2)
+except Exception:
+    try:
+        user.kill()
+    except Exception:
+        pass
+try:
+    sys.stderr.buffer.write((user.stderr.read() or b"")[:1000])
+except Exception:
+    pass
+if p.get("use_python_wrapper"):
+    sys.exit(0 if rc == 0 else (42 if rc == 42 else 1))
+# Compiled interactor (DOMjudge): 42/0 = AC, 43 = WA.
+sys.exit(0 if rc in (0, 42) else (42 if rc == 43 else 1))
+'''
+
+
 def _run_interactive(
     *,
     run_cmd: str,
@@ -407,32 +482,27 @@ def _run_interactive(
     exe_path = os.path.join(workdir, "bin")
     user_cmd = _expand(run_cmd, src=src_path, exe=exe_path, workdir=workdir)
     wall = max(0.2, (time_limit_ms / 1000.0) * max(1.0, time_factor))
+    docker = _use_docker()
+    pybin = "python3" if docker else (_sys.executable or "python3")
 
-    env = _sandbox_env(
-        SCORING_MEMORY_MB=str(memory_limit_mb),
-        SCORING_TIMEOUT_SECONDS=str(int(wall) + 1),
-    )
-    # Same resource caps as the batch path — the interactive path previously
-    # applied none, leaving MLE/fork-bombs unbounded for interactive problems.
-    child_preexec = _child_rlimits(memory_limit_mb, int(wall) + 1)
-
+    # Env visible to the INTERACTOR only. It carries the testcase and the
+    # EXPECTED output — the user program must never see these. (The previous
+    # code shared one env between both processes, leaking expected_output to
+    # the contestant via os.environ.)
+    inter_env_extra: dict = {}
     use_python_wrapper = interactor_run_cmd_str is None
     if use_python_wrapper:
-        env["INTERACTOR_PAYLOAD"] = _json.dumps({
+        inter_env_extra["INTERACTOR_PAYLOAD"] = _json.dumps({
             "script": interactor_script,
             "testcase_input": testcase_input or "",
             "expected_output": expected_output or "",
         })
-        interactor_argv = [_sys.executable, "-I", "-u", "-c", _INTERACTOR_WRAPPER]
+        interactor_argv = [pybin, "-I", "-u", "-c", _INTERACTOR_WRAPPER]
         interactor_cwd = workdir
         interactor_shell = False
     else:
-        # Compiled interactor: drop the testcase into files it can read.
-        # We follow DOMjudge conventions so imported packages Just Work:
-        # argv[1] = testcase .in, argv[2] = expected .ans, argv[3] = a
-        # writable feedback dir. Env vars (INTERACTOR_INPUT_FILE /
-        # INTERACTOR_EXPECTED_FILE) are kept as an alternative for
-        # natively-authored interactors.
+        # Compiled interactor: drop the testcase into files it reads.
+        # DOMjudge convention: argv = <in> <ans> <feedbackdir>.
         iwd = interactor_workdir or workdir
         in_path = os.path.join(iwd, "input.txt")
         ans_path = os.path.join(iwd, "expected.txt")
@@ -442,11 +512,16 @@ def _run_interactive(
             f.write(testcase_input or "")
         with open(ans_path, "w", encoding="utf-8") as f:
             f.write(expected_output or "")
-        env["INTERACTOR_INPUT_FILE"] = in_path
-        env["INTERACTOR_EXPECTED_FILE"] = ans_path
-        if os.name == "nt":
-            # Best effort on Windows dev: shell-join the three paths
-            # onto the command.
+        inter_env_extra["INTERACTOR_INPUT_FILE"] = in_path
+        inter_env_extra["INTERACTOR_EXPECTED_FILE"] = ans_path
+        if docker:
+            # The sandbox's non-root uid must be able to write the feedback dir.
+            for _d in (iwd, feedback_dir):
+                try: os.chmod(_d, 0o777)
+                except OSError: pass
+            interactor_argv = shlex.split(interactor_run_cmd_str) + [in_path, ans_path, feedback_dir]
+            interactor_shell = False
+        elif os.name == "nt":
             interactor_argv = f'{interactor_run_cmd_str} "{in_path}" "{ans_path}" "{feedback_dir}"'
             interactor_shell = True
         else:
@@ -454,8 +529,56 @@ def _run_interactive(
             interactor_shell = False
         interactor_cwd = iwd
 
-    # Pipe A: interactor.stdout → user.stdin.
-    # Pipe B: user.stdout → interactor.stdin.
+    # ── Docker: run BOTH processes inside one isolated container ──────────
+    # A small orchestrator (running as the sandbox uid) does the pipe wiring
+    # inside the network-less, read-only container, so the contestant program
+    # is isolated. It normalises the verdict to an exit code we map below.
+    if docker:
+        payload = {
+            "user_argv": shlex.split(user_cmd),
+            "user_cwd": workdir,
+            "interactor_argv": interactor_argv,
+            "interactor_cwd": interactor_cwd,
+            "interactor_env": inter_env_extra,
+            "use_python_wrapper": use_python_wrapper,
+            "wall_s": wall,
+            "mem_mb": memory_limit_mb,
+        }
+        orch_path = os.path.join(workdir, "_interactive_orch.py")
+        payload_path = os.path.join(workdir, "_interactive_payload.json")
+        with open(orch_path, "w", encoding="utf-8") as f:
+            f.write(_INTERACTIVE_ORCHESTRATOR)
+        with open(payload_path, "w", encoding="utf-8") as f:
+            _json.dump(payload, f)
+        cmd = f"{pybin} {shlex.quote(orch_path)} {shlex.quote(payload_path)}"
+        # A touch more container memory than the user's cap: the interactor +
+        # python runtime share the cgroup, while the user's precise RLIMIT_AS
+        # is applied per-process by the orchestrator's preexec.
+        rc, _out, err, elapsed_ms = icpc_sandbox.run_in_container(
+            cmd, workdir=workdir, stdin=None, timeout_s=wall + 2,
+            memory_mb=memory_limit_mb + 256,
+            cpus=os.environ.get("SCORING_CPUS", "1.0"),
+        )
+        if rc in icpc_sandbox.TIMEOUT_RCS:
+            return RunResult(verdict=TLE, runtime_ms=elapsed_ms, stderr=(err or "")[:1000])
+        if rc == 0:
+            return RunResult(verdict=AC, runtime_ms=elapsed_ms, stderr=(err or "")[:1000])
+        if rc == 42:
+            return RunResult(verdict=WA, runtime_ms=elapsed_ms, stderr=(err or "")[:1000])
+        return RunResult(verdict=RE, runtime_ms=elapsed_ms, stderr=(err or "")[:1000])
+
+    # ── Host subprocess path (dev / SCORING_MODE=subprocess) ─────────────
+    user_env = _sandbox_env(
+        SCORING_MEMORY_MB=str(memory_limit_mb),
+        SCORING_TIMEOUT_SECONDS=str(int(wall) + 1),
+    )
+    inter_env = dict(user_env)
+    inter_env.update(inter_env_extra)
+    # Same resource caps as the batch path — the interactive path previously
+    # applied none, leaving MLE/fork-bombs unbounded for interactive problems.
+    child_preexec = _child_rlimits(memory_limit_mb, int(wall) + 1)
+
+    # Pipe A: interactor.stdout → user.stdin.  Pipe B: user.stdout → interactor.stdin.
     a_r, a_w = os.pipe()
     b_r, b_w = os.pipe()
     user = None
@@ -464,14 +587,14 @@ def _run_interactive(
         user = subprocess.Popen(
             shlex.split(user_cmd) if os.name != "nt" else user_cmd,
             stdin=a_r, stdout=b_w, stderr=subprocess.PIPE,
-            cwd=workdir, env=env, shell=(os.name == "nt"),
+            cwd=workdir, env=user_env, shell=(os.name == "nt"),
             close_fds=True,
             preexec_fn=child_preexec,
         )
         interactor = subprocess.Popen(
             interactor_argv,
             stdin=b_r, stdout=a_w, stderr=subprocess.PIPE,
-            cwd=interactor_cwd, env=env, shell=interactor_shell,
+            cwd=interactor_cwd, env=inter_env, shell=interactor_shell,
             close_fds=True,
             preexec_fn=child_preexec,
         )
@@ -585,16 +708,6 @@ def judge(
         runs: list[tuple[int, RunResult, bool]] = []
         overall = AC
         is_interactive = (checker_kind or "").lower() == "interactive" and interactor_script
-        if is_interactive and _use_docker():
-            # The interactive path uses host pipes between two processes and
-            # is not yet wired through the container sandbox — it still runs
-            # the contestant program as a host subprocess (env-scrubbed +
-            # rlimited, but not network/fs-isolated). Track as a follow-up.
-            log.warning(
-                "Interactive problem judged in SCORING_MODE=docker but the "
-                "interactive path is NOT containerised; contestant code ran "
-                "as a host subprocess. Prefer batch problems until wired."
-            )
         passes = max(1, int(num_passes or 1))
 
         # Prepare the interactor once per judge() call. Python interactors

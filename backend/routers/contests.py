@@ -41,6 +41,29 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+_TRUTHY = {"1", "true", "yes", "on"}
+
+
+def _client_ip(request: "Request") -> Optional[str]:
+    """Best-effort client IP recorded on a submission for audit/anti-cheat.
+
+    ``X-Forwarded-For`` is only honoured when ``TRUST_PROXY_HEADERS`` is set,
+    i.e. a trusted reverse proxy (Caddy/nginx) is actually in front and
+    rewrites it. Otherwise the header is fully attacker-controlled — a
+    contestant could forge the recorded submitter IP — so we use the real
+    socket peer instead. Set TRUST_PROXY_HEADERS=1 in the compose/prod deploy
+    where the backend sits behind the edge proxy."""
+    try:
+        peer = request.client.host if request.client else None
+    except Exception:  # pragma: no cover
+        peer = None
+    if os.environ.get("TRUST_PROXY_HEADERS", "").strip().lower() in _TRUTHY:
+        fwd = request.headers.get("x-forwarded-for")
+        if fwd:
+            return (fwd.split(",")[0].strip() or peer)
+    return peer
+
+
 def _aware(dt: Optional[datetime]) -> Optional[datetime]:
     """SQLite stores naive datetimes; treat them as UTC when comparing."""
     if dt is None:
@@ -1205,16 +1228,7 @@ async def submit_solution(
     sub_dir = os.path.join(UPLOAD_DIR, "submissions")
     os.makedirs(sub_dir, exist_ok=True)
 
-    client_ip = None
-    try:
-        client_ip = request.client.host if request.client else None
-        # Honour the first X-Forwarded-For hop when behind a trusted proxy
-        # (Caddy/nginx). Kept as raw string so admins can spot spoofing.
-        fwd = request.headers.get("x-forwarded-for")
-        if fwd:
-            client_ip = fwd.split(",")[0].strip()
-    except Exception:  # pragma: no cover
-        client_ip = None
+    client_ip = _client_ip(request)
 
     submission = models.Submission(
         team_id=team_id,
@@ -1433,14 +1447,7 @@ async def submit_solution_code(
     if not source_text.strip():
         raise HTTPException(status_code=400, detail="Source vide")
 
-    client_ip = None
-    try:
-        client_ip = request.client.host if request.client else None
-        fwd = request.headers.get("x-forwarded-for")
-        if fwd:
-            client_ip = fwd.split(",")[0].strip()
-    except Exception:  # pragma: no cover
-        client_ip = None
+    client_ip = _client_ip(request)
 
     submission = models.Submission(
         team_id=team_id,

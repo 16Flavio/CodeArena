@@ -45,6 +45,13 @@ def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
 
 
+# Pre-computed bcrypt hash of a random string. The login handler verifies a
+# supplied password against THIS when the username doesn't exist, so a missing
+# account takes the same time as a wrong password — closing the timing oracle
+# that would otherwise let an attacker enumerate valid usernames.
+_DUMMY_PASSWORD_HASH = hash_password(_secrets.token_urlsafe(24))
+
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Sign a JWT for the bearer-auth flow. Always carries ``purpose``
     so the routes that consume access tokens can distinguish them from

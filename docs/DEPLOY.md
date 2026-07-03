@@ -45,15 +45,28 @@ Each submission's compile and run happen in a sibling container with
 `/tmp`, no swap, and a coreutils `timeout` enforcing the wall limit. The
 backend/worker mount the host Docker socket to spawn these siblings.
 
+Interactive problems are containerised too: a small orchestrator runs inside
+the same sandbox container and wires the contestant program to the interactor
+over pipes, applying the user's memory cap per-process while the container's
+`--memory` backstops the pair.
+
 **Caveats to validate in staging first** (`backend/icpc_sandbox.py`):
-- **Interactive** problems are *not yet* containerised — they still run the
-  contestant program as a host subprocess. Prefer batch problems, or keep the
-  worker itself on an isolated host, until this is wired.
 - Container startup adds latency; TLE is enforced by the in-container
   `timeout` (not wall-clock measured across startup), but validate your time
   limits against the sandbox image before the contest.
 - The Docker socket mount grants root-equivalent on the host — run this on a
   single-tenant contest box only.
+- Compiled (non-Python) interactors write the expected-output file into the
+  judge workdir; prefer Python interactors (the default), where the expected
+  output is passed to the interactor process only, never exposed to the user.
+
+### Other security toggles (`.env`)
+
+| Variable              | Default | What it does                                                        |
+| --------------------- | ------- | ------------------------------------------------------------------- |
+| `TRUST_PROXY_HEADERS` | unset   | When set (`1`), honour `X-Forwarded-For` for the recorded submitter IP. **Set this only when a trusted reverse proxy (Caddy/nginx) is in front** — the compose deployment is. Left unset, the header is ignored (it is otherwise attacker-spoofable) and the socket peer is used. |
+| `METRICS_TOKEN`       | unset   | When set, `/api/metrics` requires it via `X-Metrics-Token:` header or `?token=`. Left unset, the endpoint stays open (aggregate counts only) for existing scrapers. |
+| `CORS_ORIGINS`        | dev localhosts | Comma-separated allowed origins. Set to your real frontend origin in prod; `*` is opt-in and disables credentialed CORS. |
 
 ## Switching to PostgreSQL
 
