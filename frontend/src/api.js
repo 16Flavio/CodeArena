@@ -265,6 +265,10 @@ export const duplicateContest = (id) => api.post(`/contests/${id}/duplicate`);
 export const getScoreboard = (contestId) => api.get(`/contests/${contestId}/scoreboard`);
 export const scoreboardStreamUrl = (contestId) =>
   `/api/contests/${contestId}/scoreboard/stream`;
+// Short-lived (60s) ticket for query-string auth on the SSE stream, so the
+// long-lived session token never lands in a URL. Sent with the normal Bearer
+// header via the axios interceptor.
+export const getStreamTicket = () => api.post('/auth/stream-ticket');
 
 // Announcements
 export const listAnnouncements = (contestId) =>

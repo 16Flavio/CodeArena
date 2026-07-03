@@ -382,6 +382,25 @@ def me(user: models.User = Depends(get_current_user)):
     return user
 
 
+STREAM_TICKET_TTL_SECONDS = 60
+
+
+@router.post("/stream-ticket")
+@limiter.limit("60/minute")
+def stream_ticket(request: Request, user: models.User = Depends(get_current_user)):
+    """Mint a short-lived (60 s) single-purpose token for query-string auth on
+    streams (EventSource can't send an Authorization header). The client
+    fetches this with its normal Bearer token right before opening the
+    stream, so the long-lived session token never ends up in a URL (browser
+    history, proxy/access logs, Referer). The ticket authenticates the same
+    user but expires in a minute."""
+    ticket = create_access_token(
+        {"sub": str(user.id), "purpose": "stream"},
+        expires_delta=timedelta(seconds=STREAM_TICKET_TTL_SECONDS),
+    )
+    return {"ticket": ticket, "expires_in": STREAM_TICKET_TTL_SECONDS}
+
+
 @router.post("/forgot-password", response_model=schemas.SimpleMessage)
 @limiter.limit("5/hour")
 def forgot_password(

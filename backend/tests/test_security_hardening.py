@@ -275,3 +275,85 @@ def test_login_unknown_user_returns_401(client):
         json={"username": "ghost-does-not-exist", "password": "irrelevant-123456"},
     )
     assert r.status_code == 401
+
+
+# ── #7: compile-time host-file read via the C preprocessor/assembler ─────────
+
+def test_compile_exploit_scan_unit():
+    from backend.icpc_runner import _scan_source_for_compile_exploits as scan
+    # Blocked: file-read constructs.
+    assert scan("cpp", '#include "/etc/passwd"\nint main(){}') is not None
+    assert scan("cpp", '#include </etc/passwd>\n') is not None
+    assert scan("cpp", '#include "../../secret.txt"\n') is not None
+    assert scan("c", 'int main(){ __asm__(".incbin \\"/etc/passwd\\""); }') is not None
+    assert scan("cpp", '#embed "/etc/passwd"\n') is not None
+    assert scan("cpp", '#if __has_include(</etc/shadow>)\n#endif\n') is not None
+    # Allowed: normal competitive code.
+    assert scan("cpp", '#include <bits/stdc++.h>\nint main(){}') is None
+    assert scan("cpp", '#include <sys/types.h>\n#include <vector>\n') is None
+    assert scan("cpp", '#include "helper.h"\n') is None
+    # Non-C languages are not scanned (their compile step can't read files).
+    assert scan("py3", 'import os; open("/etc/passwd").read()') is None
+
+
+def test_cpp_absolute_include_rejected_without_leaking_file(client):
+    """An ICPC C submission that tries to #include an absolute host path is
+    rejected at compile time, and the returned compile output contains our
+    message — never the file's contents."""
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    cid = client.post(
+        "/api/contests",
+        json={
+            "title": "C-Exploit", "is_active": True,
+            "start_time": _iso(now - timedelta(minutes=5)),
+            "end_time": _iso(now + timedelta(hours=1)),
+            "participation_mode": "solo", "kind": "icpc",
+            "scoring_script": "score = 0",
+        },
+        headers=admin,
+    ).json()["id"]
+    pid = client.post(
+        f"/api/contests/{cid}/problems",
+        json={"external_id": "p", "label": "A", "name": "P",
+              "time_limit_ms": 2000, "memory_limit_mb": 256, "checker_kind": "tokens"},
+        headers=admin,
+    ).json()["id"]
+    client.post(
+        f"/api/icpc/problems/{pid}/testcases",
+        json={"rank": 0, "is_sample": True, "input_data": "1", "expected_output": "1"},
+        headers=admin,
+    )
+    client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
+
+    src = '#include "/etc/hostname"\nint main(){return 0;}\n'
+    sid = client.post(
+        f"/api/contests/{cid}/problems/{pid}/submit",
+        headers=alice, data={"language": "c", "source": src},
+    ).json()["id"]
+    assert _wait_verdict(client, alice, sid) == "CE"
+    j = client.get(f"/api/contests/submissions/{sid}/judging", headers=alice).json()
+    out = (j.get("compile_output") or "")
+    assert "not allowed" in out.lower() or "rejected" in out.lower()
+
+
+# ── SSE short-lived stream ticket ────────────────────────────────────────────
+
+def test_stream_ticket_is_scoped_and_short_lived(client):
+    from jose import jwt
+    from backend.auth import SECRET_KEY, ALGORITHM
+
+    assert client.post("/api/auth/stream-ticket").status_code == 401  # needs auth
+
+    hdr = auth_header(client, "root")
+    r = client.post("/api/auth/stream-ticket", headers=hdr)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["expires_in"] == 60
+    payload = jwt.decode(body["ticket"], SECRET_KEY, algorithms=[ALGORITHM])
+    assert payload["purpose"] == "stream" and payload["sub"]
+
+    # The ticket must NOT double as a full session token on header-auth routes.
+    me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {body['ticket']}"})
+    assert me.status_code == 401

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { getScoreboard, getContests, getContest, scoreboardStreamUrl, scoreboardCsvUrl } from '../api';
+import { getScoreboard, getContests, getContest, scoreboardStreamUrl, scoreboardCsvUrl, getStreamTicket } from '../api';
 import IcpcScoreboard from '../components/IcpcScoreboard';
 import {
   Trophy, ArrowUpDown, RefreshCw, Users, AlertCircle, Snowflake, FileSpreadsheet, X, Medal, Sparkles,
@@ -127,21 +127,11 @@ function OutputScoreboard() {
   useEffect(() => {
     if (!autoRefresh) return undefined;
 
-    // EventSource can't send Authorization headers, so we pass the token as a
-    // query-param. On a real deployment behind nginx/cookies you'd handle this
-    // differently; for the dev setup the token is already stored in localStorage.
-    const token = getToken() || '';
-    const url = `${scoreboardStreamUrl(id)}?token=${encodeURIComponent(token)}`;
     let source;
-    try {
-      source = new EventSource(url, { withCredentials: false });
-    } catch {
-      // Browser without EventSource — fall back to polling.
-      const interval = setInterval(() => fetchData(), 10000);
-      return () => clearInterval(interval);
-    }
+    let pollInterval;
+    let cancelled = false;
 
-    source.onmessage = (e) => {
+    const onMessage = (e) => {
       try {
         const payload = JSON.parse(e.data);
         // Mimic the change-detection behavior fetchData had.
@@ -170,15 +160,36 @@ function OutputScoreboard() {
       }
     };
 
-    source.onerror = () => {
-      // Most common cause: the server closed the connection or the token is
-      // rejected. Fall back to one refresh via the normal GET so the UI
-      // doesn't stall.
-      source.close();
-      fetchData();
-    };
+    // Fetch a short-lived stream ticket (sent with the normal Bearer header)
+    // and open the EventSource with that instead of the long-lived session
+    // token — EventSource can't set headers, so the ticket is the only thing
+    // that lands in the URL, and it expires in ~60s.
+    getStreamTicket()
+      .then((r) => {
+        if (cancelled) return;
+        const ticket = r.data.ticket;
+        const url = `${scoreboardStreamUrl(id)}?token=${encodeURIComponent(ticket)}`;
+        source = new EventSource(url, { withCredentials: false });
+        source.onmessage = onMessage;
+        source.onerror = () => {
+          // Server closed the stream or the ticket expired. Fall back to one
+          // refresh via the normal GET so the UI doesn't stall.
+          source.close();
+          if (!cancelled) fetchData();
+        };
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // No EventSource / couldn't get a ticket — degrade to polling.
+        fetchData();
+        pollInterval = setInterval(() => fetchData(), 10000);
+      });
 
-    return () => source.close();
+    return () => {
+      cancelled = true;
+      if (source) source.close();
+      if (pollInterval) clearInterval(pollInterval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRefresh, id]);
 

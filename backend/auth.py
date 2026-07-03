@@ -180,10 +180,12 @@ def get_current_user_from_query(
         )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        # Same purpose check as get_current_user — SSE callers must
-        # not be able to authenticate with a 2FA challenge token.
+        # Query-string callers (SSE / <a href> downloads) may present either a
+        # normal access token or a short-lived "stream" ticket
+        # (POST /api/auth/stream-ticket). A 2FA challenge token must still be
+        # rejected — it only proves the password step.
         purpose = payload.get("purpose", "access")
-        if purpose != "access":
+        if purpose not in ("access", "stream"):
             raise JWTError("wrong purpose")
         sub = payload.get("sub")
         if sub is None:

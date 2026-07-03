@@ -50,6 +50,13 @@ the same sandbox container and wires the contestant program to the interactor
 over pipes, applying the user's memory cap per-process while the container's
 `--memory` backstops the pair.
 
+In **subprocess mode** (no container), C/C++ submissions are additionally
+scanned before compilation and rejected (CE) if they try to read a host file
+at compile time — `#include` of an absolute/`..` path, `#embed`, `.incbin`,
+or `__has_include` of an absolute path. Legitimate submissions (`<vector>`,
+`<bits/stdc++.h>`, local `"helper.h"`) are unaffected. Docker mode contains
+this anyway via the read-only isolated rootfs.
+
 **Caveats to validate in staging first** (`backend/icpc_sandbox.py`):
 - Container startup adds latency; TLE is enforced by the in-container
   `timeout` (not wall-clock measured across startup), but validate your time

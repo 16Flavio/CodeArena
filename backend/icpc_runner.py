@@ -271,9 +271,47 @@ def _guess_language_filename(language_id: str) -> str:
     return mapping.get(language_id, f"main.{language_id}")
 
 
+# C-family constructs that make the COMPILER read an arbitrary host file and
+# echo its bytes back through diagnostics / the object file. In subprocess
+# mode the compiler shares the host filesystem, so `#include "/etc/passwd"`
+# would leak that file to the submitter via ``compile_output`` (returned by
+# get_judging). Docker mode already contains this (read-only, isolated rootfs);
+# this scan is the belt for the non-isolated subprocess fallback. Legitimate
+# competitive submissions never use these forms (system headers are
+# ``<vector>`` / ``<sys/types.h>`` — no leading slash right after the bracket).
+_C_FAMILY_IDS = {"c", "cpp", "cc", "cxx", "c++"}
+_COMPILE_EXPLOIT_PATTERNS = (
+    (re.compile(r'#\s*include\s*[<"]\s*(?:/|\.\.)'), "#include of an absolute or parent path"),
+    (re.compile(r'#\s*embed\b'), "#embed directive"),
+    (re.compile(r'\.incbin\b'), ".incbin assembler directive"),
+    (re.compile(r'__has_include\s*\(\s*[<"]\s*/'), "__has_include probe of an absolute path"),
+)
+
+
+def _scan_source_for_compile_exploits(language_id: str, source_code: str) -> Optional[str]:
+    """Return a rejection reason if C-family ``source_code`` tries to read a
+    host file at compile time, else None. Prevents the file's contents from
+    ever reaching the compiler (and thus the returned compile output)."""
+    if (language_id or "").lower() not in _C_FAMILY_IDS or not source_code:
+        return None
+    for pat, label in _COMPILE_EXPLOIT_PATTERNS:
+        if pat.search(source_code):
+            return (
+                f"Rejected before compilation: {label} is not allowed "
+                "(potential host-file read)."
+            )
+    return None
+
+
 def compile_source(language_id: str, compile_cmd: str, source_code: str, *, workdir: str) -> RunResult:
     """Write ``source_code`` into ``workdir`` and run the compile command
     (if any). Returns AC with ``compile_output`` on success, CE on failure."""
+    exploit = _scan_source_for_compile_exploits(language_id, source_code)
+    if exploit:
+        # Never write/compile the source: return a CE carrying only our own
+        # message — no file contents, no compiler echo.
+        return RunResult(verdict=CE, compile_output=exploit)
+
     src_name = _guess_language_filename(language_id)
     src_path = os.path.join(workdir, src_name)
     with open(src_path, "w", encoding="utf-8") as f:
