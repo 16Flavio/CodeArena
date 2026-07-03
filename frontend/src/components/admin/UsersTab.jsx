@@ -65,30 +65,30 @@ export default function UsersTab({ users, currentUser, onChange }) {
   };
 
   return (
-    <div className="glass-card overflow-hidden">
+    <div className="card overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-100/60 dark:bg-slate-800/50">
-              <th className="text-left text-slate-500 font-semibold py-4 px-5 dark:text-gray-400">{t('admin.users.colUser')}</th>
-              <th className="text-left text-slate-500 font-semibold py-4 px-5 dark:text-gray-400">{t('admin.users.colEmail')}</th>
-              <th className="text-left text-slate-500 font-semibold py-4 px-5 dark:text-gray-400">{t('admin.users.colRole')}</th>
-              <th className="text-left text-slate-500 font-semibold py-4 px-5 dark:text-gray-400">{t('admin.users.colJoined')}</th>
-              <th className="text-right text-slate-500 font-semibold py-4 px-5 dark:text-gray-400">{t('admin.users.colActions')}</th>
+            <tr className="bg-zinc-100/60 dark:bg-zinc-800/50">
+              <th className="text-left text-zinc-500 font-semibold py-4 px-5 dark:text-zinc-400">{t('admin.users.colUser')}</th>
+              <th className="text-left text-zinc-500 font-semibold py-4 px-5 dark:text-zinc-400">{t('admin.users.colEmail')}</th>
+              <th className="text-left text-zinc-500 font-semibold py-4 px-5 dark:text-zinc-400">{t('admin.users.colRole')}</th>
+              <th className="text-left text-zinc-500 font-semibold py-4 px-5 dark:text-zinc-400">{t('admin.users.colJoined')}</th>
+              <th className="text-right text-zinc-500 font-semibold py-4 px-5 dark:text-zinc-400">{t('admin.users.colActions')}</th>
             </tr>
           </thead>
           <tbody>
             {users.map((u) => (
-              <tr key={u.id} className="border-t border-gray-100 hover:bg-gray-50 dark:border-slate-800/30 dark:hover:bg-slate-800/20">
+              <tr key={u.id} className="border-t border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-800/20">
                 <td className="py-3 px-5">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/30 to-indigo-500/30 flex items-center justify-center text-sm font-bold text-violet-700 dark:text-violet-300">
+                    <div className="w-8 h-8 rounded-lg bg-accent-500/20 flex items-center justify-center text-sm font-bold text-accent-700 dark:text-accent-300">
                       {u.username[0].toUpperCase()}
                     </div>
-                    <span className="text-slate-900 font-medium dark:text-white">{u.username}</span>
+                    <span className="text-zinc-900 font-medium dark:text-white">{u.username}</span>
                   </div>
                 </td>
-                <td className="py-3 px-5 text-slate-500 dark:text-gray-400">{u.email}</td>
+                <td className="py-3 px-5 text-zinc-500 dark:text-zinc-400">{u.email}</td>
                 <td className="py-3 px-5">
                   {u.is_admin ? (
                     <span className="badge-admin">{t('admin.users.roleAdmin')}</span>
@@ -100,7 +100,7 @@ export default function UsersTab({ users, currentUser, onChange }) {
                     <span className="badge-inactive">{t('admin.users.roleUser')}</span>
                   )}
                 </td>
-                <td className="py-3 px-5 text-slate-400 text-xs dark:text-gray-500">
+                <td className="py-3 px-5 text-zinc-400 text-xs dark:text-zinc-500">
                   {new Date(u.created_at).toLocaleDateString()}
                 </td>
                 <td className="py-3 px-5 text-right">
@@ -117,7 +117,7 @@ export default function UsersTab({ users, currentUser, onChange }) {
                       )}
                       <button
                         onClick={() => handleToggleAdmin(u.id)}
-                        className="p-2 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-amber-500 transition-colors dark:hover:bg-slate-700/50 dark:text-gray-400 dark:hover:text-amber-400"
+                        className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-amber-500 transition-colors dark:hover:bg-zinc-700/50 dark:text-zinc-400 dark:hover:text-amber-400"
                         title={u.is_admin ? t('admin.users.removeAdmin') : t('admin.users.makeAdmin')}
                       >
                         {u.is_admin ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
@@ -125,7 +125,7 @@ export default function UsersTab({ users, currentUser, onChange }) {
                       {!u.is_admin && (
                         <button
                           onClick={() => handleToggleOrganizer(u.id)}
-                          className="p-2 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-violet-500 transition-colors dark:hover:bg-slate-700/50 dark:text-gray-400 dark:hover:text-violet-400"
+                          className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-accent-500 transition-colors dark:hover:bg-zinc-700/50 dark:text-zinc-400 dark:hover:text-accent-400"
                           title={u.is_organizer ? t('admin.users.removeOrganizer') : t('admin.users.makeOrganizer')}
                         >
                           <UserCog className="w-4 h-4" />
@@ -133,7 +133,7 @@ export default function UsersTab({ users, currentUser, onChange }) {
                       )}
                       <button
                         onClick={() => handleDelete(u.id, u.username)}
-                        className="p-2 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors dark:text-gray-400 dark:hover:text-red-400"
+                        className="p-2 rounded-lg hover:bg-red-500/10 text-zinc-400 hover:text-red-500 transition-colors dark:text-zinc-400 dark:hover:text-red-400"
                         title={t('admin.users.deleteUser')}
                       >
                         <Trash2 className="w-4 h-4" />

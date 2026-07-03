@@ -42,7 +42,7 @@ export default function Learn() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -53,22 +53,22 @@ export default function Learn() {
         <div>
           <Link
             to="/learn"
-            className="text-sm text-violet-600 hover:text-violet-500 dark:text-violet-400 inline-flex items-center gap-1"
+            className="text-sm text-accent-600 hover:text-accent-500 dark:text-accent-400 inline-flex items-center gap-1"
           >
             ← {t('learn.backToSections')}
           </Link>
-          <h1 className="text-3xl font-bold mt-3 text-slate-900 dark:text-white flex items-center gap-3">
-            <BookOpen className="w-7 h-7 text-violet-500" />
+          <h1 className="text-3xl font-bold mt-3 text-zinc-900 dark:text-white flex items-center gap-3">
+            <BookOpen className="w-7 h-7 text-accent-500" />
             {tr(currentSection, 'title')}
           </h1>
           {tr(currentSection, 'description') && (
-            <p className="text-slate-500 dark:text-gray-400 mt-2">{tr(currentSection, 'description')}</p>
+            <p className="text-zinc-500 dark:text-zinc-400 mt-2">{tr(currentSection, 'description')}</p>
           )}
         </div>
 
         {lessons.length === 0 ? (
-          <div className="glass-card p-8 text-center">
-            <p className="text-slate-500 dark:text-gray-400">{t('learn.noLessons')}</p>
+          <div className="card p-8 text-center">
+            <p className="text-zinc-500 dark:text-zinc-400">{t('learn.noLessons')}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -76,14 +76,14 @@ export default function Learn() {
               <Link
                 key={l.id}
                 to={`/learn/lessons/${l.id}`}
-                className="glass-card p-4 flex items-center gap-4 hover:border-violet-300 transition-colors group"
+                className="card p-4 flex items-center gap-4 hover:border-accent-300 transition-colors group"
               >
-                <div className="w-10 h-10 rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 flex items-center justify-center font-semibold text-sm">
+                <div className="w-10 h-10 rounded-lg bg-accent-100 text-accent-700 dark:bg-accent-500/20 dark:text-accent-300 flex items-center justify-center font-semibold text-sm">
                   {idx + 1}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-slate-900 dark:text-white truncate">
+                    <span className="font-semibold text-zinc-900 dark:text-white truncate">
                       {tr(l, 'title')}
                     </span>
                     {l.has_exercise && (
@@ -94,9 +94,9 @@ export default function Learn() {
                 {l.progress_status === 'completed' ? (
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                 ) : l.progress_status === 'started' ? (
-                  <span className="text-xs text-violet-600 dark:text-violet-400">{t('learn.inProgress')}</span>
+                  <span className="text-xs text-accent-600 dark:text-accent-400">{t('learn.inProgress')}</span>
                 ) : null}
-                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-violet-500 transition-colors dark:text-gray-600" />
+                <ChevronRight className="w-5 h-5 text-zinc-300 group-hover:text-accent-500 transition-colors dark:text-zinc-600" />
               </Link>
             ))}
           </div>
@@ -109,16 +109,16 @@ export default function Learn() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-          <GraduationCap className="w-8 h-8 text-violet-500" />
+        <h1 className="text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-3">
+          <GraduationCap className="w-8 h-8 text-accent-500" />
           {t('learn.title')}
         </h1>
-        <p className="text-slate-500 dark:text-gray-400 mt-2">{t('learn.subtitle')}</p>
+        <p className="text-zinc-500 dark:text-zinc-400 mt-2">{t('learn.subtitle')}</p>
       </div>
 
       {sections.length === 0 ? (
-        <div className="glass-card p-8 text-center">
-          <p className="text-slate-500 dark:text-gray-400">{t('learn.noSections')}</p>
+        <div className="card p-8 text-center">
+          <p className="text-zinc-500 dark:text-zinc-400">{t('learn.noSections')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -128,21 +128,21 @@ export default function Learn() {
               <Link
                 key={s.id}
                 to={`/learn/sections/${s.slug}`}
-                className="glass-card p-5 hover:border-violet-300 transition-colors group"
+                className="card p-5 hover:border-accent-300 transition-colors group"
               >
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{tr(s, 'title')}</h2>
+                <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">{tr(s, 'title')}</h2>
                 {tr(s, 'description') && (
-                  <p className="text-sm text-slate-500 dark:text-gray-400 mt-1 line-clamp-2">
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">
                     {tr(s, 'description')}
                   </p>
                 )}
-                <div className="mt-4 flex items-center justify-between text-xs text-slate-400 dark:text-gray-500">
+                <div className="mt-4 flex items-center justify-between text-xs text-zinc-400 dark:text-zinc-500">
                   <span>{t('learn.lessonCount', { count: s.lesson_count })}</span>
                   <span>{t('learn.completedCount', { done: s.completed_count, total: s.lesson_count })}</span>
                 </div>
-                <div className="mt-2 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div className="mt-2 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-violet-500 transition-all"
+                    className="h-full bg-accent-500 transition-all"
                     style={{ width: `${pct}%` }}
                   />
                 </div>

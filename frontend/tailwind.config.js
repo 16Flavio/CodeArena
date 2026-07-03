@@ -8,23 +8,35 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+        sans: ['IBM Plex Sans', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['IBM Plex Mono', 'JetBrains Mono', 'monospace'],
+      },
+      colors: {
+        // The app's single accent — a desaturated steel blue. Everything
+        // interactive points at this scale; swapping the brand color is
+        // a one-place change.
+        accent: {
+          50: '#f2f6fa',
+          100: '#e4ecf4',
+          200: '#c6d7e8',
+          300: '#9cbbd6',
+          400: '#6d99bf',
+          500: '#4b7ca8',
+          600: '#3a6690',
+          700: '#325575',
+          800: '#2c4762',
+          900: '#283c52',
+          950: '#1a2836',
+        },
       },
       animation: {
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'fade-in': 'fadeIn 0.5s ease-out',
-        'slide-up': 'slideUp 0.3s ease-out',
+        'fade-in': 'fadeIn 0.3s ease-out',
         'score-flash': 'scoreFlash 0.6s ease-out',
       },
       keyframes: {
         fadeIn: {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         scoreFlash: {
           '0%': { backgroundColor: 'rgba(34, 197, 94, 0.3)' },

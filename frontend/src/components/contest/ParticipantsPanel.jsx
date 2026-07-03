@@ -16,28 +16,28 @@ export default function ParticipantsPanel({ contestId, participants, setParticip
   const [showParticipants, setShowParticipants] = useState(false);
 
   return (
-    <div className="glass-card overflow-hidden">
+    <div className="card overflow-hidden">
       <button
         onClick={() => setShowParticipants(!showParticipants)}
-        className="w-full flex items-center justify-between p-5 hover:bg-gray-50 transition-colors dark:hover:bg-slate-800/30"
+        className="w-full flex items-center justify-between p-5 hover:bg-zinc-50 transition-colors dark:hover:bg-zinc-800/30"
       >
-        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 dark:text-white">
-          <Users className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+        <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2 dark:text-white">
+          <Users className="w-5 h-5 text-accent-500 dark:text-accent-400" />
           {t('contest.participants')}
-          <span className="text-xs font-normal text-slate-400 ml-1 dark:text-gray-500">
+          <span className="text-xs font-normal text-zinc-400 ml-1 dark:text-zinc-500">
             ({participants.length})
           </span>
         </h2>
         {showParticipants ? (
-          <ChevronUp className="w-5 h-5 text-slate-400 dark:text-gray-400" />
+          <ChevronUp className="w-5 h-5 text-zinc-400 dark:text-zinc-400" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-slate-400 dark:text-gray-400" />
+          <ChevronDown className="w-5 h-5 text-zinc-400 dark:text-zinc-400" />
         )}
       </button>
       {showParticipants && (
         <div className="px-5 pb-5">
           {participants.length === 0 ? (
-            <p className="text-sm text-slate-400 italic dark:text-gray-600">
+            <p className="text-sm text-zinc-400 italic dark:text-zinc-600">
               {t('contest.noParticipants')}
             </p>
           ) : (
@@ -45,26 +45,26 @@ export default function ParticipantsPanel({ contestId, participants, setParticip
               {participants.map((p) => (
                 <div
                   key={p.id}
-                  className={`flex items-center gap-2 py-2 px-3 rounded-lg bg-white border dark:bg-slate-700/20 ${
+                  className={`flex items-center gap-2 py-2 px-3 rounded-lg bg-white border dark:bg-zinc-700/20 ${
                     p.disqualified
                       ? 'border-red-500/40 opacity-70'
-                      : 'border-gray-200 dark:border-transparent'
+                      : 'border-zinc-200 dark:border-transparent'
                   }`}
                   title={p.disqualified ? p.disqualified_reason || t('contest.disqualified') : undefined}
                 >
                   {p.kind === 'team' ? (
                     <>
-                      <Users className="w-4 h-4 text-violet-500 flex-shrink-0 dark:text-violet-400" />
-                      <span className={`text-sm truncate ${p.disqualified ? 'line-through text-slate-400 dark:text-gray-500' : 'text-slate-700 dark:text-gray-200'}`}>
+                      <Users className="w-4 h-4 text-accent-500 flex-shrink-0 dark:text-accent-400" />
+                      <span className={`text-sm truncate ${p.disqualified ? 'line-through text-zinc-400 dark:text-zinc-500' : 'text-zinc-700 dark:text-zinc-200'}`}>
                         {p.team_name}
                       </span>
                     </>
                   ) : (
                     <>
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500/30 to-indigo-500/30 flex items-center justify-center text-xs font-bold text-violet-700 flex-shrink-0 dark:text-violet-300">
+                      <div className="w-6 h-6 rounded-full bg-accent-500/20 flex items-center justify-center text-xs font-bold text-accent-700 flex-shrink-0 dark:text-accent-300">
                         {(p.username || '?')[0].toUpperCase()}
                       </div>
-                      <span className={`text-sm truncate ${p.disqualified ? 'line-through text-slate-400 dark:text-gray-500' : 'text-slate-700 dark:text-gray-200'}`}>
+                      <span className={`text-sm truncate ${p.disqualified ? 'line-through text-zinc-400 dark:text-zinc-500' : 'text-zinc-700 dark:text-zinc-200'}`}>
                         {p.username}
                       </span>
                     </>
@@ -99,7 +99,7 @@ export default function ParticipantsPanel({ contestId, participants, setParticip
                       className={`ml-auto p-1 rounded transition-colors ${
                         p.disqualified
                           ? 'text-emerald-500 hover:bg-emerald-500/10'
-                          : 'text-slate-400 hover:text-red-500 hover:bg-red-500/10 dark:text-gray-500'
+                          : 'text-zinc-400 hover:text-red-500 hover:bg-red-500/10 dark:text-zinc-500'
                       }`}
                       title={p.disqualified ? t('contest.requalify') : t('contest.disqualify')}
                       aria-label={p.disqualified ? t('contest.requalify') : t('contest.disqualify')}

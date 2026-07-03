@@ -49,18 +49,18 @@ export default function TestScoringModal({ contest, mode, scoringScript, validat
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto">
-      <div className="glass-card p-6 w-full max-w-2xl my-8 animate-slide-up" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-y-auto">
+      <div className="card p-6 w-full max-w-2xl my-8 animate-fade-in" role="dialog" aria-modal="true">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 dark:text-white">
-            <FlaskConical className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+          <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2 dark:text-white">
+            <FlaskConical className="w-5 h-5 text-accent-500 dark:text-accent-400" />
             {mode === 'validate'
               ? t('admin.testScoring.titleValidate')
               : t('admin.testScoring.title')}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-slate-900 transition-colors dark:hover:bg-slate-800 dark:text-gray-400 dark:hover:text-white"
+            className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-colors dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-white"
             aria-label="Fermer"
           >
             <X className="w-5 h-5" />
@@ -68,7 +68,7 @@ export default function TestScoringModal({ contest, mode, scoringScript, validat
         </div>
         <form onSubmit={runTestScoring} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">{t('admin.testScoring.instanceLabel')}</label>
+            <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">{t('admin.testScoring.instanceLabel')}</label>
             <select
               className="input-field"
               value={testScoringState.instance_id}
@@ -82,7 +82,7 @@ export default function TestScoringModal({ contest, mode, scoringScript, validat
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+            <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
               {t('admin.testScoring.submissionLabel')}
             </label>
             <textarea
@@ -92,7 +92,7 @@ export default function TestScoringModal({ contest, mode, scoringScript, validat
               onChange={(e) => setTestScoringState((s) => ({ ...s, submission_data: e.target.value }))}
             />
           </div>
-          <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-gray-300">
+          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
             <input
               type="checkbox"
               checked={testScoringState.useOverride}
@@ -103,7 +103,7 @@ export default function TestScoringModal({ contest, mode, scoringScript, validat
 
           {testScoringState.result && (
             <div
-              className={`rounded-xl p-3 border ${
+              className={`rounded-lg p-3 border ${
                 testScoringState.result.ok
                   ? 'border-emerald-500/30 bg-emerald-500/10'
                   : 'border-red-500/30 bg-red-500/10'
@@ -121,7 +121,7 @@ export default function TestScoringModal({ contest, mode, scoringScript, validat
                       <span className="font-mono">{testScoringState.result.score}</span>
                     </>
                   )}
-                  <span className="text-xs text-slate-500 ml-3 dark:text-gray-400">
+                  <span className="text-xs text-zinc-500 ml-3 dark:text-zinc-400">
                     ({testScoringState.result.duration_ms} ms)
                   </span>
                 </p>

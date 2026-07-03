@@ -12,10 +12,10 @@ import { formatScore, formatScoreFull, clampRatio } from '../utils/format';
 import { formatDateTime, backendIsoMs } from '../utils/datetime';
 import { getToken } from '../utils/tokenStore';
 
-const MEDALS = ['text-yellow-500 dark:text-yellow-400', 'text-gray-400 dark:text-gray-300', 'text-amber-600'];
+const MEDALS = ['text-yellow-500 dark:text-yellow-400', 'text-zinc-400 dark:text-zinc-300', 'text-amber-600'];
 const MEDAL_BG = [
   'bg-yellow-400/10 border-yellow-400/30',
-  'bg-gray-300/10 border-gray-400/30',
+  'bg-zinc-300/10 border-zinc-400/30',
   'bg-amber-600/10 border-amber-600/30',
 ];
 
@@ -32,7 +32,7 @@ export default function Scoreboard() {
   if (kindProbe === undefined) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -242,16 +242,16 @@ function OutputScoreboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="glass-card p-12 text-center">
+      <div className="card p-12 text-center">
         <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4 dark:text-amber-400" />
-        <h3 className="text-xl font-bold text-slate-900 mb-2 dark:text-white">
+        <h3 className="text-xl font-bold text-zinc-900 mb-2 dark:text-white">
           {error ? t('scoreboard.loadFailedHeading') : t('contest.notFoundHeading')}
         </h3>
         {error && (
@@ -306,11 +306,11 @@ function OutputScoreboard() {
     <div className="animate-fade-in space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3 dark:text-white">
+          <h1 className="text-3xl font-bold text-zinc-900 flex items-center gap-3 dark:text-white">
             <Trophy className="w-8 h-8 text-yellow-500 dark:text-yellow-400" />
             {t('scoreboard.title')}
           </h1>
-          <p className="text-slate-500 mt-1 truncate dark:text-gray-400">{data.contest_title}</p>
+          <p className="text-zinc-500 mt-1 truncate dark:text-zinc-400">{data.contest_title}</p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -333,10 +333,10 @@ function OutputScoreboard() {
 
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
               autoRefresh
                 ? 'bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400'
-                : 'bg-gray-100 text-slate-500 border border-gray-300 dark:bg-slate-800 dark:text-gray-400 dark:border-slate-700'
+                : 'bg-zinc-100 text-zinc-500 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'
             }`}
             title={autoRefresh ? t('scoreboard.liveOn') : t('scoreboard.liveOff')}
             aria-pressed={autoRefresh}
@@ -381,21 +381,21 @@ function OutputScoreboard() {
       </div>
 
       {lastUpdate && (
-        <p className="text-xs text-slate-400 dark:text-gray-600">
+        <p className="text-xs text-zinc-400 dark:text-zinc-600">
           {t('scoreboard.lastUpdate', { time: lastUpdate.toLocaleTimeString() })}
         </p>
       )}
 
       {data.frozen && (
-        <div className="glass-card p-4 border border-sky-500/30 flex items-start gap-3 bg-sky-500/5">
+        <div className="card p-4 border border-sky-500/30 flex items-start gap-3 bg-sky-500/5">
           <Snowflake className="w-5 h-5 text-sky-600 flex-shrink-0 mt-0.5 dark:text-sky-400" />
           <div className="text-sm">
-            <p className="font-semibold text-slate-900 dark:text-white">
+            <p className="font-semibold text-zinc-900 dark:text-white">
               {t('scoreboard.frozenTitle', {
                 since: data.freeze_at ? t('scoreboard.frozenSince', { time: formatDateTime(data.freeze_at) }) : '',
               })}
             </p>
-            <p className="text-slate-600 dark:text-gray-400 mt-0.5">
+            <p className="text-zinc-600 dark:text-zinc-400 mt-0.5">
               {t('scoreboard.frozenBody', {
                 endPart: data.end_time ? ` (${formatDateTime(data.end_time)})` : '',
               })}
@@ -411,11 +411,11 @@ function OutputScoreboard() {
         const active = freezeMs <= now && (!endMs || now < endMs);
         if (!active) return null;
         return (
-          <div className="glass-card p-4 border border-amber-500/30 flex items-start gap-3 bg-amber-500/5">
+          <div className="card p-4 border border-amber-500/30 flex items-start gap-3 bg-amber-500/5">
             <Snowflake className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5 dark:text-amber-400" />
             <div className="text-sm">
-              <p className="font-semibold text-slate-900 dark:text-white">{t('scoreboard.adminView')}</p>
-              <p className="text-slate-600 dark:text-gray-400 mt-0.5">
+              <p className="font-semibold text-zinc-900 dark:text-white">{t('scoreboard.adminView')}</p>
+              <p className="text-zinc-600 dark:text-zinc-400 mt-0.5">
                 {t('scoreboard.adminViewBody', { time: formatDateTime(data.freeze_at) })}
               </p>
             </div>
@@ -424,10 +424,10 @@ function OutputScoreboard() {
       })()}
 
       {sortedTeams.length === 0 ? (
-        <div className="glass-card p-12 text-center">
-          <Trophy className="w-14 h-14 text-slate-300 mx-auto mb-4 dark:text-gray-600" />
-          <h3 className="text-xl font-bold text-slate-900 mb-2 dark:text-white">{t('scoreboard.noSubmissions')}</h3>
-          <p className="text-slate-500 dark:text-gray-400">{t('scoreboard.noSubmissionsBody')}</p>
+        <div className="card p-12 text-center">
+          <Trophy className="w-14 h-14 text-zinc-300 mx-auto mb-4 dark:text-zinc-600" />
+          <h3 className="text-xl font-bold text-zinc-900 mb-2 dark:text-white">{t('scoreboard.noSubmissions')}</h3>
+          <p className="text-zinc-500 dark:text-zinc-400">{t('scoreboard.noSubmissionsBody')}</p>
           <Link to={`/contests/${id}`} className="btn-primary text-sm mt-4 inline-block">
             {t('scoreboard.goToContest')}
           </Link>
@@ -442,7 +442,7 @@ function OutputScoreboard() {
             return (
               <div
                 key={team.team_id}
-                className={`glass-card p-4 ${isUserTeam ? 'border-violet-500/40' : ''}`}
+                className={`card p-4 ${isUserTeam ? 'border-accent-500/40' : ''}`}
               >
                 <div className="flex items-center justify-between gap-3 mb-2">
                   <div className="flex items-center gap-3 min-w-0">
@@ -451,19 +451,19 @@ function OutputScoreboard() {
                         <span className={`font-bold text-sm ${MEDALS[rank - 1]}`}>{rank}</span>
                       </div>
                     ) : (
-                      <span className="text-slate-400 font-mono pl-1 w-8 text-center dark:text-gray-500">{rank}</span>
+                      <span className="text-zinc-400 font-mono pl-1 w-8 text-center dark:text-zinc-500">{rank}</span>
                     )}
                     <div className="min-w-0">
-                      <p className={`font-semibold truncate ${isUserTeam ? 'text-violet-700 dark:text-violet-300' : 'text-slate-900 dark:text-white'}`}>
+                      <p className={`font-semibold truncate ${isUserTeam ? 'text-accent-700 dark:text-accent-300' : 'text-zinc-900 dark:text-white'}`}>
                         {team.team_name}
-                        {isUserTeam && <span className="ml-1 text-[11px] text-violet-500 font-normal dark:text-violet-400">{t('scoreboard.youTag')}</span>}
+                        {isUserTeam && <span className="ml-1 text-[11px] text-accent-500 font-normal dark:text-accent-400">{t('scoreboard.youTag')}</span>}
                       </p>
-                      <p className="text-[11px] text-slate-500 truncate dark:text-gray-500">
+                      <p className="text-[11px] text-zinc-500 truncate dark:text-zinc-500">
                         {team.members.join(', ')}
                       </p>
                     </div>
                   </div>
-                  <span className="font-mono font-bold text-base text-slate-900 tabular-nums dark:text-white">
+                  <span className="font-mono font-bold text-base text-zinc-900 tabular-nums dark:text-white">
                     {formatScore(team.total_score)}
                   </span>
                 </div>
@@ -472,7 +472,7 @@ function OutputScoreboard() {
                     const s = team.scores[String(inst.id)];
                     if (!s || s.submission_count === 0) {
                       return (
-                        <div key={inst.id} className="text-[10px] text-slate-400 px-2 py-1 rounded bg-gray-50 dark:bg-slate-800/30 dark:text-gray-600 truncate">
+                        <div key={inst.id} className="text-[10px] text-zinc-400 px-2 py-1 rounded bg-zinc-50 dark:bg-zinc-800/30 dark:text-zinc-600 truncate">
                           {inst.name}: —
                         </div>
                       );
@@ -482,7 +482,7 @@ function OutputScoreboard() {
                     return (
                       <div
                         key={inst.id}
-                        className="text-[10px] px-2 py-1 rounded bg-gray-50 dark:bg-slate-800/30"
+                        className="text-[10px] px-2 py-1 rounded bg-zinc-50 dark:bg-zinc-800/30"
                         style={{ color: pct >= 0.9 ? '#22c55e' : pct >= 0.7 ? '#eab308' : pct >= 0.4 ? '#f97316' : '#ef4444' }}
                       >
                         <span className="truncate">{inst.name}: </span>
@@ -496,34 +496,34 @@ function OutputScoreboard() {
           })}
         </div>
 
-        <div className="glass-card overflow-hidden hidden md:block">
+        <div className="card overflow-hidden hidden md:block">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-100/60 dark:bg-slate-800/50">
-                  <th className="text-left text-slate-500 font-semibold py-4 px-4 w-16 dark:text-gray-400">{t('scoreboard.tableRank')}</th>
-                  <th className="text-left text-slate-500 font-semibold py-4 px-4 dark:text-gray-400">{t('scoreboard.tableTeam')}</th>
+                <tr className="bg-zinc-100/60 dark:bg-zinc-800/50">
+                  <th className="text-left text-zinc-500 font-semibold py-4 px-4 w-16 dark:text-zinc-400">{t('scoreboard.tableRank')}</th>
+                  <th className="text-left text-zinc-500 font-semibold py-4 px-4 dark:text-zinc-400">{t('scoreboard.tableTeam')}</th>
                   {data.instances.map((inst) => (
                     <th
                       key={inst.id}
-                      className="text-center text-slate-500 font-semibold py-4 px-3 select-none dark:text-gray-400"
+                      className="text-center text-zinc-500 font-semibold py-4 px-3 select-none dark:text-zinc-400"
                     >
                       <div className="flex items-center justify-center gap-1">
                         <button
                           type="button"
                           onClick={() => handleSort(String(inst.id))}
-                          className="flex items-center gap-1 hover:text-violet-600 transition-colors focus:outline-none focus:text-violet-600 dark:hover:text-violet-400"
+                          className="flex items-center gap-1 hover:text-accent-600 transition-colors focus:outline-none focus:text-accent-600 dark:hover:text-accent-400"
                           title={t('scoreboard.sortBy', { name: inst.name })}
                         >
                           <span className="truncate max-w-[120px]">{inst.name}</span>
                           {sortBy === String(inst.id) && (
-                            <ArrowUpDown className="w-3 h-3 text-violet-500 flex-shrink-0 dark:text-violet-400" />
+                            <ArrowUpDown className="w-3 h-3 text-accent-500 flex-shrink-0 dark:text-accent-400" />
                           )}
                         </button>
                         <button
                           type="button"
                           onClick={() => openDrilldown(inst)}
-                          className="opacity-60 hover:opacity-100 text-violet-500 dark:text-violet-400"
+                          className="opacity-60 hover:opacity-100 text-accent-500 dark:text-accent-400"
                           title={t('scoreboard.drillTitle')}
                           aria-label={t('scoreboard.drillAria', { name: inst.name })}
                         >
@@ -535,7 +535,7 @@ function OutputScoreboard() {
                   <th
                     role="button"
                     tabIndex={0}
-                    className="text-center text-slate-500 font-semibold py-4 px-4 cursor-pointer hover:text-violet-600 transition-colors select-none focus:outline-none focus:text-violet-600 dark:text-gray-400 dark:hover:text-violet-400 dark:focus:text-violet-400"
+                    className="text-center text-zinc-500 font-semibold py-4 px-4 cursor-pointer hover:text-accent-600 transition-colors select-none focus:outline-none focus:text-accent-600 dark:text-zinc-400 dark:hover:text-accent-400 dark:focus:text-accent-400"
                     onClick={() => handleSort('total')}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
@@ -548,7 +548,7 @@ function OutputScoreboard() {
                     <div className="flex items-center justify-center gap-1">
                       {t('scoreboard.tableTotal')}
                       {sortBy === 'total' && (
-                        <ArrowUpDown className="w-3 h-3 text-violet-500 dark:text-violet-400" />
+                        <ArrowUpDown className="w-3 h-3 text-accent-500 dark:text-accent-400" />
                       )}
                     </div>
                   </th>
@@ -564,10 +564,10 @@ function OutputScoreboard() {
                     <tr
                       key={team.team_id}
                       className={`
-                        border-t border-gray-100 transition-all duration-300 dark:border-slate-800/30
+                        border-t border-zinc-100 transition-all duration-300 dark:border-zinc-800/30
                         ${isUserTeam
-                          ? 'bg-violet-500/5 hover:bg-violet-500/10'
-                          : 'hover:bg-gray-50 dark:hover:bg-slate-800/30'}
+                          ? 'bg-accent-500/5 hover:bg-accent-500/10'
+                          : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/30'}
                         ${isFlashing ? 'animate-score-flash' : ''}
                       `}
                     >
@@ -577,20 +577,20 @@ function OutputScoreboard() {
                             <span className={`font-bold ${MEDALS[rank - 1]}`}>{rank}</span>
                           </div>
                         ) : (
-                          <span className="text-slate-400 font-mono pl-2 dark:text-gray-500">{rank}</span>
+                          <span className="text-zinc-400 font-mono pl-2 dark:text-zinc-500">{rank}</span>
                         )}
                       </td>
 
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="min-w-0">
-                            <p className={`font-semibold truncate ${isUserTeam ? 'text-violet-700 dark:text-violet-300' : 'text-slate-900 dark:text-white'}`}>
+                            <p className={`font-semibold truncate ${isUserTeam ? 'text-accent-700 dark:text-accent-300' : 'text-zinc-900 dark:text-white'}`}>
                               {team.team_name}
                               {isUserTeam && (
-                                <span className="ml-2 text-xs text-violet-500 font-normal dark:text-violet-400">{t('scoreboard.youTag')}</span>
+                                <span className="ml-2 text-xs text-accent-500 font-normal dark:text-accent-400">{t('scoreboard.youTag')}</span>
                               )}
                             </p>
-                            <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1 truncate dark:text-gray-500">
+                            <p className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1 truncate dark:text-zinc-500">
                               <Users className="w-3 h-3 flex-shrink-0" />
                               <span className="truncate">{team.members.join(', ')}</span>
                             </p>
@@ -631,13 +631,13 @@ function OutputScoreboard() {
                                   {formatScore(score.best_score)}
                                 </span>
                                 {hasPending && (
-                                  <span className="ml-1 inline-flex items-baseline gap-0.5 text-xs font-mono text-slate-700 dark:text-gray-200">
+                                  <span className="ml-1 inline-flex items-baseline gap-0.5 text-xs font-mono text-zinc-700 dark:text-zinc-200">
                                     <span>+/-</span>
                                     <span className="font-semibold">?</span>
                                     <Snowflake className="w-3 h-3 text-sky-500 dark:text-sky-300" />
                                   </span>
                                 )}
-                                <div className="w-full bg-gray-200 rounded-full h-1 mt-1.5 overflow-hidden dark:bg-slate-800">
+                                <div className="w-full bg-zinc-200 rounded-full h-1 mt-1.5 overflow-hidden dark:bg-zinc-800">
                                   <div
                                     className="h-1 rounded-full transition-all duration-500"
                                     style={{
@@ -652,17 +652,17 @@ function OutputScoreboard() {
                                     }}
                                   />
                                 </div>
-                                <p className="text-[10px] text-slate-400 mt-1 dark:text-gray-600">
+                                <p className="text-[10px] text-zinc-400 mt-1 dark:text-zinc-600">
                                   {score.submission_count} {t('scoreboard.countSuffix')}
                                 </p>
                               </div>
                             ) : hasPending ? (
                               <div className="inline-flex flex-col items-center gap-0.5">
                                 <Snowflake className="w-3 h-3 text-sky-500 dark:text-sky-300" />
-                                <span className="font-mono font-bold text-sm text-slate-700 dark:text-gray-200">?</span>
+                                <span className="font-mono font-bold text-sm text-zinc-700 dark:text-zinc-200">?</span>
                               </div>
                             ) : (
-                              <span className="text-slate-300 dark:text-gray-700">—</span>
+                              <span className="text-zinc-300 dark:text-zinc-700">—</span>
                             )}
                           </td>
                         );
@@ -671,14 +671,14 @@ function OutputScoreboard() {
                       <td className="py-4 px-4 text-center whitespace-nowrap">
                         <div className="flex flex-col items-center">
                           <span
-                            className="font-mono font-bold text-lg text-slate-900 tabular-nums dark:text-white"
+                            className="font-mono font-bold text-lg text-zinc-900 tabular-nums dark:text-white"
                             title={formatScoreFull(team.total_score)}
                           >
                             {formatScore(team.total_score)}
                           </span>
-                          <div className="w-20 bg-gray-200 rounded-full h-1.5 mt-1 overflow-hidden dark:bg-slate-800">
+                          <div className="w-20 bg-zinc-200 rounded-full h-1.5 mt-1 overflow-hidden dark:bg-zinc-800">
                             <div
-                              className="h-1.5 rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all duration-500"
+                              className="h-1.5 rounded-full bg-accent-500 transition-all duration-500"
                               style={{ width: `${clampRatio(team.total_score, maxTotal) * 100}%` }}
                             />
                           </div>
@@ -695,28 +695,28 @@ function OutputScoreboard() {
       )}
 
       {drilldown && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setDrilldown(null)}>
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setDrilldown(null)}>
           <div
-            className="glass-card p-6 w-full max-w-lg animate-slide-up"
+            className="card p-6 w-full max-w-lg animate-fade-in"
             role="dialog"
             aria-modal="true"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 dark:text-white">
+              <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2 dark:text-white">
                 <Medal className="w-5 h-5 text-amber-500 dark:text-amber-400" />
                 {drilldown.instance.name}
               </h2>
               <button
                 onClick={() => setDrilldown(null)}
-                className="p-1 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-slate-900 transition-colors dark:hover:bg-slate-800 dark:text-gray-400 dark:hover:text-white"
+                className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-colors dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-white"
                 aria-label={t('accountModal.close')}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             {drilldown.rows.length === 0 ? (
-              <p className="text-slate-500 text-sm text-center py-6 dark:text-gray-400">
+              <p className="text-zinc-500 text-sm text-center py-6 dark:text-zinc-400">
                 {t('scoreboard.drillEmpty')}
               </p>
             ) : (
@@ -724,19 +724,19 @@ function OutputScoreboard() {
                 {drilldown.rows.slice(0, 25).map((row, idx) => (
                   <li
                     key={row.team.team_id}
-                    className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg bg-gray-50 dark:bg-slate-800/40"
+                    className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/40"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="font-mono text-sm font-bold text-slate-400 w-6 text-right dark:text-gray-500">
+                      <span className="font-mono text-sm font-bold text-zinc-400 w-6 text-right dark:text-zinc-500">
                         {idx + 1}
                       </span>
-                      <span className="text-sm font-medium text-slate-900 truncate dark:text-white">
+                      <span className="text-sm font-medium text-zinc-900 truncate dark:text-white">
                         {row.team.team_name}
                       </span>
                     </div>
-                    <span className="font-mono font-bold text-sm text-violet-700 tabular-nums dark:text-violet-300">
+                    <span className="font-mono font-bold text-sm text-accent-700 tabular-nums dark:text-accent-300">
                       {formatScore(row.best)}
-                      <span className="text-[10px] text-slate-400 ml-2 dark:text-gray-500">
+                      <span className="text-[10px] text-zinc-400 ml-2 dark:text-zinc-500">
                         {row.subs} {t('scoreboard.countSuffix')}
                       </span>
                     </span>

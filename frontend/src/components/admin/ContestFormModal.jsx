@@ -253,15 +253,15 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto">
-        <div className="glass-card p-6 w-full max-w-3xl my-8 animate-slide-up" role="dialog" aria-modal="true" aria-labelledby="contest-form-title">
+      <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-y-auto">
+        <div className="card p-6 w-full max-w-3xl my-8 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="contest-form-title">
           <div className="flex items-center justify-between mb-6">
-            <h2 id="contest-form-title" className="text-xl font-bold text-slate-900 dark:text-white">
+            <h2 id="contest-form-title" className="text-xl font-bold text-zinc-900 dark:text-white">
               {contest ? t('admin.form.editTitle') : t('admin.form.createTitle')}
             </h2>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-slate-900 transition-colors dark:hover:bg-slate-800 dark:text-gray-400 dark:hover:text-white"
+              className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-colors dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-white"
               aria-label={t('admin.form.closeAria')}
             >
               <X className="w-5 h-5" />
@@ -270,7 +270,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
 
           <form onSubmit={handleContestSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">{t('admin.form.titleField')}</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">{t('admin.form.titleField')}</label>
               <input
                 type="text"
                 className="input-field"
@@ -282,7 +282,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">{t('admin.form.descriptionField')}</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">{t('admin.form.descriptionField')}</label>
               <input
                 type="text"
                 className="input-field"
@@ -294,7 +294,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
 
             {contestForm.kind !== 'icpc' && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+              <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
                 {t('admin.form.statementField')}
               </label>
               <textarea
@@ -307,44 +307,44 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
             )}
 
             {!contest && contestForm.kind !== 'icpc' && (
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 dark:bg-slate-800/30 dark:border-slate-700/40">
-                <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2 dark:text-gray-300">
-                  <FileType className="w-4 h-4 text-violet-500 dark:text-violet-400" />
+              <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 dark:bg-zinc-800/30 dark:border-zinc-700/40">
+                <label className="block text-sm font-medium text-zinc-700 mb-2 flex items-center gap-2 dark:text-zinc-300">
+                  <FileType className="w-4 h-4 text-accent-500 dark:text-accent-400" />
                   {t('admin.form.pdfLabel')}
                 </label>
                 <input
                   type="file"
                   accept="application/pdf,.pdf"
                   onChange={(e) => setCreatePdfFile(e.target.files?.[0] || null)}
-                  className="input-field text-sm py-2 file:mr-2 file:py-0.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-violet-600 file:text-white"
+                  className="input-field text-sm py-2 file:mr-2 file:py-0.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-accent-600 file:text-white"
                 />
                 {createPdfFile && (
-                  <p className="text-xs text-slate-500 mt-1.5 dark:text-gray-500">
+                  <p className="text-xs text-zinc-500 mt-1.5 dark:text-zinc-500">
                     {createPdfFile.name}
                   </p>
                 )}
-                <p className="text-xs text-slate-500 mt-1.5 dark:text-gray-500">
+                <p className="text-xs text-zinc-500 mt-1.5 dark:text-zinc-500">
                   {t('admin.form.pdfHint')}
                 </p>
               </div>
             )}
 
             {contest && contestForm.kind !== 'icpc' && (
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 dark:bg-slate-800/30 dark:border-slate-700/40">
-                <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2 dark:text-gray-300">
-                  <FileType className="w-4 h-4 text-violet-500 dark:text-violet-400" />
+              <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 dark:bg-zinc-800/30 dark:border-zinc-700/40">
+                <label className="block text-sm font-medium text-zinc-700 mb-2 flex items-center gap-2 dark:text-zinc-300">
+                  <FileType className="w-4 h-4 text-accent-500 dark:text-accent-400" />
                   {t('admin.form.pdfLabel')}
                 </label>
                 {contest.has_problem_statement_pdf ? (
                   <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-2 min-w-0">
-                      <FileText className="w-4 h-4 text-violet-500 flex-shrink-0 dark:text-violet-400" />
-                      <span className="text-sm text-slate-700 truncate dark:text-gray-200" title={contest.problem_statement_pdf_name}>
+                      <FileText className="w-4 h-4 text-accent-500 flex-shrink-0 dark:text-accent-400" />
+                      <span className="text-sm text-zinc-700 truncate dark:text-zinc-200" title={contest.problem_statement_pdf_name}>
                         {contest.problem_statement_pdf_name || t('admin.form.pdfFilename')}
                       </span>
                     </div>
                     <div className="flex gap-2">
-                      <label className="cursor-pointer text-xs font-medium px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 border border-gray-300 text-slate-700 transition-colors flex items-center gap-1.5 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-gray-200">
+                      <label className="cursor-pointer text-xs font-medium px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 border border-zinc-300 text-zinc-700 transition-colors flex items-center gap-1.5 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 dark:text-zinc-200">
                         <Upload className="w-3.5 h-3.5" />
                         {t('admin.form.replacePdf')}
                         <input
@@ -366,7 +366,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                   </div>
                 ) : (
                   <>
-                    <label className="cursor-pointer inline-flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-300 text-slate-700 transition-colors dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-gray-200">
+                    <label className="cursor-pointer inline-flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 border border-zinc-300 text-zinc-700 transition-colors dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 dark:text-zinc-200">
                       <Upload className="w-4 h-4" />
                       {t('admin.form.uploadPdf')}
                       <input
@@ -376,7 +376,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                         onChange={handlePdfUpload}
                       />
                     </label>
-                    <p className="text-xs text-slate-500 mt-2 dark:text-gray-500">
+                    <p className="text-xs text-zinc-500 mt-2 dark:text-zinc-500">
                       {t('admin.form.pdfHint')}
                     </p>
                   </>
@@ -387,7 +387,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
             <div className="space-y-3">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+                  <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
                     {t('admin.form.visibleAt')}
                   </label>
                   <input
@@ -396,12 +396,12 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                     value={contestForm.visible_at}
                     onChange={(e) => setContestForm({ ...contestForm, visible_at: e.target.value })}
                   />
-                  <p className="text-[11px] text-slate-400 mt-1 dark:text-gray-600">
+                  <p className="text-[11px] text-zinc-400 mt-1 dark:text-zinc-600">
                     {t('admin.form.visibleAtHint')}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+                  <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
                     {t('admin.form.startTime')}
                   </label>
                   <input
@@ -412,7 +412,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+                  <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
                     {t('admin.form.endTime')}
                   </label>
                   <input
@@ -423,7 +423,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+                  <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
                     {t('admin.form.hiddenAt')}
                   </label>
                   <input
@@ -432,13 +432,13 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                     value={contestForm.hidden_at}
                     onChange={(e) => setContestForm({ ...contestForm, hidden_at: e.target.value })}
                   />
-                  <p className="text-[11px] text-slate-400 mt-1 dark:text-gray-600">
+                  <p className="text-[11px] text-zinc-400 mt-1 dark:text-zinc-600">
                     {t('admin.form.hiddenAtHint')}
                   </p>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+                <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
                   {t('admin.form.freezeLabel')}
                 </label>
                 <input
@@ -447,7 +447,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                   value={contestForm.freeze_scoreboard_at}
                   onChange={(e) => setContestForm({ ...contestForm, freeze_scoreboard_at: e.target.value })}
                 />
-                <p className="text-[11px] text-slate-400 mt-1 dark:text-gray-600">
+                <p className="text-[11px] text-zinc-400 mt-1 dark:text-zinc-600">
                   {t('admin.form.freezeHint')}
                 </p>
               </div>
@@ -456,12 +456,12 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
             {contestForm.kind !== 'icpc' && (
             <div>
               <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-                <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   <Code className="w-4 h-4 inline mr-1" />
                   {t('admin.form.scriptLabel')}
                 </label>
                 <div className="flex gap-2">
-                  <label className="cursor-pointer text-xs font-medium px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 border border-gray-300 text-slate-700 transition-colors flex items-center gap-1.5 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-gray-200">
+                  <label className="cursor-pointer text-xs font-medium px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 border border-zinc-300 text-zinc-700 transition-colors flex items-center gap-1.5 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 dark:text-zinc-200">
                     <Upload className="w-3.5 h-3.5" />
                     {t('admin.form.uploadPy')}
                     <input
@@ -475,7 +475,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                     type="button"
                     onClick={handleScriptDownload}
                     disabled={!contestForm.scoring_script}
-                    className="text-xs font-medium px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 border border-gray-300 text-slate-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-gray-200"
+                    className="text-xs font-medium px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 border border-zinc-300 text-zinc-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
                     title={t('admin.form.downloadPyTooltip')}
                   >
                     <FileDown className="w-3.5 h-3.5" />
@@ -485,7 +485,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                     <button
                       type="button"
                       onClick={() => setTestScoringMode('score')}
-                      className="text-xs font-medium px-3 py-1.5 rounded-md bg-violet-600/10 hover:bg-violet-600/20 border border-violet-500/30 text-violet-700 transition-colors flex items-center gap-1.5 dark:bg-violet-600/20 dark:hover:bg-violet-600/30 dark:text-violet-300"
+                      className="text-xs font-medium px-3 py-1.5 rounded-md bg-accent-600/10 hover:bg-accent-600/20 border border-accent-500/30 text-accent-700 transition-colors flex items-center gap-1.5 dark:bg-accent-600/20 dark:hover:bg-accent-600/30 dark:text-accent-300"
                       title={t('admin.form.testScriptTooltip')}
                     >
                       <FlaskConical className="w-3.5 h-3.5" />
@@ -513,7 +513,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                 placeholder={t('admin.form.scriptPlaceholder')}
                 spellCheck={false}
               />
-              <p className="text-xs text-slate-500 mt-1.5 dark:text-gray-500">
+              <p className="text-xs text-zinc-500 mt-1.5 dark:text-zinc-500">
                 {t('admin.form.scriptHint1', {
                   args: 'instance_data, submission_data',
                   score: 'score',
@@ -525,7 +525,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+                <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
                   {t('admin.form.participationModeLabel')}
                 </label>
                 <select
@@ -537,12 +537,12 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                   <option value="solo">{t('admin.form.participationModeSolo')}</option>
                   <option value="both">{t('admin.form.participationModeBoth')}</option>
                 </select>
-                <p className="text-[11px] text-slate-400 mt-1 dark:text-gray-600">
+                <p className="text-[11px] text-zinc-400 mt-1 dark:text-zinc-600">
                   {t('admin.form.participationModeHint')}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+                <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
                   {t('admin.form.accessLabel')}
                 </label>
                 <div className="flex gap-2">
@@ -551,8 +551,8 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                     onClick={() => setContestForm({ ...contestForm, is_public: true })}
                     className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
                       contestForm.is_public
-                        ? 'bg-violet-600 text-white border-violet-600'
-                        : 'bg-white text-slate-700 border-gray-300 hover:bg-gray-100 dark:bg-slate-800 dark:text-gray-200 dark:border-slate-700 dark:hover:bg-slate-700'
+                        ? 'bg-accent-600 text-white border-accent-600'
+                        : 'bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700'
                     }`}
                   >
                     <Globe className="w-4 h-4" />
@@ -563,15 +563,15 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                     onClick={() => setContestForm({ ...contestForm, is_public: false })}
                     className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
                       !contestForm.is_public
-                        ? 'bg-violet-600 text-white border-violet-600'
-                        : 'bg-white text-slate-700 border-gray-300 hover:bg-gray-100 dark:bg-slate-800 dark:text-gray-200 dark:border-slate-700 dark:hover:bg-slate-700'
+                        ? 'bg-accent-600 text-white border-accent-600'
+                        : 'bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700'
                     }`}
                   >
                     <Lock className="w-4 h-4" />
                     {t('admin.form.accessPrivate')}
                   </button>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1 dark:text-gray-600">
+                <p className="text-[11px] text-zinc-400 mt-1 dark:text-zinc-600">
                   {contestForm.is_public
                     ? t('admin.form.accessPublicHint')
                     : t('admin.form.accessPrivateHint')}
@@ -586,14 +586,14 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
               <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md font-medium ${
                 contestForm.kind === 'icpc'
                   ? 'bg-sky-500/15 text-sky-700 border border-sky-500/30 dark:text-sky-300'
-                  : 'bg-violet-500/15 text-violet-700 border border-violet-500/30 dark:text-violet-300'
+                  : 'bg-accent-500/15 text-accent-700 border border-accent-500/30 dark:text-accent-300'
               }`}>
                 {contestForm.kind === 'icpc'
                   ? <><Code className="w-3.5 h-3.5" /> {t('admin.form.kindIcpc')}</>
                   : <><FlaskConical className="w-3.5 h-3.5" /> {t('admin.form.kindOutput')}</>
                 }
               </span>
-              <span className="text-[11px] text-slate-400 dark:text-gray-500">
+              <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
                 {contestForm.kind === 'icpc'
                   ? t('admin.form.kindIcpcHint')
                   : t('admin.form.kindOutputHint')}
@@ -604,8 +604,8 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                 (stages the file for post-create upload) and during
                 edit (imports immediately). */}
             {contestForm.kind === 'icpc' && (
-              <div className="rounded-xl border-2 border-dashed border-sky-500/40 bg-sky-500/5 p-4">
-                <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2 dark:text-gray-300">
+              <div className="rounded-lg border-2 border-dashed border-sky-500/40 bg-sky-500/5 p-4">
+                <label className="block text-sm font-semibold text-zinc-700 mb-2 flex items-center gap-2 dark:text-zinc-300">
                   <Upload className="w-4 h-4 text-sky-500 dark:text-sky-400" />
                   {t('admin.form.importDomjudge')}
                 </label>
@@ -646,26 +646,26 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                     {t('admin.form.icpcNoProblemsYet')}
                   </p>
                 )}
-                <p className="text-[11px] text-slate-500 mt-1.5 dark:text-gray-400">
+                <p className="text-[11px] text-zinc-500 mt-1.5 dark:text-zinc-400">
                   {t('admin.form.importDomjudgeHint')}
                 </p>
               </div>
             )}
 
-            <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-gray-300 cursor-pointer select-none">
+            <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={!!contestForm.practice_mode}
                 onChange={(e) => setContestForm({ ...contestForm, practice_mode: e.target.checked })}
               />
               <span>{t('admin.form.practiceMode')}</span>
-              <span className="text-[11px] text-slate-400 ml-1 dark:text-gray-500">
+              <span className="text-[11px] text-zinc-400 ml-1 dark:text-zinc-500">
                 {t('admin.form.practiceModeHint')}
               </span>
             </label>
 
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 dark:bg-slate-800/30 dark:border-slate-700/40">
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-gray-300">
+            <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 space-y-3 dark:bg-zinc-800/30 dark:border-zinc-700/40">
+              <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                 {t('admin.form.hardeningHeading')}
               </h4>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -675,13 +675,13 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                   onChange={(e) => setContestForm({ ...contestForm, dedup_block: e.target.checked })}
                 />
                 <span>{t('admin.form.dedupBlock')}</span>
-                <span className="text-[11px] text-slate-400 ml-1 dark:text-gray-500">
+                <span className="text-[11px] text-zinc-400 ml-1 dark:text-zinc-500">
                   {t('admin.form.dedupBlockHint')}
                 </span>
               </label>
               <div className={contestForm.kind === 'icpc' ? '' : 'grid sm:grid-cols-2 gap-3'}>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1 dark:text-gray-400">
+                  <label className="block text-xs font-medium text-zinc-600 mb-1 dark:text-zinc-400">
                     {t('admin.form.cooldown')}
                   </label>
                   <input
@@ -694,7 +694,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                 </div>
                 {contestForm.kind !== 'icpc' && (
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1 dark:text-gray-400">
+                    <label className="block text-xs font-medium text-zinc-600 mb-1 dark:text-zinc-400">
                       {t('admin.form.quota')}
                     </label>
                     <input
@@ -711,11 +711,11 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
               {contestForm.kind !== 'icpc' && (
                 <div>
                   <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-                    <label className="block text-xs font-medium text-slate-600 dark:text-gray-400">
+                    <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                       {t('admin.form.validator')}
                     </label>
                     <div className="flex gap-2">
-                      <label className="cursor-pointer text-xs font-medium px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 border border-gray-300 text-slate-700 transition-colors flex items-center gap-1.5 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-gray-200">
+                      <label className="cursor-pointer text-xs font-medium px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 border border-zinc-300 text-zinc-700 transition-colors flex items-center gap-1.5 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 dark:text-zinc-200">
                         <Upload className="w-3.5 h-3.5" />
                         {t('admin.form.uploadPy')}
                         <input
@@ -729,7 +729,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                         type="button"
                         onClick={handleValidatorDownload}
                         disabled={!contestForm.output_validator_script}
-                        className="text-xs font-medium px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 border border-gray-300 text-slate-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-gray-200"
+                        className="text-xs font-medium px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 border border-zinc-300 text-zinc-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
                         title={t('admin.form.downloadPyTooltip')}
                       >
                         <FileDown className="w-3.5 h-3.5" />
@@ -740,7 +740,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                           type="button"
                           onClick={() => setTestScoringMode('validate')}
                           disabled={!contestForm.output_validator_script}
-                          className="text-xs font-medium px-3 py-1.5 rounded-md bg-violet-600/10 hover:bg-violet-600/20 border border-violet-500/30 text-violet-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-violet-600/20 dark:hover:bg-violet-600/30 dark:text-violet-300"
+                          className="text-xs font-medium px-3 py-1.5 rounded-md bg-accent-600/10 hover:bg-accent-600/20 border border-accent-500/30 text-accent-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-accent-600/20 dark:hover:bg-accent-600/30 dark:text-accent-300"
                           title={t('admin.form.testValidatorTooltip')}
                         >
                           <FlaskConical className="w-3.5 h-3.5" />
@@ -767,7 +767,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                     value={contestForm.output_validator_script}
                     onChange={(e) => setContestForm({ ...contestForm, output_validator_script: e.target.value })}
                   />
-                  <p className="text-[11px] text-slate-400 mt-1 dark:text-gray-500">
+                  <p className="text-[11px] text-zinc-400 mt-1 dark:text-zinc-500">
                     {t('admin.form.validatorHint')}
                   </p>
                 </div>

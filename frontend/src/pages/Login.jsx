@@ -78,51 +78,46 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative bg-gray-50 dark:bg-slate-950">
+    <div className="min-h-screen flex items-center justify-center px-4 relative bg-zinc-50 dark:bg-zinc-950">
       <div className="absolute top-4 right-4 flex items-center gap-1">
         <button
           onClick={toggleLng}
-          className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-gray-100 transition-colors text-xs font-semibold uppercase dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-slate-800"
+          className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors text-xs font-semibold uppercase dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800"
           aria-label={t('nav.language')}
         >
           {currentLng}
         </button>
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-gray-100 transition-colors dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-slate-800"
+          className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800"
           aria-label={t('nav.toggleTheme')}
         >
           {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>
       </div>
 
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/3 w-96 h-96 bg-violet-500/10 rounded-full blur-[128px] dark:bg-violet-600/15" />
-        <div className="absolute bottom-1/3 right-1/3 w-96 h-96 bg-indigo-500/10 rounded-full blur-[128px] dark:bg-indigo-600/10" />
-      </div>
-
-      <div className="relative glass-card p-8 w-full max-w-md animate-fade-in">
+      <div className="relative card p-8 w-full max-w-md animate-fade-in">
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-accent-600 flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="text-2xl font-bold gradient-text">CodeArena</span>
+          <span className="text-2xl font-bold text-zinc-900 dark:text-white">CodeArena</span>
         </div>
 
         {challenge ? (
           <>
             <div className="flex items-center justify-center gap-2 mb-2">
-              <ShieldCheck className="w-6 h-6 text-violet-500 dark:text-violet-400" />
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+              <ShieldCheck className="w-6 h-6 text-accent-500 dark:text-accent-400" />
+              <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">
                 {t('auth.totp.title')}
               </h2>
             </div>
-            <p className="text-slate-500 text-center mb-8 dark:text-gray-400">
+            <p className="text-zinc-500 text-center mb-8 dark:text-zinc-400">
               {t('auth.totp.subtitle')}
             </p>
             <form onSubmit={handle2faSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+                <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
                   {t('auth.totp.codeLabel')}
                 </label>
                 <input
@@ -138,7 +133,7 @@ export default function Login() {
                   required
                   autoFocus
                 />
-                <p className="text-xs text-slate-400 mt-2 dark:text-gray-500">
+                <p className="text-xs text-zinc-400 mt-2 dark:text-zinc-500">
                   {t('auth.totp.recoveryHint')}
                 </p>
               </div>
@@ -148,7 +143,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={cancelChallenge}
-                className="w-full text-sm text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="w-full text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
               >
                 {t('auth.totp.cancel')}
               </button>
@@ -156,16 +151,16 @@ export default function Login() {
           </>
         ) : (
           <>
-        <h2 className="text-2xl font-bold text-slate-900 text-center mb-2 dark:text-white">
+        <h2 className="text-2xl font-bold text-zinc-900 text-center mb-2 dark:text-white">
           {t('auth.welcomeBack')}
         </h2>
-        <p className="text-slate-500 text-center mb-8 dark:text-gray-400">
+        <p className="text-zinc-500 text-center mb-8 dark:text-zinc-400">
           {t('auth.signIn')}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+            <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
               {t('auth.username')}
             </label>
             <input
@@ -180,12 +175,12 @@ export default function Login() {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 {t('auth.password')}
               </label>
               <Link
                 to="/forgot-password"
-                className="text-xs text-violet-600 hover:text-violet-500 font-medium dark:text-violet-400 dark:hover:text-violet-300"
+                className="text-xs text-accent-600 hover:text-accent-500 font-medium dark:text-accent-400 dark:hover:text-accent-300"
               >
                 {t('auth.forgotPassword')}
               </Link>
@@ -202,7 +197,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setShowPw(!showPw)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors dark:text-gray-500 dark:hover:text-gray-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors dark:text-zinc-500 dark:hover:text-zinc-300"
                 aria-label={showPw ? t('auth.hidePassword') : t('auth.showPassword')}
               >
                 {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -210,7 +205,7 @@ export default function Login() {
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-400 cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={form.remember_me}
@@ -231,9 +226,9 @@ export default function Login() {
           </button>
         </form>
 
-        <p className="text-center text-slate-500 text-sm mt-6 dark:text-gray-500">
+        <p className="text-center text-zinc-500 text-sm mt-6 dark:text-zinc-500">
           {t('auth.noAccount')}{' '}
-          <Link to="/register" className="text-violet-600 hover:text-violet-500 font-medium dark:text-violet-400 dark:hover:text-violet-300">
+          <Link to="/register" className="text-accent-600 hover:text-accent-500 font-medium dark:text-accent-400 dark:hover:text-accent-300">
             {t('auth.createAccount')}
           </Link>
         </p>

@@ -174,7 +174,7 @@ export default function ContestDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -184,10 +184,10 @@ export default function ContestDetail() {
 
   if (!contest) {
     return (
-      <div className="glass-card p-12 text-center">
+      <div className="card p-12 text-center">
         <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4 dark:text-amber-400" />
-        <h3 className="text-xl font-bold text-slate-900 mb-2 dark:text-white">{t('contest.notFoundHeading')}</h3>
-        <p className="text-slate-500 mb-4 dark:text-gray-400">{t('contest.notFoundBody')}</p>
+        <h3 className="text-xl font-bold text-zinc-900 mb-2 dark:text-white">{t('contest.notFoundHeading')}</h3>
+        <p className="text-zinc-500 mb-4 dark:text-zinc-400">{t('contest.notFoundBody')}</p>
         <Link to="/dashboard" className="btn-primary text-sm inline-block">
           {t('contest.backToDashboard')}
         </Link>
@@ -275,9 +275,9 @@ export default function ContestDetail() {
         && contest.participation_mode === 'team'
         && teams.length === 0
         && !user?.is_admin && (
-        <div className="glass-card p-8 text-center">
+        <div className="card p-8 text-center">
           <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3 dark:text-amber-400" />
-          <p className="text-slate-700 font-medium dark:text-gray-300">{t('contest.joinTeamToSubmit')}</p>
+          <p className="text-zinc-700 font-medium dark:text-zinc-300">{t('contest.joinTeamToSubmit')}</p>
           <Link to="/teams" className="btn-primary text-sm mt-4 inline-block">
             {t('contest.goToTeams')} <ArrowRight className="w-4 h-4 ml-1 inline" />
           </Link>
@@ -285,9 +285,9 @@ export default function ContestDetail() {
       )}
 
       {!contest.is_open_for_submissions && contest.start_time && backendIsoMs(contest.start_time) > now && (
-        <div className="glass-card p-6 text-center bg-sky-500/5 border border-sky-500/20">
+        <div className="card p-6 text-center bg-sky-500/5 border border-sky-500/20">
           <Clock className="w-8 h-8 text-sky-600 mx-auto mb-3 dark:text-sky-400" />
-          <p className="text-slate-700 font-medium dark:text-gray-200">
+          <p className="text-zinc-700 font-medium dark:text-zinc-200">
             {t('contest.startsIn')}{' '}
             <span className="font-mono tabular-nums text-sky-700 dark:text-sky-300">
               {formatCountdown((backendIsoMs(contest.start_time) - now) / 1000)}

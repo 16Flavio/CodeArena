@@ -170,7 +170,7 @@ export default function AdminLearningWidgets() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -181,13 +181,13 @@ export default function AdminLearningWidgets() {
         <div>
           <button
             onClick={() => navigate('/admin/learning')}
-            className="text-sm text-violet-600 hover:text-violet-500 inline-flex items-center gap-1 dark:text-violet-400"
+            className="text-sm text-accent-600 hover:text-accent-500 inline-flex items-center gap-1 dark:text-accent-400"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             {t('admin.learningWidgets.backToLearning')}
           </button>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3 mt-2">
-            <Sparkles className="w-8 h-8 text-violet-500" />
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-3 mt-2">
+            <Sparkles className="w-8 h-8 text-accent-500" />
             {t('admin.learningWidgets.title')}
           </h1>
         </div>
@@ -201,35 +201,35 @@ export default function AdminLearningWidgets() {
         {/* Widget list */}
         <div className="lg:col-span-3 space-y-2">
           {widgets.length === 0 && (
-            <div className="glass-card p-6 text-center text-sm text-slate-500 dark:text-gray-400">
+            <div className="card p-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
               {t('admin.learningWidgets.empty')}
             </div>
           )}
           {widgets.map((w) => (
             <div
               key={w.id}
-              className={`glass-card p-3 cursor-pointer transition-colors ${
-                editing?.id === w.id ? 'border-violet-300 bg-violet-50 dark:bg-violet-500/10' : ''
+              className={`card p-3 cursor-pointer transition-colors ${
+                editing?.id === w.id ? 'border-accent-300 bg-accent-50 dark:bg-accent-500/10' : ''
               }`}
               onClick={() => handleEdit(w)}
             >
               <div className="flex items-center gap-2">
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-slate-900 dark:text-white truncate">
+                  <div className="font-semibold text-zinc-900 dark:text-white truncate">
                     {w.title_fr || w.title_en || w.name}
                   </div>
-                  <code className="text-xs text-violet-600 dark:text-violet-400">
+                  <code className="text-xs text-accent-600 dark:text-accent-400">
                     :::{w.name}
                   </code>
                 </div>
                 {!w.is_published && (
-                  <span className="text-[10px] uppercase text-slate-400">
+                  <span className="text-[10px] uppercase text-zinc-400">
                     {t('admin.learningWidgets.draft')}
                   </span>
                 )}
                 <button
                   onClick={(e) => { e.stopPropagation(); handleDelete(w); }}
-                  className="p-1 rounded hover:bg-red-500/10 text-slate-400 hover:text-red-500"
+                  className="p-1 rounded hover:bg-red-500/10 text-zinc-400 hover:text-red-500"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -241,14 +241,14 @@ export default function AdminLearningWidgets() {
         {/* Editor */}
         <div className="lg:col-span-9">
           {!editing ? (
-            <div className="glass-card p-12 text-center">
-              <Code2 className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-500 dark:text-gray-400">
+            <div className="card p-12 text-center">
+              <Code2 className="w-10 h-10 text-zinc-300 dark:text-zinc-600 mx-auto mb-3" />
+              <p className="text-zinc-500 dark:text-zinc-400">
                 {t('admin.learningWidgets.selectHint')}
               </p>
             </div>
           ) : (
-            <div className="glass-card p-4 space-y-3">
+            <div className="card p-4 space-y-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <input
                   className="input-field flex-1"
@@ -266,7 +266,7 @@ export default function AdminLearningWidgets() {
                   onClick={() => setEditing((p) => ({ ...p, is_published: !p.is_published }))}
                   className={`text-sm px-3 py-1.5 rounded-lg ${editing.is_published
                     ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
-                    : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-gray-400'}`}
+                    : 'bg-zinc-200 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400'}`}
                 >
                   {editing.is_published ? t('admin.learningWidgets.published') : t('admin.learningWidgets.draft')}
                 </button>
@@ -283,7 +283,7 @@ export default function AdminLearningWidgets() {
                   value={editing.name || ''}
                   onChange={(e) => setEditing((p) => ({ ...p, name: e.target.value }))}
                 />
-                <span className="text-slate-400 dark:text-gray-500 self-center">
+                <span className="text-zinc-400 dark:text-zinc-500 self-center">
                   :::{editing.name}{'{...}'}
                 </span>
               </div>
@@ -306,7 +306,7 @@ export default function AdminLearningWidgets() {
               {/* Code editor + live preview */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs uppercase tracking-wide font-semibold text-slate-500 dark:text-gray-400 mb-1 block">
+                  <label className="text-xs uppercase tracking-wide font-semibold text-zinc-500 dark:text-zinc-400 mb-1 block">
                     {t('admin.learningWidgets.htmlTemplate')}
                   </label>
                   <textarea
@@ -317,10 +317,10 @@ export default function AdminLearningWidgets() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs uppercase tracking-wide font-semibold text-slate-500 dark:text-gray-400 mb-1 block">
+                  <label className="text-xs uppercase tracking-wide font-semibold text-zinc-500 dark:text-zinc-400 mb-1 block">
                     {t('admin.learningWidgets.preview')}
                   </label>
-                  <div className="border border-gray-200 rounded-lg overflow-hidden h-[400px] dark:border-slate-700/50">
+                  <div className="border border-zinc-200 rounded-lg overflow-hidden h-[400px] dark:border-zinc-700/50">
                     <CustomWidget
                       template={editing.html_template || ''}
                       height="100%"
@@ -334,7 +334,7 @@ export default function AdminLearningWidgets() {
               {/* Schemas */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs uppercase tracking-wide font-semibold text-slate-500 dark:text-gray-400 mb-1 block">
+                  <label className="text-xs uppercase tracking-wide font-semibold text-zinc-500 dark:text-zinc-400 mb-1 block">
                     {t('admin.learningWidgets.paramsSchema')}
                   </label>
                   <textarea
@@ -346,7 +346,7 @@ export default function AdminLearningWidgets() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs uppercase tracking-wide font-semibold text-slate-500 dark:text-gray-400 mb-1 block">
+                  <label className="text-xs uppercase tracking-wide font-semibold text-zinc-500 dark:text-zinc-400 mb-1 block">
                     {t('admin.learningWidgets.exampleParams')}
                   </label>
                   <textarea
@@ -359,7 +359,7 @@ export default function AdminLearningWidgets() {
                 </div>
               </div>
 
-              <p className="text-xs text-slate-500 dark:text-gray-400">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 {t('admin.learningWidgets.helpHint')}
               </p>
             </div>

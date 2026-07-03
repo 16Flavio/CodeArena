@@ -17,11 +17,11 @@ export default function SubmissionsTable({
   const [expandedErrorId, setExpandedErrorId] = useState(null);
 
   return (
-    <div className="glass-card p-6">
+    <div className="card p-6">
       <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+        <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
           {t('contest.recentSubmissions')}
-          <span className="ml-2 text-sm font-normal text-slate-500 dark:text-gray-500">
+          <span className="ml-2 text-sm font-normal text-zinc-500 dark:text-zinc-500">
             ({submissionsTotal})
           </span>
         </h2>
@@ -34,7 +34,7 @@ export default function SubmissionsTable({
             >
               {t('common.previous')}
             </button>
-            <span className="text-slate-500 dark:text-gray-500">
+            <span className="text-zinc-500 dark:text-zinc-500">
               {submissionPage * pageSize + 1}
               –
               {Math.min(submissionsTotal, (submissionPage + 1) * pageSize)}
@@ -53,29 +53,29 @@ export default function SubmissionsTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-slate-700/50">
-              <th className="text-left text-slate-500 font-medium pb-3 pr-4 dark:text-gray-400">{t('contest.tableInstance')}</th>
-              <th className="text-left text-slate-500 font-medium pb-3 pr-4 dark:text-gray-400">{t('contest.tableFile')}</th>
-              <th className="text-left text-slate-500 font-medium pb-3 pr-4 dark:text-gray-400">{t('contest.tableScore')}</th>
-              <th className="text-left text-slate-500 font-medium pb-3 pr-4 dark:text-gray-400">{t('contest.tableStatus')}</th>
-              <th className="text-left text-slate-500 font-medium pb-3 pr-4 dark:text-gray-400">{t('contest.tableBy')}</th>
-              <th className="text-left text-slate-500 font-medium pb-3 pr-4 dark:text-gray-400">{t('contest.tableTime')}</th>
-              <th className="text-right text-slate-500 font-medium pb-3 dark:text-gray-400">{t('mySubmissions.colActions')}</th>
+            <tr className="border-b border-zinc-200 dark:border-zinc-700/50">
+              <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">{t('contest.tableInstance')}</th>
+              <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">{t('contest.tableFile')}</th>
+              <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">{t('contest.tableScore')}</th>
+              <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">{t('contest.tableStatus')}</th>
+              <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">{t('contest.tableBy')}</th>
+              <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">{t('contest.tableTime')}</th>
+              <th className="text-right text-zinc-500 font-medium pb-3 dark:text-zinc-400">{t('mySubmissions.colActions')}</th>
             </tr>
           </thead>
           <tbody>
             {submissions.map((s) => (
               <Fragment key={s.id}>
-              <tr className="border-b border-gray-100 hover:bg-gray-50 dark:border-slate-800/30 dark:hover:bg-slate-800/20">
-                <td className="py-3 pr-4 text-slate-800 max-w-[200px] truncate dark:text-gray-200" title={s.instance_name}>
+              <tr className="border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-800/20">
+                <td className="py-3 pr-4 text-zinc-800 max-w-[200px] truncate dark:text-zinc-200" title={s.instance_name}>
                   {s.instance_name}
                 </td>
-                <td className="py-3 pr-4 text-slate-500 font-mono text-xs max-w-[200px] truncate dark:text-gray-400" title={s.file_name}>
+                <td className="py-3 pr-4 text-zinc-500 font-mono text-xs max-w-[200px] truncate dark:text-zinc-400" title={s.file_name}>
                   {s.file_name}
                 </td>
                 <td className="py-3 pr-4">
                   <span
-                    className="font-mono font-bold text-violet-600 tabular-nums dark:text-violet-300"
+                    className="font-mono font-bold text-accent-600 tabular-nums dark:text-accent-300"
                     title={formatScoreFull(s.score)}
                   >
                     {formatScore(s.score)}
@@ -101,8 +101,8 @@ export default function SubmissionsTable({
                     </button>
                   )}
                 </td>
-                <td className="py-3 pr-4 text-slate-500 dark:text-gray-400">{s.submitted_by_username}</td>
-                <td className="py-3 pr-4 text-slate-400 text-xs dark:text-gray-500">
+                <td className="py-3 pr-4 text-zinc-500 dark:text-zinc-400">{s.submitted_by_username}</td>
+                <td className="py-3 pr-4 text-zinc-400 text-xs dark:text-zinc-500">
                   {new Date(s.submitted_at).toLocaleString()}
                 </td>
                 <td className="py-3 text-right">
@@ -124,7 +124,7 @@ export default function SubmissionsTable({
                           toast.error(t('mySubmissions.downloadFailed'));
                         }
                       }}
-                      className="p-1.5 rounded hover:bg-gray-100 text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 dark:hover:bg-slate-800 transition-colors"
+                      className="p-1.5 rounded hover:bg-zinc-100 text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300 dark:hover:bg-zinc-800 transition-colors"
                       title={t('mySubmissions.download')}
                       aria-label={t('mySubmissions.download')}
                     >
@@ -134,7 +134,7 @@ export default function SubmissionsTable({
                 </td>
               </tr>
               {expandedErrorId === s.id && s.status !== 'scored' && (
-                <tr className="border-b border-gray-100 bg-red-500/5 dark:border-slate-800/30 dark:bg-red-500/10">
+                <tr className="border-b border-zinc-100 bg-red-500/5 dark:border-zinc-800/30 dark:bg-red-500/10">
                   <td colSpan={7} className="px-4 py-3">
                     <p className="text-[10px] uppercase text-red-600 mb-1 dark:text-red-400">
                       {s.status === 'invalid_output'

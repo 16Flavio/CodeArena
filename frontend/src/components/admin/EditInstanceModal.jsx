@@ -63,17 +63,17 @@ export default function EditInstanceModal({ instance, onClose, onSaved }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="glass-card p-6 w-full max-w-md animate-slide-up" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="card p-6 w-full max-w-md animate-fade-in" role="dialog" aria-modal="true">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 dark:text-white">
-            <Edit className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+          <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2 dark:text-white">
+            <Edit className="w-5 h-5 text-accent-500 dark:text-accent-400" />
             {t('admin.contests.editInstance')}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-slate-900 transition-colors dark:hover:bg-slate-800 dark:text-gray-400 dark:hover:text-white"
+            className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-colors dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-white"
             aria-label="close"
           >
             <X className="w-5 h-5" />
@@ -81,7 +81,7 @@ export default function EditInstanceModal({ instance, onClose, onSaved }) {
         </div>
         <form onSubmit={save} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1 dark:text-gray-400">
+            <label className="block text-xs font-medium text-zinc-600 mb-1 dark:text-zinc-400">
               {t('admin.contests.instanceNamePlaceholder')}
             </label>
             <input
@@ -94,7 +94,7 @@ export default function EditInstanceModal({ instance, onClose, onSaved }) {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1 dark:text-gray-400">
+            <label className="block text-xs font-medium text-zinc-600 mb-1 dark:text-zinc-400">
               {t('admin.contests.instanceUnlockMinutes')}
             </label>
             <input
@@ -104,13 +104,13 @@ export default function EditInstanceModal({ instance, onClose, onSaved }) {
               value={unlockMinutes}
               onChange={(e) => setUnlockMinutes(e.target.value)}
             />
-            <p className="text-[11px] text-slate-400 mt-1 dark:text-gray-500">
+            <p className="text-[11px] text-zinc-400 mt-1 dark:text-zinc-500">
               {t('admin.contests.instanceUnlockHint')}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1 dark:text-gray-400">
+              <label className="block text-xs font-medium text-zinc-600 mb-1 dark:text-zinc-400">
                 {t('admin.contests.instanceAvailableFrom')}
               </label>
               <input
@@ -119,12 +119,12 @@ export default function EditInstanceModal({ instance, onClose, onSaved }) {
                 value={unlockAt}
                 onChange={(e) => setUnlockAt(e.target.value)}
               />
-              <p className="text-[11px] text-slate-400 mt-1 dark:text-gray-500">
+              <p className="text-[11px] text-zinc-400 mt-1 dark:text-zinc-500">
                 {t('admin.contests.instanceAvailableFromHint')}
               </p>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1 dark:text-gray-400">
+              <label className="block text-xs font-medium text-zinc-600 mb-1 dark:text-zinc-400">
                 {t('admin.contests.instanceAvailableUntil')}
               </label>
               <input
@@ -133,18 +133,18 @@ export default function EditInstanceModal({ instance, onClose, onSaved }) {
                 value={closeAt}
                 onChange={(e) => setCloseAt(e.target.value)}
               />
-              <p className="text-[11px] text-slate-400 mt-1 dark:text-gray-500">
+              <p className="text-[11px] text-zinc-400 mt-1 dark:text-zinc-500">
                 {t('admin.contests.instanceAvailableUntilHint')}
               </p>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1 dark:text-gray-400">
+            <label className="block text-xs font-medium text-zinc-600 mb-1 dark:text-zinc-400">
               {t('admin.contests.instanceReplaceFile')}
             </label>
             <input
               type="file"
-              className="input-field text-sm py-2 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-violet-600 file:text-white"
+              className="input-field text-sm py-2 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-accent-600 file:text-white"
               onChange={(e) => setReplaceFile(e.target.files?.[0] || null)}
             />
             <p className="text-[11px] text-amber-600 mt-1 dark:text-amber-400">

@@ -14,7 +14,7 @@ export default function ContestHeader({ contest, now }) {
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div className="min-w-0">
         <div className="flex items-center gap-3 mb-2 flex-wrap">
-          <h1 className="text-3xl font-bold text-slate-900 break-words dark:text-white">{contest.title}</h1>
+          <h1 className="text-3xl font-bold text-zinc-900 break-words dark:text-white">{contest.title}</h1>
           {contest.is_open_for_submissions ? (
             <span className="badge-active">{t('contest.statusLive')}</span>
           ) : contest.end_time && backendIsoMs(contest.end_time) <= now ? (
@@ -27,8 +27,8 @@ export default function ContestHeader({ contest, now }) {
             <span className="badge-inactive">{t('contest.statusClosed')}</span>
           )}
         </div>
-        <p className="text-slate-500 dark:text-gray-400">{contest.description}</p>
-        <div className="text-xs text-slate-400 mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 dark:text-gray-500">
+        <p className="text-zinc-500 dark:text-zinc-400">{contest.description}</p>
+        <div className="text-xs text-zinc-400 mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 dark:text-zinc-500">
           {contest.start_time && (
             <span className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" />
@@ -40,7 +40,7 @@ export default function ContestHeader({ contest, now }) {
               <Clock className="w-3.5 h-3.5" />
               {t('contest.endLabel')} {formatDateTime(contest.end_time)}
               {backendIsoMs(contest.end_time) > now && (
-                <span className="text-slate-500 dark:text-gray-400">
+                <span className="text-zinc-500 dark:text-zinc-400">
                   {t('contest.endingIn', {
                     remaining: formatCountdown((backendIsoMs(contest.end_time) - now) / 1000),
                   })}

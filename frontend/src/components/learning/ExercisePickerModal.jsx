@@ -120,20 +120,20 @@ export default function ExercisePickerModal({ open, onClose, lessonId, onInsertD
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 px-4 bg-black/50" onClick={onClose}>
-      <div className="glass-card max-w-6xl w-full max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700/50">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+      <div className="card max-w-6xl w-full max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700/50">
+          <h2 className="text-xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
             <Code2 className="w-5 h-5 text-amber-500" />
             {t('exercisePicker.title')}
           </h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700/50 text-slate-400">
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700/50 text-zinc-400">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="flex-1 overflow-hidden grid grid-cols-12 gap-0">
           {/* List */}
-          <div className="col-span-4 border-r border-gray-200 dark:border-slate-700/50 overflow-y-auto p-3 space-y-2">
+          <div className="col-span-4 border-r border-zinc-200 dark:border-zinc-700/50 overflow-y-auto p-3 space-y-2">
             <button
               onClick={handleNew}
               className="w-full btn-primary text-sm inline-flex items-center justify-center gap-1"
@@ -141,9 +141,9 @@ export default function ExercisePickerModal({ open, onClose, lessonId, onInsertD
               <Plus className="w-4 h-4" />
               {t('exercisePicker.new')}
             </button>
-            {loading && <div className="text-xs text-slate-400">{t('exercisePicker.loading')}</div>}
+            {loading && <div className="text-xs text-zinc-400">{t('exercisePicker.loading')}</div>}
             {!loading && exercises.length === 0 && (
-              <p className="text-xs text-slate-400 dark:text-gray-500 text-center py-4">
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 text-center py-4">
                 {t('exercisePicker.empty')}
               </p>
             )}
@@ -152,13 +152,13 @@ export default function ExercisePickerModal({ open, onClose, lessonId, onInsertD
                 key={ex.id}
                 className={`p-2 rounded cursor-pointer ${
                   editing?.id === ex.id
-                    ? 'bg-violet-100 dark:bg-violet-500/20'
-                    : 'hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    ? 'bg-accent-100 dark:bg-accent-500/20'
+                    : 'hover:bg-zinc-100 dark:hover:bg-zinc-800/40'
                 }`}
                 onClick={() => setEditing(ex)}
               >
                 <div className="flex items-center gap-2">
-                  <span className="flex-1 text-sm font-medium text-slate-900 dark:text-white truncate">
+                  <span className="flex-1 text-sm font-medium text-zinc-900 dark:text-white truncate">
                     #{ex.id} · {ex.title_fr || ex.title_en || t('exercisePicker.untitled')}
                   </span>
                   <button
@@ -170,12 +170,12 @@ export default function ExercisePickerModal({ open, onClose, lessonId, onInsertD
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDelete(ex); }}
-                    className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-500/10"
+                    className="p-1 rounded text-zinc-400 hover:text-red-500 hover:bg-red-500/10"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <div className="text-[11px] text-slate-400 dark:text-gray-500 mt-0.5">
+                <div className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
                   {ex.language} · {ex.test_cases?.length || 0} tests
                 </div>
               </div>
@@ -185,7 +185,7 @@ export default function ExercisePickerModal({ open, onClose, lessonId, onInsertD
           {/* Form */}
           <div className="col-span-8 overflow-y-auto p-4">
             {!editing ? (
-              <p className="text-sm text-slate-500 dark:text-gray-400 text-center py-12">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center py-12">
                 {t('exercisePicker.selectHint')}
               </p>
             ) : (
@@ -244,10 +244,10 @@ export default function ExercisePickerModal({ open, onClose, lessonId, onInsertD
                     value={editing.time_limit_ms || 2000}
                     onChange={(e) => setEditing((p) => ({ ...p, time_limit_ms: parseInt(e.target.value, 10) || 2000 }))}
                   />
-                  <span className="text-xs text-slate-400">{t('exercisePicker.timeLimit')}</span>
+                  <span className="text-xs text-zinc-400">{t('exercisePicker.timeLimit')}</span>
                 </div>
                 <div>
-                  <label className="text-xs uppercase tracking-wide font-semibold text-slate-500 dark:text-gray-400 mb-1 block">
+                  <label className="text-xs uppercase tracking-wide font-semibold text-zinc-500 dark:text-zinc-400 mb-1 block">
                     {t('exercisePicker.starterCode')}
                   </label>
                   <textarea
@@ -259,19 +259,19 @@ export default function ExercisePickerModal({ open, onClose, lessonId, onInsertD
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs uppercase tracking-wide font-semibold text-slate-500 dark:text-gray-400">
+                    <label className="text-xs uppercase tracking-wide font-semibold text-zinc-500 dark:text-zinc-400">
                       {t('exercisePicker.testCases')}
                     </label>
                     <button
                       onClick={() => setEditing((p) => ({ ...p, test_cases: [...(p.test_cases || []), { ...DEFAULT_TEST_CASE }] }))}
-                      className="text-xs text-violet-600 hover:text-violet-500 dark:text-violet-400"
+                      className="text-xs text-accent-600 hover:text-accent-500 dark:text-accent-400"
                     >
                       + {t('exercisePicker.addTest')}
                     </button>
                   </div>
                   <div className="space-y-2">
                     {(editing.test_cases || []).map((tc, i) => (
-                      <div key={i} className="border border-gray-200 dark:border-slate-700/50 rounded p-2">
+                      <div key={i} className="border border-zinc-200 dark:border-zinc-700/50 rounded p-2">
                         <div className="flex items-center gap-2 mb-1 text-xs">
                           <span className="font-mono">#{i + 1}</span>
                           <label className="inline-flex items-center gap-1">
@@ -291,7 +291,7 @@ export default function ExercisePickerModal({ open, onClose, lessonId, onInsertD
                               ...p,
                               test_cases: p.test_cases.filter((_, j) => j !== i),
                             }))}
-                            className="ml-auto text-slate-400 hover:text-red-500"
+                            className="ml-auto text-zinc-400 hover:text-red-500"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -322,7 +322,7 @@ export default function ExercisePickerModal({ open, onClose, lessonId, onInsertD
                     ))}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 pt-2 border-t border-gray-200 dark:border-slate-700/50">
+                <div className="flex items-center gap-2 pt-2 border-t border-zinc-200 dark:border-zinc-700/50">
                   <button onClick={handleSave} className="btn-primary inline-flex items-center gap-2">
                     <Save className="w-4 h-4" />
                     {t('exercisePicker.save')}

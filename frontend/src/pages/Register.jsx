@@ -56,47 +56,42 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative bg-gray-50 dark:bg-slate-950">
+    <div className="min-h-screen flex items-center justify-center px-4 relative bg-zinc-50 dark:bg-zinc-950">
       <div className="absolute top-4 right-4 flex items-center gap-1">
         <button
           onClick={toggleLng}
-          className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-gray-100 transition-colors text-xs font-semibold uppercase dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-slate-800"
+          className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors text-xs font-semibold uppercase dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800"
           aria-label={t('nav.language')}
         >
           {currentLng}
         </button>
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-gray-100 transition-colors dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-slate-800"
+          className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800"
           aria-label={t('nav.toggleTheme')}
         >
           {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>
       </div>
 
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/3 w-96 h-96 bg-violet-500/10 rounded-full blur-[128px] dark:bg-violet-600/15" />
-        <div className="absolute bottom-1/3 right-1/3 w-96 h-96 bg-indigo-500/10 rounded-full blur-[128px] dark:bg-indigo-600/10" />
-      </div>
-
-      <div className="relative glass-card p-8 w-full max-w-md animate-fade-in">
+      <div className="relative card p-8 w-full max-w-md animate-fade-in">
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-accent-600 flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="text-2xl font-bold gradient-text">CodeArena</span>
+          <span className="text-2xl font-bold text-zinc-900 dark:text-white">CodeArena</span>
         </div>
 
-        <h2 className="text-2xl font-bold text-slate-900 text-center mb-2 dark:text-white">
+        <h2 className="text-2xl font-bold text-zinc-900 text-center mb-2 dark:text-white">
           {t('auth.registerTitle')}
         </h2>
-        <p className="text-slate-500 text-center mb-8 dark:text-gray-400">
+        <p className="text-zinc-500 text-center mb-8 dark:text-zinc-400">
           {t('auth.registerSubtitle')}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+            <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
               {t('auth.username')}
             </label>
             <input
@@ -110,7 +105,7 @@ export default function Register() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+            <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
               {t('auth.email')}
             </label>
             <input
@@ -124,7 +119,7 @@ export default function Register() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+            <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
               {t('auth.password')}
             </label>
             <div className="relative">
@@ -139,7 +134,7 @@ export default function Register() {
               <button
                 type="button"
                 onClick={() => setShowPw(!showPw)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors dark:text-gray-500 dark:hover:text-gray-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors dark:text-zinc-500 dark:hover:text-zinc-300"
                 aria-label={showPw ? t('auth.hidePassword') : t('auth.showPassword')}
               >
                 {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -149,7 +144,7 @@ export default function Register() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+            <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
               {t('auth.confirmPassword')}
             </label>
             <input
@@ -174,9 +169,9 @@ export default function Register() {
           </button>
         </form>
 
-        <p className="text-center text-slate-500 text-sm mt-6 dark:text-gray-500">
+        <p className="text-center text-zinc-500 text-sm mt-6 dark:text-zinc-500">
           {t('auth.haveAccount')}{' '}
-          <Link to="/login" className="text-violet-600 hover:text-violet-500 font-medium dark:text-violet-400 dark:hover:text-violet-300">
+          <Link to="/login" className="text-accent-600 hover:text-accent-500 font-medium dark:text-accent-400 dark:hover:text-accent-300">
             {t('auth.signIn')}
           </Link>
         </p>

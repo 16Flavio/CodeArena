@@ -30,18 +30,18 @@ export default function AccountModal({ onClose, initialTab = 'password' }) {
   const [tab, setTab] = useState(initialTab);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
       <div
-        className="glass-card w-full max-w-3xl flex flex-col max-h-[90vh] overflow-hidden animate-slide-up"
+        className="card w-full max-w-3xl flex flex-col max-h-[90vh] overflow-hidden animate-fade-in"
         role="dialog" aria-modal="true"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700/50">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-700/50">
+          <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
             {t('accountModal.title')}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-slate-900 dark:hover:bg-slate-800 dark:text-gray-400 dark:hover:text-white"
+            className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-white"
             aria-label={t('accountModal.close')}
           >
             <X className="w-5 h-5" />
@@ -50,7 +50,7 @@ export default function AccountModal({ onClose, initialTab = 'password' }) {
 
         <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
           {/* Sidebar tabs */}
-          <nav className="md:w-56 shrink-0 md:border-r border-b md:border-b-0 border-gray-200 dark:border-slate-700/50 p-3 md:overflow-y-auto flex md:block gap-1 md:gap-0 overflow-x-auto">
+          <nav className="md:w-56 shrink-0 md:border-r border-b md:border-b-0 border-zinc-200 dark:border-zinc-700/50 p-3 md:overflow-y-auto flex md:block gap-1 md:gap-0 overflow-x-auto">
             {TABS.map((tb) => {
               const Icon = tb.icon;
               return (
@@ -59,8 +59,8 @@ export default function AccountModal({ onClose, initialTab = 'password' }) {
                   onClick={() => setTab(tb.id)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm w-full text-left transition-colors mb-0.5 whitespace-nowrap ${
                     tab === tb.id
-                      ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300'
-                      : 'text-slate-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-800/40'
+                      ? 'bg-accent-100 text-accent-700 dark:bg-accent-500/20 dark:text-accent-300'
+                      : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800/40'
                   }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
@@ -117,12 +117,12 @@ function PasswordTab({ onClose }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
-      <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-        <KeyRound className="w-5 h-5 text-violet-500" />
+      <h3 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+        <KeyRound className="w-5 h-5 text-accent-500" />
         {t('accountModal.passwordTitle')}
       </h3>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-gray-300">
+        <label className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
           {t('accountModal.currentPassword')}
         </label>
         <input
@@ -135,7 +135,7 @@ function PasswordTab({ onClose }) {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-gray-300">
+        <label className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
           {t('accountModal.newPassword')}
         </label>
         <div className="relative">
@@ -150,14 +150,14 @@ function PasswordTab({ onClose }) {
           <button
             type="button"
             onClick={() => setShow((s) => !s)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 dark:hover:text-gray-200"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
           >
             {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-gray-300">
+        <label className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
           {t('accountModal.confirmPassword')}
         </label>
         <input
@@ -202,12 +202,12 @@ function UsernameTab({ onClose }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
-      <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-        <UserCog className="w-5 h-5 text-violet-500" />
+      <h3 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+        <UserCog className="w-5 h-5 text-accent-500" />
         {t('accountModal.usernameTitle')}
       </h3>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-gray-300">
+        <label className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
           {t('accountModal.newUsername')}
         </label>
         <input
@@ -218,7 +218,7 @@ function UsernameTab({ onClose }) {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-gray-300">
+        <label className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
           {t('accountModal.currentPassword')}
         </label>
         <input
@@ -270,15 +270,15 @@ function AffiliationTab({ onClose }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
-      <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-        <Building2 className="w-5 h-5 text-violet-500" />
+      <h3 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+        <Building2 className="w-5 h-5 text-accent-500" />
         {t('accountModal.affiliationTitle')}
       </h3>
-      <p className="text-sm text-slate-500 dark:text-gray-400">
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">
         {t('accountModal.affiliationHint')}
       </p>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-gray-300">
+        <label className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
           {t('accountModal.affiliationLabel')}
         </label>
         <select
@@ -305,11 +305,11 @@ function SecurityTab({ onClose }) {
   const { user } = useAuth();
   return (
     <div className="space-y-4 max-w-md">
-      <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-        <ShieldCheck className={`w-5 h-5 ${user?.totp_enabled ? 'text-emerald-500' : 'text-violet-500'}`} />
+      <h3 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+        <ShieldCheck className={`w-5 h-5 ${user?.totp_enabled ? 'text-emerald-500' : 'text-accent-500'}`} />
         {t('accountModal.securityTitle')}
       </h3>
-      <p className="text-sm text-slate-500 dark:text-gray-400">
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">
         {user?.totp_enabled
           ? t('accountModal.securityEnabled')
           : t('accountModal.securityDisabled')}

@@ -54,7 +54,7 @@ export default function Admin() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -62,14 +62,14 @@ export default function Admin() {
   return (
     <div className="animate-fade-in space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3 dark:text-white">
+        <h1 className="text-3xl font-bold text-zinc-900 flex items-center gap-3 dark:text-white">
           <Shield className="w-8 h-8 text-amber-500 dark:text-amber-400" />
           {t('admin.title')}
         </h1>
-        <p className="text-slate-500 mt-1 dark:text-gray-400">{t('admin.subtitle')}</p>
+        <p className="text-zinc-500 mt-1 dark:text-zinc-400">{t('admin.subtitle')}</p>
       </div>
 
-      <div className="flex gap-1 bg-white/50 p-1 rounded-xl w-fit border border-gray-200 dark:bg-slate-900/50 dark:border-slate-800/50">
+      <div className="flex gap-1 bg-white/50 p-1 rounded-lg w-fit border border-zinc-200 dark:bg-zinc-900/50 dark:border-zinc-800/50">
         {[
           { key: 'contests', label: t('admin.tabContests'), icon: Trophy },
           { key: 'submissions', label: t('admin.tabSubmissions'), icon: Inbox },
@@ -85,8 +85,8 @@ export default function Admin() {
             onClick={() => setTab(tb.key)}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               tab === tb.key
-                ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
-                : 'text-slate-500 hover:text-slate-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-slate-800/50'
+                ? 'bg-accent-600 text-white'
+                : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/50'
             }`}
           >
             <tb.icon className="w-4 h-4" />

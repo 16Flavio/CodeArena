@@ -75,14 +75,14 @@ export default function MySubmissions() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   const s = kind === 'icpc' ? stats.icpc : stats.output;
   const pills = [
-    { k: 'total', v: s.total, cls: 'bg-slate-500/10 text-slate-700 dark:text-gray-300' },
+    { k: 'total', v: s.total, cls: 'bg-zinc-500/10 text-zinc-700 dark:text-zinc-300' },
     { k: 'pending', v: s.pending, cls: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
     { k: 'scored', v: s.scored, cls: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
     { k: 'error', v: s.error, cls: 'bg-red-500/10 text-red-700 dark:text-red-300' },
@@ -92,18 +92,18 @@ export default function MySubmissions() {
     <div className="animate-fade-in space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('mySubmissions.title')}</h1>
-          <p className="text-slate-500 dark:text-gray-400 mt-1">{t('mySubmissions.subtitle')}</p>
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">{t('mySubmissions.title')}</h1>
+          <p className="text-zinc-500 dark:text-zinc-400 mt-1">{t('mySubmissions.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="inline-flex rounded-lg border border-gray-200 p-0.5 dark:border-slate-700">
+          <div className="inline-flex rounded-lg border border-zinc-200 p-0.5 dark:border-zinc-700">
             <button
               type="button"
               onClick={() => { setKind('output'); setSelected([]); }}
               className={`text-xs font-medium px-3 py-1 rounded-md transition-colors ${
                 kind === 'output'
-                  ? 'bg-violet-600 text-white'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200'
+                  ? 'bg-accent-600 text-white'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
               }`}
             >
               {t('admin.submissions.kindOutput')} <span className="opacity-60">({stats.output.total})</span>
@@ -113,8 +113,8 @@ export default function MySubmissions() {
               onClick={() => { setKind('icpc'); setSelected([]); }}
               className={`text-xs font-medium px-3 py-1 rounded-md transition-colors ${
                 kind === 'icpc'
-                  ? 'bg-violet-600 text-white'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200'
+                  ? 'bg-accent-600 text-white'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
               }`}
             >
               {t('admin.submissions.kindIcpc')} <span className="opacity-60">({stats.icpc.total})</span>
@@ -142,9 +142,9 @@ export default function MySubmissions() {
         ))}
       </div>
 
-      <div className="glass-card p-6">
+      <div className="card p-6">
         {visible.length === 0 ? (
-          <div className="py-12 text-center text-slate-500 dark:text-gray-500">
+          <div className="py-12 text-center text-zinc-500 dark:text-zinc-500">
             <FileText className="w-10 h-10 mx-auto mb-3 opacity-50" />
             <p>{t('mySubmissions.empty')}</p>
           </div>
@@ -152,28 +152,28 @@ export default function MySubmissions() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-slate-700/50">
+                <tr className="border-b border-zinc-200 dark:border-zinc-700/50">
                   {kind === 'output' && <th className="pb-3 pr-2 w-6"></th>}
-                  <th className="text-left text-slate-500 font-medium pb-3 pr-4 dark:text-gray-400">{t('mySubmissions.colContest')}</th>
-                  <th className="text-left text-slate-500 font-medium pb-3 pr-4 dark:text-gray-400">
+                  <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colContest')}</th>
+                  <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">
                     {kind === 'icpc' ? t('admin.submissions.colProblem') : t('mySubmissions.colInstance')}
                   </th>
-                  <th className="text-left text-slate-500 font-medium pb-3 pr-4 dark:text-gray-400">
+                  <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">
                     {kind === 'icpc' ? t('admin.submissions.colVerdict') : t('mySubmissions.colScore')}
                   </th>
                   {kind === 'output' && (
-                    <th className="text-left text-slate-500 font-medium pb-3 pr-4 dark:text-gray-400">{t('mySubmissions.colStatus')}</th>
+                    <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colStatus')}</th>
                   )}
                   {kind === 'icpc' && (
-                    <th className="text-left text-slate-500 font-medium pb-3 pr-4 dark:text-gray-400">{t('mySubmissions.colLanguage')}</th>
+                    <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colLanguage')}</th>
                   )}
-                  <th className="text-left text-slate-500 font-medium pb-3 pr-4 dark:text-gray-400">{t('mySubmissions.colWhen')}</th>
-                  <th className="text-right text-slate-500 font-medium pb-3 dark:text-gray-400">{t('mySubmissions.colActions')}</th>
+                  <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colWhen')}</th>
+                  <th className="text-right text-zinc-500 font-medium pb-3 dark:text-zinc-400">{t('mySubmissions.colActions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {visible.map((s) => (
-                  <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50 dark:border-slate-800/30 dark:hover:bg-slate-800/20">
+                  <tr key={s.id} className="border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-800/20">
                     {kind === 'output' && (
                       <td className="py-3 pr-2">
                         <input
@@ -184,12 +184,12 @@ export default function MySubmissions() {
                         />
                       </td>
                     )}
-                    <td className="py-3 pr-4 max-w-[220px] truncate dark:text-gray-200">
-                      <Link to={`/contests/${s.contest_id}`} className="text-violet-600 hover:underline dark:text-violet-300">
+                    <td className="py-3 pr-4 max-w-[220px] truncate dark:text-zinc-200">
+                      <Link to={`/contests/${s.contest_id}`} className="text-accent-600 hover:underline dark:text-accent-300">
                         {s.contest_title}
                       </Link>
                     </td>
-                    <td className="py-3 pr-4 text-slate-800 dark:text-gray-200">
+                    <td className="py-3 pr-4 text-zinc-800 dark:text-zinc-200">
                       {kind === 'icpc' ? (s.problem_label || '—') : (s.instance_name || '—')}
                     </td>
                     <td className="py-3 pr-4">
@@ -203,10 +203,10 @@ export default function MySubmissions() {
                             {s.latest_verdict}
                           </span>
                         ) : (
-                          <span className="text-slate-400 font-mono">{s.status}</span>
+                          <span className="text-zinc-400 font-mono">{s.status}</span>
                         )
                       ) : (
-                        <span className="font-mono font-bold text-violet-600 tabular-nums dark:text-violet-300" title={formatScoreFull(s.score)}>
+                        <span className="font-mono font-bold text-accent-600 tabular-nums dark:text-accent-300" title={formatScoreFull(s.score)}>
                           {formatScore(s.score)}
                         </span>
                       )}
@@ -228,11 +228,11 @@ export default function MySubmissions() {
                       </td>
                     )}
                     {kind === 'icpc' && (
-                      <td className="py-3 pr-4 text-xs font-mono text-slate-500 dark:text-gray-400">
+                      <td className="py-3 pr-4 text-xs font-mono text-zinc-500 dark:text-zinc-400">
                         {s.source_language || '—'}
                       </td>
                     )}
-                    <td className="py-3 pr-4 text-slate-400 text-xs dark:text-gray-500">
+                    <td className="py-3 pr-4 text-zinc-400 text-xs dark:text-zinc-500">
                       {formatDateTime(s.submitted_at)}
                     </td>
                     <td className="py-3 text-right">
@@ -240,7 +240,7 @@ export default function MySubmissions() {
                         <button
                           type="button"
                           onClick={() => handleDownload(s)}
-                          className="p-1.5 rounded hover:bg-gray-100 text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 dark:hover:bg-slate-800 transition-colors"
+                          className="p-1.5 rounded hover:bg-zinc-100 text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300 dark:hover:bg-zinc-800 transition-colors"
                           title={t('mySubmissions.download')}
                           aria-label={t('mySubmissions.download')}
                         >

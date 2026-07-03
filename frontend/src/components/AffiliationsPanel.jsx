@@ -83,12 +83,12 @@ export default function AffiliationsPanel() {
   };
 
   return (
-    <div className="glass-card p-6 space-y-4">
+    <div className="card p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-white flex items-center gap-2">
-          <Building2 className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+        <h2 className="text-lg font-semibold text-zinc-800 dark:text-white flex items-center gap-2">
+          <Building2 className="w-5 h-5 text-accent-500 dark:text-accent-400" />
           {t('affiliations.heading')}
-          <span className="text-xs font-normal text-slate-400 dark:text-gray-500">({rows.length})</span>
+          <span className="text-xs font-normal text-zinc-400 dark:text-zinc-500">({rows.length})</span>
         </h2>
         <button
           type="button"
@@ -100,10 +100,10 @@ export default function AffiliationsPanel() {
       </div>
 
       {editingId !== null && (
-        <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
+        <div className="bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <label className="block text-[10px] uppercase text-slate-400 dark:text-gray-500">
+              <label className="block text-[10px] uppercase text-zinc-400 dark:text-zinc-500">
                 {t('affiliations.name')}
               </label>
               <input
@@ -112,7 +112,7 @@ export default function AffiliationsPanel() {
               />
             </div>
             <div>
-              <label className="block text-[10px] uppercase text-slate-400 dark:text-gray-500">
+              <label className="block text-[10px] uppercase text-zinc-400 dark:text-zinc-500">
                 {t('affiliations.shortName')}
               </label>
               <input
@@ -121,7 +121,7 @@ export default function AffiliationsPanel() {
               />
             </div>
             <div>
-              <label className="block text-[10px] uppercase text-slate-400 dark:text-gray-500">
+              <label className="block text-[10px] uppercase text-zinc-400 dark:text-zinc-500">
                 {t('affiliations.country')}
               </label>
               <input
@@ -131,7 +131,7 @@ export default function AffiliationsPanel() {
               />
             </div>
             <div>
-              <label className="block text-[10px] uppercase text-slate-400 dark:text-gray-500">
+              <label className="block text-[10px] uppercase text-zinc-400 dark:text-zinc-500">
                 {t('affiliations.logoUrl')}
               </label>
               <input
@@ -153,13 +153,13 @@ export default function AffiliationsPanel() {
       )}
 
       {loading ? (
-        <p className="text-sm text-slate-400 dark:text-gray-500">{t('common.loading')}</p>
+        <p className="text-sm text-zinc-400 dark:text-zinc-500">{t('common.loading')}</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-slate-400 dark:text-gray-500">{t('affiliations.empty')}</p>
+        <p className="text-sm text-zinc-400 dark:text-zinc-500">{t('affiliations.empty')}</p>
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-slate-500 dark:text-gray-400">
+            <tr className="text-zinc-500 dark:text-zinc-400">
               <th className="text-left py-2 px-3">{t('affiliations.name')}</th>
               <th className="text-left py-2 px-3">{t('affiliations.shortName')}</th>
               <th className="text-left py-2 px-3">{t('affiliations.country')}</th>
@@ -168,10 +168,10 @@ export default function AffiliationsPanel() {
           </thead>
           <tbody>
             {rows.map((a) => (
-              <tr key={a.id} className="border-t border-slate-200/60 dark:border-slate-700/60">
-                <td className="py-2 px-3 text-slate-800 dark:text-gray-100">{a.name}</td>
-                <td className="py-2 px-3 text-slate-600 font-mono text-xs dark:text-gray-300">{a.short_name || '—'}</td>
-                <td className="py-2 px-3 text-slate-600 font-mono text-xs dark:text-gray-300">{a.country_code || '—'}</td>
+              <tr key={a.id} className="border-t border-zinc-200/60 dark:border-zinc-700/60">
+                <td className="py-2 px-3 text-zinc-800 dark:text-zinc-100">{a.name}</td>
+                <td className="py-2 px-3 text-zinc-600 font-mono text-xs dark:text-zinc-300">{a.short_name || '—'}</td>
+                <td className="py-2 px-3 text-zinc-600 font-mono text-xs dark:text-zinc-300">{a.country_code || '—'}</td>
                 <td className="py-2 px-3 text-right">
                   <button
                     type="button" onClick={() => startEdit(a)}

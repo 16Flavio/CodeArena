@@ -10,7 +10,7 @@ import { getToken } from '../utils/tokenStore';
 
 const MEDALS = [
   'text-yellow-500 dark:text-yellow-400',
-  'text-gray-400 dark:text-gray-300',
+  'text-zinc-400 dark:text-zinc-300',
   'text-amber-600',
 ];
 
@@ -83,7 +83,7 @@ export default function IcpcScoreboard({ contestId }) {
   if (loading || !data) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -92,11 +92,11 @@ export default function IcpcScoreboard({ contestId }) {
     <div className="animate-fade-in space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2 dark:text-white">
+          <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2 dark:text-white">
             <Trophy className="w-6 h-6 text-amber-500" />
             {data.contest_title}
           </h1>
-          <p className="text-xs text-slate-500 mt-1 dark:text-gray-500">
+          <p className="text-xs text-zinc-500 mt-1 dark:text-zinc-500">
             {t('icpcScoreboard.subtitle')}
           </p>
         </div>
@@ -130,12 +130,12 @@ export default function IcpcScoreboard({ contestId }) {
         </div>
       </div>
 
-      <div className="glass-card overflow-x-auto">
+      <div className="card overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-100/60 dark:bg-slate-800/50">
+          <thead className="bg-zinc-100/60 dark:bg-zinc-800/50">
             <tr>
-              <th className="text-left font-semibold py-2 px-3 sticky left-0 bg-gray-100/95 dark:bg-slate-800/95 backdrop-blur-sm z-10">#</th>
-              <th className="text-left font-semibold py-2 px-3 sticky left-10 bg-gray-100/95 dark:bg-slate-800/95 backdrop-blur-sm z-10 max-w-[140px] sm:max-w-none">{t('icpcScoreboard.team')}</th>
+              <th className="text-left font-semibold py-2 px-3 sticky left-0 bg-zinc-100/95 dark:bg-zinc-800/95 z-10">#</th>
+              <th className="text-left font-semibold py-2 px-3 sticky left-10 bg-zinc-100/95 dark:bg-zinc-800/95 z-10 max-w-[140px] sm:max-w-none">{t('icpcScoreboard.team')}</th>
               <th className="text-right font-semibold py-2 px-3">{t('icpcScoreboard.solved')}</th>
               <th className="text-right font-semibold py-2 px-3">{t('icpcScoreboard.penalty')}</th>
               {data.problems.map((p) => (
@@ -154,40 +154,40 @@ export default function IcpcScoreboard({ contestId }) {
             {data.rows.map((row, idx) => (
               <tr
                 key={`${row.team_id || row.team_name}-${idx}`}
-                className="border-t border-gray-100 dark:border-slate-800/30"
+                className="border-t border-zinc-100 dark:border-zinc-800/30"
               >
-                <td className="py-2 px-3 font-mono sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
-                  <span className={idx < 3 ? MEDALS[idx] : 'text-slate-500 dark:text-gray-500'}>
+                <td className="py-2 px-3 font-mono sticky left-0 bg-white/95 dark:bg-zinc-900/95">
+                  <span className={idx < 3 ? MEDALS[idx] : 'text-zinc-500 dark:text-zinc-500'}>
                     {idx + 1}
                   </span>
                 </td>
-                <td className="py-2 px-3 font-medium text-slate-900 dark:text-white sticky left-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm max-w-[140px] sm:max-w-none truncate">
+                <td className="py-2 px-3 font-medium text-zinc-900 dark:text-white sticky left-10 bg-white/95 dark:bg-zinc-900/95 max-w-[140px] sm:max-w-none truncate">
                   {row.team_name}
                   {row.affiliation_name && (
                     <span
-                      className="ml-2 inline-block text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-gray-300"
+                      className="ml-2 inline-block text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
                       title={row.affiliation_name}
                     >
                       {row.affiliation_name}
                     </span>
                   )}
                   {row.members.length > 1 && (
-                    <span className="text-xs text-slate-400 ml-2 dark:text-gray-500">
+                    <span className="text-xs text-zinc-400 ml-2 dark:text-zinc-500">
                       ({row.members.join(', ')})
                     </span>
                   )}
                 </td>
-                <td className="py-2 px-3 text-right font-mono font-bold text-violet-700 dark:text-violet-300">
+                <td className="py-2 px-3 text-right font-mono font-bold text-accent-700 dark:text-accent-300">
                   {row.solved_count}
                 </td>
-                <td className="py-2 px-3 text-right font-mono text-slate-600 dark:text-gray-300">
+                <td className="py-2 px-3 text-right font-mono text-zinc-600 dark:text-zinc-300">
                   {row.total_penalty}
                 </td>
                 {data.problems.map((p) => {
                   const cell = row.cells[p.label];
                   if (!cell) {
                     return (
-                      <td key={p.id} className="py-2 px-2 text-center text-slate-300 dark:text-gray-700">
+                      <td key={p.id} className="py-2 px-2 text-center text-zinc-300 dark:text-zinc-700">
                         —
                       </td>
                     );
@@ -216,7 +216,7 @@ export default function IcpcScoreboard({ contestId }) {
                             {cell.first_solve_minutes ?? 0}
                           </span>
                           {cell.attempts > 1 && (
-                            <span className="text-[9px] text-slate-400 dark:text-gray-500">
+                            <span className="text-[9px] text-zinc-400 dark:text-zinc-500">
                               {t('icpcScoreboard.attemptsShort', { n: cell.attempts })}
                             </span>
                           )}
@@ -247,9 +247,9 @@ export default function IcpcScoreboard({ contestId }) {
                               </span>
                             )}
                             {cell.attempts > 0 && (
-                              <span className="text-slate-500 dark:text-gray-400">+</span>
+                              <span className="text-zinc-500 dark:text-zinc-400">+</span>
                             )}
-                            <span className="text-slate-800 dark:text-white font-semibold">
+                            <span className="text-zinc-800 dark:text-white font-semibold">
                               {cell.pending_attempts}?
                             </span>
                           </div>
@@ -269,7 +269,7 @@ export default function IcpcScoreboard({ contestId }) {
             ))}
             {data.rows.length === 0 && (
               <tr>
-                <td colSpan={4 + data.problems.length} className="py-10 text-center text-slate-400 italic dark:text-gray-600">
+                <td colSpan={4 + data.problems.length} className="py-10 text-center text-zinc-400 italic dark:text-zinc-600">
                   {t('icpcScoreboard.empty')}
                 </td>
               </tr>

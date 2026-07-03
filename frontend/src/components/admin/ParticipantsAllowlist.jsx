@@ -76,11 +76,11 @@ export default function ParticipantsAllowlist({ contest, participationMode, user
   };
 
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 dark:bg-slate-800/30 dark:border-slate-700/40">
-      <label className="block text-sm font-medium text-slate-700 flex items-center gap-2 dark:text-gray-300">
-        <Users className="w-4 h-4 text-violet-500 dark:text-violet-400" />
+    <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 space-y-3 dark:bg-zinc-800/30 dark:border-zinc-700/40">
+      <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2 dark:text-zinc-300">
+        <Users className="w-4 h-4 text-accent-500 dark:text-accent-400" />
         {t('admin.form.allowlistLabel')}
-        <span className="text-xs font-normal text-slate-400 dark:text-gray-500">
+        <span className="text-xs font-normal text-zinc-400 dark:text-zinc-500">
           ({participants.length})
         </span>
       </label>
@@ -144,7 +144,7 @@ export default function ParticipantsAllowlist({ contest, participationMode, user
       )}
 
       {participants.length === 0 ? (
-        <p className="text-xs text-slate-400 italic dark:text-gray-600">
+        <p className="text-xs text-zinc-400 italic dark:text-zinc-600">
           {t('admin.form.allowlistEmpty')}
         </p>
       ) : (
@@ -152,21 +152,21 @@ export default function ParticipantsAllowlist({ contest, participationMode, user
           {participants.map((p) => (
             <div
               key={p.id}
-              className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-white border border-gray-200 dark:bg-slate-700/20 dark:border-transparent"
+              className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-white border border-zinc-200 dark:bg-zinc-700/20 dark:border-transparent"
             >
-              <div className="text-sm text-slate-700 dark:text-gray-200">
+              <div className="text-sm text-zinc-700 dark:text-zinc-200">
                 {p.kind === 'team' ? (
                   <span className="font-medium">
-                    <Users className="w-3.5 h-3.5 inline mr-1 text-violet-500" />
+                    <Users className="w-3.5 h-3.5 inline mr-1 text-accent-500" />
                     {p.team_name}
-                    <span className="text-xs text-slate-400 ml-2 dark:text-gray-500">
+                    <span className="text-xs text-zinc-400 ml-2 dark:text-zinc-500">
                       ({t('admin.form.allowlistTeamBadge')})
                     </span>
                   </span>
                 ) : (
                   <>
                     <span className="font-medium">{p.username}</span>
-                    <span className="text-xs text-slate-400 ml-2 dark:text-gray-500">
+                    <span className="text-xs text-zinc-400 ml-2 dark:text-zinc-500">
                       {p.email}
                     </span>
                   </>
@@ -175,7 +175,7 @@ export default function ParticipantsAllowlist({ contest, participationMode, user
               <button
                 type="button"
                 onClick={() => handleRemoveParticipant(p.id)}
-                className="p-1 rounded hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors dark:text-gray-500 dark:hover:text-red-400"
+                className="p-1 rounded hover:bg-red-500/10 text-zinc-400 hover:text-red-500 transition-colors dark:text-zinc-500 dark:hover:text-red-400"
                 title={t('admin.form.allowlistRemove')}
               >
                 <UserMinus className="w-4 h-4" />
