@@ -32,7 +32,7 @@ COMMON_STYLE = """
 html, body { margin: 0; padding: 0; height: 100%; box-sizing: border-box; }
 *, *::before, *::after { box-sizing: inherit; }
 body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-       color: #0f172a; background: transparent; padding: 14px 16px; font-size: 13px; }
+       color: #18181b; background: transparent; padding: 14px 16px; font-size: 13px; }
 .stage { width: 100%; }
 .controls {
   display: flex; align-items: center; justify-content: center;
@@ -45,40 +45,40 @@ body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   cursor: pointer; line-height: 1;
   transition: background-color 0.18s, color 0.18s, opacity 0.18s;
 }
-.btn-icon-primary   { background: #8b5cf6; color: #fff; }
-.btn-icon-primary:hover:not(:disabled)   { background: #7c3aed; }
-.btn-icon-secondary { background: #e2e8f0; color: #334155; }
-.btn-icon-secondary:hover:not(:disabled) { background: #cbd5e1; }
+.btn-icon-primary   { background: #3a6690; color: #fff; }
+.btn-icon-primary:hover:not(:disabled)   { background: #325575; }
+.btn-icon-secondary { background: #e4e4e7; color: #3f3f46; }
+.btn-icon-secondary:hover:not(:disabled) { background: #d4d4d8; }
 .btn-icon-primary:disabled, .btn-icon-secondary:disabled { opacity: 0.5; cursor: default; }
 .btn-icon-primary svg, .btn-icon-secondary svg { width: 16px; height: 16px; display: block; }
 .form-input, input[type="number"], input[type="text"], input[type="range"] {
-  padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 6px;
-  background: #fff; color: #0f172a; font: inherit; height: 32px;
+  padding: 5px 8px; border: 1px solid #d4d4d8; border-radius: 6px;
+  background: #fff; color: #18181b; font: inherit; height: 32px;
 }
 input[type="range"] { padding: 0; min-width: 110px; height: 32px; background: transparent; border: 0; }
 .form-input:focus, input[type="number"]:focus, input[type="text"]:focus {
-  outline: 2px solid #c4b5fd; outline-offset: -1px;
+  outline: 2px solid #9cbbd6; outline-offset: -1px;
 }
 label.field { display: inline-flex; align-items: center; gap: 6px;
-              font-size: 12px; color: #475569; }
+              font-size: 12px; color: #52525b; }
 label.field input[type="number"], label.field input[type="text"] { width: 80px; }
 .meta-row { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px;
-            color: #64748b; margin-top: 10px; justify-content: center; }
-.meta-row b { color: #0f172a; font-weight: 600; }
+            color: #71717a; margin-top: 10px; justify-content: center; }
+.meta-row b { color: #18181b; font-weight: 600; }
 .info-line { font-family: ui-monospace, "SF Mono", Menlo, monospace;
-             font-size: 12px; color: #7c3aed; min-height: 16px;
+             font-size: 12px; color: #325575; min-height: 16px;
              text-align: center; margin-top: 10px; }
 @media (prefers-color-scheme: dark) {
-  body { color: #e2e8f0; }
-  .btn-icon-secondary { background: #334155; color: #e5e7eb; }
-  .btn-icon-secondary:hover:not(:disabled) { background: #475569; }
+  body { color: #e4e4e7; }
+  .btn-icon-secondary { background: #3f3f46; color: #e4e4e7; }
+  .btn-icon-secondary:hover:not(:disabled) { background: #52525b; }
   .form-input, input[type="number"], input[type="text"] {
-    background: #1e293b; border-color: #475569; color: #e2e8f0;
+    background: #27272a; border-color: #52525b; color: #e4e4e7;
   }
-  label.field { color: #94a3b8; }
-  .meta-row { color: #94a3b8; }
-  .meta-row b { color: #f1f5f9; }
-  .info-line { color: #c4b5fd; }
+  label.field { color: #a1a1aa; }
+  .meta-row { color: #a1a1aa; }
+  .meta-row b { color: #f4f4f5; }
+  .info-line { color: #9cbbd6; }
 }
 """
 
@@ -143,27 +143,27 @@ def main():
         '<title>Test widgets en isolation</title>'
         '<style>'
         'body{font-family:system-ui,-apple-system,sans-serif;max-width:900px;'
-        'margin:20px auto;padding:0 20px;color:#0f172a;}'
+        'margin:20px auto;padding:0 20px;color:#18181b;}'
         'h1{font-size:22px;}'
-        '.widget-card{margin:24px 0;padding:16px;border-radius:16px;'
-        'border:1px solid #e5e7eb;background:#fff;'
+        '.widget-card{margin:24px 0;padding:16px;border-radius:8px;'
+        'border:1px solid #e4e4e7;background:#fff;'
         'box-shadow:0 1px 2px 0 rgba(0,0,0,0.05);}'
         '.widget-card-head{font-size:11px;text-transform:uppercase;'
-        'letter-spacing:0.05em;font-weight:600;color:#7c3aed;margin-bottom:10px;}'
+        'letter-spacing:0.05em;font-weight:600;color:#3a6690;margin-bottom:10px;}'
         '.widget-card iframe{width:100%;height:460px;border:0;'
         'border-radius:8px;background:transparent;display:block;}'
-        '.meta{margin:6px 0 0;font-size:12px;color:#64748b;}'
-        'code{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:12px;}'
-        'p.note{color:#64748b;font-size:13px;}'
+        '.meta{margin:6px 0 0;font-size:12px;color:#71717a;}'
+        'code{background:#f4f4f5;padding:2px 6px;border-radius:4px;font-size:12px;}'
+        'p.note{color:#71717a;font-size:13px;}'
         '@media (prefers-color-scheme: dark){'
-        'body{background:#0b1220;color:#e2e8f0;}'
-        '.widget-card{background:#0f172a;border-color:#1f2937;}'
-        '.widget-card-head{color:#c4b5fd;}'
-        'code{background:#1e293b;color:#e2e8f0;}'
+        'body{background:#09090b;color:#e4e4e7;}'
+        '.widget-card{background:#18181b;border-color:#27272a;}'
+        '.widget-card-head{color:#9cbbd6;}'
+        'code{background:#27272a;color:#e4e4e7;}'
         '}'
         '</style></head><body>'
         '<h1>Test widgets — iframe sandboxé identique à l\'app</h1>'
-        '<p class="note">Cette page reproduit le wrapper extérieur (carte + titre violet) et '
+        '<p class="note">Cette page reproduit le wrapper extérieur (carte + titre accent) et '
         'le préambule CSS commun de <code>CustomWidget.jsx</code>. Si un widget s\'affiche '
         'correctement ici, son code est OK. Sinon, clique-droit dans l\'iframe → Inspect → '
         'Console pour voir l\'erreur exacte.</p>'
