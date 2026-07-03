@@ -1,0 +1,31 @@
+# ICPC judging sandbox image — carries the language toolchains so that
+# contestant compile+run can happen inside a locked-down throwaway container
+# (SCORING_MODE=docker). Kept separate from Dockerfile.scoring (which is
+# Python-only, for the output-scoring validator path).
+#
+# Build:  docker compose --profile build-only build icpc-sandbox
+# Used by: backend/icpc_sandbox.py via `docker run` (sibling container).
+FROM debian:12-slim
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Toolchains: g++/gcc (C/C++), OpenJDK (Java), Python 3. coreutils supplies
+# the `timeout` used as the container entrypoint. No network tools, no
+# package manager left configured for the runtime user.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        g++ gcc openjdk-17-jdk-headless python3 coreutils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Dedicated non-root uid (matches SANDBOX_UID in backend/icpc_sandbox.py).
+# The container is additionally run with --cap-drop=ALL, --network=none,
+# --read-only and --security-opt no-new-privileges at `docker run` time.
+RUN useradd --system --uid 1997 --create-home --home-dir /home/sandbox sandbox
+USER sandbox
+WORKDIR /home/sandbox
+
+# The command is supplied per-run by `docker run ... timeout ... sh -c <cmd>`,
+# so nothing needs baking into the entrypoint.
+CMD ["sh", "-c", "echo 'icpc-sandbox image; invoked via docker run per submission' && exit 0"]

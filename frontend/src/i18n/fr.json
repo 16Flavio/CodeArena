@@ -267,6 +267,7 @@
     "pdfDeleted": "PDF d'énoncé supprimé",
     "pdfNotPdf": "Le fichier doit être un PDF",
     "pdfUploadFailed": "Échec du téléversement du PDF",
+    "pdfOpenFailed": "Impossible d'ouvrir l'énoncé",
     "pdfConfirmDelete": "Supprimer le PDF d'énoncé du problème {{label}} ({{name}}) ?"
   },
   "adminHints": {

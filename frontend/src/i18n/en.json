@@ -267,6 +267,7 @@
     "pdfDeleted": "Statement PDF removed",
     "pdfNotPdf": "File must be a PDF",
     "pdfUploadFailed": "Failed to upload the PDF",
+    "pdfOpenFailed": "Failed to open the statement",
     "pdfConfirmDelete": "Remove the statement PDF for problem {{label}} ({{name}})?"
   },
   "adminHints": {

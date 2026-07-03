@@ -10,9 +10,9 @@ import {
   listIcpcTestcases, addIcpcTestcase, updateIcpcTestcase, deleteIcpcTestcase,
   exportIcpcProblem,
   uploadIcpcProblemStatement, deleteIcpcProblemStatement,
+  openStatementPdf,
 } from '../api';
 import { textOn } from '../utils/contrast';
-import { getToken } from '../utils/tokenStore';
 import { useConfirm } from './Confirm';
 
 const CHECKER_KINDS = [
@@ -595,19 +595,11 @@ function StatementPdfControls({ problem, contestId, onChanged, t, confirm }) {
   const [busy, setBusy] = useState(false);
 
   const openPreview = () => {
-    // <a href> opens in a new tab without an Authorization header, so
-    // the statement endpoint accepts the JWT via ?token=. Same pattern
-    // the contestant view uses.
-    //
-    // ``v=`` is the file mtime exposed by the API. Stable while the PDF
-    // is unchanged (so admins benefit from HTTP caching across clicks)
-    // but flips on every replace, so a freshly uploaded PDF cannot be
-    // shadowed by a stale browser cache entry from before we deployed
-    // ``Cache-Control: no-store`` on the download endpoint.
-    const token = getToken() || '';
-    const v = problem.statement_pdf_version || 0;
-    const url = `/api/contests/${contestId}/problems/${problem.id}/statement?token=${encodeURIComponent(token)}&v=${v}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
+    // Open via a short-lived stream ticket + blob fetch so the durable
+    // session token never lands in a URL. ``v`` (the file mtime) still
+    // busts any stale browser cache after an admin replaces the PDF.
+    openStatementPdf(contestId, problem.id, problem.statement_pdf_version || 0)
+      .catch(() => toast.error(t('icpcProblems.pdfOpenFailed')));
   };
 
   const onPick = () => fileInputRef.current?.click();

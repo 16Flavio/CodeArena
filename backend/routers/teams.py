@@ -90,11 +90,15 @@ def _generate_join_code(length: int = 8) -> str:
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
 
-def _team_to_out(team: models.Team) -> schemas.TeamOut:
+def _team_to_out(team: models.Team, *, include_join_code: bool = True) -> schemas.TeamOut:
+    # ``join_code`` is a shared secret: anyone holding it can join the team.
+    # It must only be returned to callers who already belong to the team (or
+    # an admin). Callers that serialise a team for an outsider pass
+    # ``include_join_code=False``.
     return schemas.TeamOut(
         id=team.id,
         name=team.name,
-        join_code=team.join_code,
+        join_code=team.join_code if include_join_code else "",
         created_at=team.created_at,
         members=[
             schemas.TeamMemberOut(
@@ -594,7 +598,8 @@ def get_team(
     )
     if not team:
         raise HTTPException(status_code=404, detail="Équipe introuvable")
-    return _team_to_out(team)
+    is_member = any(m.user_id == user.id for m in team.members)
+    return _team_to_out(team, include_join_code=is_member or user.is_admin)
 
 
 @router.delete("/{team_id}")

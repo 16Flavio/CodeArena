@@ -41,6 +41,29 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+_TRUTHY = {"1", "true", "yes", "on"}
+
+
+def _client_ip(request: "Request") -> Optional[str]:
+    """Best-effort client IP recorded on a submission for audit/anti-cheat.
+
+    ``X-Forwarded-For`` is only honoured when ``TRUST_PROXY_HEADERS`` is set,
+    i.e. a trusted reverse proxy (Caddy/nginx) is actually in front and
+    rewrites it. Otherwise the header is fully attacker-controlled — a
+    contestant could forge the recorded submitter IP — so we use the real
+    socket peer instead. Set TRUST_PROXY_HEADERS=1 in the compose/prod deploy
+    where the backend sits behind the edge proxy."""
+    try:
+        peer = request.client.host if request.client else None
+    except Exception:  # pragma: no cover
+        peer = None
+    if os.environ.get("TRUST_PROXY_HEADERS", "").strip().lower() in _TRUTHY:
+        fwd = request.headers.get("x-forwarded-for")
+        if fwd:
+            return (fwd.split(",")[0].strip() or peer)
+    return peer
+
+
 def _aware(dt: Optional[datetime]) -> Optional[datetime]:
     """SQLite stores naive datetimes; treat them as UTC when comparing."""
     if dt is None:
@@ -270,6 +293,11 @@ def _serialize_contest(
     if now is None:
         now = _utcnow()
     is_admin = bool(user and user.is_admin)
+    # The scoring / validator scripts are executable secrets: they reveal the
+    # expected output and the grading logic. Only a contest manager may see
+    # them — a contestant reading them can reverse-engineer the answer. Gate
+    # them exactly like a management action, not merely "logged in".
+    can_manage = bool(user) and can_manage_contest(user, contest)
     # The problem statement (text or PDF) stays hidden until the contest
     # has actually started — being "visible" only means the entry appears
     # in the list and the schedule/description are readable, not that the
@@ -295,10 +323,10 @@ def _serialize_contest(
         dedup_block=bool(contest.dedup_block),
         min_seconds_between_submits=int(contest.min_seconds_between_submits or 0),
         max_submissions_per_instance=contest.max_submissions_per_instance,
-        output_validator_script=contest.output_validator_script,
+        output_validator_script=(contest.output_validator_script if can_manage else None),
         is_open_for_submissions=_is_contest_open(contest, now, is_admin=is_admin),
         is_scoreboard_frozen=_is_scoreboard_frozen(contest, now, is_admin=is_admin),
-        scoring_script=contest.scoring_script or "",
+        scoring_script=(contest.scoring_script or "") if can_manage else "",
         created_at=contest.created_at,
         instances=[
             _serialize_instance(i, contest, now, is_admin)
@@ -1200,16 +1228,7 @@ async def submit_solution(
     sub_dir = os.path.join(UPLOAD_DIR, "submissions")
     os.makedirs(sub_dir, exist_ok=True)
 
-    client_ip = None
-    try:
-        client_ip = request.client.host if request.client else None
-        # Honour the first X-Forwarded-For hop when behind a trusted proxy
-        # (Caddy/nginx). Kept as raw string so admins can spot spoofing.
-        fwd = request.headers.get("x-forwarded-for")
-        if fwd:
-            client_ip = fwd.split(",")[0].strip()
-    except Exception:  # pragma: no cover
-        client_ip = None
+    client_ip = _client_ip(request)
 
     submission = models.Submission(
         team_id=team_id,
@@ -1428,14 +1447,7 @@ async def submit_solution_code(
     if not source_text.strip():
         raise HTTPException(status_code=400, detail="Source vide")
 
-    client_ip = None
-    try:
-        client_ip = request.client.host if request.client else None
-        fwd = request.headers.get("x-forwarded-for")
-        if fwd:
-            client_ip = fwd.split(",")[0].strip()
-    except Exception:  # pragma: no cover
-        client_ip = None
+    client_ip = _client_ip(request)
 
     submission = models.Submission(
         team_id=team_id,
@@ -1832,6 +1844,22 @@ def list_submissions(
         .filter(models.Submission.contest_id == contest_id)
     )
     if team_id:
+        # IDOR guard: only a member of the team (or a contest manager) may
+        # list that team's submissions. Without this, any authenticated user
+        # could enumerate ?team_id=N and read rival teams' scores/status live,
+        # bypassing the scoreboard freeze.
+        contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
+        is_member = (
+            db.query(models.TeamMember)
+            .filter(
+                models.TeamMember.team_id == team_id,
+                models.TeamMember.user_id == user.id,
+            )
+            .first()
+            is not None
+        )
+        if not (is_member or (contest is not None and can_manage_contest(user, contest))):
+            raise HTTPException(status_code=403, detail="Accès aux soumissions de cette équipe refusé")
         base = base.filter(models.Submission.team_id == team_id)
     else:
         # No team scope -> user's own solo submissions only (avoids leaking
@@ -1862,7 +1890,8 @@ def list_submissions(
             submitted_at=s.submitted_at,
             submitted_by=s.submitted_by,
             submitted_by_username=s.submitted_by_user.username if s.submitted_by_user else "",
-            submitter_ip=s.submitter_ip,
+            # PII: only admins see the submitter IP in a team-scoped listing.
+            submitter_ip=s.submitter_ip if user.is_admin else None,
             is_final=bool(s.is_final),
         )
         for s in submissions

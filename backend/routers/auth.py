@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, 
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas
-from ..auth import hash_password, verify_password, create_access_token, get_current_user
+from ..auth import hash_password, verify_password, create_access_token, get_current_user, _DUMMY_PASSWORD_HASH
 from ..errors import ErrorCode, raise_error
 from ..email_utils import send_password_reset_email, send_email_verification
 from ..rate_limit import limiter
@@ -212,6 +212,12 @@ def login(request: Request, data: schemas.UserLogin, db: Session = Depends(get_d
     user = db.query(models.User).filter(models.User.username == data.username).first()
     now = datetime.now(timezone.utc)
 
+    if user is None:
+        # Equalize timing with the wrong-password path: bcrypt is the slow
+        # part, so verifying against a dummy hash stops an attacker from
+        # distinguishing "no such user" (fast) from "wrong password" (slow).
+        verify_password(data.password, _DUMMY_PASSWORD_HASH)
+
     # Refuse early if the account is locked, *before* touching the hash
     # — same response shape as a wrong password, so we don't leak "this
     # username exists, it's just locked" to scanners.
@@ -374,6 +380,25 @@ def totp_login_verify(
 @router.get("/me", response_model=schemas.UserOut)
 def me(user: models.User = Depends(get_current_user)):
     return user
+
+
+STREAM_TICKET_TTL_SECONDS = 60
+
+
+@router.post("/stream-ticket")
+@limiter.limit("60/minute")
+def stream_ticket(request: Request, user: models.User = Depends(get_current_user)):
+    """Mint a short-lived (60 s) single-purpose token for query-string auth on
+    streams (EventSource can't send an Authorization header). The client
+    fetches this with its normal Bearer token right before opening the
+    stream, so the long-lived session token never ends up in a URL (browser
+    history, proxy/access logs, Referer). The ticket authenticates the same
+    user but expires in a minute."""
+    ticket = create_access_token(
+        {"sub": str(user.id), "purpose": "stream"},
+        expires_delta=timedelta(seconds=STREAM_TICKET_TTL_SECONDS),
+    )
+    return {"ticket": ticket, "expires_in": STREAM_TICKET_TTL_SECONDS}
 
 
 @router.post("/forgot-password", response_model=schemas.SimpleMessage)
