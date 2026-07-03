@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { BarChart3, Download, RefreshCw } from 'lucide-react';
 import api, { getIcpcStats } from '../api';
+import { extractErrorMessage } from '../utils/apiError';
 
 export default function IcpcStatsPanel({ contestId }) {
   const { t } = useTranslation();
@@ -17,7 +18,7 @@ export default function IcpcStatsPanel({ contestId }) {
     setLoading(true);
     getIcpcStats(contestId)
       .then((r) => setStats(r.data))
-      .catch((err) => toast.error(err.response?.data?.detail || 'Failed to load stats'))
+      .catch((err) => toast.error(extractErrorMessage(err, 'Failed to load stats')))
       .finally(() => setLoading(false));
   };
 
@@ -40,7 +41,7 @@ export default function IcpcStatsPanel({ contestId }) {
       a.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to download event feed');
+      toast.error(extractErrorMessage(err, 'Failed to download event feed'));
     }
   };
 

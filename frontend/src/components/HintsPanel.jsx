@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { Lightbulb, Lock, Unlock } from 'lucide-react';
 import { listHints, unlockHint } from '../api';
 import { useConfirm } from './Confirm';
+import { extractErrorMessage } from '../utils/apiError';
 
 export default function HintsPanel({ contestId }) {
   const { t } = useTranslation();
@@ -35,7 +36,7 @@ export default function HintsPanel({ contestId }) {
       await refresh();
       toast.success(t('hints.unlocked'));
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('hints.unlockFailed'));
+      toast.error(extractErrorMessage(err, t('hints.unlockFailed')));
     } finally {
       setUnlocking(null);
     }

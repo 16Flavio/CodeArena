@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { Edit, X } from 'lucide-react';
 import { updateInstance } from '../../api';
+import { extractErrorMessage } from '../../utils/apiError';
 
 // Inline editor for an Instance row. Only sends the fields that the
 // admin actually touched (so an unchanged save is a single 200 with
@@ -55,7 +56,7 @@ export default function EditInstanceModal({ instance, onClose, onSaved }) {
       }
       onSaved();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.contests.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.contests.toastFailed')));
     } finally {
       setSaving(false);
     }

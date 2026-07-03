@@ -11,6 +11,7 @@ import AccountModal from './AccountModal';
 import NotificationsBell from './NotificationsBell';
 import SessionWarning from './SessionWarning';
 import toast from 'react-hot-toast';
+import { extractErrorMessage } from '../utils/apiError';
 
 // Persist the collapsed-sidebar preference per user — reading it on
 // load avoids a flash from expanded → collapsed during render.
@@ -46,7 +47,7 @@ export default function Layout() {
       const r = await resendVerification();
       toast.success(r.data?.detail || t('nav.toastVerificationSent'));
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
   const currentLng = (i18n.resolvedLanguage || i18n.language || 'fr').slice(0, 2);

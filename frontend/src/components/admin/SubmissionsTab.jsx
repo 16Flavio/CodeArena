@@ -10,6 +10,7 @@ import {
 } from '../../api';
 import { formatDateTime } from '../../utils/datetime';
 import { useConfirm, usePrompt } from '../Confirm';
+import { extractErrorMessage } from '../../utils/apiError';
 
 // Self-contained submissions browser with its own list/filter/modals
 // state. Receives ``contests`` for the contest dropdown — Admin.jsx
@@ -62,7 +63,7 @@ export default function SubmissionsTab({ contests }) {
       const { data } = await adminGetSubmissionContent(s.id);
       setViewer({ id: s.id, filename: s.file_name, content: typeof data === 'string' ? data : JSON.stringify(data) });
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.submissions.toastLoadContentFailed'));
+      toast.error(extractErrorMessage(err, t('admin.submissions.toastLoadContentFailed')));
       setViewer(null);
     } finally {
       setViewerLoading(false);
@@ -76,7 +77,7 @@ export default function SubmissionsTab({ contests }) {
       const { data } = await getJudging(s.id);
       setJudgingViewer({ submission: s, judging: data });
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
       setJudgingViewer(null);
     } finally {
       setJudgingLoading(false);
@@ -98,7 +99,7 @@ export default function SubmissionsTab({ contests }) {
       toast.success(t('admin.submissions.overrideToastOk'));
       setTimeout(() => load(list.offset), 300);
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 
@@ -110,7 +111,7 @@ export default function SubmissionsTab({ contests }) {
       toast.success(t('admin.submissions.toastRejudgeQueued'));
       setTimeout(() => load(list.offset), 1500);
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 
@@ -125,7 +126,7 @@ export default function SubmissionsTab({ contests }) {
       toast.success(t('admin.submissions.toastDeleted'));
       load(list.offset);
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 

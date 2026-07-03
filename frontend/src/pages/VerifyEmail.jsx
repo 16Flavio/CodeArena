@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Zap, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
 import { verifyEmail } from '../api';
+import { extractErrorMessage } from '../utils/apiError';
 
 // Token preferred from the URL fragment (never reaches the server's
 // access logs, never leaks via Referer); fall back to the legacy
@@ -33,7 +34,7 @@ export default function VerifyEmail() {
         setState({
           loading: false,
           ok: false,
-          message: err.response?.data?.detail || t('verifyEmail.failed'),
+          message: extractErrorMessage(err, t('verifyEmail.failed')),
         }),
       );
   }, [token, t]);

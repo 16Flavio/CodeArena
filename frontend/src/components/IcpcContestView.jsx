@@ -18,6 +18,7 @@ import { textOn } from '../utils/contrast';
 import { useTheme } from '../ThemeContext';
 import { useAuth } from '../AuthContext';
 import { useConfirm } from './Confirm';
+import { extractErrorMessage } from '../utils/apiError';
 
 // Verdict → classes / short label. Matches DOMjudge's short codes.
 const VERDICT_STYLE = {
@@ -129,7 +130,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
       setExpandedTestcaseId(null);
       pollJudging(data.id);
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('icpc.toastSubmitFailed'));
+      toast.error(extractErrorMessage(err, t('icpc.toastSubmitFailed')));
     } finally {
       setSubmitting(false);
     }
@@ -160,7 +161,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
       setClars(r.data || []);
       toast.success(t('icpc.toastClarSent'));
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('icpc.toastClarFailed'));
+      toast.error(extractErrorMessage(err, t('icpc.toastClarFailed')));
     }
   };
 
@@ -172,7 +173,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
       setClars(r.data || []);
       toast.success(t('icpc.toastClarAnswered'));
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('icpc.toastClarFailed'));
+      toast.error(extractErrorMessage(err, t('icpc.toastClarFailed')));
     }
   };
 
@@ -183,7 +184,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
       setClars(r.data || []);
       toast.success(t('icpc.toastClarUpdated'));
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('icpc.toastClarFailed'));
+      toast.error(extractErrorMessage(err, t('icpc.toastClarFailed')));
     }
   };
 
@@ -194,7 +195,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
       const r = await listClarifications(contest.id);
       setClars(r.data || []);
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('icpc.toastClarFailed'));
+      toast.error(extractErrorMessage(err, t('icpc.toastClarFailed')));
     }
   };
 
@@ -210,7 +211,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
       setClars(r.data || []);
       toast.success(t('icpc.toastClarDeleted'));
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('icpc.toastClarFailed'));
+      toast.error(extractErrorMessage(err, t('icpc.toastClarFailed')));
     }
   };
 

@@ -5,6 +5,7 @@ import { resetPassword } from '../api';
 import { Zap, Eye, EyeOff, AlertCircle, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PasswordStrength from '../components/PasswordStrength';
+import { extractErrorMessage } from '../utils/apiError';
 
 // Read the token from EITHER the URL fragment (preferred — never sent
 // to the server, never logged by the reverse proxy, never leaked via
@@ -45,7 +46,7 @@ export default function ResetPassword() {
       toast.success(t('auth.passwordUpdated'));
       navigate('/login');
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('auth.resetFailed'));
+      toast.error(extractErrorMessage(err, t('auth.resetFailed')));
     } finally {
       setLoading(false);
     }

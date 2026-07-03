@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { ArrowUp, ArrowDown, Trash2, Plus, Save, X, Lightbulb } from 'lucide-react';
 import { listHints, createHint, updateHint, deleteHint } from '../api';
 import { useConfirm } from './Confirm';
+import { extractErrorMessage } from '../utils/apiError';
 
 export default function AdminHints({ contestId }) {
   const { t } = useTranslation();
@@ -49,7 +50,7 @@ export default function AdminHints({ contestId }) {
       setEditing(null);
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 
@@ -63,7 +64,7 @@ export default function AdminHints({ contestId }) {
       await deleteHint(h.id);
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 
@@ -80,7 +81,7 @@ export default function AdminHints({ contestId }) {
       ]);
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 

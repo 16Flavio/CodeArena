@@ -13,6 +13,7 @@ import {
 } from '../api';
 import CustomWidget from '../components/learning/CustomWidget';
 import * as widgetsStore from '../components/learning/widgetsStore';
+import { extractErrorMessage } from '../utils/apiError';
 
 const STARTER_TEMPLATE = `<!-- Le widget reçoit ses paramètres dans window.__params -->
 <canvas id="cv" width="600" height="200"
@@ -65,7 +66,7 @@ export default function AdminLearningWidgets() {
       setWidgets(r.data || []);
       setLoading(false);
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learningWidgets.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.learningWidgets.toastFailed')));
       setLoading(false);
     }
   };
@@ -81,7 +82,7 @@ export default function AdminLearningWidgets() {
         }
       } catch (err) {
         if (!cancelled) {
-          toast.error(err.response?.data?.detail || t('admin.learningWidgets.toastFailed'));
+          toast.error(extractErrorMessage(err, t('admin.learningWidgets.toastFailed')));
           setLoading(false);
         }
       }
@@ -107,7 +108,7 @@ export default function AdminLearningWidgets() {
       reload();
       widgetsStore.invalidate();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learningWidgets.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.learningWidgets.toastFailed')));
     }
   };
 
@@ -116,7 +117,7 @@ export default function AdminLearningWidgets() {
       const r = await adminLearnGetWidget(w.id);
       setEditing(r.data);
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learningWidgets.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.learningWidgets.toastFailed')));
     }
   };
 
@@ -139,7 +140,7 @@ export default function AdminLearningWidgets() {
       reload();
       widgetsStore.invalidate();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learningWidgets.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.learningWidgets.toastFailed')));
     }
   };
 
@@ -156,7 +157,7 @@ export default function AdminLearningWidgets() {
       reload();
       widgetsStore.invalidate();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learningWidgets.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.learningWidgets.toastFailed')));
     }
   };
 

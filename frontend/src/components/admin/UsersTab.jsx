@@ -19,7 +19,7 @@ export default function UsersTab({ users, currentUser, onChange }) {
       toast.success(t('admin.users.toastStatus'));
       onChange?.();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 
@@ -29,7 +29,7 @@ export default function UsersTab({ users, currentUser, onChange }) {
       toast.success(t('admin.users.toastStatus'));
       onChange?.();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 
@@ -44,7 +44,7 @@ export default function UsersTab({ users, currentUser, onChange }) {
       toast.success(t('admin.users.toastDeleted'));
       onChange?.();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 

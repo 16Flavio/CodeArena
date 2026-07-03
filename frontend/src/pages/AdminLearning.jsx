@@ -17,6 +17,7 @@ import LessonMarkdown from '../components/learning/LessonMarkdown';
 import MarkdownEditor from '../components/learning/MarkdownEditor';
 import WidgetCatalog from '../components/learning/WidgetCatalog';
 import ExercisePickerModal from '../components/learning/ExercisePickerModal';
+import { extractErrorMessage } from '../utils/apiError';
 
 // Slug helper — keeps the admin from having to type a URL-safe id.
 function slugify(s) {
@@ -57,7 +58,7 @@ export default function AdminLearning() {
       const r = await adminLearnListSections();
       setSections(r.data || []);
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.learning.toastFailed')));
     }
   };
 
@@ -68,7 +69,7 @@ export default function AdminLearning() {
         const r = await adminLearnListSections();
         if (!cancelled) setSections(r.data || []);
       } catch (err) {
-        if (!cancelled) toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+        if (!cancelled) toast.error(extractErrorMessage(err, t('admin.learning.toastFailed')));
       }
     })();
     return () => { cancelled = true; };
@@ -79,7 +80,7 @@ export default function AdminLearning() {
       const r = await adminLearnListLessons(sectionId);
       setLessonsBySection((prev) => ({ ...prev, [sectionId]: r.data || [] }));
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.learning.toastFailed')));
     }
   };
 
@@ -108,7 +109,7 @@ export default function AdminLearning() {
       toast.success(t('admin.learning.toastCreated'));
       reloadSections();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.learning.toastFailed')));
     }
   };
 
@@ -123,7 +124,7 @@ export default function AdminLearning() {
       toast.success(t('admin.learning.toastDeleted'));
       reloadSections();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.learning.toastFailed')));
     }
   };
 
@@ -132,7 +133,7 @@ export default function AdminLearning() {
       await adminLearnUpdateSection(s.id, { ...s, is_published: !s.is_published });
       reloadSections();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.learning.toastFailed')));
     }
   };
 
@@ -151,7 +152,7 @@ export default function AdminLearning() {
       reloadLessons(sectionId);
       setEditingLesson({ ...r.data, _sectionId: sectionId });
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.learning.toastFailed')));
     }
   };
 
@@ -162,7 +163,7 @@ export default function AdminLearning() {
       const r = await learnGetLesson(lesson.id);
       setEditingLesson({ ...r.data, _sectionId: sectionId });
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.learning.toastFailed')));
     }
   };
 
@@ -182,7 +183,7 @@ export default function AdminLearning() {
       setEditingLesson({ ...r.data, _sectionId });
       reloadLessons(_sectionId);
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.learning.toastFailed')));
     }
   };
 
@@ -198,7 +199,7 @@ export default function AdminLearning() {
       if (editingLesson?.id === lesson.id) setEditingLesson(null);
       reloadLessons(sectionId);
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.learning.toastFailed')));
     }
   };
 
@@ -220,7 +221,7 @@ export default function AdminLearning() {
       URL.revokeObjectURL(url);
       toast.success(t('admin.learning.toastExportOk'));
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.learning.toastFailed')));
     } finally {
       setExporting(false);
     }
@@ -408,7 +409,7 @@ export default function AdminLearning() {
                           setEditingSection(null);
                           reloadSections();
                         } catch (err) {
-                          toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+                          toast.error(extractErrorMessage(err, t('admin.learning.toastFailed')));
                         }
                       }}
                       className="btn-primary text-xs inline-flex items-center gap-1"
@@ -555,7 +556,7 @@ export default function AdminLearning() {
                       toast.success(t('admin.learning.toastImageInserted'));
                       return `![${file.name}](${r.data.url})`;
                     } catch (err) {
-                      toast.error(err.response?.data?.detail || t('admin.learning.toastFailed'));
+                      toast.error(extractErrorMessage(err, t('admin.learning.toastFailed')));
                       return '';
                     }
                   }}

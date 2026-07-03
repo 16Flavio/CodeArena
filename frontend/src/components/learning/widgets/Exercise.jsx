@@ -6,6 +6,7 @@ import { python } from '@codemirror/lang-python';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { learnGetExercise, learnRunExercise } from '../../../api';
 import LessonMarkdown from '../LessonMarkdown';
+import { extractErrorMessage } from '../../../utils/apiError';
 
 /**
  * `:::exercise{id="42"}`
@@ -39,7 +40,7 @@ export default function Exercise({ id }) {
         setCode(r.data?.starter_code || '');
       } catch (err) {
         if (!cancelled) {
-          setLoadError(err.response?.data?.detail || t('learn.widget.exercise.loadFailed'));
+          setLoadError(extractErrorMessage(err, t('learn.widget.exercise.loadFailed')));
         }
       }
     })();
@@ -58,7 +59,7 @@ export default function Exercise({ id }) {
         all_passed: false,
         compile_output: '',
         results: [],
-        _error: err.response?.data?.detail || t('learn.widget.exercise.runFailed'),
+        _error: extractErrorMessage(err, t('learn.widget.exercise.runFailed')),
       });
     } finally {
       setRunning(false);

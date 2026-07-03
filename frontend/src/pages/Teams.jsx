@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { copyText } from '../utils/clipboard';
 import { useConfirm } from '../components/Confirm';
+import { extractErrorMessage } from '../utils/apiError';
 
 const MAX_TEAM_SIZE = 4;
 
@@ -72,7 +73,7 @@ export default function Teams() {
       setShowCreate(false);
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('teams.toastCreateFailed'));
+      toast.error(extractErrorMessage(err, t('teams.toastCreateFailed')));
     } finally {
       setSubmitting(false);
     }
@@ -88,7 +89,7 @@ export default function Teams() {
       setShowJoin(false);
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('teams.toastJoinFailed'));
+      toast.error(extractErrorMessage(err, t('teams.toastJoinFailed')));
     } finally {
       setSubmitting(false);
     }
@@ -102,7 +103,7 @@ export default function Teams() {
       toast.success(t('teams.toastLeft'));
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('teams.toastLeaveFailed'));
+      toast.error(extractErrorMessage(err, t('teams.toastLeaveFailed')));
     }
   };
 
@@ -118,7 +119,7 @@ export default function Teams() {
       toast.success(t('teams.toastDeleted'));
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('teams.toastDeleteFailed'));
+      toast.error(extractErrorMessage(err, t('teams.toastDeleteFailed')));
     }
   };
 
@@ -133,7 +134,7 @@ export default function Teams() {
       toast.success(t('teams.toastRemoved'));
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('teams.toastRemoveFailed'));
+      toast.error(extractErrorMessage(err, t('teams.toastRemoveFailed')));
     }
   };
 
@@ -148,7 +149,7 @@ export default function Teams() {
       await setMemberPermissions(teamId, userId, { can_submit: canSubmit });
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 
@@ -163,7 +164,7 @@ export default function Teams() {
       toast.success(t('teams.toastTransferred', { username }));
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 
@@ -175,7 +176,7 @@ export default function Teams() {
       toast.success(t('teams.toastNewCode'));
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 
@@ -197,7 +198,7 @@ export default function Teams() {
       setRequestMessage('');
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('teams.toastRequestFailed'));
+      toast.error(extractErrorMessage(err, t('teams.toastRequestFailed')));
     } finally {
       setSubmitting(false);
     }
@@ -210,7 +211,7 @@ export default function Teams() {
       toast.success(t('teams.toastAccepted', { user: req.username, team: req.team_name }));
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('teams.toastAcceptFailed'));
+      toast.error(extractErrorMessage(err, t('teams.toastAcceptFailed')));
     } finally {
       setPendingAction(null);
     }
@@ -223,7 +224,7 @@ export default function Teams() {
       toast.success(t('teams.toastRejected'));
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('teams.toastRejectFailed'));
+      toast.error(extractErrorMessage(err, t('teams.toastRejectFailed')));
     } finally {
       setPendingAction(null);
     }
@@ -240,7 +241,7 @@ export default function Teams() {
       toast.success(t('teams.toastCancelled'));
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('teams.toastCancelFailed'));
+      toast.error(extractErrorMessage(err, t('teams.toastCancelFailed')));
     } finally {
       setPendingAction(null);
     }

@@ -8,6 +8,7 @@ import {
   getPackages, getPackageEnvInfo, installPackage, uninstallPackage,
 } from '../api';
 import { useConfirm } from './Confirm';
+import { extractErrorMessage } from '../utils/apiError';
 
 export default function PackagesPanel() {
   const confirm = useConfirm();
@@ -55,7 +56,7 @@ export default function PackagesPanel() {
         toast.error(data.detail, { id: toastId });
       }
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('packages.installFailed'), { id: toastId });
+      toast.error(extractErrorMessage(err, t('packages.installFailed')), { id: toastId });
     } finally {
       setInstalling(false);
     }
@@ -81,7 +82,7 @@ export default function PackagesPanel() {
         toast.error(data.detail, { id: toastId });
       }
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('packages.removeFailed'), { id: toastId });
+      toast.error(extractErrorMessage(err, t('packages.removeFailed')), { id: toastId });
     } finally {
       setRemoving(null);
     }

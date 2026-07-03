@@ -9,6 +9,7 @@ import {
   listAffiliations, createAffiliation, updateAffiliation, deleteAffiliation,
 } from '../api';
 import { useConfirm } from './Confirm';
+import { extractErrorMessage } from '../utils/apiError';
 
 const BLANK = { name: '', short_name: '', country_code: '', logo_url: '' };
 
@@ -63,7 +64,7 @@ export default function AffiliationsPanel() {
       cancel();
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 
@@ -77,7 +78,7 @@ export default function AffiliationsPanel() {
       await deleteAffiliation(a.id);
       refresh();
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('admin.users.toastFailed'));
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
     }
   };
 

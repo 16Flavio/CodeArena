@@ -5,6 +5,7 @@ import { CheckCircle2, ArrowLeft, Code2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { learnGetLesson, learnSetProgress } from '../api';
 import LessonMarkdown from '../components/learning/LessonMarkdown';
+import { extractErrorMessage } from '../utils/apiError';
 
 export default function LessonReader() {
   const { lessonId } = useParams();
@@ -23,7 +24,7 @@ export default function LessonReader() {
         const r = await learnGetLesson(lessonId);
         if (!cancelled) setLesson(r.data);
       } catch (err) {
-        if (!cancelled) toast.error(err.response?.data?.detail || t('learn.toastLoadFailed'));
+        if (!cancelled) toast.error(extractErrorMessage(err, t('learn.toastLoadFailed')));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -38,7 +39,7 @@ export default function LessonReader() {
       setLesson(r.data);
       toast.success(t('learn.toastCompleted'));
     } catch (err) {
-      toast.error(err.response?.data?.detail || t('learn.toastFailed'));
+      toast.error(extractErrorMessage(err, t('learn.toastFailed')));
     } finally {
       setMarking(false);
     }
