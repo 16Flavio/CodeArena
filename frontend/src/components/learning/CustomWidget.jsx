@@ -48,7 +48,7 @@ export default function CustomWidget({ template = '', height = '400', __title = 
   // Common chrome injected into every widget iframe so DB-authored
   // widgets share the same look-and-feel as the built-in ``viz-sort``:
   // a viz "stage" up top, a centered ``.controls`` row of icon buttons
-  // below (violet primary for play/run, slate secondary for
+  // below (accent primary for play/run, neutral secondary for
   // step/reset/pause), with dark-mode-aware tokens. Widgets only ship
   // their stage HTML and the icon button shells; ``window.__svg(name)``
   // returns the inline SVG markup for the standard Lucide icons used
@@ -57,7 +57,7 @@ export default function CustomWidget({ template = '', height = '400', __title = 
     html, body { margin: 0; padding: 0; height: 100%; box-sizing: border-box; }
     *, *::before, *::after { box-sizing: inherit; }
     body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-           color: #0f172a; background: transparent; padding: 14px 16px; font-size: 13px; }
+           color: #18181b; background: transparent; padding: 14px 16px; font-size: 13px; }
 
     .stage { width: 100%; }
 
@@ -73,43 +73,43 @@ export default function CustomWidget({ template = '', height = '400', __title = 
       cursor: pointer; line-height: 1;
       transition: background-color 0.18s, color 0.18s, opacity 0.18s;
     }
-    .btn-icon-primary   { background: #8b5cf6; color: #fff; }
-    .btn-icon-primary:hover:not(:disabled)   { background: #7c3aed; }
-    .btn-icon-secondary { background: #e2e8f0; color: #334155; }
-    .btn-icon-secondary:hover:not(:disabled) { background: #cbd5e1; }
+    .btn-icon-primary   { background: #3a6690; color: #fff; }
+    .btn-icon-primary:hover:not(:disabled)   { background: #325575; }
+    .btn-icon-secondary { background: #e4e4e7; color: #3f3f46; }
+    .btn-icon-secondary:hover:not(:disabled) { background: #d4d4d8; }
     .btn-icon-primary:disabled, .btn-icon-secondary:disabled { opacity: 0.5; cursor: default; }
     .btn-icon-primary svg, .btn-icon-secondary svg { width: 16px; height: 16px; display: block; }
 
     .form-input, input[type="number"], input[type="text"], input[type="range"] {
-      padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 6px;
-      background: #fff; color: #0f172a; font: inherit; height: 32px;
+      padding: 5px 8px; border: 1px solid #d4d4d8; border-radius: 6px;
+      background: #fff; color: #18181b; font: inherit; height: 32px;
     }
     input[type="range"] { padding: 0; min-width: 110px; height: 32px; background: transparent; border: 0; }
     .form-input:focus, input[type="number"]:focus, input[type="text"]:focus {
-      outline: 2px solid #c4b5fd; outline-offset: -1px;
+      outline: 2px solid #9cbbd6; outline-offset: -1px;
     }
     label.field { display: inline-flex; align-items: center; gap: 6px;
-                  font-size: 12px; color: #475569; }
+                  font-size: 12px; color: #52525b; }
     label.field input[type="number"], label.field input[type="text"] { width: 80px; }
 
     .meta-row { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px;
-                color: #64748b; margin-top: 10px; justify-content: center; }
-    .meta-row b { color: #0f172a; font-weight: 600; }
+                color: #71717a; margin-top: 10px; justify-content: center; }
+    .meta-row b { color: #18181b; font-weight: 600; }
     .info-line { font-family: ui-monospace, "SF Mono", Menlo, monospace;
-                 font-size: 12px; color: #7c3aed; min-height: 16px;
+                 font-size: 12px; color: #325575; min-height: 16px;
                  text-align: center; margin-top: 10px; }
 
     @media (prefers-color-scheme: dark) {
-      body { color: #e2e8f0; }
-      .btn-icon-secondary { background: #334155; color: #e5e7eb; }
-      .btn-icon-secondary:hover:not(:disabled) { background: #475569; }
+      body { color: #e4e4e7; }
+      .btn-icon-secondary { background: #3f3f46; color: #e4e4e7; }
+      .btn-icon-secondary:hover:not(:disabled) { background: #52525b; }
       .form-input, input[type="number"], input[type="text"] {
-        background: #1e293b; border-color: #475569; color: #e2e8f0;
+        background: #27272a; border-color: #52525b; color: #e4e4e7;
       }
-      label.field { color: #94a3b8; }
-      .meta-row { color: #94a3b8; }
-      .meta-row b { color: #f1f5f9; }
-      .info-line { color: #c4b5fd; }
+      label.field { color: #a1a1aa; }
+      .meta-row { color: #a1a1aa; }
+      .meta-row b { color: #f4f4f5; }
+      .info-line { color: #9cbbd6; }
     }
   `;
 
@@ -163,15 +163,15 @@ export default function CustomWidget({ template = '', height = '400', __title = 
   const safeHeight = /^\d+(px|%)?$/.test(String(height)) ? height : '400';
   const heightCss = String(safeHeight).match(/(px|%)$/) ? safeHeight : `${safeHeight}px`;
 
-  // Same outer chrome as the built-in ``SortViz`` (rounded-2xl border,
-  // header with violet uppercase title) so the learning zone reads
+  // Same outer chrome as the built-in ``SortViz`` (rounded-lg border,
+  // header with accent uppercase title) so the learning zone reads
   // visually consistent regardless of whether a widget is built-in or
   // DB-authored.
   return (
-    <div className="my-6 not-prose rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50">
+    <div className="my-6 not-prose rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-900/50">
       {__title && (
         <div className="flex items-center justify-between mb-3">
-          <div className="text-xs uppercase tracking-wide font-semibold text-violet-600 dark:text-violet-400">
+          <div className="text-xs uppercase tracking-wide font-semibold text-accent-600 dark:text-accent-400">
             {__title}
           </div>
         </div>

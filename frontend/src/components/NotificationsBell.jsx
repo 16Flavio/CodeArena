@@ -62,7 +62,7 @@ export default function NotificationsBell() {
       <button
         type="button"
         onClick={handleOpen}
-        className="relative p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-gray-100 transition-colors dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-slate-800"
+        className="relative p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800"
         aria-label={t('notifications.openLabel')}
       >
         <Bell className="w-5 h-5" />
@@ -71,12 +71,12 @@ export default function NotificationsBell() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-12 w-80 max-h-[70vh] overflow-y-auto glass-card p-2 z-50 shadow-xl">
-          <div className="px-3 py-2 text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">
+        <div className="absolute right-0 top-12 w-80 max-h-[70vh] overflow-y-auto card p-2 z-50 shadow-xl">
+          <div className="px-3 py-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
             {t('notifications.title')}
           </div>
           {items.length === 0 ? (
-            <p className="text-sm text-slate-400 italic text-center py-6 dark:text-gray-600">
+            <p className="text-sm text-zinc-400 italic text-center py-6 dark:text-zinc-600">
               {t('notifications.empty')}
             </p>
           ) : (
@@ -86,19 +86,19 @@ export default function NotificationsBell() {
                   <Link
                     to={it.contest_id ? `/contests/${it.contest_id}` : '#'}
                     onClick={() => setOpen(false)}
-                    className="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors"
+                    className="flex items-start gap-2 p-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
                   >
                     {it.kind === 'announcement' ? (
                       <Megaphone className="w-4 h-4 mt-0.5 text-sky-600 dark:text-sky-400 flex-shrink-0" />
                     ) : (
-                      <Send className="w-4 h-4 mt-0.5 text-violet-500 dark:text-violet-400 flex-shrink-0" />
+                      <Send className="w-4 h-4 mt-0.5 text-accent-500 dark:text-accent-400 flex-shrink-0" />
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-slate-800 truncate dark:text-gray-200">{it.title}</p>
+                      <p className="text-sm font-medium text-zinc-800 truncate dark:text-zinc-200">{it.title}</p>
                       {it.body && (
-                        <p className="text-xs text-slate-500 truncate dark:text-gray-400">{it.body}</p>
+                        <p className="text-xs text-zinc-500 truncate dark:text-zinc-400">{it.body}</p>
                       )}
-                      <p className="text-[10px] text-slate-400 mt-0.5 dark:text-gray-500">{formatDateTime(it.at)}</p>
+                      <p className="text-[10px] text-zinc-400 mt-0.5 dark:text-zinc-500">{formatDateTime(it.at)}</p>
                     </div>
                   </Link>
                 </li>

@@ -60,7 +60,7 @@ function ToolbarButton({ onClick, title, children }) {
       type="button"
       onClick={onClick}
       title={title}
-      className="p-1.5 rounded hover:bg-slate-100 text-slate-600 hover:text-slate-900 dark:hover:bg-slate-700/50 dark:text-gray-300 dark:hover:text-white"
+      className="p-1.5 rounded hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900 dark:hover:bg-zinc-700/50 dark:text-zinc-300 dark:hover:text-white"
     >
       {children}
     </button>
@@ -161,19 +161,19 @@ export default function MarkdownEditor({
 
   return (
     <div
-      className="border border-gray-200 rounded-xl overflow-hidden bg-white dark:bg-slate-900 dark:border-slate-700/50"
+      className="border border-zinc-200 rounded-lg overflow-hidden bg-white dark:bg-zinc-900 dark:border-zinc-700/50"
       onDrop={handleDrop}
       onDragOver={(e) => onUploadImage && e.preventDefault()}
     >
       {/* Toolbar */}
-      <div className="flex items-center gap-0.5 flex-wrap px-2 py-1.5 border-b border-gray-200 dark:border-slate-700/50 bg-gray-50 dark:bg-slate-800/40">
+      <div className="flex items-center gap-0.5 flex-wrap px-2 py-1.5 border-b border-zinc-200 dark:border-zinc-700/50 bg-zinc-50 dark:bg-zinc-800/40">
         <ToolbarButton title={t('mdEditor.bold') + ' (Ctrl+B)'} onClick={() => applyWrap(viewRef.current, '**', '**', t('mdEditor.boldPlaceholder'))}>
           <Bold className="w-4 h-4" />
         </ToolbarButton>
         <ToolbarButton title={t('mdEditor.italic') + ' (Ctrl+I)'} onClick={() => applyWrap(viewRef.current, '*', '*', t('mdEditor.italicPlaceholder'))}>
           <Italic className="w-4 h-4" />
         </ToolbarButton>
-        <span className="w-px h-5 bg-gray-200 dark:bg-slate-700 mx-1" />
+        <span className="w-px h-5 bg-zinc-200 dark:bg-zinc-700 mx-1" />
         <ToolbarButton title="H1" onClick={() => applyLinePrefix(viewRef.current, '# ')}>
           <Heading1 className="w-4 h-4" />
         </ToolbarButton>
@@ -183,14 +183,14 @@ export default function MarkdownEditor({
         <ToolbarButton title="H3" onClick={() => applyLinePrefix(viewRef.current, '### ')}>
           <Heading3 className="w-4 h-4" />
         </ToolbarButton>
-        <span className="w-px h-5 bg-gray-200 dark:bg-slate-700 mx-1" />
+        <span className="w-px h-5 bg-zinc-200 dark:bg-zinc-700 mx-1" />
         <ToolbarButton title={t('mdEditor.list')} onClick={() => applyLinePrefix(viewRef.current, '- ')}>
           <List className="w-4 h-4" />
         </ToolbarButton>
         <ToolbarButton title={t('mdEditor.orderedList')} onClick={() => applyLinePrefix(viewRef.current, '1. ')}>
           <ListOrdered className="w-4 h-4" />
         </ToolbarButton>
-        <span className="w-px h-5 bg-gray-200 dark:bg-slate-700 mx-1" />
+        <span className="w-px h-5 bg-zinc-200 dark:bg-zinc-700 mx-1" />
         <ToolbarButton title={t('mdEditor.link') + ' (Ctrl+K)'} onClick={handleLink}>
           <LinkIcon className="w-4 h-4" />
         </ToolbarButton>
@@ -199,7 +199,7 @@ export default function MarkdownEditor({
             <ImageIcon className="w-4 h-4" />
           </ToolbarButton>
         )}
-        <span className="w-px h-5 bg-gray-200 dark:bg-slate-700 mx-1" />
+        <span className="w-px h-5 bg-zinc-200 dark:bg-zinc-700 mx-1" />
         <ToolbarButton title={t('mdEditor.codeInline')} onClick={() => applyWrap(viewRef.current, '`', '`', 'code')}>
           <CodeIcon className="w-4 h-4" />
         </ToolbarButton>
@@ -209,7 +209,7 @@ export default function MarkdownEditor({
         <ToolbarButton title={t('mdEditor.math')} onClick={() => applyWrap(viewRef.current, '$$', '$$', '\\frac{1}{2}')}>
           <Sigma className="w-4 h-4" />
         </ToolbarButton>
-        <span className="w-px h-5 bg-gray-200 dark:bg-slate-700 mx-1" />
+        <span className="w-px h-5 bg-zinc-200 dark:bg-zinc-700 mx-1" />
         {onPickExercise && (
           <ToolbarButton title={t('mdEditor.exercise')} onClick={onPickExercise}>
             <Code2 className="w-4 h-4" />
@@ -221,7 +221,7 @@ export default function MarkdownEditor({
           </ToolbarButton>
         )}
         {onUploadImage && (
-          <span className="ml-auto text-[11px] text-slate-400 dark:text-gray-500 px-2">
+          <span className="ml-auto text-[11px] text-zinc-400 dark:text-zinc-500 px-2">
             {t('mdEditor.dndHint')}
           </span>
         )}

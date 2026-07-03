@@ -12,7 +12,7 @@ export function scorePassword(pw) {
 }
 
 const BAR_COLORS = [
-  'bg-gray-200 dark:bg-slate-700',
+  'bg-zinc-200 dark:bg-zinc-700',
   'bg-red-500',
   'bg-amber-500',
   'bg-sky-500',
@@ -38,12 +38,12 @@ export default function PasswordStrength({ password }) {
           <div
             key={i}
             className={`h-1 flex-1 rounded-full transition-colors ${
-              i < score ? BAR_COLORS[score] : 'bg-gray-200 dark:bg-slate-700'
+              i < score ? BAR_COLORS[score] : 'bg-zinc-200 dark:bg-zinc-700'
             }`}
           />
         ))}
       </div>
-      <p className="text-[11px] text-slate-500 mt-1 dark:text-gray-400">
+      <p className="text-[11px] text-zinc-500 mt-1 dark:text-zinc-400">
         {t(LABEL_KEYS[score])}
       </p>
     </div>

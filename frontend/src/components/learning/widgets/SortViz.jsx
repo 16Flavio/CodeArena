@@ -135,12 +135,12 @@ export default function SortViz({ algo = 'bubble', data = '[5,2,8,1,9,3]' }) {
   const max = Math.max(...step.array, 1);
 
   return (
-    <div className="my-6 not-prose rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50">
+    <div className="my-6 not-prose rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-900/50">
       <div className="flex items-center justify-between mb-3">
-        <div className="text-xs uppercase tracking-wide font-semibold text-violet-600 dark:text-violet-400">
+        <div className="text-xs uppercase tracking-wide font-semibold text-accent-600 dark:text-accent-400">
           {t('learn.widget.sortTitle')} · {algo}
         </div>
-        <div className="text-xs text-slate-400 dark:text-gray-500">
+        <div className="text-xs text-zinc-400 dark:text-zinc-500">
           {t('learn.widget.step', { current: stepIdx + 1, total: steps.length })}
         </div>
       </div>
@@ -156,8 +156,8 @@ export default function SortViz({ algo = 'bubble', data = '[5,2,8,1,9,3]' }) {
           const fill = isSwap
             ? '#f97316'
             : isCompare
-              ? '#a855f7'
-              : '#94a3b8';
+              ? '#4b7ca8'
+              : '#a1a1aa';
           const h = (value / max) * 160;
           return (
             <g key={idx} style={{ transition: 'transform 300ms ease' }}>
@@ -174,7 +174,7 @@ export default function SortViz({ algo = 'bubble', data = '[5,2,8,1,9,3]' }) {
                 x={idx * 40 + 20}
                 y={195}
                 textAnchor="middle"
-                className="fill-slate-600 dark:fill-gray-400"
+                className="fill-zinc-600 dark:fill-zinc-400"
                 fontSize="12"
               >
                 {value}
@@ -187,7 +187,7 @@ export default function SortViz({ algo = 'bubble', data = '[5,2,8,1,9,3]' }) {
       <div className="flex items-center justify-center gap-2 mt-3">
         <button
           onClick={() => setPlaying((p) => !p)}
-          className="p-2 rounded-lg bg-violet-500 text-white hover:bg-violet-600 transition-colors"
+          className="p-2 rounded-lg bg-accent-500 text-white hover:bg-accent-600 transition-colors"
           aria-label={playing ? t('learn.widget.pause') : t('learn.widget.play')}
         >
           {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -197,7 +197,7 @@ export default function SortViz({ algo = 'bubble', data = '[5,2,8,1,9,3]' }) {
             setPlaying(false);
             setStepIdx((i) => Math.min(steps.length - 1, i + 1));
           }}
-          className="p-2 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-gray-200 dark:hover:bg-slate-600 transition-colors"
+          className="p-2 rounded-lg bg-zinc-200 text-zinc-700 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-600 transition-colors"
           aria-label={t('learn.widget.stepNext')}
         >
           <ChevronsRight className="w-4 h-4" />
@@ -207,7 +207,7 @@ export default function SortViz({ algo = 'bubble', data = '[5,2,8,1,9,3]' }) {
             setPlaying(false);
             setStepIdx(0);
           }}
-          className="p-2 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-gray-200 dark:hover:bg-slate-600 transition-colors"
+          className="p-2 rounded-lg bg-zinc-200 text-zinc-700 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-600 transition-colors"
           aria-label={t('learn.widget.reset')}
         >
           <RotateCcw className="w-4 h-4" />

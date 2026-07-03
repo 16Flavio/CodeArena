@@ -124,28 +124,28 @@ export default function ContestsTab({ contests, users, onChange }) {
 
       {showKindPicker && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
           onClick={() => setShowKindPicker(false)}
         >
           <div
-            className="glass-card p-6 w-full max-w-2xl animate-slide-up"
+            className="card p-6 w-full max-w-2xl animate-fade-in"
             role="dialog"
             aria-modal="true"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
                 {t('admin.kindPicker.title')}
               </h2>
               <button
                 onClick={() => setShowKindPicker(false)}
-                className="p-1 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-slate-900 transition-colors dark:hover:bg-slate-800 dark:text-gray-400 dark:hover:text-white"
+                className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-colors dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-white"
                 aria-label={t('accountModal.close')}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-sm text-slate-500 mb-6 dark:text-gray-400">
+            <p className="text-sm text-zinc-500 mb-6 dark:text-zinc-400">
               {t('admin.kindPicker.subtitle')}
             </p>
             <div className="grid sm:grid-cols-2 gap-4">
@@ -156,18 +156,18 @@ export default function ContestsTab({ contests, users, onChange }) {
                   setShowKindPicker(false);
                   setShowForm(true);
                 }}
-                className="text-left p-5 rounded-xl border-2 border-gray-200 hover:border-violet-500 hover:bg-violet-500/5 transition-colors dark:border-slate-700 dark:hover:border-violet-400"
+                className="text-left p-5 rounded-lg border-2 border-zinc-200 hover:border-accent-500 hover:bg-accent-500/5 transition-colors dark:border-zinc-700 dark:hover:border-accent-400"
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <FlaskConical className="w-5 h-5 text-violet-500 dark:text-violet-400" />
-                  <h3 className="font-semibold text-slate-900 dark:text-white">
+                  <FlaskConical className="w-5 h-5 text-accent-500 dark:text-accent-400" />
+                  <h3 className="font-semibold text-zinc-900 dark:text-white">
                     {t('admin.kindPicker.outputTitle')}
                   </h3>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-gray-400">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   {t('admin.kindPicker.outputBody')}
                 </p>
-                <p className="text-[11px] text-slate-400 mt-2 dark:text-gray-500">
+                <p className="text-[11px] text-zinc-400 mt-2 dark:text-zinc-500">
                   {t('admin.kindPicker.outputExample')}
                 </p>
               </button>
@@ -178,18 +178,18 @@ export default function ContestsTab({ contests, users, onChange }) {
                   setShowKindPicker(false);
                   setShowForm(true);
                 }}
-                className="text-left p-5 rounded-xl border-2 border-gray-200 hover:border-violet-500 hover:bg-violet-500/5 transition-colors dark:border-slate-700 dark:hover:border-violet-400"
+                className="text-left p-5 rounded-lg border-2 border-zinc-200 hover:border-accent-500 hover:bg-accent-500/5 transition-colors dark:border-zinc-700 dark:hover:border-accent-400"
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <Code className="w-5 h-5 text-violet-500 dark:text-violet-400" />
-                  <h3 className="font-semibold text-slate-900 dark:text-white">
+                  <Code className="w-5 h-5 text-accent-500 dark:text-accent-400" />
+                  <h3 className="font-semibold text-zinc-900 dark:text-white">
                     {t('admin.kindPicker.icpcTitle')}
                   </h3>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-gray-400">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   {t('admin.kindPicker.icpcBody')}
                 </p>
-                <p className="text-[11px] text-slate-400 mt-2 dark:text-gray-500">
+                <p className="text-[11px] text-zinc-400 mt-2 dark:text-zinc-500">
                   {t('admin.kindPicker.icpcExample')}
                 </p>
               </button>
@@ -212,26 +212,26 @@ export default function ContestsTab({ contests, users, onChange }) {
       )}
 
       {contests.length === 0 ? (
-        <div className="glass-card p-12 text-center">
-          <Trophy className="w-14 h-14 text-slate-300 mx-auto mb-4 dark:text-gray-600" />
-          <h3 className="text-xl font-bold text-slate-900 mb-2 dark:text-white">{t('admin.contests.noneHeading')}</h3>
-          <p className="text-slate-500 dark:text-gray-400">{t('admin.contests.noneBody')}</p>
+        <div className="card p-12 text-center">
+          <Trophy className="w-14 h-14 text-zinc-300 mx-auto mb-4 dark:text-zinc-600" />
+          <h3 className="text-xl font-bold text-zinc-900 mb-2 dark:text-white">{t('admin.contests.noneHeading')}</h3>
+          <p className="text-zinc-500 dark:text-zinc-400">{t('admin.contests.noneBody')}</p>
         </div>
       ) : (
         <div className="space-y-4">
           {contests.map((c) => (
-            <div key={c.id} className="glass-card p-6">
+            <div key={c.id} className="card p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">{c.title}</h3>
+                    <h3 className="text-lg font-bold text-zinc-900 dark:text-white">{c.title}</h3>
                     <span className={c.is_active ? 'badge-active' : 'badge-inactive'}>
                       {c.is_active ? t('admin.contests.active') : t('admin.contests.inactive')}
                     </span>
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium border ${
                       c.kind === 'icpc'
                         ? 'bg-sky-500/15 text-sky-700 border-sky-500/30 dark:text-sky-300'
-                        : 'bg-violet-500/15 text-violet-700 border-violet-500/30 dark:text-violet-300'
+                        : 'bg-accent-500/15 text-accent-700 border-accent-500/30 dark:text-accent-300'
                     }`}>
                       {c.kind === 'icpc'
                         ? <><Code className="w-3 h-3" /> ICPC</>
@@ -239,12 +239,12 @@ export default function ContestsTab({ contests, users, onChange }) {
                       }
                     </span>
                   </div>
-                  <p className="text-slate-500 text-sm dark:text-gray-400">{c.description}</p>
+                  <p className="text-zinc-500 text-sm dark:text-zinc-400">{c.description}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Link
                     to={`/scoreboard/${c.id}`}
-                    className="p-2 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-violet-500 transition-colors dark:hover:bg-slate-700/50 dark:text-gray-400 dark:hover:text-violet-400"
+                    className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-accent-500 transition-colors dark:hover:bg-zinc-700/50 dark:text-zinc-400 dark:hover:text-accent-400"
                     title={t('admin.contests.viewBoard')}
                   >
                     <Eye className="w-4 h-4" />
@@ -261,8 +261,8 @@ export default function ContestsTab({ contests, users, onChange }) {
                     }}
                     className={`p-2 rounded-lg transition-colors ${
                       c.is_active
-                        ? 'hover:bg-amber-500/10 text-slate-400 hover:text-amber-500 dark:text-gray-400 dark:hover:text-amber-400'
-                        : 'hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-500 dark:text-gray-400 dark:hover:text-emerald-400'
+                        ? 'hover:bg-amber-500/10 text-zinc-400 hover:text-amber-500 dark:text-zinc-400 dark:hover:text-amber-400'
+                        : 'hover:bg-emerald-500/10 text-zinc-400 hover:text-emerald-500 dark:text-zinc-400 dark:hover:text-emerald-400'
                     }`}
                     title={c.is_active ? t('admin.contests.pause') : t('admin.contests.resume')}
                   >
@@ -272,7 +272,7 @@ export default function ContestsTab({ contests, users, onChange }) {
                   </button>
                   <button
                     onClick={() => startEdit(c)}
-                    className="p-2 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-violet-500 transition-colors dark:hover:bg-slate-700/50 dark:text-gray-400 dark:hover:text-violet-400"
+                    className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-accent-500 transition-colors dark:hover:bg-zinc-700/50 dark:text-zinc-400 dark:hover:text-accent-400"
                     title={t('admin.contests.edit')}
                   >
                     <Edit className="w-4 h-4" />
@@ -287,14 +287,14 @@ export default function ContestsTab({ contests, users, onChange }) {
                         toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
                       }
                     }}
-                    className="p-2 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-violet-500 transition-colors dark:hover:bg-slate-700/50 dark:text-gray-400 dark:hover:text-violet-400"
+                    className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-accent-500 transition-colors dark:hover:bg-zinc-700/50 dark:text-zinc-400 dark:hover:text-accent-400"
                     title={t('admin.contests.duplicate')}
                   >
                     <Copy className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteContest(c.id, c.title)}
-                    className="p-2 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors dark:text-gray-400 dark:hover:text-red-400"
+                    className="p-2 rounded-lg hover:bg-red-500/10 text-zinc-400 hover:text-red-500 transition-colors dark:text-zinc-400 dark:hover:text-red-400"
                     title={t('admin.contests.delete')}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -303,13 +303,13 @@ export default function ContestsTab({ contests, users, onChange }) {
               </div>
 
               {c.kind === 'icpc' ? (
-                <div className="bg-gray-50 rounded-xl p-4 text-sm text-slate-500 dark:bg-slate-800/30 dark:text-gray-400">
+                <div className="bg-zinc-50 rounded-lg p-4 text-sm text-zinc-500 dark:bg-zinc-800/30 dark:text-zinc-400">
                   {t('admin.contests.icpcEditHint')}
                 </div>
               ) : (
-              <div className="bg-gray-50 rounded-xl p-4 dark:bg-slate-800/30">
-                <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2 dark:text-gray-300">
-                  <Target className="w-4 h-4 text-violet-500 dark:text-violet-400" />
+              <div className="bg-zinc-50 rounded-lg p-4 dark:bg-zinc-800/30">
+                <h4 className="text-sm font-semibold text-zinc-700 mb-3 flex items-center gap-2 dark:text-zinc-300">
+                  <Target className="w-4 h-4 text-accent-500 dark:text-accent-400" />
                   {t('admin.contests.instancesHeading', { count: c.instances?.length || 0 })}
                 </h4>
 
@@ -318,11 +318,11 @@ export default function ContestsTab({ contests, users, onChange }) {
                     {c.instances.map((inst) => (
                       <div
                         key={inst.id}
-                        className="flex items-center justify-between py-2 px-3 rounded-lg bg-white border border-gray-200 dark:bg-slate-700/20 dark:border-transparent"
+                        className="flex items-center justify-between py-2 px-3 rounded-lg bg-white border border-zinc-200 dark:bg-zinc-700/20 dark:border-transparent"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <FileText className="w-4 h-4 text-violet-500 flex-shrink-0 dark:text-violet-400" />
-                          <span className="text-sm text-slate-700 truncate dark:text-gray-200">{inst.name}</span>
+                          <FileText className="w-4 h-4 text-accent-500 flex-shrink-0 dark:text-accent-400" />
+                          <span className="text-sm text-zinc-700 truncate dark:text-zinc-200">{inst.name}</span>
                           {inst.unlock_delay_seconds > 0 && (
                             <span
                               className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 border border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-400"
@@ -335,14 +335,14 @@ export default function ContestsTab({ contests, users, onChange }) {
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <button
                             onClick={() => setEditingInstance(inst)}
-                            className="p-1 rounded hover:bg-violet-500/10 text-slate-400 hover:text-violet-500 transition-colors dark:text-gray-500 dark:hover:text-violet-400"
+                            className="p-1 rounded hover:bg-accent-500/10 text-zinc-400 hover:text-accent-500 transition-colors dark:text-zinc-500 dark:hover:text-accent-400"
                             title={t('admin.contests.editInstance')}
                           >
                             <Edit className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteInstance(inst.id)}
-                            className="p-1 rounded hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors dark:text-gray-500 dark:hover:text-red-400"
+                            className="p-1 rounded hover:bg-red-500/10 text-zinc-400 hover:text-red-500 transition-colors dark:text-zinc-500 dark:hover:text-red-400"
                             title={t('admin.contests.deleteInstance')}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -410,7 +410,7 @@ export default function ContestsTab({ contests, users, onChange }) {
                     <input
                       type="file"
                       onChange={(e) => setInstanceFile(e.target.files[0])}
-                      className="input-field text-sm py-2 file:mr-2 file:py-0.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-violet-600 file:text-white"
+                      className="input-field text-sm py-2 file:mr-2 file:py-0.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-accent-600 file:text-white"
                     />
                   </div>
                   <button
@@ -424,7 +424,7 @@ export default function ContestsTab({ contests, users, onChange }) {
                 </div>
 
                 {(!c.instances || c.instances.length === 0) && (
-                  <p className="text-slate-400 text-sm text-center py-2 mt-2 dark:text-gray-600">
+                  <p className="text-zinc-400 text-sm text-center py-2 mt-2 dark:text-zinc-600">
                     {t('admin.contests.noInstancesYet')}
                   </p>
                 )}

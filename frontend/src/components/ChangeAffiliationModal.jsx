@@ -46,16 +46,16 @@ export default function ChangeAffiliationModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="glass-card p-6 w-full max-w-md animate-slide-up" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="card p-6 w-full max-w-md animate-fade-in" role="dialog" aria-modal="true">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 dark:text-white">
-            <Building2 className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+          <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2 dark:text-white">
+            <Building2 className="w-5 h-5 text-accent-500 dark:text-accent-400" />
             {t('accountModal.affiliationTitle')}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-slate-900 transition-colors dark:hover:bg-slate-800 dark:text-gray-400 dark:hover:text-white"
+            className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-colors dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-white"
             aria-label={t('accountModal.close')}
           >
             <X className="w-5 h-5" />
@@ -63,13 +63,13 @@ export default function ChangeAffiliationModal({ onClose }) {
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+            <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
               {t('accountModal.affiliationField')}
             </label>
             {loading ? (
-              <p className="text-sm text-slate-400 dark:text-gray-500">{t('common.loading')}</p>
+              <p className="text-sm text-zinc-400 dark:text-zinc-500">{t('common.loading')}</p>
             ) : rows.length === 0 ? (
-              <p className="text-sm text-slate-400 dark:text-gray-500">
+              <p className="text-sm text-zinc-400 dark:text-zinc-500">
                 {t('accountModal.affiliationEmpty')}
               </p>
             ) : (
@@ -86,7 +86,7 @@ export default function ChangeAffiliationModal({ onClose }) {
                 ))}
               </select>
             )}
-            <p className="text-[11px] text-slate-400 mt-1 dark:text-gray-600">
+            <p className="text-[11px] text-zinc-400 mt-1 dark:text-zinc-600">
               {t('accountModal.affiliationHint')}
             </p>
           </div>

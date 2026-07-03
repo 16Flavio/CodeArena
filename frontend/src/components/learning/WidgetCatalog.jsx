@@ -75,29 +75,29 @@ export default function WidgetCatalog({ open, onClose, onInsert }) {
       onClick={onClose}
     >
       <div
-        className="glass-card max-w-3xl w-full max-h-[80vh] overflow-y-auto"
+        className="card max-w-3xl w-full max-h-[80vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-slate-700/50">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-violet-500" />
+        <div className="flex items-center justify-between p-5 border-b border-zinc-200 dark:border-zinc-700/50">
+          <h2 className="text-xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-accent-500" />
             {t('learn.widget.catalog.title')}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-slate-600 dark:hover:bg-slate-700/50 dark:text-gray-400"
+            className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 dark:hover:bg-zinc-700/50 dark:text-zinc-400"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-5 space-y-4">
-          <p className="text-sm text-slate-500 dark:text-gray-400">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
             {t('learn.widget.catalog.intro')}
           </p>
 
           {entries.length === 0 && (
-            <p className="text-sm text-slate-400 dark:text-gray-500">
+            <p className="text-sm text-zinc-400 dark:text-zinc-500">
               {t('learn.widget.catalog.empty')}
             </p>
           )}
@@ -110,29 +110,29 @@ export default function WidgetCatalog({ open, onClose, onInsert }) {
             return (
             <div
               key={key}
-              className="border border-gray-200 dark:border-slate-700/50 rounded-xl p-4 space-y-3"
+              className="border border-zinc-200 dark:border-zinc-700/50 rounded-lg p-4 space-y-3"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
-                  <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  <div className="font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
                     {label}
                     {entry.source === 'custom' && (
-                      <span className="text-[10px] uppercase tracking-wide bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] uppercase tracking-wide bg-accent-100 dark:bg-accent-500/20 text-accent-700 dark:text-accent-300 px-1.5 py-0.5 rounded">
                         {t('learn.widget.catalog.customBadge')}
                       </span>
                     )}
                   </div>
-                  <code className="text-xs text-violet-600 dark:text-violet-400">
+                  <code className="text-xs text-accent-600 dark:text-accent-400">
                     :::{key}{'{...}'}
                   </code>
-                  <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                     {desc}
                   </p>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button
                     onClick={() => handleCopy(key, entry.snippet)}
-                    className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs inline-flex items-center gap-1 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-gray-200"
+                    className="px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs inline-flex items-center gap-1 dark:bg-zinc-700 dark:hover:bg-zinc-600 dark:text-zinc-200"
                   >
                     {copiedKey === key ? (
                       <>
@@ -148,7 +148,7 @@ export default function WidgetCatalog({ open, onClose, onInsert }) {
                   </button>
                   <button
                     onClick={() => { onInsert(entry.snippet); onClose(); }}
-                    className="px-3 py-1.5 rounded-lg bg-violet-500 hover:bg-violet-600 text-white text-xs"
+                    className="px-3 py-1.5 rounded-lg bg-accent-500 hover:bg-accent-600 text-white text-xs"
                   >
                     {t('learn.widget.catalog.insert')}
                   </button>
@@ -157,20 +157,20 @@ export default function WidgetCatalog({ open, onClose, onInsert }) {
 
               {entry.params?.length > 0 && (
                 <div className="space-y-1">
-                  <div className="text-xs uppercase tracking-wide font-semibold text-slate-500 dark:text-gray-400">
+                  <div className="text-xs uppercase tracking-wide font-semibold text-zinc-500 dark:text-zinc-400">
                     {t('learn.widget.catalog.parameters')}
                   </div>
                   <table className="w-full text-xs">
                     <tbody>
                       {entry.params.map((p) => (
-                        <tr key={p.name} className="border-t border-gray-100 dark:border-slate-700/30">
-                          <td className="py-1.5 pr-3 font-mono font-semibold text-violet-600 dark:text-violet-400 align-top w-24">
+                        <tr key={p.name} className="border-t border-zinc-100 dark:border-zinc-700/30">
+                          <td className="py-1.5 pr-3 font-mono font-semibold text-accent-600 dark:text-accent-400 align-top w-24">
                             {p.name}
                           </td>
-                          <td className="py-1.5 pr-3 text-slate-600 dark:text-gray-300">
+                          <td className="py-1.5 pr-3 text-zinc-600 dark:text-zinc-300">
                             {entry.source === 'custom' ? p.description : t(p.description)}
                           </td>
-                          <td className="py-1.5 font-mono text-slate-400 dark:text-gray-500 align-top">
+                          <td className="py-1.5 font-mono text-zinc-400 dark:text-zinc-500 align-top">
                             {p.example}
                           </td>
                         </tr>
@@ -180,7 +180,7 @@ export default function WidgetCatalog({ open, onClose, onInsert }) {
                 </div>
               )}
 
-              <pre className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3 text-xs overflow-x-auto text-slate-700 dark:text-gray-300">
+              <pre className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3 text-xs overflow-x-auto text-zinc-700 dark:text-zinc-300">
                 <code>{entry.snippet}</code>
               </pre>
             </div>

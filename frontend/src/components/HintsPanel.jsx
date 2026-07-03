@@ -45,8 +45,8 @@ export default function HintsPanel({ contestId }) {
   if (loading || hints.length === 0) return null;
 
   return (
-    <div className="glass-card p-6">
-      <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2 dark:text-white">
+    <div className="card p-6">
+      <h2 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2 dark:text-white">
         <Lightbulb className="w-5 h-5 text-amber-500 dark:text-amber-400" />
         {t('hints.title')}
       </h2>
@@ -56,7 +56,7 @@ export default function HintsPanel({ contestId }) {
           return (
             <li
               key={h.id}
-              className="rounded-lg border border-gray-200 p-3 dark:border-slate-700/50"
+              className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700/50"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -64,9 +64,9 @@ export default function HintsPanel({ contestId }) {
                     {h.unlocked ? (
                       <Unlock className="w-4 h-4 text-emerald-500 flex-shrink-0 dark:text-emerald-400" />
                     ) : (
-                      <Lock className="w-4 h-4 text-slate-400 flex-shrink-0 dark:text-gray-500" />
+                      <Lock className="w-4 h-4 text-zinc-400 flex-shrink-0 dark:text-zinc-500" />
                     )}
-                    <span className="text-sm font-medium text-slate-900 dark:text-white">
+                    <span className="text-sm font-medium text-zinc-900 dark:text-white">
                       {h.label || `#${h.id}`}
                     </span>
                     <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 border border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-400">
@@ -74,7 +74,7 @@ export default function HintsPanel({ contestId }) {
                     </span>
                   </div>
                   {h.unlocked && h.body && (
-                    <p className="text-sm text-slate-700 whitespace-pre-wrap mt-2 dark:text-gray-200">
+                    <p className="text-sm text-zinc-700 whitespace-pre-wrap mt-2 dark:text-zinc-200">
                       {h.body}
                     </p>
                   )}

@@ -12,7 +12,7 @@ export default function RegistrationPanel({
 
   if (isBanned) {
     return (
-      <div className="glass-card p-4 border border-red-500/40 bg-red-500/5 dark:bg-red-500/10">
+      <div className="card p-4 border border-red-500/40 bg-red-500/5 dark:bg-red-500/10">
         <div className="flex items-start gap-3">
           <Ban className="w-6 h-6 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
           <div className="min-w-0">
@@ -32,12 +32,12 @@ export default function RegistrationPanel({
   }
 
   return (
-    <div className="glass-card p-4 flex items-center justify-between gap-3 flex-wrap">
+    <div className="card p-4 flex items-center justify-between gap-3 flex-wrap">
       <div className="flex items-center gap-2 text-sm">
         {registration.registered ? (
           <>
             <CheckCircle className="w-5 h-5 text-emerald-500" />
-            <span className="text-slate-700 dark:text-gray-200 font-medium">
+            <span className="text-zinc-700 dark:text-zinc-200 font-medium">
               {registration.kind === 'team'
                 ? t('contest.registeredAsTeam')
                 : t('contest.registeredAsSolo')}
@@ -46,14 +46,14 @@ export default function RegistrationPanel({
         ) : registration.can_register ? (
           <>
             <AlertCircle className="w-5 h-5 text-amber-500" />
-            <span className="text-slate-700 dark:text-gray-200">
+            <span className="text-zinc-700 dark:text-zinc-200">
               {t('contest.registerToSubmit')}
             </span>
           </>
         ) : (
           <>
-            <Lock className="w-5 h-5 text-slate-400" />
-            <span className="text-slate-500 dark:text-gray-400">
+            <Lock className="w-5 h-5 text-zinc-400" />
+            <span className="text-zinc-500 dark:text-zinc-400">
               {registration.reason || t('contest.cannotRegister')} —{' '}
               {t('contest.scoreboardOnly')}
             </span>

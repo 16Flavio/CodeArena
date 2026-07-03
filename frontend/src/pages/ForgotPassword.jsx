@@ -26,27 +26,23 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative bg-gray-50 dark:bg-slate-950">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/3 w-96 h-96 bg-violet-500/10 rounded-full blur-[128px] dark:bg-violet-600/15" />
-        <div className="absolute bottom-1/3 right-1/3 w-96 h-96 bg-indigo-500/10 rounded-full blur-[128px] dark:bg-indigo-600/10" />
-      </div>
+    <div className="min-h-screen flex items-center justify-center px-4 relative bg-zinc-50 dark:bg-zinc-950">
 
-      <div className="relative glass-card p-8 w-full max-w-md animate-fade-in">
+      <div className="relative card p-8 w-full max-w-md animate-fade-in">
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-accent-600 flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="text-2xl font-bold gradient-text">CodeArena</span>
+          <span className="text-2xl font-bold text-zinc-900 dark:text-white">CodeArena</span>
         </div>
 
         {sent ? (
           <div className="text-center">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto mb-5">
+            <div className="w-14 h-14 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto mb-5">
               <CheckCircle className="w-7 h-7 text-emerald-500 dark:text-emerald-400" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-3 dark:text-white">{t('auth.checkInbox')}</h2>
-            <p className="text-slate-500 mb-6 leading-relaxed dark:text-gray-400">
+            <h2 className="text-2xl font-bold text-zinc-900 mb-3 dark:text-white">{t('auth.checkInbox')}</h2>
+            <p className="text-zinc-500 mb-6 leading-relaxed dark:text-zinc-400">
               {t('auth.checkInboxBody', { email })}
             </p>
             <Link to="/login" className="btn-primary w-full inline-block text-center">
@@ -56,20 +52,20 @@ export default function ForgotPassword() {
           </div>
         ) : (
           <>
-            <h2 className="text-2xl font-bold text-slate-900 text-center mb-2 dark:text-white">
+            <h2 className="text-2xl font-bold text-zinc-900 text-center mb-2 dark:text-white">
               {t('auth.forgotTitle')}
             </h2>
-            <p className="text-slate-500 text-center mb-8 dark:text-gray-400">
+            <p className="text-zinc-500 text-center mb-8 dark:text-zinc-400">
               {t('auth.forgotSubtitle')}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+                <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
                   {t('auth.email')}
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none dark:text-gray-500" />
+                  <Mail className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none dark:text-zinc-500" />
                   <input
                     type="email"
                     className="input-field pl-10"
@@ -94,8 +90,8 @@ export default function ForgotPassword() {
               </button>
             </form>
 
-            <p className="text-center text-slate-500 text-sm mt-6 dark:text-gray-500">
-              <Link to="/login" className="text-violet-600 hover:text-violet-500 font-medium dark:text-violet-400 dark:hover:text-violet-300">
+            <p className="text-center text-zinc-500 text-sm mt-6 dark:text-zinc-500">
+              <Link to="/login" className="text-accent-600 hover:text-accent-500 font-medium dark:text-accent-400 dark:hover:text-accent-300">
                 <ArrowLeft className="w-3.5 h-3.5 mr-1 inline" />
                 {t('auth.backToSignIn')}
               </Link>

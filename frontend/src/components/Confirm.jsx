@@ -132,20 +132,20 @@ function DialogShell({ dialog, closeWith }) {
     <div
       ref={dialogRef}
       onClick={onBackdropClick}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm animate-fade-in p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/60 animate-fade-in p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="dialog-title"
     >
       <div
-        className="glass-card max-w-md w-full p-6 space-y-4 shadow-2xl"
+        className="card max-w-md w-full p-6 space-y-4 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
           <h2
             id="dialog-title"
             className={`text-lg font-bold flex items-center gap-2 ${
-              danger ? 'text-red-700 dark:text-red-300' : 'text-slate-900 dark:text-white'
+              danger ? 'text-red-700 dark:text-red-300' : 'text-zinc-900 dark:text-white'
             }`}
           >
             {danger && <AlertTriangle className="w-5 h-5 flex-shrink-0" />}
@@ -154,7 +154,7 @@ function DialogShell({ dialog, closeWith }) {
           <button
             type="button"
             onClick={() => closeWith(isPrompt ? null : false)}
-            className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-gray-200"
+            className="p-1 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
             aria-label={cancelLabel}
           >
             <X className="w-5 h-5" />
@@ -162,7 +162,7 @@ function DialogShell({ dialog, closeWith }) {
         </div>
 
         {message && (
-          <p className="text-sm text-slate-700 dark:text-gray-300 whitespace-pre-wrap">
+          <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
             {message}
           </p>
         )}
@@ -190,7 +190,7 @@ function DialogShell({ dialog, closeWith }) {
             ref={confirmBtnRef}
             type="button"
             onClick={() => closeWith(isPrompt ? value : true)}
-            className={`text-sm py-2 px-4 rounded-xl font-medium transition-colors ${
+            className={`text-sm py-2 px-4 rounded-lg font-medium transition-colors ${
               danger
                 ? 'bg-red-500 hover:bg-red-400 text-white'
                 : 'btn-primary'

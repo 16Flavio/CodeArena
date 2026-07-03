@@ -94,19 +94,19 @@ export default function Security() {
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4 animate-fade-in">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+      <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-2">
         {t('auth.totp.settings.title')}
       </h1>
 
       {stage === 'idle' && user?.totp_enabled && (
-        <div className="glass-card p-6 mt-4 space-y-4">
+        <div className="card p-6 mt-4 space-y-4">
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-8 h-8 text-emerald-500" />
             <div>
               <p className="font-semibold text-emerald-700 dark:text-emerald-300">
                 {t('auth.totp.settings.statusEnabled')}
               </p>
-              <p className="text-sm text-slate-500 dark:text-gray-400">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 {t('auth.totp.settings.intro')}
               </p>
             </div>
@@ -123,14 +123,14 @@ export default function Security() {
       )}
 
       {stage === 'idle' && !user?.totp_enabled && (
-        <div className="glass-card p-6 mt-4 space-y-4">
+        <div className="card p-6 mt-4 space-y-4">
           <div className="flex items-center gap-3">
-            <ShieldOff className="w-8 h-8 text-slate-400" />
+            <ShieldOff className="w-8 h-8 text-zinc-400" />
             <div>
-              <p className="font-semibold text-slate-700 dark:text-gray-200">
+              <p className="font-semibold text-zinc-700 dark:text-zinc-200">
                 {t('auth.totp.settings.statusDisabled')}
               </p>
-              <p className="text-sm text-slate-500 dark:text-gray-400">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 {t('auth.totp.settings.intro')}
               </p>
             </div>
@@ -148,25 +148,25 @@ export default function Security() {
       )}
 
       {stage === 'setup' && (
-        <form onSubmit={handleVerify} className="glass-card p-6 mt-4 space-y-5">
-          <p className="text-sm text-slate-600 dark:text-gray-300">
+        <form onSubmit={handleVerify} className="card p-6 mt-4 space-y-5">
+          <p className="text-sm text-zinc-600 dark:text-zinc-300">
             {t('auth.totp.settings.scanQR')}
           </p>
 
           {/* QR rendered locally with qrcode.react — never hits a third
               party, the secret stays inside the user's browser. */}
           <div className="flex justify-center">
-            <div className="bg-white p-4 rounded-xl inline-block">
+            <div className="bg-white p-4 rounded-lg inline-block">
               <QRCodeSVG value={otpauthUrl} size={200} level="M" includeMargin={false} />
             </div>
           </div>
 
           <div>
-            <label className="text-xs uppercase tracking-wide text-slate-500 dark:text-gray-400">
+            <label className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               {t('auth.totp.settings.secretLabel')}
             </label>
             <div className="flex items-center gap-2 mt-1">
-              <code className="flex-1 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800/60 font-mono text-sm break-all tracking-wider">
+              <code className="flex-1 px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800/60 font-mono text-sm break-all tracking-wider">
                 {/* Group every 4 chars for readability — Google Authenticator
                     accepts this format on manual entry. */}
                 {secret.match(/.{1,4}/g)?.join(' ') || secret}
@@ -183,7 +183,7 @@ export default function Security() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
               {t('auth.totp.settings.verifyHint')}
             </label>
             <input
@@ -212,7 +212,7 @@ export default function Security() {
       )}
 
       {stage === 'success' && (
-        <div className="glass-card p-6 mt-4 space-y-4 border border-amber-500/40 bg-amber-500/5">
+        <div className="card p-6 mt-4 space-y-4 border border-amber-500/40 bg-amber-500/5">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" />
             <div>
@@ -228,7 +228,7 @@ export default function Security() {
             {recoveryCodes.map((c) => (
               <code
                 key={c}
-                className="px-3 py-2 rounded bg-slate-50 dark:bg-slate-900 font-mono text-sm text-center select-all border border-slate-200 dark:border-slate-700"
+                className="px-3 py-2 rounded bg-zinc-50 dark:bg-zinc-900 font-mono text-sm text-center select-all border border-zinc-200 dark:border-zinc-700"
               >
                 {c}
               </code>
@@ -245,16 +245,16 @@ export default function Security() {
       )}
 
       {stage === 'disable' && (
-        <form onSubmit={handleDisable} className="glass-card p-6 mt-4 space-y-4 border border-red-500/30">
+        <form onSubmit={handleDisable} className="card p-6 mt-4 space-y-4 border border-red-500/30">
           <h3 className="font-bold text-red-700 dark:text-red-300 flex items-center gap-2">
             <ShieldOff className="w-5 h-5" />
             {t('auth.totp.settings.disableTitle')}
           </h3>
-          <p className="text-sm text-slate-600 dark:text-gray-300">
+          <p className="text-sm text-zinc-600 dark:text-zinc-300">
             {t('auth.totp.settings.disableSubtitle')}
           </p>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
               {t('auth.totp.settings.passwordLabel')}
             </label>
             <input
@@ -267,7 +267,7 @@ export default function Security() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
               {t('auth.totp.settings.codeLabel')}
             </label>
             <input
@@ -285,7 +285,7 @@ export default function Security() {
             <button type="button" onClick={() => setStage('idle')} className="btn-secondary text-sm">
               {t('common.cancel')}
             </button>
-            <button type="submit" disabled={busy} className="text-sm py-2 px-4 rounded-xl bg-red-500 hover:bg-red-400 text-white font-medium">
+            <button type="submit" disabled={busy} className="text-sm py-2 px-4 rounded-lg bg-red-500 hover:bg-red-400 text-white font-medium">
               {t('auth.totp.settings.disableConfirm')}
             </button>
           </div>

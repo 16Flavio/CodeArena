@@ -86,12 +86,12 @@ export default function AdminHints({ contestId }) {
   };
 
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 dark:bg-slate-800/30 dark:border-slate-700/40">
+    <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 space-y-3 dark:bg-zinc-800/30 dark:border-zinc-700/40">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2 dark:text-gray-300">
+        <h4 className="text-sm font-semibold text-zinc-700 flex items-center gap-2 dark:text-zinc-300">
           <Lightbulb className="w-4 h-4 text-amber-500 dark:text-amber-400" />
           {t('adminHints.heading')}
-          <span className="text-xs font-normal text-slate-400 dark:text-gray-500">({hints.length})</span>
+          <span className="text-xs font-normal text-zinc-400 dark:text-zinc-500">({hints.length})</span>
         </h4>
         {editing === null && (
           <button type="button" onClick={startCreate} className="btn-secondary text-xs py-1 px-2">
@@ -102,15 +102,15 @@ export default function AdminHints({ contestId }) {
       </div>
 
       {loading ? (
-        <p className="text-xs text-slate-400 italic dark:text-gray-600">{t('common.loading')}</p>
+        <p className="text-xs text-zinc-400 italic dark:text-zinc-600">{t('common.loading')}</p>
       ) : hints.length === 0 && editing !== 'new' ? (
-        <p className="text-xs text-slate-400 italic dark:text-gray-600">{t('adminHints.empty')}</p>
+        <p className="text-xs text-zinc-400 italic dark:text-zinc-600">{t('adminHints.empty')}</p>
       ) : (
         <ul className="space-y-2">
           {[...hints]
             .sort((a, b) => a.order_idx - b.order_idx || a.id - b.id)
             .map((h, i, arr) => (
-              <li key={h.id} className="rounded-lg bg-white border border-gray-200 p-2 dark:bg-slate-900/40 dark:border-slate-700/40">
+              <li key={h.id} className="rounded-lg bg-white border border-zinc-200 p-2 dark:bg-zinc-900/40 dark:border-zinc-700/40">
                 {editing === h.id ? (
                   <HintForm draft={draft} setDraft={setDraft} onSave={save} onCancel={() => setEditing(null)} t={t} />
                 ) : (
@@ -120,7 +120,7 @@ export default function AdminHints({ contestId }) {
                         type="button"
                         disabled={i === 0}
                         onClick={() => reorder(h, 'up')}
-                        className="p-0.5 text-slate-400 hover:text-violet-500 disabled:opacity-30 disabled:cursor-not-allowed dark:text-gray-500 dark:hover:text-violet-400"
+                        className="p-0.5 text-zinc-400 hover:text-accent-500 disabled:opacity-30 disabled:cursor-not-allowed dark:text-zinc-500 dark:hover:text-accent-400"
                         aria-label={t('adminHints.moveUp')}
                       >
                         <ArrowUp className="w-3.5 h-3.5" />
@@ -129,7 +129,7 @@ export default function AdminHints({ contestId }) {
                         type="button"
                         disabled={i === arr.length - 1}
                         onClick={() => reorder(h, 'down')}
-                        className="p-0.5 text-slate-400 hover:text-violet-500 disabled:opacity-30 disabled:cursor-not-allowed dark:text-gray-500 dark:hover:text-violet-400"
+                        className="p-0.5 text-zinc-400 hover:text-accent-500 disabled:opacity-30 disabled:cursor-not-allowed dark:text-zinc-500 dark:hover:text-accent-400"
                         aria-label={t('adminHints.moveDown')}
                       >
                         <ArrowDown className="w-3.5 h-3.5" />
@@ -137,7 +137,7 @@ export default function AdminHints({ contestId }) {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-900 dark:text-white">
+                        <span className="text-sm font-medium text-zinc-900 dark:text-white">
                           {h.label || `#${h.id}`}
                         </span>
                         <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 border border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-400">
@@ -145,14 +145,14 @@ export default function AdminHints({ contestId }) {
                         </span>
                       </div>
                       {h.body && (
-                        <p className="text-xs text-slate-500 mt-1 whitespace-pre-wrap dark:text-gray-400">{h.body}</p>
+                        <p className="text-xs text-zinc-500 mt-1 whitespace-pre-wrap dark:text-zinc-400">{h.body}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
                         onClick={() => startEdit(h)}
-                        className="p-1 rounded hover:bg-gray-100 text-slate-400 hover:text-violet-500 dark:hover:bg-slate-700/50"
+                        className="p-1 rounded hover:bg-zinc-100 text-zinc-400 hover:text-accent-500 dark:hover:bg-zinc-700/50"
                         aria-label={t('admin.contests.edit')}
                       >
                         <Save className="w-3.5 h-3.5" />
@@ -160,7 +160,7 @@ export default function AdminHints({ contestId }) {
                       <button
                         type="button"
                         onClick={() => remove(h)}
-                        className="p-1 rounded hover:bg-red-500/10 text-slate-400 hover:text-red-500"
+                        className="p-1 rounded hover:bg-red-500/10 text-zinc-400 hover:text-red-500"
                         aria-label={t('admin.contests.delete')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -171,7 +171,7 @@ export default function AdminHints({ contestId }) {
               </li>
             ))}
           {editing === 'new' && (
-            <li className="rounded-lg bg-white border border-violet-300 p-2 dark:bg-slate-900/40 dark:border-violet-500/40">
+            <li className="rounded-lg bg-white border border-accent-300 p-2 dark:bg-zinc-900/40 dark:border-accent-500/40">
               <HintForm draft={draft} setDraft={setDraft} onSave={save} onCancel={() => setEditing(null)} t={t} />
             </li>
           )}
@@ -198,7 +198,7 @@ function HintForm({ draft, setDraft, onSave, onCancel, t }) {
         onChange={(e) => setDraft({ ...draft, body: e.target.value })}
       />
       <div className="flex items-center gap-2">
-        <label className="text-xs text-slate-500 dark:text-gray-400">
+        <label className="text-xs text-zinc-500 dark:text-zinc-400">
           {t('adminHints.costFraction')}
         </label>
         <input
@@ -210,7 +210,7 @@ function HintForm({ draft, setDraft, onSave, onCancel, t }) {
           value={draft.cost_fraction}
           onChange={(e) => setDraft({ ...draft, cost_fraction: e.target.value })}
         />
-        <span className="text-xs text-slate-500 dark:text-gray-400">
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">
           = {Math.round((parseFloat(draft.cost_fraction) || 0) * 100)}%
         </span>
         <div className="ml-auto flex gap-1">

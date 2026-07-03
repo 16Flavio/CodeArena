@@ -115,9 +115,9 @@ export default function SubmitSolutionForm({
   };
 
   return (
-    <div className="glass-card p-6">
-      <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2 dark:text-white">
-        <Upload className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+    <div className="card p-6">
+      <h2 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2 dark:text-white">
+        <Upload className="w-5 h-5 text-accent-500 dark:text-accent-400" />
         {t('contest.submitSolution')}
       </h2>
       <form
@@ -131,15 +131,15 @@ export default function SubmitSolutionForm({
         className="space-y-4"
       >
         {contest.participation_mode === 'both' && (
-          <div className="inline-flex rounded-lg border border-gray-200 p-0.5 dark:border-slate-700">
+          <div className="inline-flex rounded-lg border border-zinc-200 p-0.5 dark:border-zinc-700">
             <button
               type="button"
               onClick={() => setSubmitKind('team')}
               disabled={teams.length === 0}
               className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
                 submitKind === 'team'
-                  ? 'bg-violet-600 text-white'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed'
+                  ? 'bg-accent-600 text-white'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed'
               }`}
             >
               {t('contest.submitAsTeam')}
@@ -149,8 +149,8 @@ export default function SubmitSolutionForm({
               onClick={() => setSubmitKind('solo')}
               className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
                 submitKind === 'solo'
-                  ? 'bg-violet-600 text-white'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200'
+                  ? 'bg-accent-600 text-white'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
               }`}
             >
               {t('contest.submitAsSolo')}
@@ -160,7 +160,7 @@ export default function SubmitSolutionForm({
         <div className={submitKind === 'team' && teams.length > 1 ? 'grid sm:grid-cols-2 gap-4' : ''}>
           {submitKind === 'team' && teams.length > 1 && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+              <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
                 {t('contest.teamLabel')}
               </label>
               <select
@@ -177,7 +177,7 @@ export default function SubmitSolutionForm({
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+            <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
               {t('contest.instanceLabel')}
             </label>
             <select
@@ -198,17 +198,17 @@ export default function SubmitSolutionForm({
         </div>
         <div>
           <div className="flex items-center justify-between mb-2 gap-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
               {t('contest.fileLabel')}
             </label>
-            <div className="inline-flex rounded-lg border border-gray-200 p-0.5 dark:border-slate-700">
+            <div className="inline-flex rounded-lg border border-zinc-200 p-0.5 dark:border-zinc-700">
               <button
                 type="button"
                 onClick={() => setSubmitMode('file')}
                 className={`text-xs font-medium px-2 py-1 rounded-md flex items-center gap-1 transition-colors ${
                   submitMode === 'file'
-                    ? 'bg-violet-600 text-white'
-                    : 'text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200'
+                    ? 'bg-accent-600 text-white'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
                 }`}
               >
                 <FileTextIcon className="w-3.5 h-3.5" />
@@ -219,8 +219,8 @@ export default function SubmitSolutionForm({
                 onClick={() => setSubmitMode('code')}
                 className={`text-xs font-medium px-2 py-1 rounded-md flex items-center gap-1 transition-colors ${
                   submitMode === 'code'
-                    ? 'bg-violet-600 text-white'
-                    : 'text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200'
+                    ? 'bg-accent-600 text-white'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
                 }`}
               >
                 <Code2 className="w-3.5 h-3.5" />
@@ -231,8 +231,8 @@ export default function SubmitSolutionForm({
                 onClick={() => setSubmitMode('source')}
                 className={`text-xs font-medium px-2 py-1 rounded-md flex items-center gap-1 transition-colors ${
                   submitMode === 'source'
-                    ? 'bg-violet-600 text-white'
-                    : 'text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200'
+                    ? 'bg-accent-600 text-white'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
                 }`}
                 title={t('contest.modeSourceHint')}
               >
@@ -244,7 +244,7 @@ export default function SubmitSolutionForm({
 
           {submitMode === 'source' && (
             <div className="mb-2 flex items-center gap-2">
-              <label className="text-xs text-slate-500 dark:text-gray-400">
+              <label className="text-xs text-zinc-500 dark:text-zinc-400">
                 {t('contest.sourceLanguage')}
               </label>
               <select
@@ -256,7 +256,7 @@ export default function SubmitSolutionForm({
                   <option key={l.id} value={l.id}>{l.display_name}</option>
                 ))}
               </select>
-              <span className="text-[11px] text-slate-400 dark:text-gray-500">
+              <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
                 {t('contest.modeSourceHint')}
               </span>
             </div>
@@ -268,17 +268,17 @@ export default function SubmitSolutionForm({
                 <input
                   type="file"
                   onChange={(e) => setFile(e.target.files[0])}
-                  className="input-field file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-violet-600 file:text-white hover:file:bg-violet-500 file:cursor-pointer"
+                  className="input-field file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-accent-600 file:text-white hover:file:bg-accent-500 file:cursor-pointer"
                 />
               </div>
               {file && (
-                <p className="text-sm text-slate-500 mt-1.5 dark:text-gray-400">
+                <p className="text-sm text-zinc-500 mt-1.5 dark:text-zinc-400">
                   {t('contest.selectedFile', { name: file.name })}
                 </p>
               )}
             </>
           ) : (
-            <div className="rounded-xl border border-gray-300 overflow-hidden dark:border-slate-700">
+            <div className="rounded-lg border border-zinc-300 overflow-hidden dark:border-zinc-700">
               <CodeMirror
                 value={codeText}
                 onChange={(v) => setCodeText(v)}
@@ -288,7 +288,7 @@ export default function SubmitSolutionForm({
                 height="260px"
               />
               {submitMode === 'source' && (
-                <p className="text-[11px] text-slate-400 px-2 py-1 bg-gray-50 dark:bg-slate-800/40 dark:text-gray-500">
+                <p className="text-[11px] text-zinc-400 px-2 py-1 bg-zinc-50 dark:bg-zinc-800/40 dark:text-zinc-500">
                   {t('contest.sourceStdinHint')}
                 </p>
               )}
@@ -309,11 +309,11 @@ export default function SubmitSolutionForm({
               </>
             )}
           </button>
-          <span className="text-[11px] text-slate-400 dark:text-gray-500">
+          <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
             {t('contest.submitShortcutHint')}
           </span>
           {contest.max_submissions_per_instance && selectedInstance && (
-            <span className="text-[11px] text-slate-400 dark:text-gray-500 ml-auto">
+            <span className="text-[11px] text-zinc-400 dark:text-zinc-500 ml-auto">
               {t('contest.quotaUsed', {
                 used: submissions.filter((x) => String(x.instance_id) === String(selectedInstance)).length,
                 limit: contest.max_submissions_per_instance,

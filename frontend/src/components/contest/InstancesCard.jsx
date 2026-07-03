@@ -28,13 +28,13 @@ export default function InstancesCard({ contest, now }) {
   };
 
   return (
-    <div className="glass-card p-6">
-      <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2 dark:text-white">
-        <FileDown className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+    <div className="card p-6">
+      <h2 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2 dark:text-white">
+        <FileDown className="w-5 h-5 text-accent-500 dark:text-accent-400" />
         {t('contest.instances')}
       </h2>
       {contest.instances.length === 0 ? (
-        <p className="text-slate-500 text-center py-4 dark:text-gray-500">{t('contest.noInstances')}</p>
+        <p className="text-zinc-500 text-center py-4 dark:text-zinc-500">{t('contest.noInstances')}</p>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {contest.instances.map((inst) => {
@@ -43,16 +43,16 @@ export default function InstancesCard({ contest, now }) {
             return (
               <div
                 key={inst.id}
-                className={`flex items-center justify-between p-4 rounded-xl border ${
+                className={`flex items-center justify-between p-4 rounded-lg border ${
                   locked
                     ? 'bg-amber-500/5 border-amber-500/20'
-                    : 'bg-gray-50 border-gray-200 dark:bg-slate-800/30 dark:border-slate-700/30'
+                    : 'bg-zinc-50 border-zinc-200 dark:bg-zinc-800/30 dark:border-zinc-700/30'
                 }`}
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 min-w-0">
                     {locked && <Lock className="w-4 h-4 text-amber-500 flex-shrink-0 dark:text-amber-400" />}
-                    <p className={`font-medium truncate ${locked ? 'text-slate-600 dark:text-gray-400' : 'text-slate-900 dark:text-white'}`}>
+                    <p className={`font-medium truncate ${locked ? 'text-zinc-600 dark:text-zinc-400' : 'text-zinc-900 dark:text-white'}`}>
                       {inst.name}
                     </p>
                   </div>
@@ -69,8 +69,8 @@ export default function InstancesCard({ contest, now }) {
                   disabled={locked}
                   className={`p-2 rounded-lg transition-colors ${
                     locked
-                      ? 'text-slate-300 cursor-not-allowed dark:text-gray-600'
-                      : 'hover:bg-gray-100 text-violet-500 hover:text-violet-600 dark:hover:bg-slate-700/50 dark:text-violet-400 dark:hover:text-violet-300'
+                      ? 'text-zinc-300 cursor-not-allowed dark:text-zinc-600'
+                      : 'hover:bg-zinc-100 text-accent-500 hover:text-accent-600 dark:hover:bg-zinc-700/50 dark:text-accent-400 dark:hover:text-accent-300'
                   }`}
                   title={locked ? t('contest.locked') : t('contest.downloadInput')}
                 >

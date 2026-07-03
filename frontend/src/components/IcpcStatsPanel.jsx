@@ -46,10 +46,10 @@ export default function IcpcStatsPanel({ contestId }) {
   };
 
   return (
-    <div className="bg-white/70 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
+    <div className="bg-white/70 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-white flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-violet-500 dark:text-violet-400" />
+        <h3 className="text-sm font-semibold text-zinc-800 dark:text-white flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-accent-500 dark:text-accent-400" />
           {t('icpcStats.heading')}
         </h3>
         <div className="flex items-center gap-2">
@@ -74,35 +74,35 @@ export default function IcpcStatsPanel({ contestId }) {
       </div>
 
       {!stats ? (
-        <p className="text-xs text-slate-400 dark:text-gray-500">{loading ? t('common.loading') : '—'}</p>
+        <p className="text-xs text-zinc-400 dark:text-zinc-500">{loading ? t('common.loading') : '—'}</p>
       ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="bg-slate-50 dark:bg-slate-900/40 rounded p-2">
-              <div className="text-slate-500 dark:text-gray-400 uppercase text-[10px]">
+            <div className="bg-zinc-50 dark:bg-zinc-900/40 rounded p-2">
+              <div className="text-zinc-500 dark:text-zinc-400 uppercase text-[10px]">
                 {t('icpcStats.totalSubmissions')}
               </div>
-              <div className="text-xl font-bold text-slate-800 dark:text-white">
+              <div className="text-xl font-bold text-zinc-800 dark:text-white">
                 {stats.total_submissions}
               </div>
             </div>
-            <div className="bg-slate-50 dark:bg-slate-900/40 rounded p-2">
-              <div className="text-slate-500 dark:text-gray-400 uppercase text-[10px]">
+            <div className="bg-zinc-50 dark:bg-zinc-900/40 rounded p-2">
+              <div className="text-zinc-500 dark:text-zinc-400 uppercase text-[10px]">
                 {t('icpcStats.totalTeams')}
               </div>
-              <div className="text-xl font-bold text-slate-800 dark:text-white">
+              <div className="text-xl font-bold text-zinc-800 dark:text-white">
                 {stats.total_teams}
               </div>
             </div>
           </div>
 
           <div>
-            <h4 className="text-[11px] uppercase text-slate-500 dark:text-gray-400 mb-1">
+            <h4 className="text-[11px] uppercase text-zinc-500 dark:text-zinc-400 mb-1">
               {t('icpcStats.perProblem')}
             </h4>
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-slate-500 dark:text-gray-400">
+                <tr className="text-zinc-500 dark:text-zinc-400">
                   <th className="text-left">{t('icpcStats.label')}</th>
                   <th className="text-left">{t('icpcStats.name')}</th>
                   <th className="text-right">{t('icpcStats.submissions')}</th>
@@ -112,7 +112,7 @@ export default function IcpcStatsPanel({ contestId }) {
               </thead>
               <tbody>
                 {stats.per_problem.map((p) => (
-                  <tr key={p.problem_id} className="border-t border-slate-200/60 dark:border-slate-700/60">
+                  <tr key={p.problem_id} className="border-t border-zinc-200/60 dark:border-zinc-700/60">
                     <td className="font-mono">{p.label}</td>
                     <td>{p.name}</td>
                     <td className="text-right font-mono">{p.submissions}</td>
@@ -128,18 +128,18 @@ export default function IcpcStatsPanel({ contestId }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <h4 className="text-[11px] uppercase text-slate-500 dark:text-gray-400 mb-1">
+              <h4 className="text-[11px] uppercase text-zinc-500 dark:text-zinc-400 mb-1">
                 {t('icpcStats.perLanguage')}
               </h4>
               <table className="w-full text-xs">
-                <thead><tr className="text-slate-500 dark:text-gray-400">
+                <thead><tr className="text-zinc-500 dark:text-zinc-400">
                   <th className="text-left">{t('icpcStats.language')}</th>
                   <th className="text-right">{t('icpcStats.submissions')}</th>
                   <th className="text-right">{t('icpcStats.accepted')}</th>
                 </tr></thead>
                 <tbody>
                   {stats.per_language.map((l) => (
-                    <tr key={l.language_id} className="border-t border-slate-200/60 dark:border-slate-700/60">
+                    <tr key={l.language_id} className="border-t border-zinc-200/60 dark:border-zinc-700/60">
                       <td className="font-mono">{l.language_id}</td>
                       <td className="text-right font-mono">{l.submissions}</td>
                       <td className="text-right font-mono">{l.accepted}</td>
@@ -149,17 +149,17 @@ export default function IcpcStatsPanel({ contestId }) {
               </table>
             </div>
             <div>
-              <h4 className="text-[11px] uppercase text-slate-500 dark:text-gray-400 mb-1">
+              <h4 className="text-[11px] uppercase text-zinc-500 dark:text-zinc-400 mb-1">
                 {t('icpcStats.perVerdict')}
               </h4>
               <table className="w-full text-xs">
-                <thead><tr className="text-slate-500 dark:text-gray-400">
+                <thead><tr className="text-zinc-500 dark:text-zinc-400">
                   <th className="text-left">{t('icpcStats.verdict')}</th>
                   <th className="text-right">{t('icpcStats.count')}</th>
                 </tr></thead>
                 <tbody>
                   {stats.per_verdict.map((v) => (
-                    <tr key={v.verdict} className="border-t border-slate-200/60 dark:border-slate-700/60">
+                    <tr key={v.verdict} className="border-t border-zinc-200/60 dark:border-zinc-700/60">
                       <td className="font-mono">{v.verdict}</td>
                       <td className="text-right font-mono">{v.count}</td>
                     </tr>

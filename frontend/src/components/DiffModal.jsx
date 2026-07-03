@@ -32,21 +32,21 @@ export default function DiffModal({ leftId, rightId, onClose }) {
     : [];
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="glass-card p-6 w-full max-w-6xl max-h-[90vh] flex flex-col animate-slide-up"
+        className="card p-6 w-full max-w-6xl max-h-[90vh] flex flex-col animate-fade-in"
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 dark:text-white">
-            <GitCompare className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+          <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2 dark:text-white">
+            <GitCompare className="w-5 h-5 text-accent-500 dark:text-accent-400" />
             {t('diff.title')}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-slate-900 transition-colors dark:hover:bg-slate-800 dark:text-gray-400 dark:hover:text-white"
+            className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-colors dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-white"
             aria-label={t('accountModal.close')}
           >
             <X className="w-5 h-5" />
@@ -55,7 +55,7 @@ export default function DiffModal({ leftId, rightId, onClose }) {
 
         {state.loading && (
           <div className="flex items-center justify-center py-16">
-            <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
         {state.error && (
@@ -63,7 +63,7 @@ export default function DiffModal({ leftId, rightId, onClose }) {
         )}
         {state.left && state.right && (
           <>
-            <div className="grid grid-cols-2 gap-3 text-xs text-slate-500 mb-3 dark:text-gray-400">
+            <div className="grid grid-cols-2 gap-3 text-xs text-zinc-500 mb-3 dark:text-zinc-400">
               <div>
                 <span className="font-mono">{state.left.file_name || `#${state.left.id}`}</span>
                 <span className="ml-2">{formatDateTime(state.left.submitted_at)}</span>
@@ -73,18 +73,18 @@ export default function DiffModal({ leftId, rightId, onClose }) {
                 <span className="ml-2">{formatDateTime(state.right.submitted_at)}</span>
               </div>
             </div>
-            <div className="flex-1 overflow-auto rounded-lg border border-gray-200 dark:border-slate-700/50">
+            <div className="flex-1 overflow-auto rounded-lg border border-zinc-200 dark:border-zinc-700/50">
               <table className="w-full text-xs font-mono">
                 <tbody>
                   {rows.map((r, idx) => (
                     <tr key={idx}>
                       <td className={`align-top w-1/2 px-3 py-0.5 whitespace-pre-wrap break-all ${
-                        r.kind === 'del' ? 'bg-red-500/10 text-red-700 dark:text-red-300' : 'text-slate-700 dark:text-gray-300'
+                        r.kind === 'del' ? 'bg-red-500/10 text-red-700 dark:text-red-300' : 'text-zinc-700 dark:text-zinc-300'
                       }`}>
                         {r.left !== null ? r.left : ''}
                       </td>
-                      <td className={`align-top w-1/2 px-3 py-0.5 whitespace-pre-wrap break-all border-l border-gray-200 dark:border-slate-700/50 ${
-                        r.kind === 'add' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'text-slate-700 dark:text-gray-300'
+                      <td className={`align-top w-1/2 px-3 py-0.5 whitespace-pre-wrap break-all border-l border-zinc-200 dark:border-zinc-700/50 ${
+                        r.kind === 'add' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'text-zinc-700 dark:text-zinc-300'
                       }`}>
                         {r.right !== null ? r.right : ''}
                       </td>

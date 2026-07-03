@@ -67,20 +67,20 @@ export default function ProblemStatementCard({ contest, visible }) {
   if (!visible) return null;
 
   return (
-    <div className="glass-card overflow-hidden">
+    <div className="card overflow-hidden">
       <button
         onClick={() => setShowStatement(!showStatement)}
-        className="w-full flex items-center justify-between p-5 hover:bg-gray-50 transition-colors dark:hover:bg-slate-800/30"
+        className="w-full flex items-center justify-between p-5 hover:bg-zinc-50 transition-colors dark:hover:bg-zinc-800/30"
       >
-        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 dark:text-white">
+        <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2 dark:text-white">
           {contest.has_problem_statement_pdf ? (
-            <FileType className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+            <FileType className="w-5 h-5 text-accent-500 dark:text-accent-400" />
           ) : (
-            <Target className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+            <Target className="w-5 h-5 text-accent-500 dark:text-accent-400" />
           )}
           {t('contest.problemStatement')}
           {contest.has_problem_statement_pdf && (
-            <span className="text-xs font-normal text-slate-400 ml-1 dark:text-gray-500">{t('contest.pdfBadge')}</span>
+            <span className="text-xs font-normal text-zinc-400 ml-1 dark:text-zinc-500">{t('contest.pdfBadge')}</span>
           )}
         </h2>
         <div className="flex items-center gap-2">
@@ -89,7 +89,7 @@ export default function ProblemStatementCard({ contest, visible }) {
               href={pdfBlobUrl}
               download={contest.problem_statement_pdf_name || 'enonce.pdf'}
               onClick={(e) => e.stopPropagation()}
-              className="text-xs font-medium px-2.5 py-1 rounded-md bg-gray-100 hover:bg-gray-200 border border-gray-300 text-slate-700 transition-colors flex items-center gap-1.5 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-gray-200"
+              className="text-xs font-medium px-2.5 py-1 rounded-md bg-zinc-100 hover:bg-zinc-200 border border-zinc-300 text-zinc-700 transition-colors flex items-center gap-1.5 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
               title={t('common.download')}
             >
               <FileDown className="w-3.5 h-3.5" />
@@ -102,7 +102,7 @@ export default function ProblemStatementCard({ contest, visible }) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="text-xs font-medium px-2.5 py-1 rounded-md bg-gray-100 hover:bg-gray-200 border border-gray-300 text-slate-700 transition-colors flex items-center gap-1.5 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-gray-200"
+              className="text-xs font-medium px-2.5 py-1 rounded-md bg-zinc-100 hover:bg-zinc-200 border border-zinc-300 text-zinc-700 transition-colors flex items-center gap-1.5 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
               title={t('common.openInNewTab')}
             >
               <ExternalLink className="w-3.5 h-3.5" />
@@ -110,9 +110,9 @@ export default function ProblemStatementCard({ contest, visible }) {
             </a>
           )}
           {showStatement ? (
-            <ChevronUp className="w-5 h-5 text-slate-400 dark:text-gray-400" />
+            <ChevronUp className="w-5 h-5 text-zinc-400 dark:text-zinc-400" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-slate-400 dark:text-gray-400" />
+            <ChevronDown className="w-5 h-5 text-zinc-400 dark:text-zinc-400" />
           )}
         </div>
       </button>
@@ -120,18 +120,18 @@ export default function ProblemStatementCard({ contest, visible }) {
         contest.has_problem_statement_pdf ? (
           <div className="px-6 pb-6">
             {pdfLoading && !pdfBlobUrl ? (
-              <div className="flex items-center justify-center h-96 bg-gray-100 rounded-xl dark:bg-slate-950/40">
-                <div className="w-6 h-6 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+              <div className="flex items-center justify-center h-96 bg-zinc-100 rounded-lg dark:bg-zinc-950/40">
+                <div className="w-6 h-6 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : pdfBlobUrl ? (
               <iframe
                 src={pdfBlobUrl}
                 title={t('contest.problemStatement')}
-                className="w-full rounded-xl border border-gray-200 bg-white dark:border-slate-800"
+                className="w-full rounded-lg border border-zinc-200 bg-white dark:border-zinc-800"
                 style={{ height: '75vh', minHeight: 480 }}
               />
             ) : (
-              <div className="flex flex-col items-center justify-center h-48 text-slate-500 gap-3 dark:text-gray-400">
+              <div className="flex flex-col items-center justify-center h-48 text-zinc-500 gap-3 dark:text-zinc-400">
                 <AlertCircle className="w-8 h-8 text-amber-500 dark:text-amber-400" />
                 <p>{t('contest.pdfLoadFailed')}</p>
                 <button onClick={() => setPdfRetryCount((n) => n + 1)} className="btn-secondary text-sm">

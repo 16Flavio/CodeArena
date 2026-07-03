@@ -162,15 +162,15 @@ export default function Presentation() {
 
   if (!user || !user.is_admin) {
     return (
-      <div className="flex items-center justify-center h-64 text-slate-500">
+      <div className="flex items-center justify-center h-64 text-zinc-500">
         {t('presentation.adminOnly')}
       </div>
     );
   }
   if (kind === undefined) {
     return (
-      <div className="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+      <div className="fixed inset-0 z-50 bg-zinc-950 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -195,8 +195,8 @@ function IcpcPresentationFlow() {
 
   if (!data) {
     return (
-      <div className="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+      <div className="fixed inset-0 z-50 bg-zinc-950 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -207,7 +207,7 @@ function IcpcPresentationFlow() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-br from-slate-950 via-slate-900 to-violet-950 text-white overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-zinc-950 text-white overflow-hidden">
       <button
         onClick={() => navigate(`/scoreboard/${id}`)}
         className="absolute top-4 right-4 z-20 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
@@ -234,7 +234,7 @@ function SceneIndicator({ scene }) {
         <div
           key={s}
           className={`h-1.5 rounded-full transition-all duration-500 ${
-            idx === i ? 'w-12 bg-violet-400' : idx < i ? 'w-6 bg-violet-700' : 'w-6 bg-white/15'
+            idx === i ? 'w-12 bg-accent-400' : idx < i ? 'w-6 bg-accent-700' : 'w-6 bg-white/15'
           }`}
           title={t(`presentation.scene.${s}`)}
         />
@@ -249,14 +249,14 @@ function IntroScene({ title, onStart }) {
     <div className="absolute inset-0 flex items-center justify-center flex-col gap-8 px-8 animate-fade-in">
       <div className="text-center space-y-4">
         <Sparkles className="w-16 h-16 mx-auto text-amber-300 animate-pulse" />
-        <h1 className="text-6xl font-bold tracking-tight bg-gradient-to-br from-amber-200 via-violet-200 to-sky-200 bg-clip-text text-transparent">
+        <h1 className="text-6xl font-bold tracking-tight text-white">
           {title}
         </h1>
         <p className="text-xl text-white/70">{t('presentation.intro.tagline')}</p>
       </div>
       <button
         onClick={onStart}
-        className="px-8 py-4 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-400 hover:to-indigo-500 text-lg font-semibold shadow-2xl shadow-violet-500/30 transition-all transform hover:scale-105 inline-flex items-center gap-3"
+        className="px-8 py-4 rounded-lg bg-accent-600 hover:bg-accent-500 text-lg font-semibold transition-all transform inline-flex items-center gap-3"
       >
         <Play className="w-6 h-6" />
         {t('presentation.intro.start')}
@@ -299,7 +299,7 @@ function StatsScene({ data, onContinue }) {
     <div className="absolute inset-0 px-8 py-16 overflow-y-auto animate-fade-in">
       <div className="max-w-6xl mx-auto space-y-10">
         <div className="text-center">
-          <BarChart3 className="w-12 h-12 mx-auto text-violet-300" />
+          <BarChart3 className="w-12 h-12 mx-auto text-accent-300" />
           <h2 className="text-4xl font-bold mt-2">{t('presentation.stats.heading')}</h2>
           <p className="text-white/60 mt-1">{data.contest_title}</p>
         </div>
@@ -313,7 +313,7 @@ function StatsScene({ data, onContinue }) {
 
         <LanguageChart languages={data.language_stats || []} />
 
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+        <div className="bg-white/5 border border-white/10 rounded-lg p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <Award className="w-5 h-5 text-amber-300" />
             {t('presentation.stats.firstSolvers')}
@@ -323,7 +323,7 @@ function StatsScene({ data, onContinue }) {
           )}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {stats.perProblem.map((p) => (
-              <div key={p.id} className="flex items-center gap-3 bg-white/5 rounded-xl p-3 border border-white/10">
+              <div key={p.id} className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
                 <div
                   className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg"
                   style={{ background: p.color || '#94a3b8', color: textOn(p.color || '#94a3b8') }}
@@ -352,7 +352,7 @@ function StatsScene({ data, onContinue }) {
         <div className="flex justify-center">
           <button
             onClick={onContinue}
-            className="px-8 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-400 hover:to-indigo-500 text-base font-semibold inline-flex items-center gap-2 shadow-xl shadow-violet-500/30"
+            className="px-8 py-3 rounded-lg bg-accent-600 hover:bg-accent-500 text-base font-semibold inline-flex items-center gap-2"
           >
             {t('presentation.stats.continue')}
             <ChevronRight className="w-5 h-5" />
@@ -372,14 +372,14 @@ const LANG_BUCKETS = [
     key: 'python',
     label: 'Python',
     color: '#3776ab',
-    accent: 'from-sky-500/30 to-blue-700/20 ring-sky-400/40',
+    accent: 'bg-sky-500/30 ring-sky-400/40',
     match: (id) => /^(py|python|pypy)/i.test(id),
   },
   {
     key: 'cpp',
     label: 'C++',
     color: '#9467bd',
-    accent: 'from-violet-500/30 to-fuchsia-700/20 ring-violet-400/40',
+    accent: 'bg-accent-500/30 ring-accent-400/40',
     match: (id) => /^(cpp|c\+\+|g\+\+|gcc-?cpp)/i.test(id),
   },
 ];
@@ -390,7 +390,7 @@ function LanguageChart({ languages }) {
     const out = LANG_BUCKETS.map((b) => ({ ...b, submissions: 0, accepted: 0, ids: [] }));
     const others = { key: 'other', label: t('presentation.stats.langOther'),
                      color: '#94a3b8',
-                     accent: 'from-slate-500/30 to-slate-700/20 ring-slate-400/40',
+                     accent: 'bg-zinc-500/30 ring-zinc-400/40',
                      submissions: 0, accepted: 0, ids: [] };
     for (const l of languages) {
       const target = out.find((b) => b.match(l.language_id)) || others;
@@ -408,9 +408,9 @@ function LanguageChart({ languages }) {
   const maxSubs = buckets[0].submissions;
 
   return (
-    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+    <div className="bg-white/5 border border-white/10 rounded-lg p-6">
       <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-        <Code2 className="w-5 h-5 text-violet-300" />
+        <Code2 className="w-5 h-5 text-accent-300" />
         {t('presentation.stats.langHeading')}
       </h3>
       <div className="space-y-3">
@@ -433,7 +433,7 @@ function LanguageChart({ languages }) {
               </div>
               <div className="h-6 bg-white/5 rounded-md overflow-hidden ring-1 ring-white/10 relative">
                 <div
-                  className={`h-full bg-gradient-to-r ${b.accent} ring-1 transition-[width] duration-700 ease-out flex items-center px-2`}
+                  className={`h-full ${b.accent} ring-1 transition-[width] duration-700 ease-out flex items-center px-2`}
                   style={{ width: `${widthPct}%` }}
                 >
                   {/* AC slice — overlay a darker portion to show the AC fraction. */}
@@ -456,13 +456,13 @@ function LanguageChart({ languages }) {
 
 function BigStat({ icon, label, value, accent }) {
   const accents = {
-    violet: 'from-violet-500/20 to-violet-700/10 text-violet-200 border-violet-400/30',
-    emerald: 'from-emerald-500/20 to-emerald-700/10 text-emerald-200 border-emerald-400/30',
-    amber: 'from-amber-500/20 to-amber-700/10 text-amber-200 border-amber-400/30',
-    rose: 'from-rose-500/20 to-rose-700/10 text-rose-200 border-rose-400/30',
+    violet: 'bg-accent-500/15 text-accent-200 border-accent-400/30',
+    emerald: 'bg-emerald-500/15 text-emerald-200 border-emerald-400/30',
+    amber: 'bg-amber-500/15 text-amber-200 border-amber-400/30',
+    rose: 'bg-rose-500/15 text-rose-200 border-rose-400/30',
   };
   return (
-    <div className={`bg-gradient-to-br ${accents[accent]} backdrop-blur-sm border rounded-2xl p-5`}>
+    <div className={`${accents[accent]} border rounded-lg p-5`}>
       <div className="flex items-center justify-between mb-2 opacity-80">
         <span className="text-xs uppercase tracking-wider">{label}</span>
         <span className="w-5 h-5">{icon}</span>
@@ -624,7 +624,7 @@ function RevealBoard({ rows, problems, flipKey }) {
   return (
     <div className="flex-1 px-6 overflow-y-auto">
       <div className="max-w-6xl mx-auto">
-        <div className="sticky top-0 z-10 grid items-center bg-slate-900/80 backdrop-blur-sm border-b border-white/10 py-2 text-xs uppercase tracking-wider text-white/60"
+        <div className="sticky top-0 z-10 grid items-center bg-zinc-900/80 border-b border-white/10 py-2 text-xs uppercase tracking-wider text-white/60"
              style={{ gridTemplateColumns: `48px minmax(180px, 1fr) 70px 90px repeat(${problems.length}, 56px)` }}>
           <div className="text-center">#</div>
           <div className="px-3">{t('presentation.reveal.team')}</div>
@@ -651,7 +651,7 @@ function RevealBoard({ rows, problems, flipKey }) {
                 key={key}
                 className={`absolute left-0 right-0 grid items-center rounded-lg my-0.5 transition-[transform,background-color] duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
                   medal === 'gold' ? 'bg-amber-400/15 ring-1 ring-amber-300/40'
-                  : medal === 'silver' ? 'bg-slate-300/10 ring-1 ring-slate-300/30'
+                  : medal === 'silver' ? 'bg-zinc-300/10 ring-1 ring-zinc-300/30'
                   : medal === 'bronze' ? 'bg-amber-700/10 ring-1 ring-amber-600/30'
                   : 'bg-white/5'
                 }`}
@@ -670,7 +670,7 @@ function RevealBoard({ rows, problems, flipKey }) {
                     <div className="text-xs text-white/50 truncate">{r.affiliation_name}</div>
                   )}
                 </div>
-                <div className="text-right pr-2 font-mono text-lg font-bold tabular-nums text-violet-300">
+                <div className="text-right pr-2 font-mono text-lg font-bold tabular-nums text-accent-300">
                   {r.solved_count}
                 </div>
                 <div className="text-right pr-2 font-mono text-sm tabular-nums text-white/70">
@@ -724,10 +724,10 @@ function RevealCell({ cell, flipping }) {
 function RevealControls({ playing, onPlayPause, onStep, onSkip, speedIdx, onSpeed }) {
   const { t } = useTranslation();
   return (
-    <div className="px-6 py-3 bg-slate-900/80 backdrop-blur-sm border-t border-white/10 flex items-center justify-center gap-3">
+    <div className="px-6 py-3 bg-zinc-900/80 border-t border-white/10 flex items-center justify-center gap-3">
       <button
         onClick={onPlayPause}
-        className="px-4 py-2 rounded-lg bg-violet-500 hover:bg-violet-400 transition-colors font-medium inline-flex items-center gap-2"
+        className="px-4 py-2 rounded-lg bg-accent-500 hover:bg-accent-400 transition-colors font-medium inline-flex items-center gap-2"
         title={playing ? t('presentation.reveal.pause') : t('presentation.reveal.play')}
       >
         {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -755,7 +755,7 @@ function RevealControls({ playing, onPlayPause, onStep, onSkip, speedIdx, onSpee
             key={s.label}
             onClick={() => onSpeed(i)}
             className={`px-2.5 py-1 rounded text-xs font-mono transition-colors ${
-              i === speedIdx ? 'bg-violet-500 text-white' : 'text-white/70 hover:bg-white/10'
+              i === speedIdx ? 'bg-accent-500 text-white' : 'text-white/70 hover:bg-white/10'
             }`}
           >
             {s.label}
@@ -772,12 +772,12 @@ function FirstSolveOverlay({ announcement, problems }) {
   const color = p?.color || '#f59e0b';
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none animate-fade-in">
-      <div className="bg-slate-900/90 backdrop-blur-md border border-amber-300/40 rounded-3xl px-12 py-8 shadow-2xl shadow-amber-500/30 max-w-2xl text-center">
+      <div className="bg-zinc-900/90 border border-amber-300/40 rounded-lg px-12 py-8 shadow-2xl shadow-amber-500/30 max-w-2xl text-center">
         <div className="text-amber-300 text-sm uppercase tracking-widest font-bold mb-2 flex items-center justify-center gap-2">
           🎈 {t('presentation.firstSolve.heading')}
         </div>
         <div
-          className="inline-block w-20 h-20 rounded-2xl text-4xl font-bold leading-[80px] mb-3"
+          className="inline-block w-20 h-20 rounded-lg text-4xl font-bold leading-[80px] mb-3"
           style={{ background: color, color: textOn(color) }}
         >
           {announcement.label}
@@ -823,7 +823,7 @@ function PodiumScene({ data, kind }) {
       <div className="max-w-5xl mx-auto space-y-12">
         <div className="text-center">
           <Trophy className="w-16 h-16 mx-auto text-amber-300" />
-          <h2 className="text-5xl font-bold mt-3 bg-gradient-to-br from-amber-200 to-amber-400 bg-clip-text text-transparent">
+          <h2 className="text-5xl font-bold mt-3 text-amber-300">
             {t('presentation.podium.heading')}
           </h2>
           <p className="text-white/60 mt-2">{data.contest_title}</p>
@@ -841,7 +841,7 @@ function PodiumGroup({ tier, group, order, revealedCount, kind }) {
   const { t } = useTranslation();
   const tierStyle = {
     gold: { bg: 'bg-gradient-to-br from-amber-400/20 to-amber-700/10 border-amber-400/40', icon: '🥇', label: t('presentation.podium.goldHeading') },
-    silver: { bg: 'bg-gradient-to-br from-slate-300/20 to-slate-500/10 border-slate-300/40', icon: '🥈', label: t('presentation.podium.silverHeading') },
+    silver: { bg: 'bg-gradient-to-br from-zinc-300/20 to-zinc-500/10 border-zinc-300/40', icon: '🥈', label: t('presentation.podium.silverHeading') },
     bronze: { bg: 'bg-gradient-to-br from-amber-700/20 to-amber-900/10 border-amber-700/40', icon: '🥉', label: t('presentation.podium.bronzeHeading') },
   }[tier];
 
@@ -853,7 +853,7 @@ function PodiumGroup({ tier, group, order, revealedCount, kind }) {
   const gridCols = isIcpc ? '60px 1fr 90px 110px' : '60px 1fr 160px';
 
   return (
-    <div className={`${tierStyle.bg} backdrop-blur-sm border rounded-3xl p-6`}>
+    <div className={`${tierStyle.bg} border rounded-lg p-6`}>
       <h3 className="text-2xl font-bold flex items-center gap-3 mb-4">
         <span className="text-3xl">{tierStyle.icon}</span>
         {tierStyle.label}
@@ -866,7 +866,7 @@ function PodiumGroup({ tier, group, order, revealedCount, kind }) {
           return (
             <div
               key={m.rank}
-              className={`grid items-center bg-white/5 rounded-xl px-5 py-3 border border-white/10 transition-all duration-700 ease-out ${
+              className={`grid items-center bg-white/5 rounded-lg px-5 py-3 border border-white/10 transition-all duration-700 ease-out ${
                 revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
               }`}
               style={{ gridTemplateColumns: gridCols }}
@@ -884,7 +884,7 @@ function PodiumGroup({ tier, group, order, revealedCount, kind }) {
               {isIcpc ? (
                 <>
                   <div className="text-right">
-                    <div className="text-2xl font-bold tabular-nums text-violet-200">{m.solved_count}</div>
+                    <div className="text-2xl font-bold tabular-nums text-accent-200">{m.solved_count}</div>
                     <div className="text-[10px] uppercase tracking-wider text-white/50">{t('presentation.podium.solved')}</div>
                   </div>
                   <div className="text-right">
@@ -894,7 +894,7 @@ function PodiumGroup({ tier, group, order, revealedCount, kind }) {
                 </>
               ) : (
                 <div className="text-right">
-                  <div className="text-2xl font-bold tabular-nums text-violet-200">{formatScore(m.total_score)}</div>
+                  <div className="text-2xl font-bold tabular-nums text-accent-200">{formatScore(m.total_score)}</div>
                   <div className="text-[10px] uppercase tracking-wider text-white/50">{t('presentation.podium.totalScore')}</div>
                 </div>
               )}
@@ -1004,8 +1004,8 @@ function ScoringPresentationFlow() {
 
   if (!data) {
     return (
-      <div className="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+      <div className="fixed inset-0 z-50 bg-zinc-950 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -1016,7 +1016,7 @@ function ScoringPresentationFlow() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-br from-slate-950 via-slate-900 to-violet-950 text-white overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-zinc-950 text-white overflow-hidden">
       <button
         onClick={() => navigate(`/scoreboard/${id}`)}
         className="absolute top-4 right-4 z-20 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
@@ -1063,7 +1063,7 @@ function ScoringStatsScene({ data, onContinue }) {
     <div className="absolute inset-0 px-8 py-16 overflow-y-auto animate-fade-in">
       <div className="max-w-6xl mx-auto space-y-10">
         <div className="text-center">
-          <BarChart3 className="w-12 h-12 mx-auto text-violet-300" />
+          <BarChart3 className="w-12 h-12 mx-auto text-accent-300" />
           <h2 className="text-4xl font-bold mt-2">{t('presentation.stats.heading')}</h2>
           <p className="text-white/60 mt-1">{data.contest_title}</p>
         </div>
@@ -1075,7 +1075,7 @@ function ScoringStatsScene({ data, onContinue }) {
           <BigStat icon={<Flame />} label={t('presentation.stats.totalSubmissions')} value={stats.totalSubs} accent="rose" />
         </div>
 
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+        <div className="bg-white/5 border border-white/10 rounded-lg p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <Award className="w-5 h-5 text-amber-300" />
             {t('presentation.stats.bestPerInstance')}
@@ -1085,8 +1085,8 @@ function ScoringStatsScene({ data, onContinue }) {
           )}
           <div className="grid sm:grid-cols-2 lg:grid-cols-2 gap-3">
             {stats.perInstance.map((inst) => (
-              <div key={inst.id} className="flex items-center gap-3 bg-white/5 rounded-xl p-3 border border-white/10">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-violet-500/30 text-violet-100 font-bold text-base flex-shrink-0">
+              <div key={inst.id} className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-accent-500/30 text-accent-100 font-bold text-base flex-shrink-0">
                   {inst.name.slice(0, 3).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -1111,7 +1111,7 @@ function ScoringStatsScene({ data, onContinue }) {
         <div className="flex justify-center">
           <button
             onClick={onContinue}
-            className="px-8 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-400 hover:to-indigo-500 text-base font-semibold inline-flex items-center gap-2 shadow-xl shadow-violet-500/30"
+            className="px-8 py-3 rounded-lg bg-accent-600 hover:bg-accent-500 text-base font-semibold inline-flex items-center gap-2"
           >
             {t('presentation.stats.continue')}
             <ChevronRight className="w-5 h-5" />
@@ -1262,7 +1262,7 @@ function ScoringRevealBoard({ teams, instances, flipKey }) {
     <div className="flex-1 px-6 overflow-y-auto">
       <div className="max-w-6xl mx-auto">
         <div
-          className="sticky top-0 z-10 grid items-center bg-slate-900/80 backdrop-blur-sm border-b border-white/10 py-2 text-xs uppercase tracking-wider text-white/60"
+          className="sticky top-0 z-10 grid items-center bg-zinc-900/80 border-b border-white/10 py-2 text-xs uppercase tracking-wider text-white/60"
           style={{ gridTemplateColumns: `48px minmax(180px, 1fr) 110px repeat(${instances.length}, minmax(72px, 1fr))` }}
         >
           <div className="text-center">#</div>
@@ -1284,7 +1284,7 @@ function ScoringRevealBoard({ teams, instances, flipKey }) {
                 key={key}
                 className={`absolute left-0 right-0 grid items-center rounded-lg my-0.5 transition-[transform,background-color] duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
                   medal === 'gold' ? 'bg-amber-400/15 ring-1 ring-amber-300/40'
-                  : medal === 'silver' ? 'bg-slate-300/10 ring-1 ring-slate-300/30'
+                  : medal === 'silver' ? 'bg-zinc-300/10 ring-1 ring-zinc-300/30'
                   : medal === 'bronze' ? 'bg-amber-700/10 ring-1 ring-amber-600/30'
                   : 'bg-white/5'
                 }`}
@@ -1303,7 +1303,7 @@ function ScoringRevealBoard({ teams, instances, flipKey }) {
                     <div className="text-xs text-white/50 truncate">{tm.members.join(' · ')}</div>
                   )}
                 </div>
-                <div className="text-right pr-2 font-mono text-lg font-bold tabular-nums text-violet-200">
+                <div className="text-right pr-2 font-mono text-lg font-bold tabular-nums text-accent-200">
                   {formatScore(tm.total_score)}
                 </div>
                 {instances.map((inst) => {
@@ -1355,11 +1355,11 @@ function BestScoreOverlay({ announcement }) {
   const { t } = useTranslation();
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none animate-fade-in">
-      <div className="bg-slate-900/90 backdrop-blur-md border border-amber-300/40 rounded-3xl px-12 py-8 shadow-2xl shadow-amber-500/30 max-w-2xl text-center">
+      <div className="bg-zinc-900/90 border border-amber-300/40 rounded-lg px-12 py-8 shadow-2xl shadow-amber-500/30 max-w-2xl text-center">
         <div className="text-amber-300 text-sm uppercase tracking-widest font-bold mb-2 flex items-center justify-center gap-2">
           🏆 {t('presentation.bestScore.heading')}
         </div>
-        <div className="inline-block px-6 py-2 rounded-2xl bg-violet-500/30 text-violet-100 text-2xl font-bold mb-3">
+        <div className="inline-block px-6 py-2 rounded-lg bg-accent-500/30 text-accent-100 text-2xl font-bold mb-3">
           {announcement.instanceName}
         </div>
         <div className="text-3xl font-bold mt-2">{announcement.team_name}</div>

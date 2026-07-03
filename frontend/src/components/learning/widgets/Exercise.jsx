@@ -88,8 +88,8 @@ export default function Exercise({ id }) {
   }
   if (!exercise) {
     return (
-      <div className="my-6 not-prose p-6 rounded-2xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-900/50">
-        <Loader2 className="w-5 h-5 animate-spin text-violet-500" />
+      <div className="my-6 not-prose p-6 rounded-lg border border-zinc-200 bg-white dark:border-zinc-700/50 dark:bg-zinc-900/50">
+        <Loader2 className="w-5 h-5 animate-spin text-accent-500" />
       </div>
     );
   }
@@ -98,37 +98,37 @@ export default function Exercise({ id }) {
   const prompt = exercise[`prompt_${lng}`] || exercise.prompt_fr || '';
 
   return (
-    <div className="my-6 not-prose rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden dark:border-slate-700/50 dark:bg-slate-900/50">
-      <div className="px-5 py-3 border-b border-gray-200 dark:border-slate-700/50 flex items-center gap-2">
-        <Code2 className="w-4 h-4 text-violet-500" />
-        <span className="font-semibold text-slate-900 dark:text-white">{title}</span>
-        <span className="text-xs text-slate-400 dark:text-gray-500 ml-auto">
+    <div className="my-6 not-prose rounded-lg border border-zinc-200 bg-white shadow-sm overflow-hidden dark:border-zinc-700/50 dark:bg-zinc-900/50">
+      <div className="px-5 py-3 border-b border-zinc-200 dark:border-zinc-700/50 flex items-center gap-2">
+        <Code2 className="w-4 h-4 text-accent-500" />
+        <span className="font-semibold text-zinc-900 dark:text-white">{title}</span>
+        <span className="text-xs text-zinc-400 dark:text-zinc-500 ml-auto">
           {exercise.language} · {exercise.time_limit_ms} ms
         </span>
       </div>
 
       {prompt && (
-        <div className="px-5 py-3 border-b border-gray-200 text-sm dark:border-slate-700/50">
+        <div className="px-5 py-3 border-b border-zinc-200 text-sm dark:border-zinc-700/50">
           <LessonMarkdown>{prompt}</LessonMarkdown>
         </div>
       )}
 
       {exercise.sample_test_cases?.length > 0 && (
-        <div className="px-5 py-3 border-b border-gray-200 dark:border-slate-700/50">
-          <div className="text-xs uppercase tracking-wide font-semibold text-slate-500 dark:text-gray-400 mb-2">
+        <div className="px-5 py-3 border-b border-zinc-200 dark:border-zinc-700/50">
+          <div className="text-xs uppercase tracking-wide font-semibold text-zinc-500 dark:text-zinc-400 mb-2">
             {t('learn.widget.exercise.samples')}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {exercise.sample_test_cases.map((tc, i) => (
               <div key={i} className="text-xs">
-                <div className="font-mono text-slate-500 dark:text-gray-500 mb-1">
+                <div className="font-mono text-zinc-500 dark:text-zinc-500 mb-1">
                   {t('learn.widget.exercise.input')} #{i + 1}
                 </div>
-                <pre className="bg-slate-50 dark:bg-slate-900 rounded p-2 overflow-x-auto text-slate-700 dark:text-gray-300">{tc.input || '(empty)'}</pre>
-                <div className="font-mono text-slate-500 dark:text-gray-500 mt-2 mb-1">
+                <pre className="bg-zinc-50 dark:bg-zinc-900 rounded p-2 overflow-x-auto text-zinc-700 dark:text-zinc-300">{tc.input || '(empty)'}</pre>
+                <div className="font-mono text-zinc-500 dark:text-zinc-500 mt-2 mb-1">
                   {t('learn.widget.exercise.expected')}
                 </div>
-                <pre className="bg-slate-50 dark:bg-slate-900 rounded p-2 overflow-x-auto text-slate-700 dark:text-gray-300">{tc.expected || '(empty)'}</pre>
+                <pre className="bg-zinc-50 dark:bg-zinc-900 rounded p-2 overflow-x-auto text-zinc-700 dark:text-zinc-300">{tc.expected || '(empty)'}</pre>
               </div>
             ))}
           </div>
@@ -150,7 +150,7 @@ export default function Exercise({ id }) {
         }}
       />
 
-      <div className="px-5 py-3 border-t border-gray-200 dark:border-slate-700/50 flex items-center gap-3">
+      <div className="px-5 py-3 border-t border-zinc-200 dark:border-zinc-700/50 flex items-center gap-3">
         <button
           onClick={handleRun}
           disabled={running}
@@ -162,7 +162,7 @@ export default function Exercise({ id }) {
           {running ? t('learn.widget.exercise.running') : t('learn.widget.exercise.run')}
         </button>
         {exercise.hidden_count > 0 && (
-          <span className="text-xs text-slate-400 dark:text-gray-500">
+          <span className="text-xs text-zinc-400 dark:text-zinc-500">
             {t('learn.widget.exercise.hiddenCount', { count: exercise.hidden_count })}
           </span>
         )}
@@ -180,16 +180,16 @@ export default function Exercise({ id }) {
       </div>
 
       {result && (
-        <div className="px-5 py-3 border-t border-gray-200 dark:border-slate-700/50 space-y-2">
+        <div className="px-5 py-3 border-t border-zinc-200 dark:border-zinc-700/50 space-y-2">
           {result._error && (
             <div className="text-sm text-red-700 dark:text-red-400">{result._error}</div>
           )}
           {result.compile_output && (
             <details className="text-xs">
-              <summary className="cursor-pointer text-slate-500 dark:text-gray-400">
+              <summary className="cursor-pointer text-zinc-500 dark:text-zinc-400">
                 {t('learn.widget.exercise.compileOutput')}
               </summary>
-              <pre className="mt-1 bg-slate-50 dark:bg-slate-900 rounded p-2 overflow-x-auto text-slate-700 dark:text-gray-300">{result.compile_output}</pre>
+              <pre className="mt-1 bg-zinc-50 dark:bg-zinc-900 rounded p-2 overflow-x-auto text-zinc-700 dark:text-zinc-300">{result.compile_output}</pre>
             </details>
           )}
           {result.results.map((r, i) => (
@@ -202,7 +202,7 @@ export default function Exercise({ id }) {
                 ? <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 : <XCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />}
               <div className="flex-1 min-w-0 space-y-1">
-                <div className="font-medium text-slate-700 dark:text-gray-200">
+                <div className="font-medium text-zinc-700 dark:text-zinc-200">
                   {r.is_sample
                     ? t('learn.widget.exercise.sampleN', { n: i + 1 })
                     : t('learn.widget.exercise.hiddenN', { n: i + 1 })}
@@ -211,21 +211,21 @@ export default function Exercise({ id }) {
                 {r.is_sample && !r.passed && r.actual !== undefined && (
                   <div className="text-xs grid grid-cols-2 gap-2">
                     <div>
-                      <div className="text-slate-500 dark:text-gray-500 mb-0.5">
+                      <div className="text-zinc-500 dark:text-zinc-500 mb-0.5">
                         {t('learn.widget.exercise.expected')}
                       </div>
-                      <pre className="bg-white dark:bg-slate-800 rounded p-1 overflow-x-auto whitespace-pre-wrap break-all">{r.expected}</pre>
+                      <pre className="bg-white dark:bg-zinc-800 rounded p-1 overflow-x-auto whitespace-pre-wrap break-all">{r.expected}</pre>
                     </div>
                     <div>
-                      <div className="text-slate-500 dark:text-gray-500 mb-0.5">
+                      <div className="text-zinc-500 dark:text-zinc-500 mb-0.5">
                         {t('learn.widget.exercise.actual')}
                       </div>
-                      <pre className="bg-white dark:bg-slate-800 rounded p-1 overflow-x-auto whitespace-pre-wrap break-all">{r.actual}</pre>
+                      <pre className="bg-white dark:bg-zinc-800 rounded p-1 overflow-x-auto whitespace-pre-wrap break-all">{r.actual}</pre>
                     </div>
                   </div>
                 )}
                 {r.error && (
-                  <pre className="text-xs text-red-700 dark:text-red-400 bg-white dark:bg-slate-800 rounded p-1 overflow-x-auto whitespace-pre-wrap break-all">{r.error}</pre>
+                  <pre className="text-xs text-red-700 dark:text-red-400 bg-white dark:bg-zinc-800 rounded p-1 overflow-x-auto whitespace-pre-wrap break-all">{r.error}</pre>
                 )}
               </div>
             </div>

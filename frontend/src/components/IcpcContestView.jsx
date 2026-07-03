@@ -27,12 +27,12 @@ const VERDICT_STYLE = {
   TLE: 'bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-400',
   MLE: 'bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-400',
   RE: 'bg-red-500/15 text-red-700 border-red-500/30 dark:text-red-400',
-  CE: 'bg-slate-500/15 text-slate-700 border-slate-500/30 dark:text-gray-300',
-  pending: 'bg-gray-200 text-gray-700 border-gray-300 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600',
+  CE: 'bg-zinc-500/15 text-zinc-700 border-zinc-500/30 dark:text-zinc-300',
+  pending: 'bg-zinc-200 text-zinc-700 border-zinc-300 dark:bg-zinc-700 dark:text-zinc-300 dark:border-zinc-600',
   // "Not evaluated" — testcase the judge never reached because it short-
   // circuited at an earlier failure (or because the submission stopped at
   // compile-time). Faded so it visually recedes behind the real verdicts.
-  unknown: 'bg-gray-100 text-gray-400 border-gray-200 dark:bg-slate-800/40 dark:text-gray-500 dark:border-slate-700/40',
+  unknown: 'bg-zinc-100 text-zinc-400 border-zinc-200 dark:bg-zinc-800/40 dark:text-zinc-500 dark:border-zinc-700/40',
 };
 
 
@@ -218,15 +218,15 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
   return (
     <div className="space-y-6">
       {problems.length === 0 ? (
-        <div className="glass-card p-8 text-center">
+        <div className="card p-8 text-center">
           <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3 dark:text-amber-400" />
-          <p className="text-slate-700 dark:text-gray-300">{t('icpc.noProblems')}</p>
+          <p className="text-zinc-700 dark:text-zinc-300">{t('icpc.noProblems')}</p>
         </div>
       ) : (
         <div className="grid lg:grid-cols-[240px_1fr] gap-4">
           {/* Problem list */}
-          <aside className="glass-card p-3 space-y-1">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 px-2 dark:text-gray-400">
+          <aside className="card p-3 space-y-1">
+            <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 px-2 dark:text-zinc-400">
               {t('icpc.problemsHeading')}
             </h3>
             {problems.map((p) => (
@@ -241,8 +241,8 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                 }}
                 className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                   activeProblemId === p.id
-                    ? 'bg-violet-600/15 text-violet-700 dark:bg-violet-600/20 dark:text-violet-300'
-                    : 'text-slate-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-800/50'
+                    ? 'bg-accent-600/15 text-accent-700 dark:bg-accent-600/20 dark:text-accent-300'
+                    : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800/50'
                 }`}
               >
                 <span
@@ -264,13 +264,13 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
           <div className="space-y-4 min-w-0">
             {activeProblem && (
               <>
-                <div className="glass-card p-6">
+                <div className="card p-6">
                   <div className="flex items-start justify-between flex-wrap gap-2 mb-3">
                     <div>
-                      <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                      <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
                         {activeProblem.label}. {activeProblem.name}
                       </h2>
-                      <p className="text-xs text-slate-500 mt-1 dark:text-gray-500">
+                      <p className="text-xs text-zinc-500 mt-1 dark:text-zinc-500">
                         {t('icpc.limits', {
                           time: (activeProblem.time_limit_ms / 1000).toFixed(1),
                           mem: activeProblem.memory_limit_mb,
@@ -303,7 +303,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
 
                   {activeProblem.sample_testcases.length > 0 && (
                     <div className="mt-4 space-y-3">
-                      <h3 className="text-sm font-semibold text-slate-700 dark:text-gray-300">
+                      <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                         {t('icpc.samples')}
                       </h3>
                       {activeProblem.sample_testcases.map((tc, i) => (
@@ -333,21 +333,21 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                         e.currentTarget.requestSubmit();
                       }
                     }}
-                    className="glass-card p-6 space-y-3"
+                    className="card p-6 space-y-3"
                   >
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2 dark:text-white">
-                        <Code2 className="w-4 h-4 text-violet-500 dark:text-violet-400" />
+                      <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2 dark:text-white">
+                        <Code2 className="w-4 h-4 text-accent-500 dark:text-accent-400" />
                         {t('icpc.submitHeading')}
                       </h3>
-                      <div className="inline-flex rounded-lg border border-gray-200 p-0.5 dark:border-slate-700">
+                      <div className="inline-flex rounded-lg border border-zinc-200 p-0.5 dark:border-zinc-700">
                         <button
                           type="button"
                           onClick={() => setSubmitMode('code')}
                           className={`text-xs font-medium px-3 py-1 rounded-md flex items-center gap-1 transition-colors ${
                             submitMode === 'code'
-                              ? 'bg-violet-600 text-white'
-                              : 'text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200'
+                              ? 'bg-accent-600 text-white'
+                              : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
                           }`}
                         >
                           <Code2 className="w-3.5 h-3.5" />
@@ -358,8 +358,8 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                           onClick={() => setSubmitMode('file')}
                           className={`text-xs font-medium px-3 py-1 rounded-md flex items-center gap-1 transition-colors ${
                             submitMode === 'file'
-                              ? 'bg-violet-600 text-white'
-                              : 'text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200'
+                              ? 'bg-accent-600 text-white'
+                              : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
                           }`}
                         >
                           <FileTextIcon className="w-3.5 h-3.5" />
@@ -368,7 +368,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                       </div>
                     </div>
                     <div className="flex items-center gap-3 flex-wrap">
-                      <label className="text-xs text-slate-600 dark:text-gray-400">
+                      <label className="text-xs text-zinc-600 dark:text-zinc-400">
                         {t('icpc.language')}
                       </label>
                       <select
@@ -381,13 +381,13 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                         ))}
                       </select>
                       {submitMode === 'file' && sourceFile && (
-                        <span className="text-[11px] text-slate-400 dark:text-gray-500">
+                        <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
                           {t('icpc.autoDetectedLang')}
                         </span>
                       )}
                     </div>
                     {submitMode === 'code' ? (
-                      <div className="rounded-xl border border-gray-300 overflow-hidden dark:border-slate-700">
+                      <div className="rounded-lg border border-zinc-300 overflow-hidden dark:border-zinc-700">
                         <CodeMirror
                           value={sourceText}
                           onChange={(v) => setSourceText(v)}
@@ -398,22 +398,22 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                         />
                       </div>
                     ) : (
-                      <div className="rounded-xl border-2 border-dashed border-gray-300 p-4 dark:border-slate-700">
+                      <div className="rounded-lg border-2 border-dashed border-zinc-300 p-4 dark:border-zinc-700">
                         <input
                           type="file"
                           accept={languages.map((l) => (l.extensions || '').split(',').map((x) => '.' + x.trim()).join(',')).join(',')}
                           onChange={(e) => pickFile(e.target.files?.[0] || null)}
-                          className="input-field text-sm py-2 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-violet-600 file:text-white"
+                          className="input-field text-sm py-2 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-accent-600 file:text-white"
                         />
                         {sourceFile && (
-                          <p className="text-xs text-slate-600 mt-2 dark:text-gray-300">
+                          <p className="text-xs text-zinc-600 mt-2 dark:text-zinc-300">
                             {t('icpc.selectedFile', {
                               name: sourceFile.name,
                               size: Math.round(sourceFile.size / 1024),
                             })}
                           </p>
                         )}
-                        <p className="text-[11px] text-slate-400 mt-2 dark:text-gray-500">
+                        <p className="text-[11px] text-zinc-400 mt-2 dark:text-zinc-500">
                           {t('icpc.fileModeHint')}
                         </p>
                       </div>
@@ -423,7 +423,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                         <Upload className="w-4 h-4 mr-2 inline" />
                         {submitting ? t('icpc.submitting') : t('icpc.submit')}
                       </button>
-                      <span className="text-[11px] text-slate-400 dark:text-gray-500">
+                      <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
                         {t('contest.submitShortcutHint')}
                       </span>
                     </div>
@@ -431,7 +431,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                 )}
 
                 {currentJudging && (
-                  <div className="glass-card p-4">
+                  <div className="card p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded border text-xs font-bold font-mono ${VERDICT_STYLE[currentJudging.verdict] || VERDICT_STYLE.pending}`}>
                         {currentJudging.verdict === 'pending' ? (
@@ -452,17 +452,17 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                         )}
                       </span>
                       {currentJudging.max_runtime_ms ? (
-                        <span className="text-xs text-slate-500 dark:text-gray-400">
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400">
                           {t('icpc.maxRuntime', { ms: currentJudging.max_runtime_ms })}
                         </span>
                       ) : null}
                     </div>
                     {currentJudging.compile_output && (
                       <details className="text-xs">
-                        <summary className="cursor-pointer text-slate-500 dark:text-gray-400">
+                        <summary className="cursor-pointer text-zinc-500 dark:text-zinc-400">
                           {t('icpc.compileOutput')}
                         </summary>
-                        <pre className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded whitespace-pre-wrap dark:bg-slate-800/40 dark:border-slate-700/40">
+                        <pre className="mt-2 p-2 bg-zinc-50 border border-zinc-200 rounded whitespace-pre-wrap dark:bg-zinc-800/40 dark:border-zinc-700/40">
                           {currentJudging.compile_output}
                         </pre>
                       </details>
@@ -509,8 +509,8 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                                   onClick={() => setExpandedTestcaseId(isOpen ? null : tc.id)}
                                   className={`px-1.5 py-0.5 rounded text-[10px] font-mono border transition-colors ${
                                     VERDICT_STYLE[verdict] || VERDICT_STYLE.pending
-                                  } ${hasDetail ? 'hover:ring-2 hover:ring-violet-400/50 cursor-pointer' : 'cursor-default'} ${
-                                    isOpen ? 'ring-2 ring-violet-500' : ''
+                                  } ${hasDetail ? 'hover:ring-2 hover:ring-accent-400/50 cursor-pointer' : 'cursor-default'} ${
+                                    isOpen ? 'ring-2 ring-accent-500' : ''
                                   }`}
                                   title={
                                     !run
@@ -539,7 +539,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                               const showCompare = sample && r.verdict !== 'AC';
                               return (
                                 <div className="mt-3 space-y-2 text-xs">
-                                  <p className="font-semibold text-slate-700 dark:text-gray-300">
+                                  <p className="font-semibold text-zinc-700 dark:text-zinc-300">
                                     {t('icpc.runDetailHeader', {
                                       kind: r.is_sample ? t('icpc.sampleKind') : t('icpc.secretKind'),
                                       n: cellIdx + 1,
@@ -558,10 +558,10 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                                       </pre>
                                     </div>
                                     <div>
-                                      <p className="text-[10px] uppercase text-slate-500 dark:text-gray-400 mb-1">
+                                      <p className="text-[10px] uppercase text-zinc-500 dark:text-zinc-400 mb-1">
                                         {t('icpc.yourOutput')}
                                       </p>
-                                      <pre className="p-2 bg-gray-50 border border-gray-200 rounded font-mono whitespace-pre-wrap break-all max-h-60 overflow-y-auto dark:bg-slate-800/40 dark:border-slate-700/40">
+                                      <pre className="p-2 bg-zinc-50 border border-zinc-200 rounded font-mono whitespace-pre-wrap break-all max-h-60 overflow-y-auto dark:bg-zinc-800/40 dark:border-zinc-700/40">
                                         {r.stdout_truncated || '(empty)'}
                                       </pre>
                                     </div>
@@ -569,10 +569,10 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                                 ) : (
                                   r.stdout_truncated && (
                                     <div>
-                                      <p className="text-[10px] uppercase text-slate-500 dark:text-gray-400 mb-1">
+                                      <p className="text-[10px] uppercase text-zinc-500 dark:text-zinc-400 mb-1">
                                         {t('icpc.stdout')}
                                       </p>
-                                      <pre className="p-2 bg-gray-50 border border-gray-200 rounded font-mono whitespace-pre-wrap break-all max-h-60 overflow-y-auto dark:bg-slate-800/40 dark:border-slate-700/40">
+                                      <pre className="p-2 bg-zinc-50 border border-zinc-200 rounded font-mono whitespace-pre-wrap break-all max-h-60 overflow-y-auto dark:bg-zinc-800/40 dark:border-zinc-700/40">
                                         {r.stdout_truncated}
                                       </pre>
                                     </div>
@@ -589,7 +589,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                                   </div>
                                 )}
                                 {!r.stdout_truncated && !r.stderr_truncated && !showCompare && (
-                                  <p className="text-slate-400 italic dark:text-gray-600">
+                                  <p className="text-zinc-400 italic dark:text-zinc-600">
                                     {t('icpc.noProgramOutput')}
                                   </p>
                                 )}
@@ -606,8 +606,8 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
             )}
 
             {/* Clarifications */}
-            <div className="glass-card p-4">
-              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2 dark:text-white">
+            <div className="card p-4">
+              <h3 className="text-sm font-semibold text-zinc-900 mb-3 flex items-center gap-2 dark:text-white">
                 <MessageCircle className="w-4 h-4 text-sky-500 dark:text-sky-400" />
                 {t('icpc.clarifications')}
               </h3>
@@ -625,12 +625,12 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                 </form>
               )}
               {clars.length === 0 ? (
-                <p className="text-xs text-slate-400 italic dark:text-gray-600">{t('icpc.noClarifications')}</p>
+                <p className="text-xs text-zinc-400 italic dark:text-zinc-600">{t('icpc.noClarifications')}</p>
               ) : (
                 <ul className="space-y-2 max-h-80 overflow-y-auto">
                   {clars.map((c) => (
-                    <li key={c.id} className="text-xs rounded border border-gray-200 p-2 dark:border-slate-700/40">
-                      <p className="text-slate-700 whitespace-pre-wrap dark:text-gray-300">
+                    <li key={c.id} className="text-xs rounded border border-zinc-200 p-2 dark:border-zinc-700/40">
+                      <p className="text-zinc-700 whitespace-pre-wrap dark:text-zinc-300">
                         {c.problem_label ? <span className="font-mono mr-2">[{c.problem_label}]</span> : null}
                         {c.body}
                       </p>
@@ -644,7 +644,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                           t={t}
                         />
                       ) : (
-                        <p className="text-[10px] text-slate-400 mt-1 dark:text-gray-500">
+                        <p className="text-[10px] text-zinc-400 mt-1 dark:text-zinc-500">
                           {t('icpc.clarPending')}
                         </p>
                       )}
@@ -689,18 +689,18 @@ function CopyablePre({ label, content, t }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <p className="text-[10px] uppercase text-slate-400 dark:text-gray-500">{label}</p>
+        <p className="text-[10px] uppercase text-zinc-400 dark:text-zinc-500">{label}</p>
         <button
           type="button"
           onClick={copy}
-          className="p-1 rounded hover:bg-gray-200 text-slate-400 hover:text-slate-700 transition-colors dark:hover:bg-slate-700/50 dark:text-gray-500 dark:hover:text-gray-200"
+          className="p-1 rounded hover:bg-zinc-200 text-zinc-400 hover:text-zinc-700 transition-colors dark:hover:bg-zinc-700/50 dark:text-zinc-500 dark:hover:text-zinc-200"
           title={t('common.copy')}
           aria-label={t('common.copy')}
         >
           {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
       </div>
-      <pre className="bg-gray-50 border border-gray-200 p-2 rounded whitespace-pre-wrap dark:bg-slate-800/40 dark:border-slate-700/40">
+      <pre className="bg-zinc-50 border border-zinc-200 p-2 rounded whitespace-pre-wrap dark:bg-zinc-800/40 dark:border-zinc-700/40">
         {content}
       </pre>
     </div>
@@ -750,7 +750,7 @@ function AnsweredBlock({ c, isAdmin, onSave, onToggle, t }) {
               <button
                 type="button"
                 onClick={() => setEditing(true)}
-                className="text-violet-600 hover:underline dark:text-violet-400"
+                className="text-accent-600 hover:underline dark:text-accent-400"
               >
                 {t('icpc.clarEdit')}
               </button>
@@ -766,7 +766,7 @@ function AnsweredBlock({ c, isAdmin, onSave, onToggle, t }) {
             onChange={(e) => setText(e.target.value)}
           />
           <div className="flex items-center justify-end gap-2">
-            <label className="inline-flex items-center gap-1 text-[10px] text-slate-500 dark:text-gray-400 mr-auto">
+            <label className="inline-flex items-center gap-1 text-[10px] text-zinc-500 dark:text-zinc-400 mr-auto">
               <input
                 type="checkbox"
                 checked={vis === 'public'}
@@ -792,7 +792,7 @@ function AnsweredBlock({ c, isAdmin, onSave, onToggle, t }) {
           </div>
         </div>
       ) : (
-        <p className="text-slate-700 whitespace-pre-wrap dark:text-gray-300">{c.answer}</p>
+        <p className="text-zinc-700 whitespace-pre-wrap dark:text-zinc-300">{c.answer}</p>
       )}
     </div>
   );
@@ -817,7 +817,7 @@ function AdminAnswerForm({ clarId, onSubmit, t }) {
   };
 
   return (
-    <form onSubmit={send} className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/40 space-y-1">
+    <form onSubmit={send} className="mt-2 pt-2 border-t border-zinc-200/60 dark:border-zinc-700/40 space-y-1">
       <textarea
         className="input-field text-xs py-1 px-2 min-h-[40px]"
         placeholder={t('icpc.clarAnswerPlaceholder')}
@@ -825,7 +825,7 @@ function AdminAnswerForm({ clarId, onSubmit, t }) {
         onChange={(e) => setAnswer(e.target.value)}
       />
       <div className="flex items-center justify-between gap-2">
-        <label className="inline-flex items-center gap-1 text-[10px] text-slate-500 dark:text-gray-400">
+        <label className="inline-flex items-center gap-1 text-[10px] text-zinc-500 dark:text-zinc-400">
           <input
             type="checkbox"
             checked={visibility === 'public'}

@@ -65,13 +65,13 @@ export default function AnnouncementsPanel({ contestId, isAdmin }) {
   if (announcements.length === 0 && !isAdmin) return null;
 
   return (
-    <div className="glass-card p-5 border border-sky-500/30 bg-sky-500/5">
-      <h2 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2 dark:text-white">
+    <div className="card p-5 border border-sky-500/30 bg-sky-500/5">
+      <h2 className="text-lg font-bold text-zinc-900 mb-3 flex items-center gap-2 dark:text-white">
         <Megaphone className="w-5 h-5 text-sky-600 dark:text-sky-400" />
         {t('contest.announcements')}
       </h2>
       {isAdmin && (
-        <form onSubmit={handleCreateAnnouncement} className="space-y-2 mb-4 p-3 rounded-xl bg-white/70 border border-sky-500/20 dark:bg-slate-900/50">
+        <form onSubmit={handleCreateAnnouncement} className="space-y-2 mb-4 p-3 rounded-lg bg-white/70 border border-sky-500/20 dark:bg-zinc-900/50">
           <input
             type="text"
             className="input-field text-sm py-2"
@@ -99,17 +99,17 @@ export default function AnnouncementsPanel({ contestId, isAdmin }) {
         </form>
       )}
       {announcements.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-gray-400">{t('contest.noAnnouncements')}</p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">{t('contest.noAnnouncements')}</p>
       ) : (
         <div className="space-y-3">
           {announcements.map((a) => (
-            <div key={a.id} className="rounded-xl p-3 bg-white/70 border border-sky-500/20 flex items-start justify-between gap-3 dark:bg-slate-900/50">
+            <div key={a.id} className="rounded-lg p-3 bg-white/70 border border-sky-500/20 flex items-start justify-between gap-3 dark:bg-zinc-900/50">
               <div className="min-w-0 flex-1">
                 {a.title && (
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{a.title}</p>
+                  <p className="text-sm font-semibold text-zinc-900 dark:text-white">{a.title}</p>
                 )}
-                <p className="text-sm text-slate-700 whitespace-pre-wrap mt-1 dark:text-gray-200">{a.body}</p>
-                <p className="text-[11px] text-slate-500 mt-2 dark:text-gray-500">
+                <p className="text-sm text-zinc-700 whitespace-pre-wrap mt-1 dark:text-zinc-200">{a.body}</p>
+                <p className="text-[11px] text-zinc-500 mt-2 dark:text-zinc-500">
                   {a.author_username ? `${a.author_username} · ` : ''}
                   {formatDateTime(a.created_at)}
                 </p>{/* */}
@@ -117,7 +117,7 @@ export default function AnnouncementsPanel({ contestId, isAdmin }) {
               {isAdmin && (
                 <button
                   onClick={() => handleDeleteAnnouncement(a.id)}
-                  className="p-1.5 rounded hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0 dark:text-gray-500 dark:hover:text-red-400"
+                  className="p-1.5 rounded hover:bg-red-500/10 text-zinc-400 hover:text-red-500 transition-colors flex-shrink-0 dark:text-zinc-500 dark:hover:text-red-400"
                   title={t('common.delete')}
                 >
                   <XCircle className="w-4 h-4" />

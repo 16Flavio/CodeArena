@@ -250,7 +250,7 @@ export default function Teams() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -267,8 +267,8 @@ export default function Teams() {
     <div className="animate-fade-in space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('teams.title')}</h1>
-          <p className="text-slate-500 mt-1 dark:text-gray-400">{t('teams.subtitle')}</p>
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">{t('teams.title')}</h1>
+          <p className="text-zinc-500 mt-1 dark:text-zinc-400">{t('teams.subtitle')}</p>
         </div>
         <div className="flex gap-3">
           <button
@@ -293,10 +293,10 @@ export default function Teams() {
       </div>
 
       {alreadyInTeam && (
-        <div className="glass-card p-4 border border-amber-500/30 flex items-start gap-3">
+        <div className="card p-4 border border-amber-500/30 flex items-start gap-3">
           <MailQuestion className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5 dark:text-amber-400" />
           <div>
-            <p className="text-sm text-slate-700 dark:text-gray-200">
+            <p className="text-sm text-zinc-700 dark:text-zinc-200">
               {t('teams.alreadyInTeamBanner')}
             </p>
           </div>
@@ -304,11 +304,11 @@ export default function Teams() {
       )}
 
       {incoming.length > 0 && (
-        <div className="glass-card p-5 border-violet-500/30 border">
-          <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2 dark:text-white">
-            <MailQuestion className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+        <div className="card p-5 border-accent-500/30 border">
+          <h2 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2 dark:text-white">
+            <MailQuestion className="w-5 h-5 text-accent-500 dark:text-accent-400" />
             {t('teams.incomingRequests')}
-            <span className="badge bg-violet-500/15 text-violet-700 border border-violet-500/30 dark:bg-violet-500/20 dark:text-violet-300">
+            <span className="badge bg-accent-500/15 text-accent-700 border border-accent-500/30 dark:bg-accent-500/20 dark:text-accent-300">
               {incoming.length}
             </span>
           </h2>
@@ -316,20 +316,20 @@ export default function Teams() {
             {incoming.map((req) => (
               <div
                 key={req.id}
-                className="flex items-start justify-between gap-3 p-3 rounded-lg bg-gray-50 border border-gray-200 flex-wrap dark:bg-slate-800/40 dark:border-slate-700/40"
+                className="flex items-start justify-between gap-3 p-3 rounded-lg bg-zinc-50 border border-zinc-200 flex-wrap dark:bg-zinc-800/40 dark:border-zinc-700/40"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-slate-700 dark:text-gray-200">
-                    <span className="font-semibold text-slate-900 dark:text-white">{req.username}</span>
+                  <p className="text-sm text-zinc-700 dark:text-zinc-200">
+                    <span className="font-semibold text-zinc-900 dark:text-white">{req.username}</span>
                     {' '}{t('teams.wantsToJoin')}{' '}
-                    <span className="font-semibold text-violet-700 dark:text-violet-300">{req.team_name}</span>
+                    <span className="font-semibold text-accent-700 dark:text-accent-300">{req.team_name}</span>
                   </p>
                   {req.message ? (
-                    <p className="text-xs text-slate-500 mt-1.5 italic break-words dark:text-gray-400">
+                    <p className="text-xs text-zinc-500 mt-1.5 italic break-words dark:text-zinc-400">
                       &ldquo;{req.message}&rdquo;
                     </p>
                   ) : null}
-                  <p className="text-[11px] text-slate-400 mt-1 dark:text-gray-600">
+                  <p className="text-[11px] text-zinc-400 mt-1 dark:text-zinc-600">
                     {new Date(req.created_at).toLocaleString('fr-FR')}
                   </p>
                 </div>
@@ -358,13 +358,13 @@ export default function Teams() {
       )}
 
       {showCreate && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-card p-6 w-full max-w-md animate-slide-up" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="card p-6 w-full max-w-md animate-fade-in" role="dialog" aria-modal="true">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('teams.createModalTitle')}</h2>
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{t('teams.createModalTitle')}</h2>
               <button
                 onClick={() => setShowCreate(false)}
-                className="p-1 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-slate-900 transition-colors dark:hover:bg-slate-800 dark:text-gray-400 dark:hover:text-white"
+                className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-colors dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-white"
                 aria-label={t('common.close')}
               >
                 <X className="w-5 h-5" />
@@ -372,7 +372,7 @@ export default function Teams() {
             </div>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+                <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
                   {t('teams.teamNameLabel')}
                 </label>
                 <input
@@ -398,13 +398,13 @@ export default function Teams() {
       )}
 
       {showJoin && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-card p-6 w-full max-w-md animate-slide-up" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="card p-6 w-full max-w-md animate-fade-in" role="dialog" aria-modal="true">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('teams.joinModalTitle')}</h2>
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{t('teams.joinModalTitle')}</h2>
               <button
                 onClick={() => setShowJoin(false)}
-                className="p-1 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-slate-900 transition-colors dark:hover:bg-slate-800 dark:text-gray-400 dark:hover:text-white"
+                className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-colors dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-white"
                 aria-label={t('common.close')}
               >
                 <X className="w-5 h-5" />
@@ -412,7 +412,7 @@ export default function Teams() {
             </div>
             <form onSubmit={handleJoin} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">{t('teams.joinCodeLabel')}</label>
+                <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">{t('teams.joinCodeLabel')}</label>
                 <input
                   type="text"
                   className="input-field font-mono tracking-widest text-center text-lg"
@@ -437,26 +437,26 @@ export default function Teams() {
       )}
 
       {showRequestModal && requestTarget && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-card p-6 w-full max-w-md animate-slide-up" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="card p-6 w-full max-w-md animate-fade-in" role="dialog" aria-modal="true">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('teams.requestModalTitle')}</h2>
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{t('teams.requestModalTitle')}</h2>
               <button
                 onClick={() => setShowRequestModal(false)}
-                className="p-1 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-slate-900 transition-colors dark:hover:bg-slate-800 dark:text-gray-400 dark:hover:text-white"
+                className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-colors dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-white"
                 aria-label={t('common.close')}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleSendRequest} className="space-y-4">
-              <p className="text-sm text-slate-500 dark:text-gray-400">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 {t('teams.requestSubtitle', { team: requestTarget.name })
                   .replace('<b>', '')
                   .replace('</b>', '')}
               </p>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-gray-300">
+                <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
                   {t('teams.requestMessageLabel')}
                 </label>
                 <textarea
@@ -466,7 +466,7 @@ export default function Teams() {
                   onChange={(e) => setRequestMessage(e.target.value)}
                   maxLength={500}
                 />
-                <p className="text-[11px] text-slate-400 mt-1 dark:text-gray-600">
+                <p className="text-[11px] text-zinc-400 mt-1 dark:text-zinc-600">
                   {requestMessage.length}/500
                 </p>
               </div>
@@ -484,12 +484,12 @@ export default function Teams() {
       )}
 
       <div>
-        <h2 className="text-xl font-bold text-slate-900 mb-4 dark:text-white">{t('teams.myTeams')}</h2>
+        <h2 className="text-xl font-bold text-zinc-900 mb-4 dark:text-white">{t('teams.myTeams')}</h2>
         {teams.length === 0 ? (
-          <div className="glass-card p-12 text-center">
-            <Users className="w-14 h-14 text-slate-300 mx-auto mb-4 dark:text-gray-600" />
-            <h3 className="text-xl font-bold text-slate-900 mb-2 dark:text-white">{t('teams.noTeamsHeading')}</h3>
-            <p className="text-slate-500 mb-6 dark:text-gray-400">
+          <div className="card p-12 text-center">
+            <Users className="w-14 h-14 text-zinc-300 mx-auto mb-4 dark:text-zinc-600" />
+            <h3 className="text-xl font-bold text-zinc-900 mb-2 dark:text-white">{t('teams.noTeamsHeading')}</h3>
+            <p className="text-zinc-500 mb-6 dark:text-zinc-400">
               {t('teams.noTeamsBody')}
             </p>
             <div className="flex justify-center gap-3">
@@ -513,11 +513,11 @@ export default function Teams() {
               const isOrphan = !hasAnyOwner;
               const canDelete = isOwner || isOrphan;
               return (
-                <div key={team.id} className="glass-card p-6">
+                <div key={team.id} className="card p-6">
                   <div className="flex items-start justify-between mb-5">
                     <div>
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-white">{team.name}</h3>
-                      <p className="text-slate-500 text-sm mt-1 dark:text-gray-500">
+                      <h3 className="text-xl font-bold text-zinc-900 dark:text-white">{team.name}</h3>
+                      <p className="text-zinc-500 text-sm mt-1 dark:text-zinc-500">
                         {team.members.length}/{MAX_TEAM_SIZE} {t('teams.memberCountSuffix')}
                       </p>
                     </div>
@@ -529,15 +529,15 @@ export default function Teams() {
                     )}
                   </div>
 
-                  <div className="bg-gray-100 rounded-xl p-4 mb-5 dark:bg-slate-800/50">
-                    <p className="text-xs text-slate-500 mb-1.5 dark:text-gray-500">{t('teams.joinCodeTitle')}</p>
+                  <div className="bg-zinc-100 rounded-lg p-4 mb-5 dark:bg-zinc-800/50">
+                    <p className="text-xs text-zinc-500 mb-1.5 dark:text-zinc-500">{t('teams.joinCodeTitle')}</p>
                     <div className="flex items-center gap-3">
-                      <code className="text-lg font-mono font-bold text-violet-700 tracking-widest flex-1 dark:text-violet-300">
+                      <code className="text-lg font-mono font-bold text-accent-700 tracking-widest flex-1 dark:text-accent-300">
                         {team.join_code}
                       </code>
                       <button
                         onClick={() => copyCode(team.join_code)}
-                        className="p-2 rounded-lg hover:bg-gray-200 text-slate-500 hover:text-slate-900 transition-colors dark:hover:bg-slate-700 dark:text-gray-400 dark:hover:text-white"
+                        className="p-2 rounded-lg hover:bg-zinc-200 text-zinc-500 hover:text-zinc-900 transition-colors dark:hover:bg-zinc-700 dark:text-zinc-400 dark:hover:text-white"
                         title={t('teams.copyCode')}
                         aria-label={t('teams.copyCode')}
                       >
@@ -546,7 +546,7 @@ export default function Teams() {
                       {isOwner && (
                         <button
                           onClick={() => handleRegenerateCode(team.id)}
-                          className="p-2 rounded-lg hover:bg-gray-200 text-slate-500 hover:text-slate-900 transition-colors dark:hover:bg-slate-700 dark:text-gray-400 dark:hover:text-white"
+                          className="p-2 rounded-lg hover:bg-zinc-200 text-zinc-500 hover:text-zinc-900 transition-colors dark:hover:bg-zinc-700 dark:text-zinc-400 dark:hover:text-white"
                           title={t('teams.regenerateCode')}
                           aria-label={t('teams.regenerateCode')}
                         >
@@ -557,23 +557,23 @@ export default function Teams() {
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-600 mb-2 dark:text-gray-400">{t('teams.membersHeading')}</p>
+                    <p className="text-sm font-medium text-zinc-600 mb-2 dark:text-zinc-400">{t('teams.membersHeading')}</p>
                     {team.members.map((m) => (
                       <div
                         key={m.id}
-                        className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 dark:bg-slate-800/30"
+                        className="flex items-center justify-between py-2 px-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/30"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500/30 to-indigo-500/30 flex items-center justify-center text-xs font-bold text-violet-700 dark:text-violet-300 flex-shrink-0">
+                          <div className="w-7 h-7 rounded-lg bg-accent-500/20 flex items-center justify-center text-xs font-bold text-accent-700 dark:text-accent-300 flex-shrink-0">
                             {m.username[0].toUpperCase()}
                           </div>
-                          <span className="text-sm text-slate-700 dark:text-gray-200 truncate">{m.username}</span>
+                          <span className="text-sm text-zinc-700 dark:text-zinc-200 truncate">{m.username}</span>
                           {m.role === 'owner' && (
                             <Crown className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 dark:text-amber-400" />
                           )}
                           {!m.can_submit && (
                             <Lock
-                              className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 dark:text-gray-500"
+                              className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0 dark:text-zinc-500"
                               title="Ne peut pas soumettre"
                             />
                           )}
@@ -584,7 +584,7 @@ export default function Teams() {
                               onClick={() =>
                                 handleTogglePermission(team.id, m.user_id, !m.can_submit)
                               }
-                              className="p-1 rounded hover:bg-gray-200 text-slate-500 hover:text-slate-900 transition-colors dark:hover:bg-slate-700 dark:text-gray-400 dark:hover:text-white"
+                              className="p-1 rounded hover:bg-zinc-200 text-zinc-500 hover:text-zinc-900 transition-colors dark:hover:bg-zinc-700 dark:text-zinc-400 dark:hover:text-white"
                               title={m.can_submit ? t('teams.permRevoke') : t('teams.permGrant')}
                             >
                               {m.can_submit ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
@@ -593,14 +593,14 @@ export default function Teams() {
                               onClick={() =>
                                 handleTransferOwnership(team.id, m.user_id, m.username)
                               }
-                              className="p-1 rounded hover:bg-amber-500/10 text-slate-400 hover:text-amber-500 transition-colors dark:text-gray-500 dark:hover:text-amber-400"
+                              className="p-1 rounded hover:bg-amber-500/10 text-zinc-400 hover:text-amber-500 transition-colors dark:text-zinc-500 dark:hover:text-amber-400"
                               title={t('teams.makeOwner', { username: m.username })}
                             >
                               <ArrowUpRight className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleRemove(team.id, m.user_id, m.username)}
-                              className="p-1 rounded hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors dark:text-gray-500 dark:hover:text-red-400"
+                              className="p-1 rounded hover:bg-red-500/10 text-zinc-400 hover:text-red-500 transition-colors dark:text-zinc-500 dark:hover:text-red-400"
                               title={t('teams.removeMember')}
                             >
                               <UserMinus className="w-4 h-4" />
@@ -611,7 +611,7 @@ export default function Teams() {
                     ))}
                   </div>
 
-                  <div className="mt-5 pt-4 border-t border-gray-200 dark:border-slate-800/50 space-y-2">
+                  <div className="mt-5 pt-4 border-t border-zinc-200 dark:border-zinc-800/50 space-y-2">
                     {isOrphan && (
                       <p className="text-xs text-amber-600 dark:text-amber-400">
                         {t('teams.orphanBanner')}
@@ -653,26 +653,26 @@ export default function Teams() {
 
       {pendingOutgoing.length > 0 && (
         <div>
-          <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2 dark:text-white">
-            <Clock className="w-5 h-5 text-slate-400 dark:text-gray-400" />
+          <h2 className="text-xl font-bold text-zinc-900 mb-4 flex items-center gap-2 dark:text-white">
+            <Clock className="w-5 h-5 text-zinc-400 dark:text-zinc-400" />
             {t('teams.yourPendingRequests')}
           </h2>
           <div className="grid sm:grid-cols-2 gap-3">
             {pendingOutgoing.map((req) => (
               <div
                 key={req.id}
-                className="glass-card p-4 flex items-center justify-between gap-3"
+                className="card p-4 flex items-center justify-between gap-3"
               >
                 <div className="min-w-0">
-                  <p className="text-sm text-slate-900 font-medium truncate dark:text-white">{req.team_name}</p>
-                  <p className="text-xs text-slate-500 mt-0.5 dark:text-gray-500">
+                  <p className="text-sm text-zinc-900 font-medium truncate dark:text-white">{req.team_name}</p>
+                  <p className="text-xs text-zinc-500 mt-0.5 dark:text-zinc-500">
                     {t('teams.sentOn', { date: new Date(req.created_at).toLocaleDateString() })}
                   </p>
                 </div>
                 <button
                   onClick={() => handleCancel(req)}
                   disabled={pendingAction === `cancel-${req.id}`}
-                  className="text-xs font-medium px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 border border-gray-300 text-slate-700 transition-colors disabled:opacity-50 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-gray-300"
+                  className="text-xs font-medium px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 border border-zinc-300 text-zinc-700 transition-colors disabled:opacity-50 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
                   title={t('teams.cancelAction')}
                 >
                   {t('teams.cancelAction')}
@@ -685,9 +685,9 @@ export default function Teams() {
 
       <div>
         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('teams.browseTeams')}</h2>
+          <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{t('teams.browseTeams')}</h2>
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none dark:text-gray-500" />
+            <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none dark:text-zinc-500" />
             <input
               type="text"
               className="input-field text-sm py-2 pl-9 pr-3 w-64"
@@ -699,9 +699,9 @@ export default function Teams() {
         </div>
 
         {filteredBrowse.length === 0 ? (
-          <div className="glass-card p-10 text-center">
-            <Users className="w-10 h-10 text-slate-300 mx-auto mb-3 dark:text-gray-600" />
-            <p className="text-slate-500 dark:text-gray-400">
+          <div className="card p-10 text-center">
+            <Users className="w-10 h-10 text-zinc-300 mx-auto mb-3 dark:text-zinc-600" />
+            <p className="text-zinc-500 dark:text-zinc-400">
               {browse.length === 0 ? t('teams.noTeamsYet') : t('teams.noBrowseResults')}
             </p>
           </div>
@@ -712,22 +712,22 @@ export default function Teams() {
                 (r) => r.team_id === bt.id && r.status === 'pending'
               );
               return (
-                <div key={bt.id} className="glass-card p-5">
+                <div key={bt.id} className="card p-5">
                   <div className="flex items-start justify-between mb-2 gap-2">
                     <div className="min-w-0">
-                      <h3 className="font-semibold text-slate-900 truncate dark:text-white">{bt.name}</h3>
-                      <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5 dark:text-gray-500">
+                      <h3 className="font-semibold text-zinc-900 truncate dark:text-white">{bt.name}</h3>
+                      <p className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1.5 dark:text-zinc-500">
                         <Users className="w-3 h-3" />
                         {bt.member_count}/{MAX_TEAM_SIZE} {t('teams.memberCountSuffix')}
                       </p>
                     </div>
                     {bt.is_member && (
-                      <span className="badge bg-violet-500/10 text-violet-700 border border-violet-500/30 flex-shrink-0 dark:bg-violet-500/15 dark:text-violet-300">
+                      <span className="badge bg-accent-500/10 text-accent-700 border border-accent-500/30 flex-shrink-0 dark:bg-accent-500/15 dark:text-accent-300">
                         {t('teams.memberBadge')}
                       </span>
                     )}
                     {!bt.is_member && bt.is_full && (
-                      <span className="badge bg-gray-200 text-slate-500 border border-gray-300 flex-shrink-0 dark:bg-slate-700/50 dark:text-slate-400 dark:border-slate-600/30">
+                      <span className="badge bg-zinc-200 text-zinc-500 border border-zinc-300 flex-shrink-0 dark:bg-zinc-700/50 dark:text-zinc-400 dark:border-zinc-600/30">
                         {t('teams.fullBadge')}
                       </span>
                     )}
@@ -735,7 +735,7 @@ export default function Teams() {
 
                   <div className="mt-4">
                     {bt.is_member ? (
-                      <p className="text-xs text-slate-500 dark:text-gray-500">{t('teams.inThisTeam')}</p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-500">{t('teams.inThisTeam')}</p>
                     ) : bt.has_pending_request ? (
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs text-amber-600 flex items-center gap-1.5 dark:text-amber-300">
@@ -746,22 +746,22 @@ export default function Teams() {
                           <button
                             onClick={() => handleCancel(outgoingForThis)}
                             disabled={pendingAction === `cancel-${outgoingForThis.id}`}
-                            className="text-xs text-slate-500 hover:text-red-500 transition-colors disabled:opacity-50 dark:text-gray-400 dark:hover:text-red-400"
+                            className="text-xs text-zinc-500 hover:text-red-500 transition-colors disabled:opacity-50 dark:text-zinc-400 dark:hover:text-red-400"
                           >
                             {t('teams.cancelAction')}
                           </button>
                         )}
                       </div>
                     ) : alreadyInTeam ? (
-                      <p className="text-xs text-slate-400 dark:text-gray-600">
+                      <p className="text-xs text-zinc-400 dark:text-zinc-600">
                         {t('teams.leaveFirst')}
                       </p>
                     ) : bt.is_full ? (
-                      <p className="text-xs text-slate-500 dark:text-gray-500">{t('teams.teamIsFull')}</p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-500">{t('teams.teamIsFull')}</p>
                     ) : (
                       <button
                         onClick={() => openRequest(bt)}
-                        className="w-full text-sm font-medium px-3 py-2 rounded-lg bg-violet-600/10 hover:bg-violet-600/20 border border-violet-500/30 text-violet-700 transition-colors flex items-center justify-center gap-2 dark:bg-violet-600/20 dark:hover:bg-violet-600/30 dark:text-violet-300"
+                        className="w-full text-sm font-medium px-3 py-2 rounded-lg bg-accent-600/10 hover:bg-accent-600/20 border border-accent-500/30 text-accent-700 transition-colors flex items-center justify-center gap-2 dark:bg-accent-600/20 dark:hover:bg-accent-600/30 dark:text-accent-300"
                       >
                         <Send className="w-3.5 h-3.5" />
                         {t('teams.requestToJoin')}
@@ -777,7 +777,7 @@ export default function Teams() {
 
       {outgoing.filter((r) => r.status !== 'pending').length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-slate-600 mb-3 dark:text-gray-400">{t('teams.historyHeading')}</h2>
+          <h2 className="text-sm font-semibold text-zinc-600 mb-3 dark:text-zinc-400">{t('teams.historyHeading')}</h2>
           <div className="space-y-1.5">
             {outgoing
               .filter((r) => r.status !== 'pending')
@@ -785,18 +785,18 @@ export default function Teams() {
               .map((req) => (
                 <div
                   key={req.id}
-                  className="flex items-center gap-3 text-xs text-slate-500 px-3 py-1.5 rounded-md bg-gray-50 border border-gray-200 dark:bg-slate-900/30 dark:border-slate-800/40 dark:text-gray-500"
+                  className="flex items-center gap-3 text-xs text-zinc-500 px-3 py-1.5 rounded-md bg-zinc-50 border border-zinc-200 dark:bg-zinc-900/30 dark:border-zinc-800/40 dark:text-zinc-500"
                 >
                   {req.status === 'accepted' ? (
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 dark:text-emerald-400" />
                   ) : (
                     <XCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0 dark:text-red-400" />
                   )}
-                  <span className="text-slate-800 dark:text-gray-300">{req.team_name}</span>
-                  <span className="text-slate-400 dark:text-gray-600">
+                  <span className="text-zinc-800 dark:text-zinc-300">{req.team_name}</span>
+                  <span className="text-zinc-400 dark:text-zinc-600">
                     {req.status === 'accepted' ? t('teams.statusAccepted') : t('teams.statusRejected')}
                   </span>
-                  <span className="ml-auto text-slate-400 dark:text-gray-700">
+                  <span className="ml-auto text-zinc-400 dark:text-zinc-700">
                     {req.decided_at
                       ? new Date(req.decided_at).toLocaleDateString()
                       : new Date(req.created_at).toLocaleDateString()}

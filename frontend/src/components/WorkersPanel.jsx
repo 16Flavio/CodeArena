@@ -49,19 +49,19 @@ export default function WorkersPanel() {
   const workers = state?.workers || [];
   const q = state?.queue || {};
   const queuePills = [
-    { k: 'pending', v: q.pending, cls: 'bg-slate-500/10 text-slate-700 dark:text-gray-300' },
+    { k: 'pending', v: q.pending, cls: 'bg-zinc-500/10 text-zinc-700 dark:text-zinc-300' },
     { k: 'started', v: q.started, cls: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
     { k: 'finished', v: q.finished, cls: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
     { k: 'failed', v: q.failed, cls: 'bg-red-500/10 text-red-700 dark:text-red-300' },
   ];
 
   return (
-    <div className="glass-card p-6 space-y-4">
+    <div className="card p-6 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-white flex items-center gap-2">
-          <Cpu className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+        <h2 className="text-lg font-semibold text-zinc-800 dark:text-white flex items-center gap-2">
+          <Cpu className="w-5 h-5 text-accent-500 dark:text-accent-400" />
           {t('workers.heading')}
-          <span className="text-xs font-normal text-slate-400 dark:text-gray-500">
+          <span className="text-xs font-normal text-zinc-400 dark:text-zinc-500">
             ({workers.length}{state?.mode ? ` — ${state.mode}` : ''})
           </span>
         </h2>
@@ -90,7 +90,7 @@ export default function WorkersPanel() {
       )}
 
       <div>
-        <h3 className="text-[11px] uppercase text-slate-500 dark:text-gray-400 mb-1">
+        <h3 className="text-[11px] uppercase text-zinc-500 dark:text-zinc-400 mb-1">
           {t('workers.queueState')}
         </h3>
         <div className="flex flex-wrap gap-2 text-[11px]">
@@ -103,15 +103,15 @@ export default function WorkersPanel() {
       </div>
 
       <div>
-        <h3 className="text-[11px] uppercase text-slate-500 dark:text-gray-400 mb-1">
+        <h3 className="text-[11px] uppercase text-zinc-500 dark:text-zinc-400 mb-1">
           {t('workers.liveWorkers')}
         </h3>
         {workers.length === 0 ? (
-          <p className="text-sm text-slate-400 dark:text-gray-500">{t('workers.noWorkers')}</p>
+          <p className="text-sm text-zinc-400 dark:text-zinc-500">{t('workers.noWorkers')}</p>
         ) : (
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-slate-500 dark:text-gray-400">
+              <tr className="text-zinc-500 dark:text-zinc-400">
                 <th className="text-left py-1 px-2">{t('workers.col_name')}</th>
                 <th className="text-left py-1 px-2">{t('workers.col_state')}</th>
                 <th className="text-left py-1 px-2">{t('workers.col_current_job')}</th>
@@ -121,13 +121,13 @@ export default function WorkersPanel() {
             </thead>
             <tbody>
               {workers.map((w) => (
-                <tr key={w.name} className="border-t border-slate-200/60 dark:border-slate-700/60">
+                <tr key={w.name} className="border-t border-zinc-200/60 dark:border-zinc-700/60">
                   <td className="py-1 px-2 font-mono">{w.name}</td>
                   <td className="py-1 px-2">
                     <span className={
                       w.state === 'busy' ? 'text-amber-600 dark:text-amber-400'
                       : w.state === 'idle' ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-slate-500 dark:text-gray-400'
+                      : 'text-zinc-500 dark:text-zinc-400'
                     }>{w.state}</span>
                   </td>
                   <td className="py-1 px-2 font-mono text-[11px]">
@@ -142,16 +142,16 @@ export default function WorkersPanel() {
         )}
       </div>
 
-      <div className="rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 p-3 text-xs">
-        <p className="text-slate-600 dark:text-gray-300 mb-1">{t('workers.scaleNote')}</p>
-        <code className="block font-mono text-[11px] bg-slate-900/90 text-emerald-300 rounded px-2 py-1 whitespace-pre">
+      <div className="rounded-lg bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700 p-3 text-xs">
+        <p className="text-zinc-600 dark:text-zinc-300 mb-1">{t('workers.scaleNote')}</p>
+        <code className="block font-mono text-[11px] bg-zinc-900/90 text-emerald-300 rounded px-2 py-1 whitespace-pre">
 {`# edit /opt/codearena/.env:
 SCORING_WORKER_REPLICAS=4
 
 # then apply (permanent, survives restarts):
 docker compose up -d worker`}
         </code>
-        <p className="text-[11px] text-slate-400 mt-1 dark:text-gray-500">
+        <p className="text-[11px] text-zinc-400 mt-1 dark:text-zinc-500">
           {t('workers.scaleHint')}
         </p>
       </div>

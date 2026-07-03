@@ -132,22 +132,22 @@ export default function SubmissionsTab({ contests }) {
 
   return (
     <>
-      <div className="glass-card overflow-hidden">
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-wrap gap-3 dark:border-slate-800/50">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2 dark:text-gray-300">
-            <Inbox className="w-4 h-4 text-violet-500 dark:text-violet-400" />
+      <div className="card overflow-hidden">
+        <div className="p-4 border-b border-zinc-200 flex items-center justify-between flex-wrap gap-3 dark:border-zinc-800/50">
+          <h3 className="text-sm font-semibold text-zinc-700 flex items-center gap-2 dark:text-zinc-300">
+            <Inbox className="w-4 h-4 text-accent-500 dark:text-accent-400" />
             {t('admin.submissions.title')}
-            <span className="text-xs font-normal text-slate-400 dark:text-gray-500">({list.total})</span>
+            <span className="text-xs font-normal text-zinc-400 dark:text-zinc-500">({list.total})</span>
           </h3>
           <div className="flex items-center gap-2">
-            <div className="inline-flex rounded-lg border border-gray-200 p-0.5 dark:border-slate-700">
+            <div className="inline-flex rounded-lg border border-zinc-200 p-0.5 dark:border-zinc-700">
               <button
                 type="button"
                 onClick={() => setKind('output')}
                 className={`text-xs font-medium px-3 py-1 rounded-md transition-colors ${
                   kind === 'output'
-                    ? 'bg-violet-600 text-white'
-                    : 'text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200'
+                    ? 'bg-accent-600 text-white'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
                 }`}
               >
                 {t('admin.submissions.kindOutput')}
@@ -157,8 +157,8 @@ export default function SubmissionsTab({ contests }) {
                 onClick={() => setKind('icpc')}
                 className={`text-xs font-medium px-3 py-1 rounded-md transition-colors ${
                   kind === 'icpc'
-                    ? 'bg-violet-600 text-white'
-                    : 'text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200'
+                    ? 'bg-accent-600 text-white'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
                 }`}
               >
                 {t('admin.submissions.kindIcpc')}
@@ -187,11 +187,11 @@ export default function SubmissionsTab({ contests }) {
         </div>
 
         {stats && (
-          <div className="px-4 py-2 border-b border-gray-200 flex flex-wrap gap-2 text-[11px] dark:border-slate-800/50">
+          <div className="px-4 py-2 border-b border-zinc-200 flex flex-wrap gap-2 text-[11px] dark:border-zinc-800/50">
             {(() => {
               const s = kind === 'icpc' ? stats.icpc : stats.output;
               const pills = [
-                { k: 'total', v: s.total, cls: 'bg-slate-500/10 text-slate-700 dark:text-gray-300' },
+                { k: 'total', v: s.total, cls: 'bg-zinc-500/10 text-zinc-700 dark:text-zinc-300' },
                 { k: 'pending', v: s.pending, cls: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
                 { k: 'scored', v: s.scored, cls: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
                 { k: 'error', v: s.error, cls: 'bg-red-500/10 text-red-700 dark:text-red-300' },
@@ -205,7 +205,7 @@ export default function SubmissionsTab({ contests }) {
                     </span>
                   ))}
                   {Object.entries(verdicts).map(([v, n]) => (
-                    <span key={v} className="px-2 py-0.5 rounded bg-violet-500/10 text-violet-700 font-mono dark:text-violet-300">
+                    <span key={v} className="px-2 py-0.5 rounded bg-accent-500/10 text-accent-700 font-mono dark:text-accent-300">
                       {v}: <strong>{n}</strong>
                     </span>
                   ))}
@@ -215,57 +215,57 @@ export default function SubmissionsTab({ contests }) {
           </div>
         )}
         {list.items.length === 0 ? (
-          <p className="text-sm text-slate-500 text-center py-10 dark:text-gray-500">
+          <p className="text-sm text-zinc-500 text-center py-10 dark:text-zinc-500">
             {loading ? t('common.loading') : t('admin.submissions.empty')}
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-100/60 dark:bg-slate-800/50">
+              <thead className="bg-zinc-100/60 dark:bg-zinc-800/50">
                 <tr>
-                  <th className="text-left text-slate-500 font-semibold py-2.5 px-4 dark:text-gray-400">#</th>
-                  <th className="text-left text-slate-500 font-semibold py-2.5 px-4 dark:text-gray-400">{t('admin.submissions.colWhen')}</th>
-                  <th className="text-left text-slate-500 font-semibold py-2.5 px-4 dark:text-gray-400">{t('admin.submissions.colWho')}</th>
-                  <th className="text-left text-slate-500 font-semibold py-2.5 px-4 dark:text-gray-400">{t('admin.submissions.colTeam')}</th>
-                  <th className="text-left text-slate-500 font-semibold py-2.5 px-4 dark:text-gray-400">
+                  <th className="text-left text-zinc-500 font-semibold py-2.5 px-4 dark:text-zinc-400">#</th>
+                  <th className="text-left text-zinc-500 font-semibold py-2.5 px-4 dark:text-zinc-400">{t('admin.submissions.colWhen')}</th>
+                  <th className="text-left text-zinc-500 font-semibold py-2.5 px-4 dark:text-zinc-400">{t('admin.submissions.colWho')}</th>
+                  <th className="text-left text-zinc-500 font-semibold py-2.5 px-4 dark:text-zinc-400">{t('admin.submissions.colTeam')}</th>
+                  <th className="text-left text-zinc-500 font-semibold py-2.5 px-4 dark:text-zinc-400">
                     {kind === 'icpc' ? t('admin.submissions.colProblem') : t('admin.submissions.colInstance')}
                   </th>
-                  <th className="text-left text-slate-500 font-semibold py-2.5 px-4 dark:text-gray-400">{t('admin.submissions.colFile')}</th>
+                  <th className="text-left text-zinc-500 font-semibold py-2.5 px-4 dark:text-zinc-400">{t('admin.submissions.colFile')}</th>
                   {kind !== 'icpc' && (
-                    <th className="text-right text-slate-500 font-semibold py-2.5 px-4 dark:text-gray-400">{t('admin.submissions.colScore')}</th>
+                    <th className="text-right text-zinc-500 font-semibold py-2.5 px-4 dark:text-zinc-400">{t('admin.submissions.colScore')}</th>
                   )}
-                  <th className="text-left text-slate-500 font-semibold py-2.5 px-4 dark:text-gray-400">
+                  <th className="text-left text-zinc-500 font-semibold py-2.5 px-4 dark:text-zinc-400">
                     {kind === 'icpc' ? t('admin.submissions.colVerdict') : t('admin.submissions.colStatus')}
                   </th>
-                  <th className="text-right text-slate-500 font-semibold py-2.5 px-4 dark:text-gray-400">{t('admin.submissions.colActions')}</th>
+                  <th className="text-right text-zinc-500 font-semibold py-2.5 px-4 dark:text-zinc-400">{t('admin.submissions.colActions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {list.items.map((s) => (
-                  <tr key={s.id} className="border-t border-gray-100 hover:bg-gray-50 dark:border-slate-800/30 dark:hover:bg-slate-800/20">
-                    <td className="py-2 px-4 font-mono text-xs text-slate-500 dark:text-gray-500">{s.id}</td>
-                    <td className="py-2 px-4 text-xs text-slate-500 whitespace-nowrap dark:text-gray-400">
+                  <tr key={s.id} className="border-t border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-800/20">
+                    <td className="py-2 px-4 font-mono text-xs text-zinc-500 dark:text-zinc-500">{s.id}</td>
+                    <td className="py-2 px-4 text-xs text-zinc-500 whitespace-nowrap dark:text-zinc-400">
                       {formatDateTime(s.submitted_at)}
                     </td>
-                    <td className="py-2 px-4 text-slate-800 dark:text-gray-200">{s.submitted_by_username}</td>
-                    <td className="py-2 px-4 text-xs text-slate-500 dark:text-gray-400">
-                      {s.team_name || <span className="italic text-slate-400 dark:text-gray-600">{t('admin.submissions.solo')}</span>}
+                    <td className="py-2 px-4 text-zinc-800 dark:text-zinc-200">{s.submitted_by_username}</td>
+                    <td className="py-2 px-4 text-xs text-zinc-500 dark:text-zinc-400">
+                      {s.team_name || <span className="italic text-zinc-400 dark:text-zinc-600">{t('admin.submissions.solo')}</span>}
                     </td>
-                    <td className="py-2 px-4 text-xs text-slate-500 dark:text-gray-400">
+                    <td className="py-2 px-4 text-xs text-zinc-500 dark:text-zinc-400">
                       {kind === 'icpc'
-                        ? (s.problem_label || <span className="italic text-slate-400 dark:text-gray-600">—</span>)
-                        : (s.instance_name || <span className="italic text-slate-400 dark:text-gray-600">—</span>)}
+                        ? (s.problem_label || <span className="italic text-zinc-400 dark:text-zinc-600">—</span>)
+                        : (s.instance_name || <span className="italic text-zinc-400 dark:text-zinc-600">—</span>)}
                     </td>
-                    <td className="py-2 px-4 text-xs text-slate-500 truncate max-w-[200px] dark:text-gray-400" title={s.file_name}>
+                    <td className="py-2 px-4 text-xs text-zinc-500 truncate max-w-[200px] dark:text-zinc-400" title={s.file_name}>
                       {s.file_name}
                       {s.source_language && (
-                        <span className="ml-2 px-1 py-0.5 rounded bg-violet-500/10 text-violet-700 text-[10px] font-mono dark:text-violet-300">
+                        <span className="ml-2 px-1 py-0.5 rounded bg-accent-500/10 text-accent-700 text-[10px] font-mono dark:text-accent-300">
                           {s.source_language}
                         </span>
                       )}
                     </td>
                     {kind !== 'icpc' && (
-                      <td className="py-2 px-4 font-mono text-right dark:text-gray-200">
+                      <td className="py-2 px-4 font-mono text-right dark:text-zinc-200">
                         {s.score != null ? s.score.toFixed(2) : '—'}
                       </td>
                     )}
@@ -294,7 +294,7 @@ export default function SubmissionsTab({ contests }) {
                       <div className="inline-flex items-center gap-1">
                         <button
                           onClick={() => openContent(s)}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-violet-500 dark:hover:bg-slate-700/50 dark:hover:text-violet-400"
+                          className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-accent-500 dark:hover:bg-zinc-700/50 dark:hover:text-accent-400"
                           title={t('admin.submissions.viewContent')}
                         >
                           <Eye className="w-4 h-4" />
@@ -302,7 +302,7 @@ export default function SubmissionsTab({ contests }) {
                         {s.problem_id && (
                           <button
                             onClick={() => openJudgingDetail(s)}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-sky-500 dark:hover:bg-slate-700/50 dark:hover:text-sky-400"
+                            className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-sky-500 dark:hover:bg-zinc-700/50 dark:hover:text-sky-400"
                             title={t('admin.submissions.viewJudging')}
                           >
                             <FlaskConical className="w-4 h-4" />
@@ -311,7 +311,7 @@ export default function SubmissionsTab({ contests }) {
                         {s.problem_id && s.latest_judging_id && (
                           <button
                             onClick={() => handleOverride(s)}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-emerald-500 dark:hover:bg-slate-700/50 dark:hover:text-emerald-400"
+                            className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-emerald-500 dark:hover:bg-zinc-700/50 dark:hover:text-emerald-400"
                             title={t('admin.submissions.override')}
                           >
                             <Shield className="w-4 h-4" />
@@ -319,14 +319,14 @@ export default function SubmissionsTab({ contests }) {
                         )}
                         <button
                           onClick={() => handleRejudge(s)}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-amber-500 dark:hover:bg-slate-700/50 dark:hover:text-amber-400"
+                          className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-amber-500 dark:hover:bg-zinc-700/50 dark:hover:text-amber-400"
                           title={t('admin.submissions.rejudge')}
                         >
                           <RefreshCw className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(s)}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-red-500 dark:hover:bg-slate-700/50 dark:hover:text-red-400"
+                          className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-red-500 dark:hover:bg-zinc-700/50 dark:hover:text-red-400"
                           title={t('admin.submissions.delete')}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -340,7 +340,7 @@ export default function SubmissionsTab({ contests }) {
           </div>
         )}
         {list.total > list.limit && (
-          <div className="flex items-center justify-between p-3 border-t border-gray-100 dark:border-slate-800/30">
+          <div className="flex items-center justify-between p-3 border-t border-zinc-100 dark:border-zinc-800/30">
             <button
               className="btn-secondary text-xs py-1.5 px-3 disabled:opacity-50"
               disabled={list.offset === 0}
@@ -348,7 +348,7 @@ export default function SubmissionsTab({ contests }) {
             >
               {t('common.previous')}
             </button>
-            <span className="text-xs text-slate-500 dark:text-gray-500">
+            <span className="text-xs text-zinc-500 dark:text-zinc-500">
               {list.offset + 1}–{Math.min(list.offset + list.limit, list.total)} / {list.total}
             </span>
             <button
@@ -364,17 +364,17 @@ export default function SubmissionsTab({ contests }) {
 
       {judgingViewer && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-y-auto"
           onClick={() => setJudgingViewer(null)}
         >
           <div
-            className="glass-card p-5 w-full max-w-5xl my-8"
+            className="card p-5 w-full max-w-5xl my-8"
             role="dialog"
             aria-modal="true"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4 gap-3">
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 dark:text-white">
+              <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2 dark:text-white">
                 <FlaskConical className="w-5 h-5 text-sky-500 dark:text-sky-400" />
                 {t('admin.submissions.judgingTitle', { id: judgingViewer.submission.id })}
                 {judgingViewer.judging && (
@@ -389,7 +389,7 @@ export default function SubmissionsTab({ contests }) {
               </h2>
               <button
                 onClick={() => setJudgingViewer(null)}
-                className="p-1 rounded-lg hover:bg-gray-100 text-slate-400 dark:hover:bg-slate-800"
+                className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 dark:hover:bg-zinc-800"
                 aria-label={t('common.close')}
               >
                 <X className="w-5 h-5" />
@@ -397,11 +397,11 @@ export default function SubmissionsTab({ contests }) {
             </div>
             {judgingLoading ? (
               <div className="flex items-center justify-center h-40">
-                <div className="w-6 h-6 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-6 h-6 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : judgingViewer.judging ? (
               <div className="space-y-3">
-                <p className="text-xs text-slate-500 dark:text-gray-400">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   {t('admin.submissions.judgingMeta', {
                     when: judgingViewer.judging.judged_at ? new Date(judgingViewer.judging.judged_at).toLocaleString() : '—',
                     ms: judgingViewer.judging.max_runtime_ms ?? '—',
@@ -409,16 +409,16 @@ export default function SubmissionsTab({ contests }) {
                 </p>
                 {judgingViewer.judging.compile_output && (
                   <div>
-                    <p className="text-[11px] uppercase text-slate-500 mb-1 dark:text-gray-400">
+                    <p className="text-[11px] uppercase text-zinc-500 mb-1 dark:text-zinc-400">
                       {t('icpc.compileOutput')}
                     </p>
-                    <pre className="text-xs font-mono p-2 bg-slate-500/10 border border-slate-500/30 rounded whitespace-pre-wrap break-all max-h-60 overflow-y-auto">
+                    <pre className="text-xs font-mono p-2 bg-zinc-500/10 border border-zinc-500/30 rounded whitespace-pre-wrap break-all max-h-60 overflow-y-auto">
                       {judgingViewer.judging.compile_output}
                     </pre>
                   </div>
                 )}
                 {(judgingViewer.judging.runs || []).length === 0 ? (
-                  <p className="text-sm text-slate-500 italic dark:text-gray-500">
+                  <p className="text-sm text-zinc-500 italic dark:text-zinc-500">
                     {t('admin.submissions.noRuns')}
                   </p>
                 ) : (
@@ -441,7 +441,7 @@ export default function SubmissionsTab({ contests }) {
                           }`}>
                             {r.verdict}
                           </span>
-                          <span className="text-slate-600 dark:text-gray-400">
+                          <span className="text-zinc-600 dark:text-zinc-400">
                             #{i + 1} · {r.is_sample ? t('icpc.sampleKind') : t('icpc.secretKind')} · {r.runtime_ms || 0} ms
                           </span>
                         </summary>
@@ -455,14 +455,14 @@ export default function SubmissionsTab({ contests }) {
                         )}
                         {r.stdout_truncated && (
                           <div className="mt-2">
-                            <p className="text-[10px] uppercase text-slate-500 dark:text-gray-400 mb-1">stdout</p>
-                            <pre className="p-2 bg-gray-50 border border-gray-200 rounded font-mono whitespace-pre-wrap break-all max-h-40 overflow-y-auto dark:bg-slate-900/40 dark:border-slate-700/40">
+                            <p className="text-[10px] uppercase text-zinc-500 dark:text-zinc-400 mb-1">stdout</p>
+                            <pre className="p-2 bg-zinc-50 border border-zinc-200 rounded font-mono whitespace-pre-wrap break-all max-h-40 overflow-y-auto dark:bg-zinc-900/40 dark:border-zinc-700/40">
                               {r.stdout_truncated}
                             </pre>
                           </div>
                         )}
                         {!r.stdout_truncated && !r.stderr_truncated && (
-                          <p className="mt-2 text-slate-400 italic dark:text-gray-600">
+                          <p className="mt-2 text-zinc-400 italic dark:text-zinc-600">
                             {t('icpc.noProgramOutput')}
                           </p>
                         )}
@@ -477,18 +477,18 @@ export default function SubmissionsTab({ contests }) {
       )}
 
       {viewer && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto">
-          <div className="glass-card p-5 w-full max-w-3xl my-8" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-y-auto">
+          <div className="card p-5 w-full max-w-3xl my-8" role="dialog" aria-modal="true">
             <div className="flex items-center justify-between mb-3 gap-3">
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 min-w-0 dark:text-white">
-                <FileText className="w-5 h-5 text-violet-500 flex-shrink-0 dark:text-violet-400" />
+              <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2 min-w-0 dark:text-white">
+                <FileText className="w-5 h-5 text-accent-500 flex-shrink-0 dark:text-accent-400" />
                 <span className="truncate" title={viewer.filename}>
                   {viewer.filename || `submission_${viewer.id}.txt`}
                 </span>
               </h2>
               <button
                 onClick={() => setViewer(null)}
-                className="p-1 rounded-lg hover:bg-gray-100 text-slate-400 dark:hover:bg-slate-800"
+                className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 dark:hover:bg-zinc-800"
                 aria-label={t('common.close')}
               >
                 <X className="w-5 h-5" />
@@ -496,10 +496,10 @@ export default function SubmissionsTab({ contests }) {
             </div>
             {viewerLoading ? (
               <div className="flex items-center justify-center h-40">
-                <div className="w-6 h-6 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-6 h-6 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
-              <pre className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-auto max-h-[70vh] text-xs font-mono text-slate-800 whitespace-pre-wrap dark:bg-slate-950/40 dark:border-slate-800 dark:text-gray-200">
+              <pre className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 overflow-auto max-h-[70vh] text-xs font-mono text-zinc-800 whitespace-pre-wrap dark:bg-zinc-950/40 dark:border-zinc-800 dark:text-zinc-200">
                 {viewer.content || t('admin.submissions.emptyContent')}
               </pre>
             )}

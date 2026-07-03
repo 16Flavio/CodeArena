@@ -40,21 +40,21 @@ export default function VerifyEmail() {
   }, [token, t]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-50 dark:bg-slate-950">
-      <div className="glass-card p-8 w-full max-w-md text-center animate-fade-in">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-zinc-50 dark:bg-zinc-950">
+      <div className="card p-8 w-full max-w-md text-center animate-fade-in">
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-accent-600 flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="text-2xl font-bold gradient-text">CodeArena</span>
+          <span className="text-2xl font-bold text-zinc-900 dark:text-white">CodeArena</span>
         </div>
         {state.loading ? (
-          <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin mx-auto" />
         ) : state.ok ? (
           <>
             <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-4 dark:text-emerald-400" />
-            <h2 className="text-xl font-bold text-slate-900 mb-2 dark:text-white">{t('verifyEmail.titleOk')}</h2>
-            <p className="text-slate-500 mb-6 dark:text-gray-400">{state.message}</p>
+            <h2 className="text-xl font-bold text-zinc-900 mb-2 dark:text-white">{t('verifyEmail.titleOk')}</h2>
+            <p className="text-zinc-500 mb-6 dark:text-zinc-400">{state.message}</p>
             <Link to="/login" className="btn-primary inline-block">
               <ArrowLeft className="w-4 h-4 mr-2 inline" />
               {t('verifyEmail.backToLogin')}
@@ -63,8 +63,8 @@ export default function VerifyEmail() {
         ) : (
           <>
             <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4 dark:text-red-400" />
-            <h2 className="text-xl font-bold text-slate-900 mb-2 dark:text-white">{t('verifyEmail.titleFailed')}</h2>
-            <p className="text-slate-500 mb-6 dark:text-gray-400">{state.message}</p>
+            <h2 className="text-xl font-bold text-zinc-900 mb-2 dark:text-white">{t('verifyEmail.titleFailed')}</h2>
+            <p className="text-zinc-500 mb-6 dark:text-zinc-400">{state.message}</p>
             <Link to="/login" className="btn-primary inline-block">
               <ArrowLeft className="w-4 h-4 mr-2 inline" />
               {t('verifyEmail.backToLogin')}
