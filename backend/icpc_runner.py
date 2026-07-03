@@ -180,20 +180,25 @@ _DOCKER_MODE: Optional[bool] = None
 
 
 def _use_docker() -> bool:
-    """True when ``SCORING_MODE=docker`` and the Docker daemon is reachable.
-    Cached per process — otherwise every compile/run would shell out to
-    ``docker version``. A worker restart re-evaluates (e.g. after the daemon
-    comes up)."""
+    """True when ``SCORING_MODE=docker``. Fail-closed: if docker mode is
+    requested but the daemon is unreachable, raise instead of silently
+    downgrading to a host subprocess — this path executes arbitrary
+    contestant code, so a daemon outage must surface as a judge error
+    (``IE`` verdict), never as an isolation downgrade. Availability is
+    cached per process only on success, so a daemon that comes up later
+    heals without a worker restart."""
     global _DOCKER_MODE
     if (os.environ.get("SCORING_MODE") or "").lower() != "docker":
         return False
     if _DOCKER_MODE is None:
-        _DOCKER_MODE = icpc_sandbox.docker_available()
-        if not _DOCKER_MODE:
-            log.warning(
-                "SCORING_MODE=docker but the Docker daemon is unreachable; "
-                "ICPC judging is falling back to a host subprocess (NOT isolated)."
+        if not icpc_sandbox.docker_available():
+            raise RuntimeError(
+                "SCORING_MODE=docker set, but the Docker daemon is not reachable. "
+                "Refusing to judge ICPC submissions in an unisolated host "
+                "subprocess. Mount /var/run/docker.sock into the worker "
+                "container (see docs/DEPLOY.md) or set SCORING_MODE=subprocess."
             )
+        _DOCKER_MODE = True
     return _DOCKER_MODE
 
 

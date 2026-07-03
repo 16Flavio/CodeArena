@@ -178,7 +178,7 @@ def change_username(
     return user
 
 
-@router.post("/change-password", response_model=schemas.SimpleMessage)
+@router.post("/change-password", response_model=schemas.ChangePasswordOut)
 @limiter.limit("10/hour")
 def change_password(
     request: Request,
@@ -198,8 +198,14 @@ def change_password(
     # by a 15-minute lockout the first time they mistype.
     user.failed_login_count = 0
     user.locked_until = None
+    # Revoke every outstanding session: whoever holds a token minted
+    # before this moment (including a thief the password change is
+    # meant to evict) is logged out. The caller gets a fresh token in
+    # the response so THEIR session survives seamlessly.
+    user.token_version = (user.token_version or 0) + 1
     db.commit()
-    return {"detail": "Mot de passe mis à jour."}
+    token = create_access_token({"sub": str(user.id), "tv": user.token_version})
+    return {"detail": "Mot de passe mis à jour.", "access_token": token}
 
 
 LOCKOUT_THRESHOLD = 5      # consecutive failed attempts
@@ -278,7 +284,9 @@ def login(request: Request, data: schemas.UserLogin, db: Session = Depends(get_d
         )
 
     ttl = timedelta(days=30) if data.remember_me else None
-    token = create_access_token({"sub": str(user.id)}, expires_delta=ttl)
+    token = create_access_token(
+        {"sub": str(user.id), "tv": user.token_version or 0}, expires_delta=ttl
+    )
     return {"access_token": token, "token_type": "bearer"}
 
 
@@ -373,7 +381,9 @@ def totp_login_verify(
 
     remember = bool(payload.get("remember_me"))
     ttl = timedelta(days=30) if remember else None
-    token = create_access_token({"sub": str(user.id)}, expires_delta=ttl)
+    token = create_access_token(
+        {"sub": str(user.id), "tv": user.token_version or 0}, expires_delta=ttl
+    )
     return {"access_token": token, "token_type": "bearer"}
 
 
@@ -395,7 +405,7 @@ def stream_ticket(request: Request, user: models.User = Depends(get_current_user
     history, proxy/access logs, Referer). The ticket authenticates the same
     user but expires in a minute."""
     ticket = create_access_token(
-        {"sub": str(user.id), "purpose": "stream"},
+        {"sub": str(user.id), "purpose": "stream", "tv": user.token_version or 0},
         expires_delta=timedelta(seconds=STREAM_TICKET_TTL_SECONDS),
     )
     return {"ticket": ticket, "expires_in": STREAM_TICKET_TTL_SECONDS}
@@ -474,6 +484,9 @@ def reset_password(
     # audit. (Same rationale as change-password above.)
     user.failed_login_count = 0
     user.locked_until = None
+    # "I forgot my password" usually really means "someone may have my
+    # password" — revoke every session minted with the old credentials.
+    user.token_version = (user.token_version or 0) + 1
     db.commit()
 
     return {"detail": "Mot de passe mis à jour. Vous pouvez maintenant vous connecter."}

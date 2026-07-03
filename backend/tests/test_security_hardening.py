@@ -68,6 +68,25 @@ def test_icpc_sandbox_docker_argv_is_locked_down():
     assert "timeout" in argv and "-s" in argv and "KILL" in argv
 
 
+def test_icpc_docker_mode_fails_closed_without_daemon(monkeypatch):
+    """SCORING_MODE=docker with an unreachable daemon must raise, never fall
+    back to judging contestant code as an unisolated host subprocess."""
+    import pytest
+
+    from backend import icpc_runner, icpc_sandbox
+
+    monkeypatch.setenv("SCORING_MODE", "docker")
+    monkeypatch.setattr(icpc_sandbox, "docker_available", lambda: False)
+    monkeypatch.setattr(icpc_runner, "_DOCKER_MODE", None)
+
+    with pytest.raises(RuntimeError, match="Docker daemon is not reachable"):
+        icpc_runner._use_docker()
+    # The failure must NOT be cached as "docker off" — a later call with a
+    # healthy daemon should switch to containers without a worker restart.
+    monkeypatch.setattr(icpc_sandbox, "docker_available", lambda: True)
+    assert icpc_runner._use_docker() is True
+
+
 # ── Scoring / validator script exposure ──────────────────────────────────────
 
 def _make_contest_with_scripts(client, admin):
