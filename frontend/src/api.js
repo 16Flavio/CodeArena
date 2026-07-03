@@ -270,6 +270,33 @@ export const scoreboardStreamUrl = (contestId) =>
 // header via the axios interceptor.
 export const getStreamTicket = () => api.post('/auth/stream-ticket');
 
+// Open a problem-statement PDF in a new tab without ever putting the durable
+// session token in a URL. We mint a short-lived stream ticket, fetch the PDF
+// as a blob with that ticket (a fetch URL isn't recorded in browser history),
+// then point the tab at the blob: URL — so the visible URL carries no token
+// at all, and the ticket itself expires in ~60s. Mirrors the CSV download.
+export async function openStatementPdf(contestId, problemId, version = 0) {
+  // Open the tab synchronously (inside the click gesture) so popup blockers
+  // don't kill it after the awaits below.
+  const win = window.open('', '_blank');
+  try {
+    const { data } = await getStreamTicket();
+    const url =
+      `/api/contests/${contestId}/problems/${problemId}/statement` +
+      `?token=${encodeURIComponent(data.ticket)}&v=${version || 0}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(await r.text());
+    const blob = await r.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    if (win) win.location = objectUrl;
+    else window.open(objectUrl, '_blank', 'noopener,noreferrer');
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+  } catch (e) {
+    if (win) win.close();
+    throw e;
+  }
+}
+
 // Announcements
 export const listAnnouncements = (contestId) =>
   api.get(`/contests/${contestId}/announcements`);

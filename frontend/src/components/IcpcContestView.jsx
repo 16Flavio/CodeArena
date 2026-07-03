@@ -12,8 +12,8 @@ import {
   listIcpcProblems, listIcpcLanguages, submitIcpc, getJudging,
   listClarifications, createClarification, answerClarification,
   updateClarification, deleteClarification,
+  openStatementPdf,
 } from '../api';
-import { getToken } from '../utils/tokenStore';
 import { textOn } from '../utils/contrast';
 import { useTheme } from '../ThemeContext';
 import { useAuth } from '../AuthContext';
@@ -279,25 +279,24 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                       </p>
                     </div>
                     {activeProblem.has_statement_pdf && (
-                      <a
-                        // Token goes in the query string because <a href>
-                        // opens in a new tab without Authorization headers.
-                        // ``v=`` is the file's mtime — stable while the PDF is
-                        // unchanged (so the browser can re-use the response
-                        // across reloads), but flips on an admin replace so
-                        // any cached entry from a previous version is bypassed.
-                        // Without this the URL was static and contestants
-                        // kept seeing the pre-replace PDF from heuristic
-                        // browser cache (no-store on the response only takes
-                        // effect once the server is actually consulted).
-                        href={`/api/contests/${contest.id}/problems/${activeProblem.id}/statement?token=${encodeURIComponent(getToken() || '')}&v=${activeProblem.statement_pdf_version || 0}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        // Open via a short-lived stream ticket + blob fetch so
+                        // the durable session token never enters a URL. ``v``
+                        // (the file mtime) still busts the browser cache after
+                        // an admin replaces the PDF.
+                        onClick={() =>
+                          openStatementPdf(
+                            contest.id,
+                            activeProblem.id,
+                            activeProblem.statement_pdf_version || 0,
+                          ).catch(() => toast.error(t('icpcProblems.pdfOpenFailed')))
+                        }
                         className="btn-secondary text-xs"
                       >
                         <FileTextIcon className="w-3.5 h-3.5 mr-1 inline" />
                         {t('icpc.statement')}
-                      </a>
+                      </button>
                     )}
                   </div>
 
