@@ -1215,9 +1215,11 @@ class LeagueEventOut(BaseModel):
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     coefficient: float
-    # True once end_time has passed - only then does the event feed the
-    # standings.
+    # finished: end_time has passed. counted: results are published into
+    # the standings (finished AND scoreboard freeze lifted) - a finished
+    # but frozen event shows as "pending reveal" in the UI.
     finished: bool
+    counted: bool
     participants: int
 
 

@@ -486,7 +486,7 @@ function OutputScoreboard() {
                         style={{ color: pct >= 0.9 ? '#22c55e' : pct >= 0.7 ? '#eab308' : pct >= 0.4 ? '#f97316' : '#ef4444' }}
                       >
                         <span className="truncate">{inst.name}: </span>
-                        <span className="font-mono font-bold">{formatScore(s.best_score)}</span>
+                        <span className="font-mono tabular-nums font-bold">{formatScore(s.best_score)}</span>
                       </div>
                     );
                   })}
@@ -727,7 +727,7 @@ function OutputScoreboard() {
                     className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/40"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="font-mono text-sm font-bold text-zinc-400 w-6 text-right dark:text-zinc-500">
+                      <span className="font-mono tabular-nums text-sm font-bold text-zinc-400 w-6 text-right dark:text-zinc-500">
                         {idx + 1}
                       </span>
                       <span className="text-sm font-medium text-zinc-900 truncate dark:text-white">
