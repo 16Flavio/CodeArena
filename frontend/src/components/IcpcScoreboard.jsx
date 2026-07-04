@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { Trophy, RefreshCw, CheckCircle, Snowflake, FileSpreadsheet, Sparkles } from 'lucide-react';
 import { textOn } from '../utils/contrast';
-import { getIcpcScoreboard, icpcScoreboardCsvUrl } from '../api';
+import { getIcpcScoreboard, icpcScoreboardCsvUrl, openStatementPdf } from '../api';
 import { useAuth } from '../AuthContext';
 import { getToken } from '../utils/tokenStore';
 
@@ -140,12 +140,29 @@ export default function IcpcScoreboard({ contestId }) {
               <th className="text-right font-semibold py-2 px-3">{t('icpcScoreboard.penalty')}</th>
               {data.problems.map((p) => (
                 <th key={p.id} className="text-center font-semibold py-2 px-2 min-w-[64px]">
-                  <div
-                    className="inline-block w-6 h-6 rounded text-xs font-bold leading-6"
-                    style={{ background: p.color || '#94a3b8', color: textOn(p.color || '#94a3b8') }}
-                  >
-                    {p.label}
-                  </div>
+                  {/* Clicking the letter opens the statement PDF in a new
+                      tab. The backend gates access (403 before contest
+                      start / for non-participants), so this stays a plain
+                      badge when no PDF exists. */}
+                  {p.has_statement_pdf ? (
+                    <button
+                      type="button"
+                      onClick={() => openStatementPdf(contestId, p.id, p.statement_pdf_version)}
+                      className="inline-block w-6 h-6 rounded text-xs font-bold leading-6 cursor-pointer transition-opacity hover:opacity-75 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                      style={{ background: p.color || '#a1a1aa', color: textOn(p.color || '#a1a1aa') }}
+                      title={`${p.label}${p.name ? ` — ${p.name}` : ''} · ${t('icpcScoreboard.openStatement')}`}
+                    >
+                      {p.label}
+                    </button>
+                  ) : (
+                    <div
+                      className="inline-block w-6 h-6 rounded text-xs font-bold leading-6"
+                      style={{ background: p.color || '#a1a1aa', color: textOn(p.color || '#a1a1aa') }}
+                      title={p.name || p.label}
+                    >
+                      {p.label}
+                    </div>
+                  )}
                 </th>
               ))}
             </tr>
