@@ -1,6 +1,6 @@
 # 2. Tri rapide & tri par tas
 
-## 2.1 — Le tri rapide : diviser **autour d'un pivot**
+## 2.1 - Le tri rapide : diviser **autour d'un pivot**
 
 Le tri rapide est un autre *diviser pour régner*, mais à la
 différence de mergesort, **toute la magie est dans la division** ; la
@@ -47,23 +47,23 @@ position `i`.
 ### Pire cas : $\Theta(n^2)$
 
 Si à chaque récursion le pivot est l'élément le plus petit (ou le
-plus grand) — par exemple sur un tableau **déjà trié** avec pivot =
-dernier — on obtient une partition de taille $n-1, 0$. La récurrence
+plus grand) - par exemple sur un tableau **déjà trié** avec pivot =
+dernier - on obtient une partition de taille $n-1, 0$. La récurrence
 
 $$T(n) = T(n-1) + \Theta(n)$$
 
 donne $T(n) = \Theta(n^2)$.
 
-**Vue d'ensemble** — l'animation ci-dessous lance un tri rapide
+**Vue d'ensemble** - l'animation ci-dessous lance un tri rapide
 **complet** : tu vois les pivots rouges se placer un par un, les
 récursions s'enchaîner, et la profondeur de pile grimper. Charge
-`1,2,3,4,5,6,7,8` (déjà trié) pour visualiser le pire cas — la pile
+`1,2,3,4,5,6,7,8` (déjà trié) pour visualiser le pire cas - la pile
 descend en escalier.
 
 :::viz-quicksort{data="8,3,5,1,9,2,7,4,6"}
 :::
 
-### Cas moyen : $\Theta(n \log n)$ — preuve par espérance
+### Cas moyen : $\Theta(n \log n)$ - preuve par espérance
 
 On choisit le pivot **aléatoirement** dans $A[lo..hi]$. Pour des
 clés distinctes $z_1 < z_2 < \dots < z_n$, soit $X_{ij}$ la variable
@@ -106,7 +106,7 @@ $\square$
 
 ---
 
-## 2.2 — Tri par tas (rappel)
+## 2.2 - Tri par tas (rappel)
 
 Le tri par tas a déjà été vu en détail au chapitre 2 (leçon « Tas
 binaires & heapsort »). On ne reprend que le résumé ici, pour le
@@ -129,7 +129,7 @@ mettre en perspective.
 
 ---
 
-## 2.3 — Exercices
+## 2.3 - Exercices
 
 :::exercise{id="{{EX_SO_PARTITION}}"}
 :::

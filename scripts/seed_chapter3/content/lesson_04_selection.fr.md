@@ -1,6 +1,6 @@
 # 4. Sélection : quickselect & médiane des médianes
 
-## 4.1 — Le problème de sélection
+## 4.1 - Le problème de sélection
 
 **Question** : étant donné un tableau $A$ de $n$ éléments et un
 entier $k \in [1, n]$, trouver le **$k$-ème plus petit** élément
@@ -23,7 +23,7 @@ problème non trivial.
 
 ---
 
-## 4.2 — Quickselect
+## 4.2 - Quickselect
 
 ### Idée
 
@@ -42,7 +42,7 @@ $\le$ pivot, droite $>$ pivot, à la position $p$ :
 import random
 
 def quickselect(A, k):
-    """Retourne le k-ème plus petit (1-indexé) de A — détruit A."""
+    """Retourne le k-ème plus petit (1-indexé) de A - détruit A."""
     lo, hi = 0, len(A) - 1
     while lo <= hi:
         # Pivot aléatoire pour casser le pire cas adversarial.
@@ -73,7 +73,7 @@ borne récursive** :
 
 $$T(n) \le n + \frac{1}{n} \sum_{i=n/2}^{n-1} 4i \le n + \frac{4}{n} \cdot \frac{n}{2} \cdot \frac{3n/2 + n/2}{2}/... $$
 
-Plus simple — bornons $\sum_{i=n/2}^{n-1} i \le \frac{3n^2}{4}$ :
+Plus simple - bornons $\sum_{i=n/2}^{n-1} i \le \frac{3n^2}{4}$ :
 
 $$T(n) \le n + \frac{4}{n} \cdot \frac{3n^2}{4} = n + 3n = 4n. \square$$
 
@@ -85,7 +85,7 @@ exponentiellement petite avec pivot aléatoire, mais possible.
 
 ---
 
-## 4.3 — Médiane des médianes : $\Theta(n)$ **déterministe**
+## 4.3 - Médiane des médianes : $\Theta(n)$ **déterministe**
 
 L'algorithme de Blum-Floyd-Pratt-Rivest-Tarjan (1973) atteint
 $\Theta(n)$ pire cas en choisissant un pivot dont on **garantit**
@@ -103,7 +103,7 @@ def select(A, k):
     groups = [A[i:i+5] for i in range(0, len(A), 5)]
     medians = [sorted(g)[len(g) // 2] for g in groups]
 
-    # 2. Médiane récursive des médianes — c'est notre pivot.
+    # 2. Médiane récursive des médianes - c'est notre pivot.
     pivot = select(medians, (len(medians) + 1) // 2)
 
     # 3. Partition autour de pivot.
@@ -163,7 +163,7 @@ donc constantes minimales.)
 
 ---
 
-## 4.4 — Tableau récapitulatif
+## 4.4 - Tableau récapitulatif
 
 | Algo | Pire cas | Moyenne | Mémoire | Aléatoire ? |
 |------|----------|---------|---------|-------------|
@@ -174,7 +174,7 @@ donc constantes minimales.)
 
 ---
 
-## 4.5 — Exercices
+## 4.5 - Exercices
 
 :::exercise{id="{{EX_SO_SELECT}}"}
 :::

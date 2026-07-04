@@ -1,13 +1,13 @@
 # 4. Amortized Analysis & Dynamic Array
 
-## 4.1 — The idea: averaging costs
+## 4.1 - The idea: averaging costs
 
 Some operations are *occasionally* expensive but *globally* cheap.
 Worst-case analysis grossly overestimates their real cost.
 
 **Motivating example.** Insert $n$ integers into a dynamic array
 (Python `list`, C++ `std::vector`). Once in a while the array
-**doubles** its capacity — an $O(\text{capacity})$ operation. Worst
+**doubles** its capacity - an $O(\text{capacity})$ operation. Worst
 case, one insertion costs $O(n)$. But over $n$ insertions, the total
 cost stays $O(n)$: the **amortized** cost per insertion is $O(1)$.
 
@@ -16,7 +16,7 @@ aggregate, accounting, potential.
 
 ---
 
-## 4.2 — Aggregate method
+## 4.2 - Aggregate method
 
 Compute the total cost of $n$ operations, divide by $n$.
 
@@ -35,7 +35,7 @@ Amortized cost: $3n / n = O(1)$. $\square$
 
 ---
 
-## 4.3 — Accounting method (banker's)
+## 4.3 - Accounting method (banker's)
 
 We *charge* each operation an artificial cost (the **amortized cost**)
 that may exceed its real cost. The difference is stored as **credit**
@@ -55,7 +55,7 @@ stays at $3 = O(1)$ per insertion. $\square$
 
 ---
 
-## 4.4 — Potential method
+## 4.4 - Potential method
 
 Define a function $\Phi$ from the structure's state into
 $\mathbb{R}_{\ge 0}$ with $\Phi(\text{initial}) = 0$. The amortized cost
@@ -87,7 +87,7 @@ and $= 0$ right after a doubling).
 
 ---
 
-## 4.5 — Algorithm and proof of correctness
+## 4.5 - Algorithm and proof of correctness
 
 ```python
 class DynamicArray:
@@ -120,7 +120,7 @@ consecutive insertions.
 
 ---
 
-## 4.6 — Exercises
+## 4.6 - Exercises
 
 :::exercise{id="{{EX_AMO_STD}}"}
 :::

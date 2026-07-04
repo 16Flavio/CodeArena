@@ -1,6 +1,6 @@
 // Smoke tests: prove the register → login → dashboard → admin flow
 // still works after every UI refactor. They don't exercise business
-// logic — the backend pytest suite does that — but catch the class of
+// logic - the backend pytest suite does that - but catch the class of
 // regressions backend tests can't see (routing, auth context wiring,
 // translation keys, lazy-loaded chunks failing to mount).
 //
@@ -54,7 +54,7 @@ test('admin panel is reachable and renders without bouncing to /login', async ({
   await login(page);
   await page.goto('/admin');
   await expect(page).toHaveURL(/\/admin/);
-  // Lazy-loaded chunk must mount — we assert *any* admin-ish content is
+  // Lazy-loaded chunk must mount - we assert *any* admin-ish content is
   // rendered, not the RouteSpinner fallback alone.
   await expect(page.locator('body')).toContainText(/admin|utilisateur|user/i, {
     timeout: 15_000,

@@ -61,7 +61,7 @@
     var collide = buckets[idx].length > 0 && buckets[idx].indexOf(k) === -1;
     if (buckets[idx].indexOf(k) === -1) buckets[idx].push(k);
     lastInsertedAt = idx;
-    statusEl.textContent = 'h(' + k + ') = ' + idx + (collide ? ' — collision' : '');
+    statusEl.textContent = 'h(' + k + ') = ' + idx + (collide ? ' - collision' : '');
     render();
   }
 

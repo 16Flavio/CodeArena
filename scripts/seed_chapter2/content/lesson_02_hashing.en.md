@@ -1,6 +1,6 @@
 # 2. Hash Tables
 
-## 2.1 — The idea: skip the sort
+## 2.1 - The idea: skip the sort
 
 We want a structure supporting `insert(k, v)`, `lookup(k)`, and
 `delete(k)` in $\Theta(1)$ **on average**, with no order maintenance.
@@ -10,13 +10,13 @@ maps each key to an array index. We store $(k, v)$ in `T[h(k)]`. If
 $h$ scatters keys well, access is near-instant.
 
 > **The catch.** For any fixed $h$ and any adversary who knows it,
-> we can craft $n$ keys all colliding into the same bucket —
+> we can craft $n$ keys all colliding into the same bucket -
 > performance degrades to $\Theta(n)$. Hence **universal hashing**
 > (a random family).
 
 ---
 
-## 2.2 — Universal hashing
+## 2.2 - Universal hashing
 
 ### Definition
 
@@ -44,7 +44,7 @@ $a$ varies. The $\bmod m$ projection adds at most $\lceil p/m
 
 ---
 
-## 2.3 — Collision resolution
+## 2.3 - Collision resolution
 
 Two philosophies:
 
@@ -93,7 +93,7 @@ def insert(T, k, v, h, m):
 **Pros**: better cache locality, no pointers.
 
 **Cons**:
-- Performance collapses as $\alpha \to 1$ — must resize early
+- Performance collapses as $\alpha \to 1$ - must resize early
   (typically $\alpha < 0.7$).
 - Deletion is non-trivial: you can't `None` a removed slot without
   breaking future probes; use a **tombstone** marker.
@@ -103,7 +103,7 @@ def insert(T, k, v, h, m):
 $$\mathbb{E}[\text{probes per lookup}] = \Theta\left(\frac{1}{(1 - \alpha)^2}\right).$$
 
 At $\alpha = 0.5$, ~4 probes on average; at $\alpha = 0.9$, $\approx
-100$ probes — hence the early-resize rule.
+100$ probes - hence the early-resize rule.
 
 ### Comparison
 
@@ -117,7 +117,7 @@ At $\alpha = 0.5$, ~4 probes on average; at $\alpha = 0.9$, $\approx
 
 ---
 
-## 2.4 — Algorithm: `lookup` with chaining + complexity proof
+## 2.4 - Algorithm: `lookup` with chaining + complexity proof
 
 ### Code
 
@@ -154,7 +154,7 @@ $\Theta(1)$ expected. $\square$
 
 ---
 
-## 2.5 — Exercises
+## 2.5 - Exercises
 
 :::exercise{id="{{EX_HT_DISTINCT}}"}
 :::

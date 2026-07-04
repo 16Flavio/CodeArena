@@ -1,4 +1,4 @@
-"""Seed Chapter 1 — Fondations de l'analyse (algorithmique).
+"""Seed Chapter 1 - Fondations de l'analyse (algorithmique).
 
 Crée (ou met à jour) la section ``fondations-analyse`` avec quatre leçons :
 
@@ -307,7 +307,7 @@ LESSONS: list[dict] = [
                 "prompt_fr": (
                     "Étant donné $r$ et $n$ ($1 \\le r, n \\le 10^9$), calculer\n"
                     "$$1 + r + r^2 + \\dots + r^{n-1} \\pmod{10^9 + 7}.$$\n"
-                    "Le calcul naïf en $O(n)$ est trop lent — il faut une "
+                    "Le calcul naïf en $O(n)$ est trop lent - il faut une "
                     "exponentiation rapide ($O(\\log n)$) et l'inverse modulaire "
                     "(petit théorème de Fermat) pour la division par $r-1$.\n\n"
                     "Cas particulier : $r = 1$ donne $n \\bmod (10^9 + 7)$.\n\n"
@@ -317,7 +317,7 @@ LESSONS: list[dict] = [
                 "prompt_en": (
                     "Given $r$ and $n$ ($1 \\le r, n \\le 10^9$), compute\n"
                     "$$1 + r + r^2 + \\dots + r^{n-1} \\pmod{10^9 + 7}.$$\n"
-                    "The naive $O(n)$ computation is too slow — you need fast "
+                    "The naive $O(n)$ computation is too slow - you need fast "
                     "exponentiation ($O(\\log n)$) and the modular inverse "
                     "(Fermat's little theorem) for the division by $r-1$.\n\n"
                     "Edge case: $r = 1$ gives $n \\bmod (10^9 + 7)$.\n\n"
@@ -563,7 +563,7 @@ LESSONS: list[dict] = [
                     "Implémenter une pile supportant trois opérations :\n\n"
                     "- `P x` : push de la valeur $x$ (chaîne sans espace)\n"
                     "- `O`   : pop (sans effet si la pile est vide)\n"
-                    "- `M k` : multipop — retire les $k$ éléments du sommet, "
+                    "- `M k` : multipop - retire les $k$ éléments du sommet, "
                     "ou tout si la pile contient moins de $k$ éléments\n\n"
                     "**Entrée** :\n\n"
                     "- ligne 1 : entier $q$ ($1 \\le q \\le 10^5$), nombre d'opérations\n"
@@ -572,14 +572,14 @@ LESSONS: list[dict] = [
                     "sommet**, séparé par des espaces, sur une seule ligne. Si la "
                     "pile est vide, écrire le mot `EMPTY`.\n\n"
                     "**Note pédagogique** : prouver que la séquence des $q$ "
-                    "opérations a un coût total amorti de $O(q)$ — chaque élément "
+                    "opérations a un coût total amorti de $O(q)$ - chaque élément "
                     "n'est poppé qu'une fois sur sa vie."
                 ),
                 "prompt_en": (
                     "Implement a stack supporting three operations:\n\n"
                     "- `P x` : push value $x$ (a non-whitespace token)\n"
                     "- `O`   : pop (no effect if the stack is empty)\n"
-                    "- `M k` : multipop — remove the top $k$ elements, "
+                    "- `M k` : multipop - remove the top $k$ elements, "
                     "or everything if the stack holds fewer than $k$\n\n"
                     "**Input**:\n\n"
                     "- line 1: integer $q$ ($1 \\le q \\le 10^5$), number of operations\n"
@@ -588,7 +588,7 @@ LESSONS: list[dict] = [
                     "space-separated, on one line. If the stack is empty, print "
                     "the word `EMPTY`.\n\n"
                     "**Pedagogical note**: argue that the total cost of the $q$ "
-                    "operations is $O(q)$ amortized — each element is popped at "
+                    "operations is $O(q)$ amortized - each element is popped at "
                     "most once during its lifetime."
                 ),
                 "starter_code": (
@@ -755,7 +755,7 @@ def upsert_lesson(db, models, section, lesson_data: dict, *, publish: bool):
 
 
 def reset_exercises(db, models, lesson) -> None:
-    """Drop existing inline exercises for this lesson — we re-create them
+    """Drop existing inline exercises for this lesson - we re-create them
     from the seed definition. Inline exercises don't track student
     submissions, so this is safe."""
     db.query(models.LessonExercise).filter(
@@ -851,7 +851,7 @@ def main(argv: Iterable[str] | None = None) -> int:
 
     state = "publiées" if publish else "en brouillon"
     print()
-    print(f"Chapitre 1 — Fondations de l'analyse : OK ({state}).")
+    print(f"Chapitre 1 - Fondations de l'analyse : OK ({state}).")
     if not publish:
         print("-> Active la publication via l'admin si tu veux les rendre "
               "visibles aux étudiants.")

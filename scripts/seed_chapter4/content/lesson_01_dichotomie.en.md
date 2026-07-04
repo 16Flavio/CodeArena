@@ -1,12 +1,12 @@
 # 1. Binary Search & Loop Invariants
 
-## 1.1 — Intuition
+## 1.1 - Intuition
 
 We look for a value $x$ in a **sorted** array $A[0..n-1]$. Instead
 of scanning all $n$ elements, we **cut in half**: if $x$ is smaller
 than the middle element, it can only be in the left half;
 otherwise in the right half. Each iteration shrinks the search
-space by a factor of two — hence $O(\log n)$ comparisons.
+space by a factor of two - hence $O(\log n)$ comparisons.
 
 Deeper: binary search is a **machine for maintaining an
 invariant**. Each iteration preserves a property over the
@@ -15,7 +15,7 @@ candidate remains.
 
 ---
 
-## 1.2 — Algorithm & invariant
+## 1.2 - Algorithm & invariant
 
 We look for the first index $i$ with $A[i] \ge x$ (C++'s
 `lower_bound`). It's the most useful primitive: equality search,
@@ -43,7 +43,7 @@ $$
 $$
 
 - **Initialization**: $lo = 0$ and $hi = n$, both quantifiers are
-  vacuous — true.
+  vacuous - true.
 - **Maintenance**: in the next iteration, either $A[\text{mid}] < x$
   and we push $lo = \text{mid} + 1$ (every position $\le \text{mid}$
   is $< x$), or $A[\text{mid}] \ge x$ and we set
@@ -51,12 +51,12 @@ $$
 - **Termination**: `hi - lo` strictly decreases each iteration;
   as a positive integer, the loop ends.
 - **Correctness on exit**: $lo = hi$, so $A[j] < x$ for $j < lo$
-  and $A[j] \ge x$ for $j \ge lo$ — that's the definition of
+  and $A[j] \ge x$ for $j \ge lo$ - that's the definition of
   `lower_bound`. $\square$
 
 ---
 
-## 1.3 — Complexity
+## 1.3 - Complexity
 
 The interval $[lo, hi)$ holds at most $n$ elements on entry and
 loses **at least half** per round: if it has size $k$,
@@ -67,16 +67,16 @@ $$\boxed{\;T(n) = \Theta(\log n)\;}$$
 
 ---
 
-## 1.4 — Classic pitfalls
+## 1.4 - Classic pitfalls
 
 1. **Closed vs half-open interval.** With `hi = n - 1` (closed),
    you must write `while lo <= hi` and `hi = mid - 1`, otherwise
-   you loop. Half-open is more regular — pick ONE convention and
+   you loop. Half-open is more regular - pick ONE convention and
    stick with it.
 2. **`mid = (lo + hi) // 2`.** No risk in Python; on C++/Java
    `int`, write `lo + (hi - lo) / 2` to avoid overflow.
 3. **Equality test after `lower_bound`.** The element is present
-   iff `lo < n && A[lo] == x`. Test *both* conditions — skipping
+   iff `lo < n && A[lo] == x`. Test *both* conditions - skipping
    the first walks past the array when $x$ is strictly greater
    than every element.
 4. **Unsorted array.** Binary search says nothing useful on an
@@ -86,7 +86,7 @@ $$\boxed{\;T(n) = \Theta(\log n)\;}$$
 
 ---
 
-## 1.5 — Useful variants
+## 1.5 - Useful variants
 
 - **`upper_bound(A, x)`**: first index $i$ with $A[i] > x$.
   Replace `<` with `<=` in the middle test.
@@ -99,7 +99,7 @@ $$\boxed{\;T(n) = \Theta(\log n)\;}$$
 
 ---
 
-## 1.6 — Exercises
+## 1.6 - Exercises
 
 :::exercise{id="{{EX_SE_LOWERBOUND}}"}
 :::

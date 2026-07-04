@@ -6,24 +6,24 @@ Problem, returning per-testcase verdicts: AC / WA / TLE / MLE / RE / CE.
 Runs on the same host as the RQ worker via subprocess, with these bounds
 on the untrusted contestant process:
 
-  * a scrubbed environment (``_sandbox_env``) — the child never inherits
+  * a scrubbed environment (``_sandbox_env``) - the child never inherits
     the worker's secrets (SECRET_KEY, DATABASE_URL, SMTP creds). Leaking
     SECRET_KEY would let a submission forge admin JWTs.
   * POSIX resource caps (``_child_rlimits``): address space, CPU time,
     process count (fork-bomb guard), and file size (disk-fill guard).
   * a wall-clock timeout kill.
 
-IMPORTANT — this path does NOT provide network or filesystem isolation.
+IMPORTANT - this path does NOT provide network or filesystem isolation.
 Unlike the output-scoring path (``scoring_docker.py``), ``SCORING_MODE``
 is not honoured here: contestant code can still open sockets and read any
 file the worker user can. For anything beyond a trusted classroom, run the
 worker itself inside a locked-down container (``--network=none``, read-only
 rootfs, non-root uid, bind-mounting only the judge workdir). See
 docs/DEPLOY.md. Wiring per-run containers in here needs a toolchain image
-(g++, gcc, javac, python3) — the stock ``codearena-scoring`` image is
+(g++, gcc, javac, python3) - the stock ``codearena-scoring`` image is
 Python-only.
 
-This module intentionally does not import FastAPI — it's called from the
+This module intentionally does not import FastAPI - it's called from the
 worker process."""
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ from . import icpc_sandbox
 log = logging.getLogger("contest.icpc_runner")
 
 
-# ── Verdict constants — match DOMjudge's short codes ──────────────────────────
+# ── Verdict constants - match DOMjudge's short codes ──────────────────────────
 AC = "AC"      # accepted
 WA = "WA"      # wrong answer
 TLE = "TLE"    # time limit exceeded
@@ -50,7 +50,7 @@ MLE = "MLE"    # memory limit exceeded
 RE = "RE"      # runtime error (non-zero exit, signal)
 CE = "CE"      # compile error
 PE = "PE"      # presentation error (unused by default checkers; reserved)
-IE = "IE"      # internal/judge error — e.g. admin-supplied interactor failed to compile
+IE = "IE"      # internal/judge error - e.g. admin-supplied interactor failed to compile
 
 
 @dataclass
@@ -104,21 +104,21 @@ def check_output(team_out: str, expected: str, kind: str, epsilon: Optional[floa
     """Dispatch a built-in checker. Returns True on match.
 
     ``custom`` is reserved for future compiled output_validators and falls
-    back to tokens for v1 — the admin UI warns if a custom script is set
+    back to tokens for v1 - the admin UI warns if a custom script is set
     but not yet executed."""
     kind = (kind or "tokens").lower()
     if kind == "diff":
         return _check_diff(team_out, expected)
     if kind == "float":
         return _check_float(team_out, expected, epsilon or 1e-6)
-    # tokens (and custom, until wired) — default.
+    # tokens (and custom, until wired) - default.
     return _check_tokens(team_out, expected)
 
 
 # ── Subprocess execution ──────────────────────────────────────────────────────
 
 # The child inherits ONLY these (secret-free) variables from the worker's
-# environment — enough for the interpreter/compiler to start, nothing more.
+# environment - enough for the interpreter/compiler to start, nothing more.
 # Everything else is withheld, so a submission running ``print(os.environ)``
 # / ``getenv`` can't exfiltrate a platform secret. The withheld set includes
 # SECRET_KEY (JWT forgery → admin), DATABASE_URL, SMTP creds, REDIS_URL,
@@ -129,7 +129,7 @@ _ENV_ALLOWLIST = frozenset({
     # POSIX runtime
     "PATH", "HOME", "LANG", "LC_ALL", "LC_CTYPE", "LC_NUMERIC", "TMPDIR",
     "TZ", "TERM", "USER", "LOGNAME", "SHELL", "LD_LIBRARY_PATH",
-    # Windows runtime (dev boxes) — needed for the interpreter/compiler to
+    # Windows runtime (dev boxes) - needed for the interpreter/compiler to
     # even start; none of these carry app secrets.
     "SYSTEMROOT", "WINDIR", "PATHEXT", "TEMP", "TMP", "COMSPEC", "SYSTEMDRIVE",
     "NUMBER_OF_PROCESSORS", "PROCESSOR_ARCHITECTURE", "OS",
@@ -148,7 +148,7 @@ def _sandbox_env(**extra: str) -> dict:
 def _child_rlimits(memory_mb: int, cpu_s: int):
     """Return a POSIX ``preexec_fn`` capping the child's address space, CPU
     time, process count (fork-bomb guard) and single-file size (disk-fill
-    guard). Returns ``None`` on Windows/dev where ``resource`` is absent —
+    guard). Returns ``None`` on Windows/dev where ``resource`` is absent -
     the wall-clock timeout is then the only bound.
 
     Note: RLIMIT_NPROC is enforced per real-uid and is a no-op when the
@@ -159,7 +159,7 @@ def _child_rlimits(memory_mb: int, cpu_s: int):
     except ImportError:
         return None
 
-    def _apply():  # pragma: no cover — only runs in POSIX children
+    def _apply():  # pragma: no cover - only runs in POSIX children
         mem_bytes = memory_mb * 1024 * 1024
         resource.setrlimit(resource.RLIMIT_AS, (mem_bytes, mem_bytes))
         resource.setrlimit(resource.RLIMIT_CPU, (cpu_s, cpu_s + 1))
@@ -182,7 +182,7 @@ _DOCKER_MODE: Optional[bool] = None
 def _use_docker() -> bool:
     """True when ``SCORING_MODE=docker``. Fail-closed: if docker mode is
     requested but the daemon is unreachable, raise instead of silently
-    downgrading to a host subprocess — this path executes arbitrary
+    downgrading to a host subprocess - this path executes arbitrary
     contestant code, so a daemon outage must surface as a judge error
     (``IE`` verdict), never as an isolation downgrade. Availability is
     cached per process only on success, so a daemon that comes up later
@@ -283,7 +283,7 @@ def _guess_language_filename(language_id: str) -> str:
 # get_judging). Docker mode already contains this (read-only, isolated rootfs);
 # this scan is the belt for the non-isolated subprocess fallback. Legitimate
 # competitive submissions never use these forms (system headers are
-# ``<vector>`` / ``<sys/types.h>`` — no leading slash right after the bracket).
+# ``<vector>`` / ``<sys/types.h>`` - no leading slash right after the bracket).
 _C_FAMILY_IDS = {"c", "cpp", "cc", "cxx", "c++"}
 _COMPILE_EXPLOIT_PATTERNS = (
     (re.compile(r'#\s*include\s*[<"]\s*(?:/|\.\.)'), "#include of an absolute or parent path"),
@@ -314,7 +314,7 @@ def compile_source(language_id: str, compile_cmd: str, source_code: str, *, work
     exploit = _scan_source_for_compile_exploits(language_id, source_code)
     if exploit:
         # Never write/compile the source: return a CE carrying only our own
-        # message — no file contents, no compiler echo.
+        # message - no file contents, no compiler echo.
         return RunResult(verdict=CE, compile_output=exploit)
 
     src_name = _guess_language_filename(language_id)
@@ -323,7 +323,7 @@ def compile_source(language_id: str, compile_cmd: str, source_code: str, *, work
         f.write(source_code)
 
     if not compile_cmd.strip():
-        return RunResult(verdict=AC)  # interpreted — nothing to compile
+        return RunResult(verdict=AC)  # interpreted - nothing to compile
 
     exe_path = os.path.join(workdir, "bin")
     cmd = _expand(compile_cmd, src=src_path, exe=exe_path, workdir=workdir)
@@ -356,7 +356,7 @@ def run_against_testcase(
     )
     # rc in TIMEOUT_RCS covers both the subprocess wall-kill (-9) and the
     # container's coreutils ``timeout`` (124/137). The elapsed>limit fallback
-    # is only trustworthy for the subprocess path — in docker mode container
+    # is only trustworthy for the subprocess path - in docker mode container
     # startup jitter inflates elapsed_ms, so we rely on the rc there.
     if rc in icpc_sandbox.TIMEOUT_RCS or (not _use_docker() and elapsed_ms > int(time_limit_ms * time_factor)):
         return RunResult(verdict=TLE, runtime_ms=elapsed_ms, stderr=err[:1000])
@@ -375,9 +375,9 @@ def run_against_testcase(
 _INTERACTOR_WRAPPER = r"""
 # Runs an admin-supplied Python 'interactor' that talks to the user
 # program over stdin/stdout. The admin script has these locals:
-#   testcase_input (str)     — the problem's canonical testcase input
-#   expected_output (str)    — the expected output (may be empty)
-#   verdict (callable)       — verdict('AC') or verdict('WA', 'msg')
+#   testcase_input (str)     - the problem's canonical testcase input
+#   expected_output (str)    - the expected output (may be empty)
+#   verdict (callable)       - verdict('AC') or verdict('WA', 'msg')
 # Everything the script writes to stdout goes to the user's stdin; it
 # reads the user's stdout by doing input() / sys.stdin.readline().
 # Exit codes: 0 = AC, 42 = WA, 1 = RE (script crashed).
@@ -404,7 +404,7 @@ except Exception as e:
     sys.exit(1)
 
 if ns["_verdict_code"] is None:
-    # Script ran to completion without explicit verdict — assume AC.
+    # Script ran to completion without explicit verdict - assume AC.
     sys.exit(0)
 if ns["_verdict_msg"]:
     sys.stderr.write(ns["_verdict_msg"] + "\n")
@@ -413,7 +413,7 @@ sys.exit(ns["_verdict_code"])
 
 
 # Orchestrator run INSIDE the sandbox container for interactive problems.
-# It wires the user program and the interactor over OS pipes — the same
+# It wires the user program and the interactor over OS pipes - the same
 # scheme as the host path, but executed within the network-less, read-only
 # container so the contestant program is isolated. It reads a JSON payload
 # (path in argv[1]) and normalises the verdict to an exit code:
@@ -509,7 +509,7 @@ def _run_interactive(
 
     Verdict comes from the interactor's exit code (0 = AC, 42 = WA).
 
-    ``interactor_run_cmd_str`` is ``None`` for Python interactors — we run
+    ``interactor_run_cmd_str`` is ``None`` for Python interactors - we run
     the built-in ``_INTERACTOR_WRAPPER`` which injects ``verdict()`` and
     reads the testcase via the ``INTERACTOR_PAYLOAD`` env JSON. For compiled
     interactors it's the fully-expanded command string, and we instead
@@ -529,7 +529,7 @@ def _run_interactive(
     pybin = "python3" if docker else (_sys.executable or "python3")
 
     # Env visible to the INTERACTOR only. It carries the testcase and the
-    # EXPECTED output — the user program must never see these. (The previous
+    # EXPECTED output - the user program must never see these. (The previous
     # code shared one env between both processes, leaking expected_output to
     # the contestant via os.environ.)
     inter_env_extra: dict = {}
@@ -617,7 +617,7 @@ def _run_interactive(
     )
     inter_env = dict(user_env)
     inter_env.update(inter_env_extra)
-    # Same resource caps as the batch path — the interactive path previously
+    # Same resource caps as the batch path - the interactive path previously
     # applied none, leaving MLE/fork-bombs unbounded for interactive problems.
     child_preexec = _child_rlimits(memory_limit_mb, int(wall) + 1)
 
@@ -688,7 +688,7 @@ def _run_interactive(
         if rc == 42:
             return RunResult(verdict=WA, runtime_ms=elapsed_ms, stderr=(inter_err or user_err))
         return RunResult(verdict=RE, runtime_ms=elapsed_ms, stderr=(inter_err or user_err))
-    # Compiled path — DOMjudge convention.
+    # Compiled path - DOMjudge convention.
     if rc == 42 or rc == 0:
         # 0 is also AC so natively-authored compiled interactors written
         # against the older "exit 0 = AC" protocol keep working.
@@ -727,7 +727,7 @@ def judge(
     original input concatenated with every prior run's stdout. Only the
     final run's output is checked against ``expected``.
 
-    ``interactor_language`` defaults to ``py3`` — the built-in wrapper with
+    ``interactor_language`` defaults to ``py3`` - the built-in wrapper with
     ``verdict()`` sugar. Any other language compiles ``interactor_script``
     in a sibling workdir using ``interactor_compile_cmd`` and invokes it
     with ``interactor_run_cmd``; the compiled interactor reads the testcase
@@ -806,7 +806,7 @@ def judge(
                     if res.verdict != AC:
                         break
                     # Next pass sees previous output appended to the input
-                    # — basic multi-pass semantics; real DOMjudge supports
+                    # - basic multi-pass semantics; real DOMjudge supports
                     # more sophisticated feedback files, deferred.
                     current_stdin = (current_stdin or "") + (res.stdout or "")
                 passed = False
@@ -819,7 +819,7 @@ def judge(
                         )
             runs.append((tc_id, res, passed))
             if res.verdict != AC:
-                # For plain ICPC scoring we short-circuit on first non-AC —
+                # For plain ICPC scoring we short-circuit on first non-AC -
                 # no point running the remaining testcases. For subtask
                 # scoring (or callers that explicitly opt in) we keep
                 # running so partial credit can be computed from the full

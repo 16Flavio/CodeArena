@@ -6,7 +6,7 @@ shared ``/api/contests`` prefix; the router is mounted from main.py
 right after the contests router.
 
 Helpers shared with the parent module live in ``contests.py`` and are
-re-imported here — duplicating them would make the next migration
+re-imported here - duplicating them would make the next migration
 that touches eligibility rules a guaranteed bug.
 """
 from __future__ import annotations
@@ -269,7 +269,7 @@ def get_my_registration(
             disqualified=bool(solo_reg.disqualified),
             disqualified_reason=(solo_reg.disqualified_reason if solo_reg.disqualified else None),
         )
-    # Not registered yet — report whether the user *could* register solo or as team
+    # Not registered yet - report whether the user *could* register solo or as team
     can_register_solo = contest.is_public or _user_on_allowlist(db, contest_id, user.id)
     can_register_team = bool(membership) and (
         contest.is_public or _team_on_allowlist(db, contest_id, membership.team_id)
@@ -329,14 +329,14 @@ def register_self(
                 detail="Cette équipe n'est pas sur la liste d'accès",
             )
         # One-registration-per-(user,contest) rule: if any team member is
-        # already solo-registered on this contest, refuse — otherwise
+        # already solo-registered on this contest, refuse - otherwise
         # they'd appear twice on the scoreboard. The admin can force it
         # by first asking the solo user to unregister.
         member_ids = [
             m.user_id for m in db.query(models.TeamMember)
             .filter(models.TeamMember.team_id == team_id).all()
         ]
-        # Persistent ban check — blocks teams whose any member was DQ'd
+        # Persistent ban check - blocks teams whose any member was DQ'd
         # (in any scope) on this contest. Bans are created by the
         # disqualify endpoint and persist across unregister/re-register.
         if not user.is_admin and member_ids:
@@ -367,7 +367,7 @@ def register_self(
                 raise HTTPException(
                     status_code=409,
                     detail=(
-                        f"{clashing.username} est déjà inscrit·e en solo — "
+                        f"{clashing.username} est déjà inscrit·e en solo - "
                         "il/elle doit d'abord se désinscrire avant que l'équipe puisse rejoindre."
                     ),
                 )
@@ -375,7 +375,7 @@ def register_self(
         if existing:
             if existing.disqualified:
                 # The team's previous registration is disqualified by an
-                # admin — surfacing the existing row would silently let
+                # admin - surfacing the existing row would silently let
                 # them think they're back in. Refuse loudly instead.
                 raise_error(
                     code=ErrorCode.REGISTRATION_DISQUALIFIED,
@@ -413,7 +413,7 @@ def register_self(
             status_code=403,
             detail="Vous n'êtes pas sur la liste d'accès",
         )
-    # Persistent ban check — also catches the user who was DQ'd as part
+    # Persistent ban check - also catches the user who was DQ'd as part
     # of a team and is now trying to enter solo on the same contest.
     if not user.is_admin:
         ban = db.query(models.ContestBan).filter(
@@ -449,7 +449,7 @@ def register_self(
             raise HTTPException(
                 status_code=409,
                 detail=(
-                    f"Votre équipe « {clashing_team.name} » est déjà inscrite — "
+                    f"Votre équipe « {clashing_team.name} » est déjà inscrite - "
                     "désinscrivez l'équipe si vous voulez participer en solo."
                 ),
             )
@@ -519,7 +519,7 @@ def unregister_self(
                 except OSError:
                     pass
             db.delete(s)
-        # Drop cached scoreboard entries too — update_entry_for_submission
+        # Drop cached scoreboard entries too - update_entry_for_submission
         # would rebuild them to 0 row-by-row, but a bulk delete is faster
         # and matches "the team is gone from this contest" semantics.
         if team_id is not None:
@@ -553,13 +553,13 @@ def unregister_self(
     if membership:
         team_reg = _team_registration(db, contest_id, membership.team_id)
         if team_reg and (user.is_admin or _is_team_owner(db, membership.team_id, user.id)):
-            # Disqualified teams can't unregister to wipe the sanction —
+            # Disqualified teams can't unregister to wipe the sanction -
             # the row stays, the unique constraint blocks re-registration,
             # and only an admin requalify can clear it.
             if team_reg.disqualified and not user.is_admin:
                 raise HTTPException(
                     status_code=403,
-                    detail=team_reg.disqualified_reason or "Cette équipe est disqualifiée — contactez un administrateur",
+                    detail=team_reg.disqualified_reason or "Cette équipe est disqualifiée - contactez un administrateur",
                 )
             n_subs = _purge_submissions(team_id=membership.team_id)
             db.delete(team_reg)
@@ -578,7 +578,7 @@ def unregister_self(
         if solo_reg.disqualified and not user.is_admin:
             raise HTTPException(
                 status_code=403,
-                detail=solo_reg.disqualified_reason or "Vous êtes disqualifié·e — contactez un administrateur",
+                detail=solo_reg.disqualified_reason or "Vous êtes disqualifié·e - contactez un administrateur",
             )
         n_subs = _purge_submissions(user_id=user.id)
         db.delete(solo_reg)
@@ -665,7 +665,7 @@ def set_registration_disqualified(
     r.disqualified_reason = (payload.reason or None) if r.disqualified else None
     # Mirror the DQ state into the contest_bans table so the sanction
     # survives unregister/re-register and scope-switching (solo↔team).
-    # For team DQs we ban every CURRENT member individually — joining a
+    # For team DQs we ban every CURRENT member individually - joining a
     # banned team after the fact is not retroactively penalised, but the
     # team itself is still blocked at the registration step.
     if r.team_id is not None:
@@ -691,7 +691,7 @@ def set_registration_disqualified(
             else:
                 existing_ban.reason = r.disqualified_reason
     else:
-        # Requalify — drop the bans we created for this scope. Use member
+        # Requalify - drop the bans we created for this scope. Use member
         # ids so a team-DQ → team-requalify clears every member's ban.
         if member_ids:
             db.query(models.ContestBan).filter(
@@ -705,7 +705,7 @@ def set_registration_disqualified(
     )
     db.commit()
     db.refresh(r)
-    # The DQ flag changes scoreboard visibility — drop the cached
+    # The DQ flag changes scoreboard visibility - drop the cached
     # response so the change is reflected immediately rather than
     # within the 2 s TTL.
     from ..scoreboard_response_cache import invalidate_contest

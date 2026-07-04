@@ -13,7 +13,7 @@ import { useConfirm, usePrompt } from '../Confirm';
 import { extractErrorMessage } from '../../utils/apiError';
 
 // Self-contained submissions browser with its own list/filter/modals
-// state. Receives ``contests`` for the contest dropdown — Admin.jsx
+// state. Receives ``contests`` for the contest dropdown - Admin.jsx
 // already has them loaded for other tabs.
 export default function SubmissionsTab({ contests }) {
   const { t } = useTranslation();
@@ -49,7 +49,7 @@ export default function SubmissionsTab({ contests }) {
   };
 
   useEffect(() => {
-    // Loading on (re)mount and on filter change is intentional — the
+    // Loading on (re)mount and on filter change is intentional - the
     // setState inside ``load`` is the whole point.
     /* eslint-disable-next-line react-hooks/set-state-in-effect */
     load(0);
@@ -253,8 +253,8 @@ export default function SubmissionsTab({ contests }) {
                     </td>
                     <td className="py-2 px-4 text-xs text-zinc-500 dark:text-zinc-400">
                       {kind === 'icpc'
-                        ? (s.problem_label || <span className="italic text-zinc-400 dark:text-zinc-600">—</span>)
-                        : (s.instance_name || <span className="italic text-zinc-400 dark:text-zinc-600">—</span>)}
+                        ? (s.problem_label || <span className="italic text-zinc-400 dark:text-zinc-600">-</span>)
+                        : (s.instance_name || <span className="italic text-zinc-400 dark:text-zinc-600">-</span>)}
                     </td>
                     <td className="py-2 px-4 text-xs text-zinc-500 truncate max-w-[200px] dark:text-zinc-400" title={s.file_name}>
                       {s.file_name}
@@ -266,7 +266,7 @@ export default function SubmissionsTab({ contests }) {
                     </td>
                     {kind !== 'icpc' && (
                       <td className="py-2 px-4 font-mono text-right dark:text-zinc-200">
-                        {s.score != null ? s.score.toFixed(2) : '—'}
+                        {s.score != null ? s.score.toFixed(2) : '-'}
                       </td>
                     )}
                     <td className="py-2 px-4">
@@ -349,7 +349,7 @@ export default function SubmissionsTab({ contests }) {
               {t('common.previous')}
             </button>
             <span className="text-xs text-zinc-500 dark:text-zinc-500">
-              {list.offset + 1}–{Math.min(list.offset + list.limit, list.total)} / {list.total}
+              {list.offset + 1}-{Math.min(list.offset + list.limit, list.total)} / {list.total}
             </span>
             <button
               className="btn-secondary text-xs py-1.5 px-3 disabled:opacity-50"
@@ -403,8 +403,8 @@ export default function SubmissionsTab({ contests }) {
               <div className="space-y-3">
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   {t('admin.submissions.judgingMeta', {
-                    when: judgingViewer.judging.judged_at ? new Date(judgingViewer.judging.judged_at).toLocaleString() : '—',
-                    ms: judgingViewer.judging.max_runtime_ms ?? '—',
+                    when: judgingViewer.judging.judged_at ? new Date(judgingViewer.judging.judged_at).toLocaleString() : '-',
+                    ms: judgingViewer.judging.max_runtime_ms ?? '-',
                   })}
                 </p>
                 {judgingViewer.judging.compile_output && (

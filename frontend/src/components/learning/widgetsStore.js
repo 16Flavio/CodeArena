@@ -21,7 +21,7 @@ export async function loadWidgets() {
       return cache;
     }).catch((err) => {
       inflight = null;
-      // Fail open — return an empty list rather than crashing the
+      // Fail open - return an empty list rather than crashing the
       // lesson reader if the widgets endpoint is down.
       console.warn('learn widgets fetch failed:', err);
       cache = [];

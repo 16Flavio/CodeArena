@@ -8,9 +8,9 @@ const UNITS = [
 ];
 
 export function formatScore(value) {
-  if (value == null) return '—';
+  if (value == null) return '-';
   const n = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(n)) return '—';
+  if (!Number.isFinite(n)) return '-';
 
   const abs = Math.abs(n);
   if (abs < 1000) return n.toFixed(1);
@@ -30,9 +30,9 @@ export function formatScore(value) {
 }
 
 export function formatScoreFull(value) {
-  if (value == null) return '—';
+  if (value == null) return '-';
   const n = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(n)) return '—';
+  if (!Number.isFinite(n)) return '-';
 
   const abs = Math.abs(n);
   if (abs >= 1e16) return n.toExponential(6).replace('e+', 'e');

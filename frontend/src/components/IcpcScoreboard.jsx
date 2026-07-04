@@ -150,7 +150,7 @@ export default function IcpcScoreboard({ contestId }) {
                       onClick={() => openStatementPdf(contestId, p.id, p.statement_pdf_version)}
                       className="inline-block w-6 h-6 rounded text-xs font-bold leading-6 cursor-pointer transition-opacity hover:opacity-75 focus:outline-none focus:ring-2 focus:ring-accent-500"
                       style={{ background: p.color || '#a1a1aa', color: textOn(p.color || '#a1a1aa') }}
-                      title={`${p.label}${p.name ? ` — ${p.name}` : ''} · ${t('icpcScoreboard.openStatement')}`}
+                      title={`${p.label}${p.name ? ` - ${p.name}` : ''} · ${t('icpcScoreboard.openStatement')}`}
                     >
                       {p.label}
                     </button>
@@ -205,7 +205,7 @@ export default function IcpcScoreboard({ contestId }) {
                   if (!cell) {
                     return (
                       <td key={p.id} className="py-2 px-2 text-center text-zinc-300 dark:text-zinc-700">
-                        —
+                        -
                       </td>
                     );
                   }
@@ -241,11 +241,11 @@ export default function IcpcScoreboard({ contestId }) {
                       </td>
                     );
                   }
-                  // Post-freeze submission on an un-solved cell — paint
+                  // Post-freeze submission on an un-solved cell - paint
                   // the whole tile blue ("frozen" look) but keep the
                   // pre-freeze wrong-attempt count in red so the viewer
                   // still sees what WAS revealed. Post-freeze attempts
-                  // appear next to it in white without a verdict — the
+                  // appear next to it in white without a verdict - the
                   // two numbers are additive in the DOMjudge style
                   // "3 + 1?".
                   if (cell.pending_attempts > 0) {

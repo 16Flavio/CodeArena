@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import PasswordStrength from '../components/PasswordStrength';
 import { extractErrorMessage } from '../utils/apiError';
 
-// Read the token from EITHER the URL fragment (preferred — never sent
+// Read the token from EITHER the URL fragment (preferred - never sent
 // to the server, never logged by the reverse proxy, never leaked via
 // Referer) OR the legacy ``?token=`` query string (for emails minted by
 // older releases that haven't expired yet). Fragment wins when both

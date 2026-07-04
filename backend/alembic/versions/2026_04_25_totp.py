@@ -1,7 +1,7 @@
 """users: TOTP 2FA columns
 
 Adds ``totp_secret``, ``totp_enabled``, ``totp_recovery_codes``. Pure
-additive — existing rows default to ``totp_enabled=False`` so the
+additive - existing rows default to ``totp_enabled=False`` so the
 migration is safe to run on a populated DB.
 
 Revision ID: 2026_04_25_a4

@@ -1,10 +1,10 @@
-"""Output-scoring scoreboard endpoints — JSON board, SSE stream, CSV
+"""Output-scoring scoreboard endpoints - JSON board, SSE stream, CSV
 export. Extracted from ``contests.py`` so that file stops growing. All
 the shared helpers and the ``get_scoreboard`` logic still depend on the
 submission / registration tables owned by ``contests.py``; we reuse
 those through plain imports.
 
-The ICPC scoreboard lives in ``icpc.py`` — different aggregation rules,
+The ICPC scoreboard lives in ``icpc.py`` - different aggregation rules,
 different response schema."""
 from __future__ import annotations
 
@@ -41,14 +41,14 @@ def get_scoreboard(
 ):
     """Compute the scoreboard for ``user``. When ``as_observer`` is True
     the function pretends the caller is a regular non-admin participant
-    even if they're actually an admin — used by the post-contest
+    even if they're actually an admin - used by the post-contest
     presentation flow to obtain the "audience-visible frozen view"
     without conjuring a fake User object.
 
     The heavy build is wrapped in a per-process TTL cache keyed on
     ``(contest_id, audience)`` where ``audience`` is ``"admin"`` for
     callers that see through the freeze and ``"public"`` for everyone
-    else. Two cache slots per contest, regardless of viewer count —
+    else. Two cache slots per contest, regardless of viewer count -
     hint-cost penalties and per-row visibility don't depend on the
     *viewer*, only on the row's owner. The visibility / 404 check
     runs on every request and is *not* cached so a freshly-hidden
@@ -77,7 +77,7 @@ def _build_scoreboard(
     contest_id: int, *, is_admin: bool, db: Session,
 ) -> schemas.ScoreboardOut:
     """Heavy lift behind ``get_scoreboard``. Pure function of
-    ``(contest_id, is_admin, current DB state)`` — no per-viewer state,
+    ``(contest_id, is_admin, current DB state)`` - no per-viewer state,
     safe to share across every caller in the same audience class."""
     contest = (
         db.query(models.Contest)
@@ -88,7 +88,7 @@ def _build_scoreboard(
     # Caller already validated the contest exists + is visible. We
     # re-fetch with instances loaded so the heavy joinedload doesn't
     # run on every visibility check.
-    if not contest:  # pragma: no cover — defensive
+    if not contest:  # pragma: no cover - defensive
         raise HTTPException(status_code=404, detail="Concours introuvable")
 
     now = _utcnow()
@@ -140,7 +140,7 @@ def _build_scoreboard(
         solo_user_ids = {uid for tid, uid in scope_rows if tid is None and uid is not None}
     else:
         # Frozen path: include teams whose ONLY submissions are after
-        # the cutoff — otherwise a team who submits for the first time
+        # the cutoff - otherwise a team who submits for the first time
         # during freeze wouldn't appear at all. Their cell will render
         # as "?" with the snowflake icon downstream.
         base_q = (
@@ -189,7 +189,7 @@ def _build_scoreboard(
                     scored = 0.0
                     count = 0
                 else:
-                    # Always take the best — the "mark as final" flow is
+                    # Always take the best - the "mark as final" flow is
                     # gone; highest scored submission per (team, instance)
                     # wins.
                     scored = r.best_score
@@ -383,10 +383,10 @@ def scoring_presentation(
             detail="La présentation n'est disponible qu'après la fin du concours",
         )
 
-    # Final state — admin sees the truth (no cutoff).
+    # Final state - admin sees the truth (no cutoff).
     final_state = get_scoreboard(contest_id=contest_id, user=admin, db=db)  # type: ignore
 
-    # Frozen state — same admin caller, but ``as_observer=True`` flips
+    # Frozen state - same admin caller, but ``as_observer=True`` flips
     # the function into "render as a non-admin participant". Only
     # differs from the final view when ``freeze_scoreboard_at`` is set;
     # with the auto-unfreeze gone, the freeze persists post-end so this
@@ -396,7 +396,7 @@ def scoring_presentation(
     else:
         frozen_state = final_state
 
-    # Per-instance "best score" — the team holding the top score on
+    # Per-instance "best score" - the team holding the top score on
     # each instance in the final state. Empty cells / zero scores skip.
     instance_bests: list[schemas.ScoringInstanceBest] = []
     for inst in final_state.instances:
@@ -419,7 +419,7 @@ def scoring_presentation(
                 best_score=best_score,
             ))
 
-    # Medal podium — top-12 by total_score. Same tier breakdown as
+    # Medal podium - top-12 by total_score. Same tier breakdown as
     # the ICPC presentation (1-4 gold, 5-8 silver, 9-12 bronze).
     sorted_teams = sorted(final_state.teams, key=lambda t: -t.total_score)
     medals: list[schemas.ScoringMedalEntry] = []

@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-/* KaTeX math typesetting — used by lesson markdown via remark-math /
+/* KaTeX math typesetting - used by lesson markdown via remark-math /
    rehype-katex. Imported once at the app root so any LessonMarkdown
    render picks up the styles automatically. */
 @import 'katex/dist/katex.min.css';

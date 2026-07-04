@@ -47,7 +47,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 # Pre-computed bcrypt hash of a random string. The login handler verifies a
 # supplied password against THIS when the username doesn't exist, so a missing
-# account takes the same time as a wrong password — closing the timing oracle
+# account takes the same time as a wrong password - closing the timing oracle
 # that would otherwise let an attacker enumerate valid usernames.
 _DUMMY_PASSWORD_HASH = hash_password(_secrets.token_urlsafe(24))
 
@@ -57,7 +57,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     so the routes that consume access tokens can distinguish them from
     short-lived special-purpose tokens (the 2FA login challenge being
     the obvious one). Callers that mint a non-``access`` token must
-    pass their own ``purpose`` in ``data`` — it overrides the default."""
+    pass their own ``purpose`` in ``data`` - it overrides the default."""
     to_encode = data.copy()
     to_encode.setdefault("purpose", "access")
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS))
@@ -78,7 +78,7 @@ def get_current_user(
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         # CRITICAL: ``purpose`` segregates token types. Without this
         # check, a 2FA challenge token (which a user gets after only
-        # the password step) is accepted as a full session — bypassing
+        # the password step) is accepted as a full session - bypassing
         # the OTP entirely. Tokens minted by older releases lack the
         # claim altogether; treat them as legacy access tokens so this
         # patch doesn't kick everyone out at deploy time.
@@ -99,7 +99,7 @@ def get_current_user(
     # Session revocation: the token must carry the user's CURRENT
     # ``token_version`` (``tv`` claim, minted at login). Password change
     # or reset bumps the column, instantly invalidating every token
-    # minted before — the only kill switch for a stolen 30-day
+    # minted before - the only kill switch for a stolen 30-day
     # remember-me token short of rotating SECRET_KEY. Legacy tokens
     # without the claim count as tv=0.
     if token_version != (user.token_version or 0):
@@ -125,7 +125,7 @@ def require_admin_or_organizer(user: models.User = Depends(get_current_user)) ->
 
 
 def can_manage_contest(user: models.User, contest: "models.Contest") -> bool:
-    """Return True iff ``user`` is allowed to mutate ``contest`` —
+    """Return True iff ``user`` is allowed to mutate ``contest`` -
     create instances, DQ participants, override verdicts, rescore.
 
     Admins always pass. Organizers pass only when they CREATED the
@@ -192,7 +192,7 @@ def get_current_user_from_query(
         # Query-string callers (SSE / <a href> downloads) may present either a
         # normal access token or a short-lived "stream" ticket
         # (POST /api/auth/stream-ticket). A 2FA challenge token must still be
-        # rejected — it only proves the password step.
+        # rejected - it only proves the password step.
         purpose = payload.get("purpose", "access")
         if purpose not in ("access", "stream"):
             raise JWTError("wrong purpose")
@@ -207,7 +207,7 @@ def get_current_user_from_query(
             detail="Identifiants d'authentification invalides",
         )
     user = db.query(models.User).filter(models.User.id == user_id).first()
-    # Same ``tv`` revocation check as get_current_user — stream tickets
+    # Same ``tv`` revocation check as get_current_user - stream tickets
     # minted from a since-revoked session must die with it.
     if user is None or token_version != (user.token_version or 0):
         raise HTTPException(

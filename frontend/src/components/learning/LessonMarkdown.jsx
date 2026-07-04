@@ -16,16 +16,16 @@ import { loadWidgets, getCachedSync, subscribe } from './widgetsStore';
 const REHYPE_PLUGINS = [rehypeKatex];
 
 // Two layers of widgets:
-//   1. Built-in (WIDGET_REGISTRY) — React components like SortViz.
+//   1. Built-in (WIDGET_REGISTRY) - React components like SortViz.
 //      Polished, integrated theme, hand-written. Cannot be edited
 //      from the UI.
-//   2. Custom (DB-backed via widgetsStore) — admin-authored HTML+JS
+//   2. Custom (DB-backed via widgetsStore) - admin-authored HTML+JS
 //      bodies rendered in a sandboxed iframe via ``CustomWidget``.
 //      Editable from the admin UI, isolated by the iframe sandbox.
 //
 // Lesson markdown's directive name is matched against both. Built-in
 // wins on conflict (an admin can't accidentally shadow a polished
-// widget by creating one with the same name — the create endpoint
+// widget by creating one with the same name - the create endpoint
 // validates uniqueness in DB but not against built-ins; the renderer
 // simply prefers the built-in).
 //
@@ -44,7 +44,7 @@ function buildPlugin(knownDirectives) {
           node.type === 'textDirective'
         ) {
           if (!knownDirectives.has(node.name)) {
-            // Unknown directive — render as plain text so authors see
+            // Unknown directive - render as plain text so authors see
             // their typo rather than silently dropping content.
             return;
           }
@@ -62,7 +62,7 @@ function buildPlugin(knownDirectives) {
 
 /**
  * Render a lesson markdown body. Custom widgets are interpolated via
- * remark directives — see ``WIDGETS`` for the static registry and the
+ * remark directives - see ``WIDGETS`` for the static registry and the
  * widgetsStore for DB-backed widgets.
  *
  * Tailwind ``prose`` classes give pleasant typography for free; the
@@ -109,7 +109,7 @@ export default function LessonMarkdown({ children }) {
       out[`learning-${name}`] = (props) => <Component {...props} />;
     }
     // DB-backed (only kicks in if not already taken by a built-in
-    // with the same name — Object.assign order matters).
+    // with the same name - Object.assign order matters).
     for (const w of dbWidgets) {
       const tag = `learning-${w.name}`;
       if (out[tag]) continue;  // built-in wins

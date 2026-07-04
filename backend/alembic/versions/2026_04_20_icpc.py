@@ -1,4 +1,4 @@
-"""ICPC mode — languages, problems, testcases, judgings, clarifications,
+"""ICPC mode - languages, problems, testcases, judgings, clarifications,
 icpc scoreboard cache; Contest.kind discriminator; Submission.problem_id
 + source_language; relax Submission.instance_id to nullable.
 
@@ -28,7 +28,7 @@ def upgrade() -> None:
         )
 
     # Languages table first (submissions FK into it if we stored language as
-    # a FK — we chose a plain string column for v1 to avoid a seed-on-startup
+    # a FK - we chose a plain string column for v1 to avoid a seed-on-startup
     # dance; the column still references Language.id conceptually).
     op.create_table(
         "languages",
@@ -224,7 +224,7 @@ def upgrade() -> None:
         {
             "id": "java", "display_name": "Java 17",
             "extensions": "java",
-            # Main class name fixed to Main — simplest convention;
+            # Main class name fixed to Main - simplest convention;
             # Kattis/DOMjudge also support detection but we avoid the
             # regex dance for v1.
             "compile_cmd": "javac -d {workdir} {src}",
@@ -250,7 +250,7 @@ def downgrade() -> None:
         batch_op.drop_constraint("fk_submissions_problem", type_="foreignkey")
         batch_op.drop_column("source_language")
         batch_op.drop_column("problem_id")
-        # Keep instance_id nullable on downgrade — restoring NOT NULL would
+        # Keep instance_id nullable on downgrade - restoring NOT NULL would
         # fail if any ICPC submissions were written.
 
     op.drop_index("ix_testcases_problem_id", table_name="testcases")

@@ -3,7 +3,7 @@
 Admin-authored interactive widgets. Bodies (HTML+JS) are stored as
 text and rendered in sandboxed iframes by the frontend.
 
-Pure additive — safe to run on a populated DB.
+Pure additive - safe to run on a populated DB.
 
 Revision ID: 2026_04_27_a1
 Revises: 2026_04_26_a2

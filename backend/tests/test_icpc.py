@@ -3,7 +3,7 @@ submit a Python solution, assert AC verdict + scoreboard update.
 
 The judging pipeline uses the subprocess sandbox (tests disable
 SCORING_MODE=docker in conftest), so we test the real compile/run flow
-for Python. Other languages share the same pipeline — this test exercises
+for Python. Other languages share the same pipeline - this test exercises
 everything except the language-specific compile commands."""
 import io
 import time
@@ -77,7 +77,7 @@ def _make_icpc_contest(client, admin_hdr, title="ICPC-Test"):
 
 def test_icpc_dry_run_accepts_reference_solution(client):
     """Admin dry-run judges a reference solution without persisting any
-    Submission/Judging row — useful for verifying testcases before a
+    Submission/Judging row - useful for verifying testcases before a
     contest opens."""
     admin = auth_header(client, "root")
     cid, pid = _make_icpc_contest(client, admin, title="ICPC-DRY")
@@ -152,7 +152,7 @@ def test_icpc_freeze_hides_post_freeze_solves(client):
     assert _wait_verdict(client, alice, sid)["verdict"] == "AC"
 
     # Non-jury: scoreboard is frozen. The AC submitted during the
-    # freeze window is surfaced as a "pending" attempt — the cell
+    # freeze window is surfaced as a "pending" attempt - the cell
     # paints pale blue, the verdict is hidden, and solved_count stays 0.
     board = client.get(f"/api/contests/{cid}/icpc-scoreboard", headers=alice).json()
     assert board["frozen"] is True
@@ -180,7 +180,7 @@ def test_icpc_end_to_end_python_ac(client):
     r = client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
     assert r.status_code == 200, r.text
 
-    # Python program that echoes stdin — should pass both testcases.
+    # Python program that echoes stdin - should pass both testcases.
     source = "import sys\nsys.stdout.write(sys.stdin.read())\n"
     r = client.post(
         f"/api/contests/{cid}/problems/{pid}/submit",
@@ -208,7 +208,7 @@ def test_icpc_end_to_end_python_ac(client):
 
 def test_icpc_submit_via_file_upload(client):
     """Submit source via the `file` multipart field instead of the `source`
-    text field — the endpoint must accept either and decode the bytes."""
+    text field - the endpoint must accept either and decode the bytes."""
     admin = auth_header(client, "root")
     alice = auth_header(client, "alice")
     cid, pid = _make_icpc_contest(client, admin, title="ICPC-File")
@@ -232,7 +232,7 @@ def test_icpc_wrong_answer(client):
     cid, pid = _make_icpc_contest(client, admin, title="ICPC-WA")
     client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
 
-    # Echoes but also appends — mismatches the expected output.
+    # Echoes but also appends - mismatches the expected output.
     source = 'import sys\nsys.stdout.write(sys.stdin.read() + "extra\\n")\n'
     r = client.post(
         f"/api/contests/{cid}/problems/{pid}/submit",
@@ -266,14 +266,14 @@ def test_icpc_submission_download_falls_back_to_text(client):
 
 def test_users_cannot_see_secret_stdout(client):
     """Non-admin viewers of a judging see sample testcase stdout but not
-    secret testcase stdout — otherwise a team can `print(input())` and
+    secret testcase stdout - otherwise a team can `print(input())` and
     dump the hidden inputs."""
     admin = auth_header(client, "root")
     alice = auth_header(client, "alice")
     cid, pid = _make_icpc_contest(client, admin, title="ICPC-LEAK")
     client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
 
-    # Program that echoes stdin — prints on every testcase.
+    # Program that echoes stdin - prints on every testcase.
     src = "import sys\nsys.stdout.write(sys.stdin.read())\n"
     sid = client.post(
         f"/api/contests/{cid}/problems/{pid}/submit",
@@ -290,7 +290,7 @@ def test_users_cannot_see_secret_stdout(client):
         else:
             assert r["stdout_truncated"] is None
 
-    # Admin sees everything — needed for debugging failed submissions.
+    # Admin sees everything - needed for debugging failed submissions.
     admin_runs = client.get(f"/api/contests/submissions/{sid}/judging", headers=admin).json()["runs"]
     assert all(r["stdout_truncated"] is not None for r in admin_runs)
 
@@ -493,7 +493,7 @@ def test_problem_statement_pdf_endpoint(client, tmp_path, monkeypatch):
     admin = auth_header(client, "root")
     cid, pid = _make_icpc_contest(client, admin, title="ICPC-PDF")
 
-    # Write a fake PDF to disk and point the Problem row at it — normally
+    # Write a fake PDF to disk and point the Problem row at it - normally
     # the import path does this, but the test stubs it directly.
     from backend import database, models
     db = database.SessionLocal()
@@ -516,7 +516,7 @@ def test_problem_statement_pdf_endpoint(client, tmp_path, monkeypatch):
     # inline → browser renders the PDF in-tab rather than forcing a download.
     assert r.headers["content-disposition"].startswith("inline")
     # Cache-Control must disable caching outright. Plain
-    # ``no-cache, must-revalidate`` was insufficient — Chrome's PDF
+    # ``no-cache, must-revalidate`` was insufficient - Chrome's PDF
     # viewer kept showing the previous PDF after an admin replace, so
     # we send ``no-store`` to forbid any cache (browser, viewer or
     # shared) from stashing the response.
@@ -525,7 +525,7 @@ def test_problem_statement_pdf_endpoint(client, tmp_path, monkeypatch):
 
 def test_admin_problem_statement_upload_replace_delete(client):
     """Admin can attach, replace, and remove a statement PDF via the
-    dedicated per-problem endpoint — no DOMjudge package re-import needed."""
+    dedicated per-problem endpoint - no DOMjudge package re-import needed."""
     admin = auth_header(client, "root")
     cid, pid = _make_icpc_contest(client, admin, title="ICPC-PDF-Admin")
 
@@ -551,7 +551,7 @@ def test_admin_problem_statement_upload_replace_delete(client):
     assert r.status_code == 200
     assert r.content == pdf_v1
 
-    # Replace — the old file must be cleared, the new one served, AND
+    # Replace - the old file must be cleared, the new one served, AND
     # the cache-buster version must flip so contestants whose browser
     # cached the previous PDF (from before Cache-Control: no-store
     # rolled out) are forced onto a fresh URL.
@@ -586,14 +586,14 @@ def test_admin_problem_statement_upload_replace_delete(client):
     )
     assert r.status_code in (401, 403)
 
-    # Delete — endpoint clears the row, GET 404s afterwards.
+    # Delete - endpoint clears the row, GET 404s afterwards.
     r = client.delete(f"/api/icpc/problems/{pid}/statement", headers=admin)
     assert r.status_code == 200
     assert r.json()["has_statement_pdf"] is False
     r = client.get(f"/api/contests/{cid}/problems/{pid}/statement?token={token}")
     assert r.status_code == 404
 
-    # Delete-then-upload — the user-reported flow. After a delete the
+    # Delete-then-upload - the user-reported flow. After a delete the
     # admin uploads a different PDF; the GET must serve the freshly
     # uploaded bytes, not anything left over from before.
     pdf_v3 = b"%PDF-1.4\n%v3-after-delete\n" + b"c" * 1024
@@ -695,7 +695,7 @@ def test_float_checker_accepts_within_tolerance(client):
 
     client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
 
-    # Prints 3.15 — diff 0.01 ≫ 1e-6, rel diff 0.3% ≫ 1e-6 → WA.
+    # Prints 3.15 - diff 0.01 ≫ 1e-6, rel diff 0.3% ≫ 1e-6 → WA.
     bad = client.post(
         f"/api/contests/{cid}/problems/{pid}/submit",
         headers=alice,
@@ -703,7 +703,7 @@ def test_float_checker_accepts_within_tolerance(client):
     ).json()["id"]
     assert _wait_verdict(client, alice, bad)["verdict"] == "WA"
 
-    # Prints 3.1400001 — byte-different from "3.14" but diff 1e-7 < 1e-6 → AC.
+    # Prints 3.1400001 - byte-different from "3.14" but diff 1e-7 < 1e-6 → AC.
     # Equivalent strict-diff checker would reject this. Float checker passes.
     good = client.post(
         f"/api/contests/{cid}/problems/{pid}/submit",
@@ -738,7 +738,7 @@ def test_admin_list_submissions_handles_icpc(client):
     row = items[0]
     assert row["instance_id"] is None
     assert row["problem_id"] == pid
-    assert row["problem_label"].startswith("A —")
+    assert row["problem_label"].startswith("A -")
     assert row["source_language"] == "py3"
     assert row["latest_verdict"] == "AC"
 
@@ -770,13 +770,13 @@ def test_admin_rejudge_icpc_submission(client):
 
 def test_icpc_judging_detail_exposes_stderr(client):
     """A failing program should surface its stderr to the submitter via
-    the judging endpoint — that's what drives the expandable detail UI."""
+    the judging endpoint - that's what drives the expandable detail UI."""
     admin = auth_header(client, "root")
     alice = auth_header(client, "alice")
     cid, pid = _make_icpc_contest(client, admin, title="ICPC-STDERR")
     client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
 
-    # Raises on first read — produces a traceback on stderr, non-zero exit.
+    # Raises on first read - produces a traceback on stderr, non-zero exit.
     source = "import sys\nsys.stderr.write('oops: custom crash\\n')\nraise RuntimeError('boom')\n"
     sid = client.post(
         f"/api/contests/{cid}/problems/{pid}/submit",
@@ -797,7 +797,7 @@ def test_icpc_compile_error(client):
     cid, pid = _make_icpc_contest(client, admin, title="ICPC-CE")
     client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
 
-    # SyntaxError — Python "compilation" fails at run time; we should still
+    # SyntaxError - Python "compilation" fails at run time; we should still
     # report a non-AC verdict (RE since the wrapper runs the program).
     source = "def broken(\n"
     r = client.post(
@@ -838,7 +838,7 @@ def test_multi_problem_import_with_label_collisions(client):
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as zf:
         for short in ("apple", "banana", "cherry"):
-            # All three claim label 'A' — the importer must auto-reassign.
+            # All three claim label 'A' - the importer must auto-reassign.
             zf.writestr(f"{short}/problem.yaml", f"name: {short.title()}\nlabel: A\n")
             zf.writestr(f"{short}/data/sample/1.in", "1\n")
             zf.writestr(f"{short}/data/sample/1.ans", "1\n")
@@ -925,12 +925,12 @@ def test_legacy_domjudge_single_problem_import(client):
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as zf:
-        # Kattis-style problem.yaml — missing timelimit/probid on purpose.
+        # Kattis-style problem.yaml - missing timelimit/probid on purpose.
         zf.writestr("problem.yaml",
                     "name: Alternative Blockchain Algorithms\n"
                     "license: cc by-sa\n"
                     "limits:\n  time_multiplier: 2\n")
-        # Legacy DOMjudge companion — supplies probid + timelimit + color.
+        # Legacy DOMjudge companion - supplies probid + timelimit + color.
         zf.writestr("domjudge-problem.ini",
                     "probid='A'\n"
                     "name='Alternative Blockchain Algorithms'\n"
@@ -1047,7 +1047,7 @@ def test_import_prefers_statement_pdf_over_figure(client):
         zf.writestr("problem-graph/problem.yaml",
                     "name: Graph\nlabel: A\nprobid: graph\n"
                     "validation: default\nlimits:\n  time: 1\n  memory: 128\n")
-        # Figure is listed first on purpose — the old code picked the
+        # Figure is listed first on purpose - the old code picked the
         # first match in zip order and would have surfaced this PDF.
         zf.writestr("problem-graph/problem_statement/tree-figure.pdf", figure_bytes)
         zf.writestr("problem-graph/problem_statement/problem.en.pdf", statement_bytes)
@@ -1217,7 +1217,7 @@ def test_affiliation_crud_and_scoreboard_badge(client):
     assert alice_row["affiliation_id"] == uliege_id
     assert alice_row["affiliation_name"] == "ULiege"
 
-    # Update — rename and verify.
+    # Update - rename and verify.
     r = client.patch(
         f"/api/icpc/affiliations/{kul_id}",
         json={"name": "KU Leuven (main)", "short_name": "KUL"},
@@ -1228,7 +1228,7 @@ def test_affiliation_crud_and_scoreboard_badge(client):
 
     # Delete sets FK to NULL (scoreboard still renders, no affiliation badge).
     assert client.delete(f"/api/icpc/affiliations/{uliege_id}", headers=admin).status_code == 200
-    # The scoreboard response cache has a 2s TTL — force a refresh so the
+    # The scoreboard response cache has a 2s TTL - force a refresh so the
     # next GET reflects the FK change. In production the staleness is
     # accepted (operators see the change within 2 seconds of the delete).
     from backend import scoreboard_response_cache as _sb_cache

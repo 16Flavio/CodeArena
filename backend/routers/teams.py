@@ -720,7 +720,7 @@ def set_member_permissions(
     )
     if not membership:
         raise HTTPException(status_code=404, detail="Utilisateur absent de cette équipe")
-    # The owner must keep submit rights — otherwise the team could lock itself out.
+    # The owner must keep submit rights - otherwise the team could lock itself out.
     if membership.role == "owner" and not data.can_submit:
         raise HTTPException(
             status_code=400,

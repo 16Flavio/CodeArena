@@ -1,6 +1,6 @@
 # 3. Two pointers
 
-## 3.1 — Le patron
+## 3.1 - Le patron
 
 On entretient deux indices $i < j$ (ou $i$, $j$ aux extrémités du
 tableau) et on les déplace **de façon monotone** : ils ne reculent
@@ -14,7 +14,7 @@ importe à quoi ressemble la logique interne.
 
 ---
 
-## 3.2 — Variante 1 : extrémités opposées (tableau trié)
+## 3.2 - Variante 1 : extrémités opposées (tableau trié)
 
 > Étant donné un tableau **trié** $A$ et une cible $T$, existe-t-il
 > $i \neq j$ tels que $A[i] + A[j] = T$ ?
@@ -47,7 +47,7 @@ satisfait $i \le i^* \le j^* \le j$ tout au long de la boucle.
 
 ---
 
-## 3.3 — Variante 2 : pointeurs dans le même sens
+## 3.3 - Variante 2 : pointeurs dans le même sens
 
 > Soit un tableau d'entiers **positifs** $A$ et une cible $S$.
 > Trouver la **plus petite** sous-tableau contigu de somme $\ge S$.
@@ -80,7 +80,7 @@ $\le 2n = O(n)$.
 
 ---
 
-## 3.4 — Variante 3 : 3-sum
+## 3.4 - Variante 3 : 3-sum
 
 > Trouver tous les triplets $(a, b, c)$ avec $a \le b \le c$,
 > $a + b + c = 0$, sans doublon.
@@ -116,7 +116,7 @@ Note : le `continue` après tri élimine les doublons sur le premier
 
 ---
 
-## 3.5 — Quand l'utiliser
+## 3.5 - Quand l'utiliser
 
 - Le tableau est trié (ou peut être trié sans changer la sémantique).
 - La quantité observée est **monotone** en l'avancée d'un pointeur
@@ -130,7 +130,7 @@ acquise par monotonie.
 
 ---
 
-## 3.6 — Exercices
+## 3.6 - Exercices
 
 :::exercise{id="{{EX_SE_2SUM}}"}
 :::

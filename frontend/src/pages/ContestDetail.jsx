@@ -37,7 +37,7 @@ export default function ContestDetail() {
   const [submissionsTotal, setSubmissionsTotal] = useState(0);
   const [submissionPage, setSubmissionPage] = useState(0);
   const [selectedTeam, setSelectedTeam] = useState('');
-  const [submitKind, setSubmitKind] = useState('team'); // 'team' | 'solo' — only relevant when mode is 'both'
+  const [submitKind, setSubmitKind] = useState('team'); // 'team' | 'solo' - only relevant when mode is 'both'
   const [sourceLanguages, setSourceLanguages] = useState([]);
   useEffect(() => {
     // Languages come from the ICPC-side endpoint (it's the canonical
@@ -116,7 +116,7 @@ export default function ContestDetail() {
       await registerToContest(contest.id, payload);
       toast.success(t('contest.toastRegistered'));
       // Re-fetch the bits that changed instead of reloading the whole
-      // SPA — keeps scroll, route, and unrelated state intact.
+      // SPA - keeps scroll, route, and unrelated state intact.
       await Promise.all([
         refreshRegistration(contest.id),
         refreshParticipants(contest.id),
@@ -138,7 +138,7 @@ export default function ContestDetail() {
     try {
       await unregisterFromContest(contest.id);
       toast.success(t('contest.toastUnregistered'));
-      // Submissions + registration are now gone — bounce to the
+      // Submissions + registration are now gone - bounce to the
       // dashboard so the user doesn't sit on a contest page they
       // can't participate in anymore (the problems list would go
       // empty, the submit form would 403 on every attempt, etc.).
@@ -161,7 +161,7 @@ export default function ContestDetail() {
     }
   }, [selectedTeam, contest, submissionPage]);
 
-  // Called by the submit form after a submission settles — jump back to
+  // Called by the submit form after a submission settles - jump back to
   // the first page and re-fetch the list (mirrors the pre-refactor tail
   // of handleSubmit; errors propagate into the form's catch).
   const handleSubmitted = async () => {

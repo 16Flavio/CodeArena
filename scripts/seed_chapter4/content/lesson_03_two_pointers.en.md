@@ -1,6 +1,6 @@
 # 3. Two pointers
 
-## 3.1 — The pattern
+## 3.1 - The pattern
 
 We maintain two indices $i < j$ (or $i$, $j$ at the array's
 endpoints) and move them **monotonically**: they **never** step
@@ -14,7 +14,7 @@ logic looks like.
 
 ---
 
-## 3.2 — Variant 1: opposite ends (sorted array)
+## 3.2 - Variant 1: opposite ends (sorted array)
 
 > Given a **sorted** array $A$ and target $T$, do indices
 > $i \neq j$ exist with $A[i] + A[j] = T$?
@@ -47,7 +47,7 @@ At most $n$ iterations → **$O(n)$ after sorting**.
 
 ---
 
-## 3.3 — Variant 2: pointers in the same direction
+## 3.3 - Variant 2: pointers in the same direction
 
 > Given an array of **positive** integers $A$ and target $S$, find
 > the **smallest** contiguous subarray whose sum $\ge S$.
@@ -80,7 +80,7 @@ $\le 2n = O(n)$.
 
 ---
 
-## 3.4 — Variant 3: 3-sum
+## 3.4 - Variant 3: 3-sum
 
 > Find all triples $(a, b, c)$ with $a \le b \le c$,
 > $a + b + c = 0$, no duplicates.
@@ -115,7 +115,7 @@ element; the two inner `while`s kill them on the others.
 
 ---
 
-## 3.5 — When to use it
+## 3.5 - When to use it
 
 - The array is sorted (or can be sorted without breaking semantics).
 - The observed quantity is **monotone** under one of the pointers
@@ -129,7 +129,7 @@ through monotonicity.
 
 ---
 
-## 3.6 — Exercises
+## 3.6 - Exercises
 
 :::exercise{id="{{EX_SE_2SUM}}"}
 :::

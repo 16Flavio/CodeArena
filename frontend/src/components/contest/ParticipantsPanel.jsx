@@ -6,7 +6,7 @@ import { listContestRegistrations, setRegistrationDisqualified } from '../../api
 import { usePrompt } from '../Confirm';
 import { extractErrorMessage } from '../../utils/apiError';
 
-// Participants list — visible to everyone who can see the contest, even if
+// Participants list - visible to everyone who can see the contest, even if
 // they haven't registered themselves. Collapsed by default. The list itself
 // lives in the parent (registration refreshes it too); admins can
 // disqualify/requalify entries inline.
@@ -81,7 +81,7 @@ export default function ParticipantsPanel({ contestId, participants, setParticip
                             message: t('contest.disqualifyReasonPrompt'),
                             defaultValue: '',
                           });
-                          // ``prompt`` returns null on cancel — stop without DQing.
+                          // ``prompt`` returns null on cancel - stop without DQing.
                           if (reason === null) return;
                         }
                         try {

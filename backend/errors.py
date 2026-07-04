@@ -14,7 +14,7 @@ touching the backend.
 Migration plan:
 - New endpoints use ``raise_error(...)``.
 - Existing endpoints can keep their plain ``HTTPException(detail=str)``
-  — the frontend renders the string verbatim as a fallback.
+  - the frontend renders the string verbatim as a fallback.
 - The most user-facing 10-15 errors are converted in this session;
   the rest can migrate incrementally as files are touched.
 """
@@ -73,7 +73,7 @@ def raise_error(
     The frontend treats ``detail`` as either a string (legacy) or a
     dict ``{"code", "message", "params"}``. ``message`` is a fallback
     rendered verbatim for clients that don't (yet) understand the
-    code mapping — keep it concise and human-readable in English."""
+    code mapping - keep it concise and human-readable in English."""
     payload = {"code": code, "message": message}
     if params:
         payload["params"] = params

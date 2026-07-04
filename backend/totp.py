@@ -6,7 +6,7 @@ The User row stores:
   codes below).
 - ``totp_recovery_codes``: JSON list of SHA-256 hex hashes. The user
   keeps the plaintext codes offline; we store hashes only. Each code
-  is single-use — consumed on first successful match.
+  is single-use - consumed on first successful match.
 
 This module owns the verification logic so callers (the auth router,
 test fixtures) don't reimplement constant-time comparison or the
@@ -41,7 +41,7 @@ def otpauth_url(secret: str, *, account_name: str, issuer: str = "CodeArena") ->
 
 def verify_code(secret: str, code: str, *, window: int = 1) -> bool:
     """Verify a 6-digit TOTP code. ``window=1`` accepts ±30 seconds of
-    clock drift between the server and the user's phone — the RFC 6238
+    clock drift between the server and the user's phone - the RFC 6238
     default. Tighter than ±60s: cuts the brute-force surface in half
     and shrinks the replay window of an intercepted code. If users
     routinely hit "code rejected" because their phone clock drifts,
@@ -71,7 +71,7 @@ def consume_recovery_code(stored_hashes_json: Optional[str], submitted_code: str
     the new ``hashes_json`` with that hash removed (caller persists
     it). Otherwise return None.
 
-    Constant-time over the LIST of hashes — we don't want to leak
+    Constant-time over the LIST of hashes - we don't want to leak
     "how many recovery codes are left" via response timing."""
     if not stored_hashes_json or not submitted_code:
         return None
@@ -94,6 +94,6 @@ def consume_recovery_code(stored_hashes_json: Optional[str], submitted_code: str
 
 
 def _hash_code(code: str) -> str:
-    """SHA-256 of the lowercase code. Cheap (no salt — codes are
+    """SHA-256 of the lowercase code. Cheap (no salt - codes are
     high-entropy random strings, not passwords)."""
     return hashlib.sha256(code.strip().lower().encode()).hexdigest()

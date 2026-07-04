@@ -12,7 +12,7 @@ import { textOn } from '../utils/contrast';
 import { formatScore } from '../utils/format';
 import { extractErrorMessage } from '../utils/apiError';
 
-const ROW_HEIGHT = 56; // px — kept in sync with row CSS
+const ROW_HEIGHT = 56; // px - kept in sync with row CSS
 const REVEAL_FLIP_MS = 280;
 
 const SPEEDS = [
@@ -24,14 +24,14 @@ const SPEEDS = [
 
 const SCENES = ['intro', 'stats', 'reveal', 'podium'];
 
-// Identity key for a row across solo/team scopes — IcpcScoreRow only carries
+// Identity key for a row across solo/team scopes - IcpcScoreRow only carries
 // team_id, so for solo entries we fall back to the username (team_name).
 function rowKey(row) {
   return row.team_id != null ? `t:${row.team_id}` : `u:${row.team_name}`;
 }
 
 // Re-sort a list of rows in canonical ICPC order (most solved, then lowest
-// penalty, then alphabetical) — same comparator as the backend.
+// penalty, then alphabetical) - same comparator as the backend.
 function sortRows(rows) {
   return [...rows].sort((a, b) => {
     if (b.solved_count !== a.solved_count) return b.solved_count - a.solved_count;
@@ -59,7 +59,7 @@ function recomputeRowTotals(row) {
 // Build the ordered list of reveal events from the frozen and final
 // states. Implements the standard DOMjudge-style reveal:
 //   1. Sort by current (working) frozen rank, descending (bottom up).
-//   2. The bottom-most team with any frozen cell — pick its leftmost
+//   2. The bottom-most team with any frozen cell - pick its leftmost
 //      such cell, reveal it (replace pending_attempts/attempts with
 //      the truth), recompute totals, and re-sort.
 //   3. Loop until no team has any frozen cell.
@@ -91,7 +91,7 @@ function buildRevealEvents(frozenRows, finalRows, problems) {
     return false;
   };
 
-  // Loop guard — at most labels.length × rows.length events.
+  // Loop guard - at most labels.length × rows.length events.
   const guard = labels.length * state.length + 1;
   let iter = 0;
   while (iter < guard) {
@@ -267,7 +267,7 @@ function IntroScene({ title, onStart }) {
 
 function StatsScene({ data, onContinue }) {
   const { t } = useTranslation();
-  // Aggregate from final state — already authoritative.
+  // Aggregate from final state - already authoritative.
   const stats = useMemo(() => {
     const rows = data.final_state.rows;
     const totalTeams = rows.length;
@@ -279,7 +279,7 @@ function StatsScene({ data, onContinue }) {
         totalAttempts += c.attempts || 0;
       }
     }
-    // First solver per problem — already in data.first_solvers.
+    // First solver per problem - already in data.first_solvers.
     const firstSolvers = new Map(data.first_solvers.map((f) => [f.label, f]));
     // Hardest / easiest problems by solve count.
     const perProblem = data.problems.map((p) => {
@@ -337,7 +337,7 @@ function StatsScene({ data, onContinue }) {
                       <div className="text-xs text-white/60 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {t('presentation.stats.atMinute', { n: p.first.minute })}
-                        <span className="ml-2 text-white/40">— {p.solved}/{stats.totalTeams} {t('presentation.stats.solvedShort')}</span>
+                        <span className="ml-2 text-white/40">- {p.solved}/{stats.totalTeams} {t('presentation.stats.solvedShort')}</span>
                       </div>
                     </>
                   ) : (
@@ -436,7 +436,7 @@ function LanguageChart({ languages }) {
                   className={`h-full ${b.accent} ring-1 transition-[width] duration-700 ease-out flex items-center px-2`}
                   style={{ width: `${widthPct}%` }}
                 >
-                  {/* AC slice — overlay a darker portion to show the AC fraction. */}
+                  {/* AC slice - overlay a darker portion to show the AC fraction. */}
                   <div
                     className="absolute left-0 top-0 h-full bg-white/15"
                     style={{ width: `${(b.accepted / maxSubs) * 100}%` }}
@@ -479,7 +479,7 @@ function RevealScene({ data, onComplete }) {
     [data]
   );
 
-  // Working state — start from frozen.
+  // Working state - start from frozen.
   const [rows, setRows] = useState(() =>
     sortRows(data.frozen_state.rows.map((r) => ({
       ...r,
@@ -499,7 +499,7 @@ function RevealScene({ data, onComplete }) {
   );
   const announcementTimer = useRef(null);
 
-  // Apply event N — mutate rows + maybe trigger announcement.
+  // Apply event N - mutate rows + maybe trigger announcement.
   const applyEvent = (n) => {
     if (n < 0 || n >= events.length) return;
     const ev = events[n];
@@ -535,7 +535,7 @@ function RevealScene({ data, onComplete }) {
   useEffect(() => {
     if (!playing) return undefined;
     if (eventIdx >= events.length - 1) {
-      // Reveal finished — give a beat, then advance to podium.
+      // Reveal finished - give a beat, then advance to podium.
       const id = setTimeout(() => onComplete(), 1500);
       return () => clearTimeout(id);
     }
@@ -697,7 +697,7 @@ function RevealBoard({ rows, problems, flipKey }) {
 function RevealCell({ cell, flipping }) {
   if (!cell) {
     return (
-      <span className="w-10 h-9 rounded text-xs flex items-center justify-center text-white/20">—</span>
+      <span className="w-10 h-9 rounded text-xs flex items-center justify-center text-white/20">-</span>
     );
   }
   const isPending = (cell.pending_attempts || 0) > 0 && !cell.solved;
@@ -1096,7 +1096,7 @@ function ScoringStatsScene({ data, onContinue }) {
                       <div className="text-base font-semibold truncate">{inst.best.team_name}</div>
                       <div className="text-xs text-amber-300 font-mono tabular-nums">
                         {formatScore(inst.best.best_score)}
-                        <span className="ml-2 text-white/40">— {inst.scorers}/{stats.totalTeams} {t('presentation.stats.scorersShort')}</span>
+                        <span className="ml-2 text-white/40">- {inst.scorers}/{stats.totalTeams} {t('presentation.stats.scorersShort')}</span>
                       </div>
                     </>
                   ) : (
@@ -1327,7 +1327,7 @@ function ScoringRevealBoard({ teams, instances, flipKey }) {
 function ScoringCell({ cell, flipping }) {
   if (!cell || (cell.best_score === 0 && (cell.pending_changes || 0) === 0 && (cell.submission_count || 0) === 0)) {
     return (
-      <span className="w-full h-9 rounded text-xs flex items-center justify-center text-white/20">—</span>
+      <span className="w-full h-9 rounded text-xs flex items-center justify-center text-white/20">-</span>
     );
   }
   const pending = (cell.pending_changes || 0) > 0;

@@ -7,7 +7,7 @@ import { loadWidgets, getCachedSync, subscribe } from './widgetsStore';
 // Modal-style catalog of available learning widgets. Lives next to the
 // admin editor; opens via a "Widgets disponibles" button. Each entry is
 // rendered from the widget's own self-describing metadata in
-// ``registry.js`` — adding a new widget there populates this catalog
+// ``registry.js`` - adding a new widget there populates this catalog
 // automatically with no extra UI work.
 //
 // ``onInsert(snippet)`` is the callback that splices the chosen
@@ -65,7 +65,7 @@ export default function WidgetCatalog({ open, onClose, onInsert }) {
       setCopiedKey(key);
       setTimeout(() => setCopiedKey(null), 1500);
     } catch {
-      /* clipboard might be denied — silently fail, user can still select manually */
+      /* clipboard might be denied - silently fail, user can still select manually */
     }
   };
 

@@ -50,7 +50,7 @@ process.stdout.write(
 
 export default defineConfig({
   testDir: './e2e',
-  // One worker — the backend DB is shared between tests in the same run.
+  // One worker - the backend DB is shared between tests in the same run.
   workers: 1,
   fullyParallel: false,
   retries: process.env.CI ? 1 : 0,

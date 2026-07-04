@@ -21,7 +21,7 @@ def client(monkeypatch):
     monkeypatch.delenv("SCORING_MODE", raising=False)
 
     # Prevent tests from dispatching real email. `send_email_verification`
-    # and friends read SMTP_* from os.environ — if the test host has those
+    # and friends read SMTP_* from os.environ - if the test host has those
     # set (your prod server does), fixture users like alice@test.local
     # receive actual messages. Unsetting SMTP_HOST makes email_utils fall
     # back to its console-log stub for the duration of the test.
@@ -32,7 +32,7 @@ def client(monkeypatch):
     from backend.database import Base, get_db
     from backend.rate_limit import limiter
 
-    # The scoreboard response cache is module-level state — without an
+    # The scoreboard response cache is module-level state - without an
     # explicit reset it leaks between tests, so a contest #1 from test
     # A would serve a stale payload to test B's contest #1.
     from backend import scoreboard_response_cache as _sb_cache
@@ -46,7 +46,7 @@ def client(monkeypatch):
     for _v in ("SMTP_HOST", "SMTP_PORT", "SMTP_SSL", "SMTP_USER", "SMTP_PASS", "SMTP_FROM"):
         monkeypatch.delenv(_v, raising=False)
 
-    # Reset + disable the rate limiter for tests — otherwise counters bleed
+    # Reset + disable the rate limiter for tests - otherwise counters bleed
     # across tests and cause spurious 429s.
     limiter.reset()
     limiter.enabled = False
@@ -92,7 +92,7 @@ def client(monkeypatch):
         scoring_jobs.score_submission(submission_id)
 
     monkeypatch.setattr(scoring_queue, "enqueue_scoring", _sync_enqueue)
-    # Also patch the re-export used by each router — `from ... import
+    # Also patch the re-export used by each router - `from ... import
     # enqueue_scoring` captures a local binding at import time, which
     # setattr on the source module doesn't affect.
     from backend.routers import contests as _contests_router
@@ -102,7 +102,7 @@ def client(monkeypatch):
     from backend.routers import admin as _admin_router
     monkeypatch.setattr(_admin_router, "enqueue_scoring", _sync_enqueue)
 
-    # Re-seed the default ICPC languages against the fresh test engine —
+    # Re-seed the default ICPC languages against the fresh test engine -
     # main.py's startup seed ran against the pre-monkeypatch SessionLocal,
     # so the test DB would otherwise have zero languages and ICPC submits
     # would 400.

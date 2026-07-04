@@ -4,7 +4,7 @@ Run: python scripts/seed_chapter3/_gen_tests.py
 import heapq, sys
 from collections import deque
 
-# ── L1 — insertion + merge ───────────────────────────────────────
+# ── L1 - insertion + merge ───────────────────────────────────────
 
 def sol_merge_two(stdin):
     """Merge two sorted arrays into one sorted output."""
@@ -59,7 +59,7 @@ def sol_kmerge(stdin):
             heapq.heappush(h, (arrs[li][pi+1], li, pi+1))
     return ' '.join(map(str, out)) + '\n' if out else '\n'
 
-# ── L2 — quicksort + heapsort ────────────────────────────────────
+# ── L2 - quicksort + heapsort ────────────────────────────────────
 
 def sol_partition(stdin):
     """Lomuto partition with pivot = last element. Output:
@@ -121,7 +121,7 @@ def sol_running_median(stdin):
             out.append(-lo[0] + hi[0])  # 2*median = lo_top + hi_top = -lo[0] + hi[0]
     return ' '.join(map(str, out)) + '\n'
 
-# ── L3 — counting + radix ────────────────────────────────────────
+# ── L3 - counting + radix ────────────────────────────────────────
 
 def sol_counting(stdin):
     """Counting sort. Inputs in [0, k]."""
@@ -171,7 +171,7 @@ def sol_radix_strings(stdin):
         a = [s for b in buckets for s in b]
     return ' '.join(a) + '\n'
 
-# ── L4 — selection ───────────────────────────────────────────────
+# ── L4 - selection ───────────────────────────────────────────────
 
 def sol_quickselect(stdin):
     """k-th smallest (1-indexed)."""

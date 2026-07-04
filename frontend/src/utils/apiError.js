@@ -4,7 +4,7 @@
 //   1. Legacy:  { detail: "Some French string" }
 //   2. Coded:   { detail: { code, message, params? } }
 //
-// The coded format is preferred — it lets us i18n the user-visible
+// The coded format is preferred - it lets us i18n the user-visible
 // string per language. Older sites still pass strings; the helper
 // renders them verbatim.
 
@@ -54,9 +54,9 @@ export function extractErrorMessage(err, fallback = '') {
     // so the user gets something meaningful instead of "[object Object]".
     if (detail.message) {
       // Append a non-empty params.reason if the backend included one
-      // — DQ errors carry the admin's free-form reason there.
+      // - DQ errors carry the admin's free-form reason there.
       if (detail.params?.reason) {
-        return `${detail.message} — ${detail.params.reason}`;
+        return `${detail.message} - ${detail.params.reason}`;
       }
       return detail.message;
     }

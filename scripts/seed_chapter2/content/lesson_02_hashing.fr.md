@@ -1,6 +1,6 @@
 # 2. Tables de hachage
 
-## 2.1 — L'idée : court-circuiter le tri
+## 2.1 - L'idée : court-circuiter le tri
 
 On veut une structure permettant `insert(k, v)`, `lookup(k)` et
 `delete(k)` en $\Theta(1)$ **en moyenne**, sans maintenir d'ordre.
@@ -12,12 +12,12 @@ instantanément.
 
 > **Le piège.** Pour toute fonction $h$ fixée et tout adversaire qui
 > connaît $h$, on peut construire $n$ clés qui se collent toutes sur
-> le même bucket — performance dégradée à $\Theta(n)$. C'est pour ça
+> le même bucket - performance dégradée à $\Theta(n)$. C'est pour ça
 > qu'on utilise du **hachage universel** (famille aléatoire).
 
 ---
 
-## 2.2 — Hachage universel
+## 2.2 - Hachage universel
 
 ### Définition
 
@@ -26,7 +26,7 @@ Une famille $\mathcal{H}$ de fonctions $h : \mathcal{U} \to [m]$ est
 
 $$\Pr_{h \sim \mathcal{H}}[h(x) = h(y)] \le \frac{1}{m}.$$
 
-L'aléa est sur le choix de $h$ dans la famille — pas sur les clés.
+L'aléa est sur le choix de $h$ dans la famille - pas sur les clés.
 Une fois $h$ tirée, elle reste fixée pour toute la durée de vie de
 la table.
 
@@ -47,7 +47,7 @@ projection $\bmod m$ ajoute au plus $\lceil p/m \rceil / p \le 1/m
 
 ---
 
-## 2.3 — Résolution de collisions
+## 2.3 - Résolution de collisions
 
 Deux philosophies :
 
@@ -98,7 +98,7 @@ def insert(T, k, v, h, m):
 **Avantages** : meilleure localité cache, pas de pointeurs.
 
 **Inconvénients** :
-- Performance s'écroule quand $\alpha \to 1$ — il faut redimensionner
+- Performance s'écroule quand $\alpha \to 1$ - il faut redimensionner
   bien avant ($\alpha < 0{,}7$ typiquement).
 - Suppression non triviale : on ne peut pas mettre `None` à la place
   d'un élément supprimé sans casser les sondages futurs ; on
@@ -109,7 +109,7 @@ def insert(T, k, v, h, m):
 $$\mathbb{E}[\text{nombre de sondes par lookup}] = \Theta\left(\frac{1}{(1 - \alpha)^2}\right).$$
 
 Avec $\alpha = 0{,}5$, environ 4 sondes en moyenne ; avec $\alpha
-= 0{,}9$, $\approx 100$ sondes — d'où la consigne de redimensionner
+= 0{,}9$, $\approx 100$ sondes - d'où la consigne de redimensionner
 tôt.
 
 ### Tableau comparatif
@@ -124,7 +124,7 @@ tôt.
 
 ---
 
-## 2.4 — Algorithme : `lookup` avec chaînage + preuve de complexité
+## 2.4 - Algorithme : `lookup` avec chaînage + preuve de complexité
 
 ### Code
 
@@ -161,7 +161,7 @@ coûte $\Theta(1)$ en espérance. $\square$
 
 ---
 
-## 2.5 — Exercices
+## 2.5 - Exercices
 
 :::exercise{id="{{EX_HT_DISTINCT}}"}
 :::

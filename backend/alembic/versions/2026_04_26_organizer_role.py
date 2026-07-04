@@ -6,7 +6,7 @@ rescore / override verdict on contests they created) but cannot
 promote users, edit other organisers' contests, or touch global
 settings.
 
-Pure additive — existing rows default to ``is_organizer=False`` so
+Pure additive - existing rows default to ``is_organizer=False`` so
 the migration is safe on a populated DB.
 
 Revision ID: 2026_04_26_a1

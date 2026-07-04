@@ -74,7 +74,7 @@ export default function IcpcStatsPanel({ contestId }) {
       </div>
 
       {!stats ? (
-        <p className="text-xs text-zinc-400 dark:text-zinc-500">{loading ? t('common.loading') : '—'}</p>
+        <p className="text-xs text-zinc-400 dark:text-zinc-500">{loading ? t('common.loading') : '-'}</p>
       ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3 text-xs">
@@ -118,7 +118,7 @@ export default function IcpcStatsPanel({ contestId }) {
                     <td className="text-right font-mono">{p.submissions}</td>
                     <td className="text-right font-mono">{p.accepted}</td>
                     <td className="text-right font-mono">
-                      {p.first_solve_minutes == null ? '—' : `${p.first_solve_minutes}'`}
+                      {p.first_solve_minutes == null ? '-' : `${p.first_solve_minutes}'`}
                     </td>
                   </tr>
                 ))}

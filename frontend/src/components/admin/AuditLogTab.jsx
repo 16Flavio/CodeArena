@@ -5,7 +5,7 @@ import { getAuditLog } from '../../api';
 
 // Self-contained audit log viewer: keeps the filter form + the rows
 // list local. Mounts once when the user picks the "audit" tab and
-// refetches on demand (no automatic polling — the log doesn't change
+// refetches on demand (no automatic polling - the log doesn't change
 // frequently enough to warrant it).
 export default function AuditLogTab() {
   const { t } = useTranslation();
@@ -85,7 +85,7 @@ export default function AuditLogTab() {
                   <td className="py-2 px-4 text-xs text-zinc-500 whitespace-nowrap dark:text-zinc-400">
                     {new Date(row.created_at).toLocaleString()}
                   </td>
-                  <td className="py-2 px-4 text-zinc-800 dark:text-zinc-200">{row.actor_username || '—'}</td>
+                  <td className="py-2 px-4 text-zinc-800 dark:text-zinc-200">{row.actor_username || '-'}</td>
                   <td className="py-2 px-4 font-mono text-xs text-accent-700 dark:text-accent-300">{row.action}</td>
                   <td className="py-2 px-4 text-xs text-zinc-500 dark:text-zinc-400">
                     {row.target_type}

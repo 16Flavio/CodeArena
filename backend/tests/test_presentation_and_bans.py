@@ -1,8 +1,8 @@
 """Coverage for the recent admin-side features:
 
-- ``GET /scoring-presentation`` and ``GET /icpc-presentation`` —
+- ``GET /scoring-presentation`` and ``GET /icpc-presentation`` -
   admin-gated, contest-must-be-ended, response shape.
-- Persistent disqualification via ``ContestBan`` — survives unregister
+- Persistent disqualification via ``ContestBan`` - survives unregister
   and blocks scope-switching evasion (solo↔team).
 - CSV exports gated to admins.
 """
@@ -37,7 +37,7 @@ def _make_output_contest(client, admin, *, end_minutes=-30, freeze_minutes_befor
 
 def test_scoring_presentation_requires_contest_ended(client):
     admin = auth_header(client, "root")
-    # Future end_time — endpoint must refuse with 409.
+    # Future end_time - endpoint must refuse with 409.
     cid = _make_output_contest(client, admin, end_minutes=+60)
     r = client.get(f"/api/contests/{cid}/scoring-presentation", headers=admin)
     assert r.status_code == 409
@@ -145,11 +145,11 @@ def test_disqualified_user_cannot_unregister_then_reregister(client):
     )
     assert r.status_code == 200, r.text
 
-    # Bob tries to unregister — refused.
+    # Bob tries to unregister - refused.
     r = client.delete(f"/api/contests/{cid}/register", headers=bob)
     assert r.status_code == 403
 
-    # Bob tries to re-register — refused (existing DQ row).
+    # Bob tries to re-register - refused (existing DQ row).
     r = client.post(f"/api/contests/{cid}/register", json={}, headers=bob)
     assert r.status_code == 403
 
@@ -162,7 +162,7 @@ def test_admin_requalify_clears_ban(client):
     r = client.post(f"/api/contests/{cid}/register", json={}, headers=carol)
     reg_id = r.json()["id"]
 
-    # DQ then requalify — the ban should be cleared.
+    # DQ then requalify - the ban should be cleared.
     client.patch(
         f"/api/contests/registrations/{reg_id}/disqualify",
         json={"disqualified": True, "reason": "mistake"},
@@ -232,7 +232,7 @@ def test_solo_dq_blocks_team_registration_with_banned_member(client):
     finally:
         sess.close()
 
-    # Eve (team owner) tries to register the team — must be refused
+    # Eve (team owner) tries to register the team - must be refused
     # because Dave (a member) is banned.
     r = client.post(f"/api/contests/{cid}/register", json={"team_id": tid}, headers=eve)
     assert r.status_code == 403, r.text

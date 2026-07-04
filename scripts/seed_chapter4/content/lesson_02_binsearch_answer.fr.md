@@ -2,12 +2,12 @@
 
 La leçon 1 dichotomise dans un **tableau trié**. Le vrai moteur
 n'était pas le tableau : c'était la **monotonie**. On peut donc
-dichotomiser chaque fois qu'on a une fonction monotone — réelle ou
+dichotomiser chaque fois qu'on a une fonction monotone - réelle ou
 discrète, parfois sans tableau du tout.
 
 ---
 
-## 2.1 — Sur les réels : bissection
+## 2.1 - Sur les réels : bissection
 
 Soit $f : [a, b] \to \mathbb{R}$ **continue** avec $f(a) < 0 <
 f(b)$. Le théorème des valeurs intermédiaires garantit une racine
@@ -52,7 +52,7 @@ for _ in range(100):
 
 ---
 
-## 2.2 — Dichotomie sur la réponse
+## 2.2 - Dichotomie sur la réponse
 
 C'est le mouvement le plus payant en programmation compétitive :
 au lieu de chercher $x$ dans un tableau, on **devine la valeur de
@@ -71,7 +71,7 @@ $$
 
 (ou la version croissante : faisable au-delà d'un seuil). C'est
 l'hypothèse de **monotonie de la prédiction**. La frontière entre
-les `vrai` et les `faux` est unique — et c'est elle qu'on cherche.
+les `vrai` et les `faux` est unique - et c'est elle qu'on cherche.
 
 ### Patron
 
@@ -87,12 +87,12 @@ def search_max(lo, hi, feasible):
 ```
 
 > **L'arrondi `+1`.** Sans le `+1`, quand `hi = lo + 1` et
-> `feasible(mid)`, on pose `lo = mid = lo` — boucle. Avec `+1`,
+> `feasible(mid)`, on pose `lo = mid = lo` - boucle. Avec `+1`,
 > `mid = lo + 1 = hi` et on progresse.
 
 ---
 
-## 2.3 — Exemple : Aggressive Cows
+## 2.3 - Exemple : Aggressive Cows
 
 > $n$ stalles aux positions $x_1 < \dots < x_n$, on doit y placer
 > $k$ vaches en **maximisant la distance minimale** entre deux
@@ -117,14 +117,14 @@ def feasible(d, X, k):
     return count >= k
 ```
 
-L'astuce **n'est pas** l'algorithme glouton — c'est la
+L'astuce **n'est pas** l'algorithme glouton - c'est la
 reformulation du problème : *résoudre directement* la version
 optimisation est dur, *vérifier* qu'une valeur est faisable est
 facile.
 
 ---
 
-## 2.4 — Quand l'utiliser
+## 2.4 - Quand l'utiliser
 
 Cherche les signaux suivants dans un énoncé :
 
@@ -140,7 +140,7 @@ la reformulation rend tout un pan de problèmes triviaux.
 
 ---
 
-## 2.5 — Exercices
+## 2.5 - Exercices
 
 :::exercise{id="{{EX_SE_AGGRCOWS}}"}
 :::

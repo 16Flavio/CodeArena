@@ -19,7 +19,7 @@ import WidgetCatalog from '../components/learning/WidgetCatalog';
 import ExercisePickerModal from '../components/learning/ExercisePickerModal';
 import { extractErrorMessage } from '../utils/apiError';
 
-// Slug helper — keeps the admin from having to type a URL-safe id.
+// Slug helper - keeps the admin from having to type a URL-safe id.
 function slugify(s) {
   return (s || '')
     .toLowerCase()
@@ -255,7 +255,7 @@ export default function AdminLearning() {
               <FileDown className="w-4 h-4" />
               {exporting ? t('admin.learning.exporting') : t('admin.learning.export')}
             </button>
-            {/* Lightweight dropdown — hover/focus reveals language picker. */}
+            {/* Lightweight dropdown - hover/focus reveals language picker. */}
             <div className="absolute right-0 mt-1 hidden group-hover:block group-focus-within:block bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg overflow-hidden z-10 min-w-[160px]">
               <button
                 onClick={() => handleExportLatex('fr')}
@@ -531,7 +531,7 @@ export default function AdminLearning() {
                 onInsertDirective={(directive) => insertWidget(directive)}
               />
 
-              {/* Toggle for the preview pane — hide it when you want
+              {/* Toggle for the preview pane - hide it when you want
                   the editor to take the full page width. */}
               <div className="flex items-center justify-end">
                 <button

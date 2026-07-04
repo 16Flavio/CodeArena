@@ -1,6 +1,6 @@
 # 2. Quicksort & Heapsort
 
-## 2.1 — Quicksort: divide **around a pivot**
+## 2.1 - Quicksort: divide **around a pivot**
 
 Quicksort is another *divide and conquer*, but unlike mergesort
 **all the magic is in the split**; the recombination is trivial.
@@ -44,24 +44,24 @@ and $>$ pivot) and `j` (the scanner) are shown below the cells. When
 
 ### Worst case: $\Theta(n^2)$
 
-If every recursive pivot is the smallest (or largest) element — for
-instance an **already sorted** array with pivot = last — we get a
+If every recursive pivot is the smallest (or largest) element - for
+instance an **already sorted** array with pivot = last - we get a
 $n-1, 0$ split. The recurrence
 
 $$T(n) = T(n-1) + \Theta(n)$$
 
 gives $T(n) = \Theta(n^2)$.
 
-**Bird's-eye view** — the animation below runs a **full** quicksort:
+**Bird's-eye view** - the animation below runs a **full** quicksort:
 you see red pivots being placed one by one, recursions stacking up,
 and the call-stack depth growing. Try loading `1,2,3,4,5,6,7,8`
-(already sorted) to visualise the worst case — the stack walks down
+(already sorted) to visualise the worst case - the stack walks down
 like a staircase.
 
 :::viz-quicksort{data="8,3,5,1,9,2,7,4,6"}
 :::
 
-### Average case: $\Theta(n \log n)$ — expectation proof
+### Average case: $\Theta(n \log n)$ - expectation proof
 
 Pick the pivot **uniformly at random** in $A[lo..hi]$. For distinct
 keys $z_1 < z_2 < \dots < z_n$, let $X_{ij}$ be the indicator
@@ -101,7 +101,7 @@ $\square$
 
 ---
 
-## 2.2 — Heapsort (recap)
+## 2.2 - Heapsort (recap)
 
 Heapsort was covered in detail in chapter 2 (lesson "Binary heaps &
 heapsort"). Just the summary here, for context.
@@ -123,7 +123,7 @@ heapsort"). Just the summary here, for context.
 
 ---
 
-## 2.3 — Exercises
+## 2.3 - Exercises
 
 :::exercise{id="{{EX_SO_PARTITION}}"}
 :::

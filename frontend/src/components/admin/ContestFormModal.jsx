@@ -23,7 +23,7 @@ const DEFAULT_SCRIPT = '# Variables disponibles : instance_data, submission_data
 
 // Create/edit contest modal. Remounted per open, so all the form state
 // initializes fresh from the ``contest`` prop (a *full* contest as
-// returned by getContest, or null for create mode — where ``initialKind``
+// returned by getContest, or null for create mode - where ``initialKind``
 // comes from the kind picker). ``onChange`` asks Admin.jsx to reload the
 // contest list without closing the modal (PDF swap, rescore); ``onClose``
 // just closes.
@@ -75,7 +75,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
   // is created (so the admin doesn't need a second edit-save round trip).
   const [createIcpcPackage, setCreateIcpcPackage] = useState(null);
   const [rescoring, setRescoring] = useState(false);
-  // "score" | "validate" | null — opens the test-scoring modal.
+  // "score" | "validate" | null - opens the test-scoring modal.
   const [testScoringMode, setTestScoringMode] = useState(null);
 
   const handleContestSubmit = async (e) => {
@@ -600,7 +600,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
               </span>
             </div>
 
-            {/* DOMjudge package importer — visible during create
+            {/* DOMjudge package importer - visible during create
                 (stages the file for post-create upload) and during
                 edit (imports immediately). */}
             {contestForm.kind === 'icpc' && (
@@ -777,7 +777,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
             {contest && contestForm.kind !== 'icpc' && <AdminHints contestId={contest.id} />}
             {contest && contestForm.kind === 'icpc' && (
               // The `key` forces a remount when the admin jumps
-              // between different contests from the list — without
+              // between different contests from the list - without
               // it React reuses the same component instance and
               // the inner state briefly shows the previous
               // contest's problems under the new id.

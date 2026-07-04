@@ -1,5 +1,5 @@
 """Build a standalone HTML page that loads each widget in its own
-sandboxed iframe — same setup as ``CustomWidget.jsx`` in the app
+sandboxed iframe - same setup as ``CustomWidget.jsx`` in the app
 (common style preamble + outer chrome wrapper).
 
 Output: scripts/seed_widgets/test-widgets.html
@@ -132,7 +132,7 @@ def main():
             + '</code>'
             '</p>'
         )
-        # textarea carries the full HTML for assignment via JS — avoids
+        # textarea carries the full HTML for assignment via JS - avoids
         # escaping the iframe's srcdoc attribute by hand.
         raw_html.append(
             f'<textarea id="src-{i}" hidden>{srcdoc.replace("&", "&amp;").replace("<", "&lt;")}</textarea>'
@@ -162,7 +162,7 @@ def main():
         'code{background:#27272a;color:#e4e4e7;}'
         '}'
         '</style></head><body>'
-        '<h1>Test widgets — iframe sandboxé identique à l\'app</h1>'
+        '<h1>Test widgets - iframe sandboxé identique à l\'app</h1>'
         '<p class="note">Cette page reproduit le wrapper extérieur (carte + titre accent) et '
         'le préambule CSS commun de <code>CustomWidget.jsx</code>. Si un widget s\'affiche '
         'correctement ici, son code est OK. Sinon, clique-droit dans l\'iframe → Inspect → '

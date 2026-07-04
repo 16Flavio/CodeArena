@@ -1,6 +1,6 @@
 # 1. Tableaux, listes chaînées, piles, files & deques
 
-## 1.1 — Le tableau, structure de base
+## 1.1 - Le tableau, structure de base
 
 Un **tableau** est une suite contiguë de cellules en mémoire. Indexé
 par un entier $i \in [0, n[$, l'accès $A[i]$ se fait en $\Theta(1)$
@@ -19,7 +19,7 @@ de tous les éléments qui suivent.
 
 ---
 
-## 1.2 — Listes chaînées
+## 1.2 - Listes chaînées
 
 Pour rendre l'insertion/suppression $\Theta(1)$ *à un point connu*,
 on remplace la contiguïté mémoire par des **liens** entre nœuds.
@@ -35,7 +35,7 @@ class Node:
 
 - **Insertion en tête** : $\Theta(1)$.
 - **Suppression en tête** : $\Theta(1)$.
-- **Accès position $i$** : $\Theta(i)$ — il faut parcourir.
+- **Accès position $i$** : $\Theta(i)$ - il faut parcourir.
 - **Insertion après un nœud connu** : $\Theta(1)$.
 
 ### Liste doublement chaînée
@@ -55,7 +55,7 @@ Au prix d'un mot de mémoire supplémentaire par nœud.
 
 ---
 
-## 1.3 — Piles, files, deques
+## 1.3 - Piles, files, deques
 
 Trois interfaces qui s'implémentent au-dessus d'un tableau dynamique
 ou d'une liste doublement chaînée.
@@ -79,13 +79,13 @@ Opérations : `push_front`, `push_back`, `pop_front`, `pop_back`. Toutes
 en $\Theta(1)$ avec une liste doublement chaînée ou un tableau
 circulaire à doublement.
 
-> **Le deque est l'arme secrète des algos de fenêtre glissante** —
+> **Le deque est l'arme secrète des algos de fenêtre glissante** -
 > on l'utilise dans la leçon ci-dessous (max coulissant) pour
 > maintenir une fenêtre triée à coût amorti $\Theta(1)$ par élément.
 
 ---
 
-## 1.4 — Algorithme : file avec deux piles
+## 1.4 - Algorithme : file avec deux piles
 
 Un classique qui montre comment composer des structures.
 
@@ -145,7 +145,7 @@ puis sa sortie.
 
 ---
 
-## 1.5 — Exercices
+## 1.5 - Exercices
 
 :::exercise{id="{{EX_DS_QUEUE}}"}
 :::

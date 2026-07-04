@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        // E2E spins a second backend on a non-default port — the Playwright
+        // E2E spins a second backend on a non-default port - the Playwright
         // config sets VITE_API_TARGET so the harness frontend talks to it.
         target: process.env.VITE_API_TARGET || 'http://127.0.0.1:8000',
         changeOrigin: true,

@@ -76,7 +76,7 @@ LESSONS: list[dict] = [
                     "- ligne 1 : entier $q$ ($1 \\le q \\le 10^5$), nombre d'opérations\n"
                     "- $q$ lignes suivantes :\n"
                     "  - `P x` : enqueue de la valeur $x$ (chaîne sans espace)\n"
-                    "  - `D`   : dequeue — afficher l'élément retiré (ou `EMPTY` si la file est vide)\n\n"
+                    "  - `D`   : dequeue - afficher l'élément retiré (ou `EMPTY` si la file est vide)\n\n"
                     "**Sortie** : pour chaque opération `D`, une ligne avec la valeur "
                     "(ou `EMPTY`).\n\n"
                     "**Indice** : voir le pseudo-code de la leçon. Coût amorti $O(q)$ "
@@ -88,7 +88,7 @@ LESSONS: list[dict] = [
                     "- line 1: integer $q$ ($1 \\le q \\le 10^5$), operation count\n"
                     "- next $q$ lines:\n"
                     "  - `P x`: enqueue value $x$ (a non-whitespace token)\n"
-                    "  - `D`  : dequeue — print the removed element (or `EMPTY` if the queue is empty)\n\n"
+                    "  - `D`  : dequeue - print the removed element (or `EMPTY` if the queue is empty)\n\n"
                     "**Output**: for each `D` op, one line with the value (or `EMPTY`).\n\n"
                     "**Hint**: see the lesson pseudocode. Amortized cost $O(q)$ over "
                     "$q$ ops."
@@ -244,14 +244,14 @@ LESSONS: list[dict] = [
                     "**Entrée** :\n\n"
                     "- ligne 1 : $n$ ($1 \\le n \\le 10^6$)\n"
                     "- ligne 2 : $n$ entiers séparés par des espaces ($|a_i| \\le 10^9$)\n\n"
-                    "**Sortie** : un seul entier — le nombre de distincts."
+                    "**Sortie** : un seul entier - le nombre de distincts."
                 ),
                 "prompt_en": (
                     "Given $n$ integers, return the count of **distinct** values.\n\n"
                     "**Input**:\n\n"
                     "- line 1: $n$ ($1 \\le n \\le 10^6$)\n"
                     "- line 2: $n$ space-separated integers ($|a_i| \\le 10^9$)\n\n"
-                    "**Output**: one integer — the number of distinct values."
+                    "**Output**: one integer - the number of distinct values."
                 ),
                 "starter_code": (
                     "import sys\n\n"
@@ -509,7 +509,7 @@ LESSONS: list[dict] = [
                     "- ligne 2 : $n$ entiers à insérer (doublons ignorés)\n\n"
                     "**Sortie** : la hauteur.\n\n"
                     "**Note** : insérer $1, 2, \\dots, n$ dans l'ordre donne une "
-                    "chaîne de hauteur $n$ — c'est exactement le pire cas dont "
+                    "chaîne de hauteur $n$ - c'est exactement le pire cas dont "
                     "parle la leçon."
                 ),
                 "prompt_en": (
@@ -522,7 +522,7 @@ LESSONS: list[dict] = [
                     "- line 2: $n$ integers to insert (duplicates ignored)\n\n"
                     "**Output**: the height.\n\n"
                     "**Note**: inserting $1, 2, \\dots, n$ in order gives a "
-                    "height-$n$ chain — exactly the worst case the lesson warns "
+                    "height-$n$ chain - exactly the worst case the lesson warns "
                     "about."
                 ),
                 "starter_code": (

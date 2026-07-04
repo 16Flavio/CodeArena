@@ -51,7 +51,7 @@ except ImportError:
 
 class Metrics:
     """Per-endpoint latency + error tracker. Thread-safe enough for
-    asyncio (no real threads — single-thread event loop)."""
+    asyncio (no real threads - single-thread event loop)."""
     def __init__(self) -> None:
         self.lat: dict[str, list[float]] = defaultdict(list)
         self.errors: dict[str, int] = defaultdict(int)
@@ -144,7 +144,7 @@ async def ensure_admin(client: httpx.AsyncClient, run_id: str, args) -> str:
             )
         return r.json()["access_token"]
 
-    # Fallback path — works only on a fresh deployment.
+    # Fallback path - works only on a fresh deployment.
     username = f"loadadmin_{run_id}"
     pw = "loadadmin-pw-very-long"
     await client.post(
@@ -220,7 +220,7 @@ def cleanup_loadtest_artifacts(run_id: str, contest_id: int | None = None) -> di
     4. Delete the users (remaining FKs cascade or SET NULL).
 
     Returns counts for logging. Caller decides whether to invoke this
-    — opt-out via ``--no-cleanup`` for post-mortem inspection."""
+    - opt-out via ``--no-cleanup`` for post-mortem inspection."""
     try:
         sys.path.insert(0, "/app")
         from backend import database, models  # type: ignore
@@ -269,7 +269,7 @@ def cleanup_loadtest_artifacts(run_id: str, contest_id: int | None = None) -> di
 
 def provision_loadtest_users(run_id: str, n: int) -> list[dict]:
     """Insert N synthetic users straight into the DB and mint JWTs
-    for each. Bypasses ``/register`` (5/min) and ``/login`` (10/min) —
+    for each. Bypasses ``/register`` (5/min) and ``/login`` (10/min) -
     those rate limits would otherwise cap user creation at ~5 users.
 
     Each user is inserted with ``email_verified=True`` so the
@@ -280,7 +280,7 @@ def provision_loadtest_users(run_id: str, n: int) -> list[dict]:
 
     Bcrypt is intentionally slow (~150ms per hash). For 70 users that
     would be 10+ s of dead time, so we hash once and reuse the digest
-    — these passwords aren't real secrets, just placeholders.
+    - these passwords aren't real secrets, just placeholders.
 
     Only works inside the backend container (imports backend.*)."""
     try:
@@ -320,7 +320,7 @@ async def register_on_contest(
     client: httpx.AsyncClient, user: dict, contest_id: int, metrics: Metrics,
 ) -> bool:
     """Register a user on a contest. Requires the user to be
-    email_verified — see force_verify_loadtest_users()."""
+    email_verified - see force_verify_loadtest_users()."""
     headers = {"Authorization": f"Bearer {user['token']}"}
     r = await timed_request(
         client, "POST", f"/api/contests/{contest_id}/register", metrics,
@@ -387,8 +387,8 @@ async def main(args: argparse.Namespace) -> int:
     try:
         return await _run(args, run_id, metrics)
     finally:
-        # Always runs — including on early FATAL exits and uncaught
-        # exceptions — so back-to-back runs don't accumulate junk.
+        # Always runs - including on early FATAL exits and uncaught
+        # exceptions - so back-to-back runs don't accumulate junk.
         print("\n=== Phase 4: cleanup ===")
         if args.no_cleanup:
             print("Skipping cleanup (--no-cleanup). Run manually:")
@@ -402,7 +402,7 @@ async def main(args: argparse.Namespace) -> int:
                 print(f"Removed: {result['users']} users, "
                       f"{result['submissions']} submissions, "
                       f"{result['contests']} contests.")
-            except Exception as err:  # pragma: no cover — best-effort
+            except Exception as err:  # pragma: no cover - best-effort
                 print(f"  [cleanup failed: {err}]", file=sys.stderr)
 
 
@@ -444,7 +444,7 @@ async def _run(args: argparse.Namespace, run_id: str, metrics: Metrics) -> int:
         # 2. Provision users in the DB directly. /register is 5/min
         #    and /login is 10/min, so the API path tops out near 5
         #    users per run. We mint tokens with the backend's SECRET_KEY
-        #    instead — same shape as /login output, no rate limit.
+        #    instead - same shape as /login output, no rate limit.
         print(f"\n=== Phase 2: provision {args.users} users (DB direct) ===")
         users = provision_loadtest_users(run_id, args.users)
         print(f"Provisioned: {len(users)} users (verified, tokens minted)")
@@ -528,7 +528,7 @@ async def _run(args: argparse.Namespace, run_id: str, metrics: Metrics) -> int:
                                 int(len(sb_lat_sorted) * 0.95))]
         print(f"Scoreboard p95: {p95:.0f}ms")
 
-    # Verdict — fail loud on anything that would degrade the contest UX.
+    # Verdict - fail loud on anything that would degrade the contest UX.
     # Bar is set for "200 active users on a real contest", not "we got
     # zero exceptions". Latency tail is what kills perceived freshness.
     issues: list[str] = []
@@ -553,7 +553,7 @@ async def _run(args: argparse.Namespace, run_id: str, metrics: Metrics) -> int:
         if sb_p99 > 2000:
             issues.append(f"scoreboard p99 {sb_p99:.0f}ms > 2000ms")
     if issues:
-        print("\n⚠️  Healthcheck failed — the deployment is NOT ready for prod load:")
+        print("\n⚠️  Healthcheck failed - the deployment is NOT ready for prod load:")
         for s in issues:
             print(f"   - {s}")
         return 1

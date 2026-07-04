@@ -1,4 +1,4 @@
-"""account lockout — failed_login_count + locked_until on users
+"""account lockout - failed_login_count + locked_until on users
 
 Revision ID: 2026_04_21_a2
 Revises: 2026_04_21_a1

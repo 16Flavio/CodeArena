@@ -3,7 +3,7 @@
     python -m backend.worker
 
 Requires REDIS_URL in the env. Picks up jobs from the scoring queue (or
-whichever name SCORING_QUEUE_NAME specifies). Kept intentionally thin —
+whichever name SCORING_QUEUE_NAME specifies). Kept intentionally thin -
 business logic lives in ``backend.scoring_jobs``."""
 from __future__ import annotations
 

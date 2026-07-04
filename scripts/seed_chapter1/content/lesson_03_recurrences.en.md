@@ -1,23 +1,23 @@
 # 3. Recurrences & Master Theorem
 
-## 3.1 — Why recurrences?
+## 3.1 - Why recurrences?
 
 The complexity of a recursive algorithm is naturally written as a
 **recurrence relation**:
 
-- *Divide and conquer*: $T(n) = a\,T(n/b) + f(n)$ — $a$ subproblems of
+- *Divide and conquer*: $T(n) = a\,T(n/b) + f(n)$ - $a$ subproblems of
   size $n/b$, plus a divide/combine cost $f(n)$.
 - *Linear recursion*: $T(n) = T(n-1) + f(n)$.
 
 Three solving techniques:
 
-1. **Substitution** — guess, then prove by induction.
-2. **Recursion tree** — sum the cost level by level.
-3. **Master Theorem** — closed-form formula for divide-and-conquer recurrences.
+1. **Substitution** - guess, then prove by induction.
+2. **Recursion tree** - sum the cost level by level.
+3. **Master Theorem** - closed-form formula for divide-and-conquer recurrences.
 
 ---
 
-## 3.2 — Substitution method
+## 3.2 - Substitution method
 
 *Guess* the form of the solution and **prove** it by induction on $n$.
 
@@ -38,12 +38,12 @@ as long as $c \ge 1$. *Base case*: pick $c$ large enough to cover it.
 $\square$
 
 > **How to use it.** Always reach **exactly** the target form. If you
-> stop at $\le c\,n \log_2 n + n$, you proved nothing — the $+n$ must
+> stop at $\le c\,n \log_2 n + n$, you proved nothing - the $+n$ must
 > be absorbed into the constant.
 
 ---
 
-## 3.3 — Recursion tree
+## 3.3 - Recursion tree
 
 For $T(n) = aT(n/b) + f(n)$ we draw the call tree:
 
@@ -62,7 +62,7 @@ the Master Theorem.
 
 ---
 
-## 3.4 — Master Theorem (statement)
+## 3.4 - Master Theorem (statement)
 
 **Theorem.** Let $T(n) = a\,T(n/b) + f(n)$ with $a \ge 1$, $b > 1$, and
 $f(n)$ asymptotically positive. Set $\alpha = \log_b a$. Then:
@@ -108,7 +108,7 @@ $\square$
 
 ---
 
-## 3.5 — Bonus: Akra-Bazzi
+## 3.5 - Bonus: Akra-Bazzi
 
 **Theorem (Akra-Bazzi).** Let
 $T(n) = \sum_{i=1}^{k} a_i\,T(n/b_i) + f(n)$
@@ -124,11 +124,11 @@ Akra-Bazzi handles:
 **Example.** $T(n) = T(n/3) + T(2n/3) + n$. Solve
 $1/3^p + (2/3)^p = 1$; the solution is $p = 1$. The integral gives
 $\int_1^n du/u = \ln n$, so $T(n) = \Theta(n \log n)$. That's the
-*balanced* quicksort complexity — exactly like merge sort.
+*balanced* quicksort complexity - exactly like merge sort.
 
 ---
 
-## 3.6 — Exercises
+## 3.6 - Exercises
 
 :::exercise{id="{{EX_REC_STD}}"}
 :::

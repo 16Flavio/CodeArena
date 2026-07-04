@@ -3,7 +3,7 @@
 Kattis/ICPC Problem Package Format (aka "polygon for Kattis"):
 
   contest.zip
-  ├── contest.yaml                  # optional — presence means "contest package"
+  ├── contest.yaml                  # optional - presence means "contest package"
   ├── problem-<shortname>/          # one dir per problem
   │   ├── problem.yaml              # name, validation, limits
   │   ├── problem_statement/        # statement.pdf (we only grab PDFs for v1)
@@ -97,7 +97,7 @@ def _parse_time_limit(meta: dict) -> int:
 
 def _parse_memory_limit(meta: dict) -> int:
     """Return the memory limit in MB. Falls back to the DOMjudge default
-    (2048 MB) when problem.yaml doesn't specify one — the previous 256
+    (2048 MB) when problem.yaml doesn't specify one - the previous 256
     MB default would crash many Python/Java submissions on import."""
     limits = meta.get("limits") or {}
     mb = limits.get("memory") or meta.get("memory_limit")
@@ -151,7 +151,7 @@ def _load_interactor(zf: zipfile.ZipFile, proot: str) -> tuple[Optional[str], st
     candidates = [n for n in zf.namelist() if n.startswith(base) and not n.endswith("/")]
     if not candidates:
         return None, "py3"
-    # Prefer Python — easier to reason about, and it's our default
+    # Prefer Python - easier to reason about, and it's our default
     # interactor language so new problems work without lang config.
     order = [".py", ".cpp", ".cc", ".cxx", ".c", ".java"]
     lang_by_ext = {
@@ -239,7 +239,7 @@ def _find_pdf(zf: zipfile.ZipFile, problem_root: str) -> Optional[str]:
         if not in_statement_dir and "/" not in rel and statement_re.match(base):
             return 1  # legacy DOMjudge problem.pdf at root
         if in_statement_dir:
-            return 2  # other PDF inside problem_statement/ — likely a figure
+            return 2  # other PDF inside problem_statement/ - likely a figure
         if "/" not in rel:
             return 3  # other PDF at the problem root
         return 4
@@ -292,7 +292,7 @@ def _testcase_pairs(zf: zipfile.ZipFile, problem_root: str) -> list[tuple[str, b
         if "input" not in bucket or "expected" not in bucket:
             continue
         out.append((stem, is_sample, bucket["input"], bucket["expected"]))
-    # Sort samples before secret, then lexicographic — matches DOMjudge order.
+    # Sort samples before secret, then lexicographic - matches DOMjudge order.
     out.sort(key=lambda x: (not x[1], x[0]))
     return out
 
@@ -329,20 +329,20 @@ def import_domjudge_package(
     if total_uncompressed > _MAX_UNCOMPRESSED:
         raise ValueError(
             f"Archive uncompressed size {total_uncompressed} exceeds the "
-            f"{_MAX_UNCOMPRESSED}-byte ceiling — possible zip bomb"
+            f"{_MAX_UNCOMPRESSED}-byte ceiling - possible zip bomb"
         )
 
-    # Contest-level metadata (optional — for v1 we keep the title/dates the
+    # Contest-level metadata (optional - for v1 we keep the title/dates the
     # admin set; contest.yaml could override them in a future iteration).
 
     problem_dirs = _list_problem_dirs(zf)
     if not problem_dirs:
-        # Single-problem zip — treat the zip root as the problem root.
+        # Single-problem zip - treat the zip root as the problem root.
         problem_dirs = [""]
 
     # Pre-compute the label / external_id space we'll be writing into. A
     # multi-problem package often has yaml files with identical default
-    # labels (all 'A', or all missing) — we need to resolve those *before*
+    # labels (all 'A', or all missing) - we need to resolve those *before*
     # any INSERT to avoid tripping uq_problem_contest_label and rolling
     # back the whole transaction. Same deal for external_id clashes from
     # shared `probid` values in domjudge-problem.ini.
@@ -373,7 +373,7 @@ def import_domjudge_package(
         return picked
 
     def _unique_ext(desired: str) -> str:
-        """Same idea for external_id — but we preserve the original when
+        """Same idea for external_id - but we preserve the original when
         it already points at an existing problem (that's the upsert path)."""
         if desired in existing_by_ext and desired not in used_ext_this_import:
             # First encounter of an existing id in this import = upsert.
@@ -418,7 +418,7 @@ def import_domjudge_package(
             or (os.path.basename(proot) if proot else None)
         )
         if not desired_ext:
-            # Single-problem at the ZIP root with no id hint — fall back to a
+            # Single-problem at the ZIP root with no id hint - fall back to a
             # stable slug from the name so imports are still idempotent.
             raw_name = meta.get("name") or f"problem-{idx}"
             desired_ext = re.sub(r"[^a-zA-Z0-9_-]+", "-", str(raw_name)).strip("-").lower() or f"problem-{idx}"
@@ -439,7 +439,7 @@ def import_domjudge_package(
         name = str(meta.get("name") or external_id)[:200]
         desired_label = str(meta.get("label") or chr(ord("A") + idx))[:8]
         # If this external_id already existed in the DB, its current label
-        # is already in used_labels — free it so we can reassign the new
+        # is already in used_labels - free it so we can reassign the new
         # desired label to the same row without the collision helper
         # thinking it's taken.
         prev = existing_by_ext.get(external_id)
@@ -509,11 +509,11 @@ def import_domjudge_package(
             elif not problem.interactor_script:
                 report.skipped.append(
                     f"{external_id}: interactive problem but no interactor "
-                    "source found under output_validators/ — paste it via "
+                    "source found under output_validators/ - paste it via "
                     "the admin UI or the problem will fail to judge."
                 )
 
-        # Statement PDF — extract to uploads/icpc/{contest_id}/{external_id}.pdf.
+        # Statement PDF - extract to uploads/icpc/{contest_id}/{external_id}.pdf.
         pdf_member = _find_pdf(zf, proot)
         if pdf_member:
             dest_dir = os.path.join(pdf_upload_dir, f"contest-{contest.id}")
@@ -523,7 +523,7 @@ def import_domjudge_package(
                 f.write(zf.read(pdf_member))
             problem.statement_pdf_path = dest_path
 
-        # Testcases — wipe old ones on re-import so renumbering doesn't pile
+        # Testcases - wipe old ones on re-import so renumbering doesn't pile
         # stale rows on top of fresh data.
         if not is_new:
             db.query(models.Testcase).filter(

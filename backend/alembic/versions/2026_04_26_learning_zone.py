@@ -7,7 +7,7 @@ Adds the four tables that back the new pedagogical zone:
 - ``lesson_assets``: images / files attached to a lesson on disk.
 - ``lesson_progress``: per-(user, lesson) completion state.
 
-Pure additive — existing tables untouched, safe to run on a populated
+Pure additive - existing tables untouched, safe to run on a populated
 DB. Downgrade drops the four tables in reverse FK order.
 
 Revision ID: 2026_04_26_a2

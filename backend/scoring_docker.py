@@ -14,7 +14,7 @@ short-lived container with:
 The backend container needs access to the host Docker socket (mounted at
 ``/var/run/docker.sock``). The compose file wires this up.
 
-Falls back to a clear ``RuntimeError`` if Docker isn't available — the caller
+Falls back to a clear ``RuntimeError`` if Docker isn't available - the caller
 can then catch it and either surface the error or fall back to the subprocess
 mode.
 """
@@ -59,7 +59,7 @@ def run_in_docker(
     Returns the wrapper's JSON dict directly so the caller can inspect
     ``ok``, ``score``, and ``error`` (validator mode sets ``error`` on
     rejection). Raises ``RuntimeError`` only on *infrastructural* failures
-    — missing daemon, timeout, unparseable output — not on script-level
+    - missing daemon, timeout, unparseable output - not on script-level
     errors, which come back through ``ok=False``."""
     if not _docker_available():
         raise RuntimeError(

@@ -34,7 +34,7 @@ export default function ParticipantsAllowlist({ contest, participationMode, user
   };
 
   useEffect(() => {
-    // Loading on (re)mount is intentional — the setState inside
+    // Loading on (re)mount is intentional - the setState inside
     // ``refreshParticipants`` is the whole point.
     /* eslint-disable-next-line react-hooks/set-state-in-effect */
     refreshParticipants(contest.id);

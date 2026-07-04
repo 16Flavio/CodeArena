@@ -13,10 +13,10 @@ services:
     environment:
       # Pass through from host .env (shared secret, SMTP, etc.). Adjust as needed.
       SECRET_KEY: ${SECRET_KEY:-}
-      # HTTP worker count. Default 4 — comfortable for ~200 active users.
+      # HTTP worker count. Default 4 - comfortable for ~200 active users.
       # Each worker is a separate process: more parallelism, more memory.
       UVICORN_WORKERS: ${UVICORN_WORKERS:-4}
-      # SQLAlchemy pool sizing. Per-worker — total connections is
+      # SQLAlchemy pool sizing. Per-worker - total connections is
       # (UVICORN_WORKERS × (DB_POOL_SIZE + DB_MAX_OVERFLOW)) at burst.
       # Defaults give 4 × 25 = 100 burst; postgres max_connections=200.
       DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
@@ -56,7 +56,7 @@ services:
       - ${UPLOADS_DIR:-./uploads}:/app/backend/uploads
       # SCORING_MODE=docker needs the host Docker socket so the backend can
       # spawn sibling scoring containers. Grants the backend root-equivalent
-      # on the host — acceptable for a single-tenant contest server where
+      # on the host - acceptable for a single-tenant contest server where
       # the backend is the only trusted app on the box.
       - /var/run/docker.sock:/var/run/docker.sock
       # Shared judge workdir, mounted at the SAME absolute path on host and in
@@ -64,7 +64,7 @@ services:
       # each per-submission subdir at an identical path (no in-command path
       # rewriting). Only needed for SCORING_MODE=docker.
       - ${JUDGE_WORKDIR:-/judge-work}:${JUDGE_WORKDIR:-/judge-work}
-    # Internal only — Caddy is the one public-facing service. For local dev
+    # Internal only - Caddy is the one public-facing service. For local dev
     # without Caddy, add `ports: - "8000:8000"`.
     expose:
       - "8000"
@@ -79,7 +79,7 @@ services:
     depends_on:
       - backend
     # Bind only to localhost so the host's nginx (or Caddy) can proxy to it.
-    # 127.0.0.1 prefix is important — without it the port would be public.
+    # 127.0.0.1 prefix is important - without it the port would be public.
     ports:
       - "127.0.0.1:${FRONTEND_HOST_PORT:-2027}:80"
     restart: unless-stopped
@@ -111,7 +111,7 @@ services:
     # and the SQLAlchemy pool sized to burst at 25/worker (= 100 across
     # backend + ~10 across workers + headroom for psql / pg_dump), 100 is
     # the floor. 200 leaves room for spikes and admin sessions.
-    # shared_buffers bumped accordingly — postgres' default 128MB is
+    # shared_buffers bumped accordingly - postgres' default 128MB is
     # tiny for our row volume; 256MB is still conservative.
     command:
       - "postgres"
@@ -125,7 +125,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-codearena}
     volumes:
       - postgres-data:/var/lib/postgresql/data
-    # No host port — backend reaches it via the internal docker network only.
+    # No host port - backend reaches it via the internal docker network only.
     # Uncomment the ports block if you need to connect with psql from the host.
     # ports:
     #   - "127.0.0.1:5432:5432"
@@ -171,7 +171,7 @@ services:
     # The replica count is driven by SCORING_WORKER_REPLICAS in .env
     # (default 1). ``deploy.replicas`` is honored by ``docker compose
     # up -d`` since Compose v2.13, so bumping the env var + plain
-    # ``up -d`` is enough to scale permanently across restarts — no
+    # ``up -d`` is enough to scale permanently across restarts - no
     # more ``--scale`` flag to remember.
     image: ${DOCKER_USER:-codearena}/codearena-backend:${IMAGE_TAG:-latest}
     build:
@@ -187,7 +187,7 @@ services:
     environment:
       SECRET_KEY: ${SECRET_KEY:-}
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-codearena}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-codearena}}
-      # Worker DB pool — much smaller than the backend's. Each worker
+      # Worker DB pool - much smaller than the backend's. Each worker
       # is a single-threaded RQ consumer holding 1 connection at a time.
       DB_POOL_SIZE: ${WORKER_DB_POOL_SIZE:-2}
       DB_MAX_OVERFLOW: ${WORKER_DB_MAX_OVERFLOW:-3}
@@ -203,7 +203,7 @@ services:
     volumes:
       - ${UPLOADS_DIR:-./uploads}:/app/backend/uploads
       - /var/run/docker.sock:/var/run/docker.sock
-      # Same-path shared judge workdir — see the backend service for why.
+      # Same-path shared judge workdir - see the backend service for why.
       - ${JUDGE_WORKDIR:-/judge-work}:${JUDGE_WORKDIR:-/judge-work}
     command: [ "python", "-m", "backend.worker" ]
     restart: unless-stopped
@@ -237,7 +237,7 @@ services:
     #
     # Dumps the Postgres DB to a .sql.gz plus a tarball of the uploads
     # volume, both timestamped under ./backups on the host. Exits as
-    # soon as the snapshot is done — schedule via host cron if you want
+    # soon as the snapshot is done - schedule via host cron if you want
     # nightly backups, e.g.
     #   0 2 * * * cd /opt/codearena && docker compose run --rm backup
     image: postgres:16-alpine

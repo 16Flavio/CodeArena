@@ -1,12 +1,12 @@
 # 2. Analyse de boucles & sommes utiles
 
-## 2.1 — L'idée fondamentale
+## 2.1 - L'idée fondamentale
 
 Le coût d'une boucle est la **somme** des coûts de ses itérations. Pour
 analyser un algorithme à boucles imbriquées, on traduit chaque niveau
 en somme et on simplifie. Trois sommes reviennent partout.
 
-## 2.2 — Les trois sommes à connaître par cœur
+## 2.2 - Les trois sommes à connaître par cœur
 
 ### Somme arithmétique
 
@@ -47,7 +47,7 @@ soit $\ln(n+1) \le H_n \le 1 + \ln n$. $\square$
 
 ---
 
-## 2.3 — Trois patrons d'analyse
+## 2.3 - Trois patrons d'analyse
 
 ### Boucles imbriquées triangulaires
 
@@ -99,7 +99,7 @@ Coût : $T(n) = n \cdot \log_2 n = \Theta(n \log n)$.
 
 ---
 
-## 2.4 — Exercices
+## 2.4 - Exercices
 
 :::exercise{id="{{EX_LOOP_STD}}"}
 :::

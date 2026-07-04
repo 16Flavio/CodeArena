@@ -16,7 +16,7 @@ def test_account_lockout_after_bad_passwords(client):
         r = client.post("/api/auth/login", json={"username": "locky", "password": "wrong"})
         assert r.status_code == 401
 
-    # 6th attempt, this time with the RIGHT password — must be rejected
+    # 6th attempt, this time with the RIGHT password - must be rejected
     # because the account is locked.
     r = client.post("/api/auth/login", json={"username": "locky", "password": "correct"})
     assert r.status_code == 429

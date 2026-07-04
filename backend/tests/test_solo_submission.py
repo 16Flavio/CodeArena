@@ -1,4 +1,4 @@
-"""Regression tests for the solo submission flow — the path that blanked the
+"""Regression tests for the solo submission flow - the path that blanked the
 page earlier. Covers:
 
 * POST submit with no team_id on a solo contest succeeds and returns a

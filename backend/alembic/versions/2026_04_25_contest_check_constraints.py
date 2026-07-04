@@ -3,7 +3,7 @@
 The schema layer already validates these (Pydantic field validators),
 but a defensive DB-level constraint catches direct INSERTs (manual
 fixes via psql, future migrations, ill-behaved scripts) that bypass
-the API. The accepted sets are immutable — adding a new mode means
+the API. The accepted sets are immutable - adding a new mode means
 shipping a new migration that updates the CHECK.
 
 Revision ID: 2026_04_25_a2

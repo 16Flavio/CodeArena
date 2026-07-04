@@ -1,6 +1,6 @@
 # 3. The $\Omega(n \log n)$ Lower Bound & Linear Sorts
 
-## 3.1 — Why look for a lower bound?
+## 3.1 - Why look for a lower bound?
 
 $\Theta(n \log n)$ sorts pile up: mergesort, heapsort, quicksort
 on average. Natural question: **can we do better?**
@@ -11,14 +11,14 @@ case. The proof goes through **decision trees**.
 
 ---
 
-## 3.2 — The decision tree
+## 3.2 - The decision tree
 
 Any deterministic sorting algorithm using only comparisons can be
 seen as a **binary decision tree**:
 
 - each internal node is a comparison `A[i] < A[j]`;
 - the two children are the `true` / `false` outcomes;
-- each leaf carries a **permutation** $\sigma$ of the input — the
+- each leaf carries a **permutation** $\sigma$ of the input - the
   output produced when that path is taken.
 
 **Key observation.** For correctness, every one of the $n!$ possible
@@ -48,12 +48,12 @@ $$\log_2(n!) \ge n \log_2(n/e) = n \log_2 n - n \log_2 e = \Omega(n \log n).$$
 **asymptotically optimal** in this model. $\square$
 
 > **Direct consequence.** To go below, one must **leave the
-> comparison model** — exploit a known structure of the keys. That's
+> comparison model** - exploit a known structure of the keys. That's
 > what linear sorts do.
 
 ---
 
-## 3.3 — Counting sort
+## 3.3 - Counting sort
 
 ### Assumption
 
@@ -73,7 +73,7 @@ def counting_sort(A, k):
 
 ### Complexity
 
-$\Theta(n + k)$ — linear if $k = O(n)$.
+$\Theta(n + k)$ - linear if $k = O(n)$.
 
 ### Stability (general version)
 
@@ -97,7 +97,7 @@ guarantees that two equal-keyed elements keep their input order.
 
 ---
 
-## 3.4 — Radix sort (LSD)
+## 3.4 - Radix sort (LSD)
 
 ### Assumption
 
@@ -135,17 +135,17 @@ significant), $A$ is sorted by the **$i$ least-significant digits**.
 
 *Step.* The pass on digit $i+1$ uses a **stable** counting sort:
 two keys with the same $(i+1)$-th digit keep the relative order
-established by the previous pass — i.e. the global order on the
+established by the previous pass - i.e. the global order on the
 $i+1$ low digits. $\square$
 
 ### Complexity
 
-$\Theta(d \cdot (n + b))$ — linear in $n$ when $d$ and $b$ are
+$\Theta(d \cdot (n + b))$ - linear in $n$ when $d$ and $b$ are
 constants (32-bit integers byte by byte: $d = 4$, $b = 256$).
 
 ---
 
-## 3.5 — Bucket sort
+## 3.5 - Bucket sort
 
 ### Assumption
 
@@ -162,7 +162,7 @@ Keys are **uniformly distributed reals** in $[0, 1]$.
 
 Under the uniform assumption, expected bucket size is $1$.
 Insertion sort on a bucket of size $m$ costs $\Theta(m^2)$. Summing
-$\mathbb{E}[m^2]$ across buckets gives $\Theta(n)$ — classic
+$\mathbb{E}[m^2]$ across buckets gives $\Theta(n)$ - classic
 calculation we skip here.
 
 → **$\Theta(n)$ in expectation** when the uniform assumption holds.
@@ -170,7 +170,7 @@ Worst case: $\Theta(n^2)$ if all elements land in the same bucket.
 
 ---
 
-## 3.6 — Summary
+## 3.6 - Summary
 
 | Algo | Assumption | Worst case | Stable |
 |------|------------|-----------|--------|
@@ -181,7 +181,7 @@ Worst case: $\Theta(n^2)$ if all elements land in the same bucket.
 
 ---
 
-## 3.7 — Exercises
+## 3.7 - Exercises
 
 :::exercise{id="{{EX_SO_COUNTING}}"}
 :::

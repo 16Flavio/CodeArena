@@ -1,6 +1,6 @@
 # 4. Sliding window
 
-## 4.1 — Intuition
+## 4.1 - Intuition
 
 Une **fenêtre glissante** est un cas particulier de two-pointers où
 la zone $[i, j]$ représente une **sous-séquence contiguë** d'un
@@ -15,7 +15,7 @@ $O(\Sigma)$ avec $\Sigma$ la taille de l'alphabet.
 
 ---
 
-## 4.2 — Fenêtre de **taille fixe** $k$
+## 4.2 - Fenêtre de **taille fixe** $k$
 
 > Plus grande somme parmi toutes les sous-tableaux de longueur $k$.
 
@@ -35,7 +35,7 @@ ce qui rentre, on **retire** ce qui sort.
 
 ---
 
-## 4.3 — Fenêtre de **taille variable** : le patron
+## 4.3 - Fenêtre de **taille variable** : le patron
 
 C'est le cas le plus puissant. On veut la plus longue (ou plus
 petite) fenêtre satisfaisant un prédicat $P$ "monotone par
@@ -65,12 +65,12 @@ def longest_valid(A, predicate):
 
 **Pourquoi $O(n)$ ?** $i$ ne recule pas, donc le total des
 incréments est $\le n$. Le `while` interne est exécuté au plus $n$
-fois sur l'ensemble de l'algorithme — il **n'augmente pas** le
+fois sur l'ensemble de l'algorithme - il **n'augmente pas** le
 coût total.
 
 ---
 
-## 4.4 — Application : plus longue sous-chaîne sans répétition
+## 4.4 - Application : plus longue sous-chaîne sans répétition
 
 > Étant donnée une chaîne $s$, trouver la longueur de la plus
 > longue sous-chaîne **sans caractère répété**.
@@ -97,21 +97,21 @@ complexité (toujours $O(n)$) mais une constante meilleure.
 
 ---
 
-## 4.5 — Application : sous-tableau de somme $\ge S$
+## 4.5 - Application : sous-tableau de somme $\ge S$
 
-C'est l'exemple de la leçon 3 — déjà vu. La frontière entre
+C'est l'exemple de la leçon 3 - déjà vu. La frontière entre
 "two-pointer" et "sliding window" est floue : c'est la même idée,
 juste un focus différent (deux index vs une statistique
 agrégée).
 
 ---
 
-## 4.6 — Pièges
+## 4.6 - Pièges
 
 1. **Prédicat non monotone** : si rétrécir une fenêtre valide peut
    la rendre invalide, le patron ne fonctionne pas.
    *Contre-exemple* : "plus longue fenêtre dont la somme est
-   exactement $S$" avec valeurs négatives — ajouter des éléments
+   exactement $S$" avec valeurs négatives - ajouter des éléments
    peut faire osciller la somme.
 2. **Statistique trop coûteuse à mettre à jour** : si l'opération
    `add` ou `remove` coûte $O(\log n)$ (insertion dans un sorted
@@ -123,7 +123,7 @@ agrégée).
 
 ---
 
-## 4.7 — Exercices
+## 4.7 - Exercices
 
 :::exercise{id="{{EX_SE_FIXEDSUM}}"}
 :::

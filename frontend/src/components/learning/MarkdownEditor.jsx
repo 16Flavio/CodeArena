@@ -81,11 +81,11 @@ function insertAtCursor(view, text) {
  * CodeMirror-backed markdown editor with a formatting toolbar.
  *
  * Props:
- *   value, onChange       — controlled string state
- *   onUploadImage(file)   — optional async; should return the markdown
+ *   value, onChange       - controlled string state
+ *   onUploadImage(file)   - optional async; should return the markdown
  *                           snippet to insert (e.g. ``![name](url)``)
- *   onPickWidget()        — optional; opens the widget catalog modal
- *   onPickExercise()      — optional; opens the exercise picker modal
+ *   onPickWidget()        - optional; opens the widget catalog modal
+ *   onPickExercise()      - optional; opens the exercise picker modal
  *
  * Drag-and-drop image upload is wired when ``onUploadImage`` is set.
  * Keyboard shortcuts: Ctrl/Cmd+B (bold), Ctrl/Cmd+I (italic),
@@ -227,7 +227,7 @@ export default function MarkdownEditor({
         )}
       </div>
 
-      {/* Editor — switches to oneDark when the app is in dark mode so
+      {/* Editor - switches to oneDark when the app is in dark mode so
           the white-on-light-grey contrast issue goes away. */}
       <CodeMirror
         value={value}

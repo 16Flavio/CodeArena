@@ -29,7 +29,7 @@
   <span>profondeur : <b id="depth">0</b></span>
   <span>swaps : <b id="nswaps">0</b></span>
   <span>comparaisons : <b id="ncmp">0</b></span>
-  <span>fenêtre : <b id="window">—</b></span>
+  <span>fenêtre : <b id="window">-</b></span>
 </div>
 <div class="controls">
   <label class="field">tableau <input type="text" id="data" /></label>
@@ -119,12 +119,12 @@
     }
     var msg;
     switch (s.kind) {
-      case 'enter':     msg = 'partition [' + s.lo + ', ' + s.hi + '] — pivot = ' + s.snap[s.pivotIdx]; break;
+      case 'enter':     msg = 'partition [' + s.lo + ', ' + s.hi + '] - pivot = ' + s.snap[s.pivotIdx]; break;
       case 'compare':   msg = 'compare a[' + s.j + '] = ' + s.snap[s.j] + ' au pivot'; break;
       case 'swap':      msg = 'swap a[' + s.i + '] ↔ a[' + s.j + ']'; break;
-      case 'place':     msg = 'pivot placé en ' + s.i + ' — récursion sur [' + s.lo + ',' + (s.i - 1) + '] et [' + (s.i + 1) + ',' + s.hi + ']'; break;
+      case 'place':     msg = 'pivot placé en ' + s.i + ' - récursion sur [' + s.lo + ',' + (s.i - 1) + '] et [' + (s.i + 1) + ',' + s.hi + ']'; break;
       case 'singleton': msg = 'singleton en ' + s.i; break;
-      case 'done':      msg = 'tri terminé — ' + nCmp + ' cmp, ' + nSwaps + ' swaps'; break;
+      case 'done':      msg = 'tri terminé - ' + nCmp + ' cmp, ' + nSwaps + ' swaps'; break;
     }
     document.getElementById('info').textContent = msg;
     render(s);
@@ -181,7 +181,7 @@
     document.getElementById('depth').textContent = s.depth;
     document.getElementById('nswaps').textContent = nSwaps;
     document.getElementById('ncmp').textContent = nCmp;
-    document.getElementById('window').textContent = (s.kind === 'done') ? '—' : '[' + s.lo + ', ' + s.hi + ']';
+    document.getElementById('window').textContent = (s.kind === 'done') ? '-' : '[' + s.lo + ', ' + s.hi + ']';
   }
 
   document.getElementById('reset').addEventListener('click', load);

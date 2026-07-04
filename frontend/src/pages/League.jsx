@@ -17,7 +17,7 @@ const MEDALS = [
 ];
 
 // Points come out of 100 × (N − rank)/(N − 1) × coefficient, so they're
-// rarely integers — one decimal keeps columns aligned without noise.
+// rarely integers - one decimal keeps columns aligned without noise.
 const fmtPoints = (x) => Number(x ?? 0).toFixed(1);
 
 export default function League() {
@@ -62,7 +62,7 @@ export default function League() {
   const league = detail?.league;
   const rows = detail?.rows || [];
 
-  // Only finished events get a standings column — upcoming ones exist
+  // Only finished events get a standings column - upcoming ones exist
   // in the strip but have no points yet.
   const finishedEvents = useMemo(
     () => (league?.events || []).filter((e) => e.finished),
@@ -109,7 +109,7 @@ export default function League() {
         </p>
       </div>
 
-      {/* League picker — only shown when there is a choice to make. */}
+      {/* League picker - only shown when there is a choice to make. */}
       {leagues.length > 1 && (
         <div className="flex gap-1 bg-white/50 p-1 rounded-lg w-fit border border-zinc-200 dark:bg-zinc-900/50 dark:border-zinc-800/50 flex-wrap">
           {leagues.map((l) => (
@@ -133,7 +133,7 @@ export default function League() {
         <p className="text-sm text-zinc-500 dark:text-zinc-400">{league.description}</p>
       )}
 
-      {/* Events strip — each event links to its scoreboard. */}
+      {/* Events strip - each event links to its scoreboard. */}
       {league?.events?.length > 0 && (
         <div>
           <h2 className="text-sm font-semibold text-zinc-700 mb-2 dark:text-zinc-300">
@@ -189,7 +189,7 @@ export default function League() {
         </div>
       )}
 
-      {/* Standings table — one column per finished event. */}
+      {/* Standings table - one column per finished event. */}
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-zinc-100/60 dark:bg-zinc-800/50">
@@ -255,7 +255,7 @@ export default function League() {
                           className="py-2 px-3 text-right text-zinc-300 dark:text-zinc-700"
                           title={t('league.absentTooltip')}
                         >
-                          —
+                          -
                         </td>
                       );
                     }

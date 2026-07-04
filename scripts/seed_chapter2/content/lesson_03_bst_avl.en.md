@@ -1,6 +1,6 @@
 # 3. Binary Search Trees & Balancing (AVL)
 
-## 3.1 — The binary search tree
+## 3.1 - The binary search tree
 
 A **BST** is a binary tree such that, for every node $v$ with key
 $v.k$:
@@ -9,7 +9,7 @@ $$\forall u \in \text{left subtree}(v),\ u.k < v.k \quad\text{and}\quad \forall 
 
 This property gives us:
 
-- **In-order traversal** visits keys in ascending order — $\Theta(n)$.
+- **In-order traversal** visits keys in ascending order - $\Theta(n)$.
 - **Search**: walks one path, $\Theta(h)$ where $h$ is the height.
 - **Insertion**: walks down to a leaf and attaches, $\Theta(h)$.
 - **Successor**: if right subtree non-empty, its minimum; otherwise,
@@ -37,19 +37,19 @@ def insert(root, k):
 
 > **Disaster scenario.** Insert $1, 2, 3, \dots, n$ in order: the
 > BST degenerates into a chain, $h = n$, every operation
-> $\Theta(n)$. Worst case — frequent in practice (sorted inputs).
+> $\Theta(n)$. Worst case - frequent in practice (sorted inputs).
 
 :::viz-bst{keys="50,30,70,20,40,60,80"}
 :::
 
-Reset, then insert $1, 2, 3, 4, 5$ one by one — the tree degenerates
+Reset, then insert $1, 2, 3, 4, 5$ one by one - the tree degenerates
 to a chain (height $5$). Now reset and insert a balanced BST like
 `4,2,6,1,3,5,7`: height $3$. Same $n = 7$, same keys, **radically
 different height depending on insertion order**.
 
 ---
 
-## 3.2 — Rotations
+## 3.2 - Rotations
 
 A **rotation** restructures a subtree **without breaking the BST
 property** and changes the height locally.
@@ -83,7 +83,7 @@ the building block of every balanced tree.
 
 ---
 
-## 3.3 — AVL: height invariant
+## 3.3 - AVL: height invariant
 
 Invented in 1962 by Adelson-Velsky and Landis. **Invariant**: for
 every node $v$,
@@ -114,7 +114,7 @@ worst-case in an AVL.
 
 ---
 
-## 3.4 — AVL insertion: algorithm
+## 3.4 - AVL insertion: algorithm
 
 After a standard BST insert, walk back up the recursion stack; at
 each ancestor:
@@ -190,7 +190,7 @@ first rebalance. Total cost $\Theta(\log n)$. $\square$
 
 ---
 
-## 3.5 — Exercises
+## 3.5 - Exercises
 
 :::exercise{id="{{EX_BST_INORDER}}"}
 :::

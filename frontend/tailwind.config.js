@@ -12,7 +12,7 @@ export default {
         mono: ['IBM Plex Mono', 'JetBrains Mono', 'monospace'],
       },
       colors: {
-        // The app's single accent — a desaturated steel blue. Everything
+        // The app's single accent - a desaturated steel blue. Everything
         // interactive points at this scale; swapping the brand color is
         // a one-place change.
         accent: {

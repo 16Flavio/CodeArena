@@ -1,8 +1,8 @@
-"""ICPC-mode endpoints — problems, submissions, judgings, scoreboard,
+"""ICPC-mode endpoints - problems, submissions, judgings, scoreboard,
 clarifications. Lives in its own router so the output-scoring module
 keeps a single responsibility.
 
-Mounted at /api/contests — URL namespaces are carefully chosen to avoid
+Mounted at /api/contests - URL namespaces are carefully chosen to avoid
 collisions with contests.py (they share the {contest_id} prefix)."""
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ from .contests import (
 
 router = APIRouter(prefix="/api/contests", tags=["icpc"])
 
-# Separate router for top-level / global ICPC endpoints — keeps them out
+# Separate router for top-level / global ICPC endpoints - keeps them out
 # of the /{contest_id}/* path matcher in the contests router, which would
 # otherwise 422 on non-int path segments.
 global_router = APIRouter(prefix="/api/icpc", tags=["icpc"])
@@ -52,7 +52,7 @@ async def import_domjudge_package(
     db: Session = Depends(get_db),
 ):
     # NOTE: ``@limiter.limit`` doesn't compose with ``from __future__ import
-    # annotations`` + ``UploadFile`` in this module — slowapi's wrapper hides
+    # annotations`` + ``UploadFile`` in this module - slowapi's wrapper hides
     # the import from FastAPI's annotation resolver. Admin-only + size-capped
     # upload, so the per-request cost is bounded; we accept the lack of a
     # rate-limit here.
@@ -60,7 +60,7 @@ async def import_domjudge_package(
     one Problem per `problem-*` directory in the archive and imports every
     `data/{sample,secret}/*.in|.ans` pair as a Testcase.
 
-    Idempotent — re-importing the same package overwrites the existing
+    Idempotent - re-importing the same package overwrites the existing
     problems keyed by (contest_id, external_id)."""
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
     if not contest:
@@ -99,7 +99,7 @@ def _problem_to_out(p: models.Problem, *, samples: list[models.Testcase]) -> sch
 
     IMPORTANT: only sample testcases carry content. Secret testcases are
     large (DOMjudge problems routinely ship 10+ MB per testcase) and must
-    never be sent over the wire with the problem list — a 50 MB JSON
+    never be sent over the wire with the problem list - a 50 MB JSON
     response would freeze any browser. Use a separate admin endpoint if
     you need to inspect secret testcase data."""
     statement_pdf_version: Optional[int] = None
@@ -144,7 +144,7 @@ def list_problems(
         raise HTTPException(status_code=404, detail="Concours introuvable")
     if contest.kind != "icpc":
         return []
-    # Problems (and their sample testcases) are part of the statement —
+    # Problems (and their sample testcases) are part of the statement -
     # hidden from non-admins until the contest actually starts. Returning
     # [] matches the "no problems yet" UI state rather than a 403.
     if not _is_contest_started(contest, _utcnow(), is_admin=bool(user.is_admin)):
@@ -163,7 +163,7 @@ def list_problems(
     if not problems:
         return []
     # Pull ONLY the sample testcases from the DB. Secret testcases can be
-    # 10+ MB each — loading them here would eat seconds of request time
+    # 10+ MB each - loading them here would eat seconds of request time
     # and tens of MB of JSON, freezing the browser on render.
     samples_by_problem: dict[int, list[models.Testcase]] = {p.id: [] for p in problems}
     samples = (
@@ -190,7 +190,7 @@ def get_problem_statement(
     db: Session = Depends(get_db),
 ):
     """Serve the problem statement PDF. Admins bypass; everyone else
-    needs the contest to be visible AND to have started — before
+    needs the contest to be visible AND to have started - before
     start_time the statement stays sealed even if the URL is guessed."""
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
     if not contest or not _is_contest_visible(contest, _utcnow(), is_admin=bool(user.is_admin)):
@@ -214,13 +214,13 @@ def get_problem_statement(
     #
     # Cache-Control: the file path is keyed by problem id and the disk
     # file is overwritten on admin replace. ``no-cache, must-revalidate``
-    # was insufficient in practice — Chrome's PDF viewer still rendered
+    # was insufficient in practice - Chrome's PDF viewer still rendered
     # the previous PDF after a replace, presumably because of an
     # internal heuristic cache that ignores must-revalidate when the
     # response is rendered through pdfium. ``no-store`` is the
     # belt-and-braces option: nothing along the way (browser, viewer,
     # any future shared cache) is allowed to stash the response. The
-    # bandwidth cost is acceptable — statements are at most a few MB
+    # bandwidth cost is acceptable - statements are at most a few MB
     # and views are infrequent.
     return FileResponse(
         p.statement_pdf_path,
@@ -248,7 +248,7 @@ async def upload_problem_statement_pdf(
         raise HTTPException(status_code=404, detail="Problème introuvable")
 
     from ..upload_utils import read_upload_capped
-    PDF_MAX_BYTES = 10 * 1024 * 1024  # 10 MB — same ceiling as the contest-level statement.
+    PDF_MAX_BYTES = 10 * 1024 * 1024  # 10 MB - same ceiling as the contest-level statement.
     content = await read_upload_capped(file, PDF_MAX_BYTES)
     if len(content) == 0:
         raise HTTPException(status_code=400, detail="Le fichier téléversé est vide")
@@ -376,7 +376,7 @@ def update_problem(
     admin: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Admin edit for an ICPC problem — rename label, change colour,
+    """Admin edit for an ICPC problem - rename label, change colour,
     retime, swap the checker kind / tolerance, etc.
 
     Label is unique per contest: if the requested label collides with a
@@ -576,7 +576,7 @@ def list_testcases(
     admin: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Full testcase list for the admin editor — includes secret content."""
+    """Full testcase list for the admin editor - includes secret content."""
     rows = (
         db.query(models.Testcase)
         .filter(models.Testcase.problem_id == problem_id)
@@ -695,7 +695,7 @@ async def submit_icpc(
             if reg is None or reg.disqualified:
                 raise HTTPException(status_code=403, detail="Non inscrit / disqualifié")
 
-        # Persistent ban check — defence-in-depth on top of the DQ
+        # Persistent ban check - defence-in-depth on top of the DQ
         # flag. ContestBan rows survive scope-switching evasion (a
         # banned solo user trying to slip in via a team), and can also
         # outlive a registration row (e.g. admin banned then user
@@ -713,7 +713,7 @@ async def submit_icpc(
         ).first() is not None:
             raise HTTPException(status_code=403, detail="Vous êtes banni de ce concours")
 
-        # Per-problem quota + cooldown — same knobs as the output
+        # Per-problem quota + cooldown - same knobs as the output
         # contest endpoint, just scoped to (team/user, problem_id)
         # instead of (team/user, instance_id). At ICPC scale the wrong
         # team spamming submits at 100 sub/s could DoS the queue.
@@ -775,7 +775,7 @@ async def submit_icpc(
     if not source_text.strip():
         raise HTTPException(status_code=400, detail="Source vide")
 
-    # Optional dedup block — same content+problem+team/user hash check
+    # Optional dedup block - same content+problem+team/user hash check
     # as the output endpoint, scoped on problem_id instead of
     # instance_id. Two-phase (pre-check + post-flush) so a concurrent
     # racer can't slip through.
@@ -891,7 +891,7 @@ def get_judging(
         for tc in all_tcs
     ]
     if not j:
-        # No judging yet — the worker may not have picked the job up.
+        # No judging yet - the worker may not have picked the job up.
         return schemas.JudgingOut(
             id=0, submission_id=submission_id, verdict="pending", runs=[],
             all_testcases=all_testcases,
@@ -954,9 +954,9 @@ def _build_icpc_scoreboard(
     contest_id: int, *, is_admin: bool, db: Session,
 ) -> schemas.IcpcScoreboardOut:
     """Heavy compute for ``icpc_scoreboard``. Same per-audience
-    contract as the output scoreboard — no per-viewer state."""
+    contract as the output scoreboard - no per-viewer state."""
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
-    if not contest:  # pragma: no cover — defensive (visibility checked upstream)
+    if not contest:  # pragma: no cover - defensive (visibility checked upstream)
         raise HTTPException(status_code=404, detail="Concours introuvable")
 
     now = _utcnow()
@@ -973,7 +973,7 @@ def _build_icpc_scoreboard(
     problem_by_id = {p.id: p for p in problems}
 
     # Disqualified scopes drop off of the public scoreboard (admins still
-    # render them — see icpc.global_router.list_registrations).
+    # render them - see icpc.global_router.list_registrations).
     dq_rows = (
         db.query(models.ContestRegistration)
         .filter(
@@ -986,7 +986,7 @@ def _build_icpc_scoreboard(
     dq_users = {r.user_id for r in dq_rows if r.user_id is not None}
 
     if cutoff is None:
-        # Fast path — the materialised ``IcpcScoreboardEntry`` cache is
+        # Fast path - the materialised ``IcpcScoreboardEntry`` cache is
         # already freeze-unaware and maintained by the judging worker.
         entries = (
             db.query(models.IcpcScoreboardEntry)
@@ -995,7 +995,7 @@ def _build_icpc_scoreboard(
         )
         row_map = _rows_from_cache(db, entries, problem_by_id, dq_teams, dq_users)
     else:
-        # Frozen path — recompute per-cell stats live from the Submission
+        # Frozen path - recompute per-cell stats live from the Submission
         # + Judging tables, ignoring anything after the freeze moment.
         # Costly but only runs during the (usually brief) freeze window.
         row_map = _rows_from_live(db, contest_id, problems, cutoff, dq_teams, dq_users)
@@ -1083,7 +1083,7 @@ def icpc_presentation(
     db: Session = Depends(get_db),
 ):
     """Admin-only bundle for the post-contest reveal ceremony. Returns
-    the frozen state (snapshot at ``freeze_scoreboard_at`` — what the
+    the frozen state (snapshot at ``freeze_scoreboard_at`` - what the
     audience sees), the final state (truth), the first-to-solve table,
     and the medal podium (top-12 grouped into gold/silver/bronze)."""
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
@@ -1119,7 +1119,7 @@ def icpc_presentation(
     dq_teams = {r.team_id for r in dq_rows if r.team_id is not None}
     dq_users = {r.user_id for r in dq_rows if r.user_id is not None}
 
-    # Final (truth) state — read directly from the materialised cache.
+    # Final (truth) state - read directly from the materialised cache.
     final_entries = (
         db.query(models.IcpcScoreboardEntry)
         .filter(models.IcpcScoreboardEntry.contest_id == contest_id)
@@ -1131,7 +1131,7 @@ def icpc_presentation(
         key=lambda r: (-r.solved_count, r.total_penalty, r.team_name.lower()),
     )
 
-    # Frozen state — recompute live with the freeze cutoff, regardless
+    # Frozen state - recompute live with the freeze cutoff, regardless
     # of whether the contest already auto-unfroze. If no freeze was set,
     # the frozen view is the same as the final view (no reveal needed).
     freeze_at = _aware(contest.freeze_scoreboard_at)
@@ -1153,7 +1153,7 @@ def icpc_presentation(
         problems=problem_out, rows=final_rows, frozen=False,
     )
 
-    # First solvers — picked off the FINAL state (so the truth wins,
+    # First solvers - picked off the FINAL state (so the truth wins,
     # even for cells that were under freeze for the public).
     first_solvers: list[schemas.IcpcFirstSolver] = []
     for p in problems:
@@ -1176,7 +1176,7 @@ def icpc_presentation(
                 minute=best_minute,
             ))
 
-    # Medal podium — top-12 from the final state. Tiers: 1-4 gold,
+    # Medal podium - top-12 from the final state. Tiers: 1-4 gold,
     # 5-8 silver, 9-12 bronze, anything below has tier="".
     medals: list[schemas.IcpcMedalEntry] = []
     for idx, row in enumerate(final_rows[:12]):
@@ -1202,7 +1202,7 @@ def icpc_presentation(
     # Per-language submission counts. Walk every non-practice submission
     # for the contest and tally by ``source_language``; an active judging
     # gives the verdict so we can split AC vs not. Same tallying logic as
-    # icpc_stats — kept inline to avoid a second round-trip.
+    # icpc_stats - kept inline to avoid a second round-trip.
     lang_subs = (
         db.query(models.Submission)
         .filter(
@@ -1296,17 +1296,17 @@ def _rows_from_live(
     """Live ICPC scoreboard computation for the freeze window.
 
     For every (scope, problem) pair we walk the submissions in time order:
-      * Submissions BEFORE the freeze contribute normally — verdict is
+      * Submissions BEFORE the freeze contribute normally - verdict is
         visible, attempts count against the team, AC locks the cell.
       * Submissions AFTER the freeze do NOT reveal their verdict. Their
         presence is exposed as ``pending_attempts`` so the scoreboard
-        can paint the cell pale blue ("?" style) — same behaviour as
-        DOMjudge during freeze — without leaking who's about to solve.
+        can paint the cell pale blue ("?" style) - same behaviour as
+        DOMjudge during freeze - without leaking who's about to solve.
       * A cell that was already AC before freeze stays AC and any
         post-freeze attempts on it are ignored (nothing new to reveal).
     """
     # Load every (contest, non-practice) submission up to the end of the
-    # contest — we need the post-freeze ones too, but we'll classify them
+    # contest - we need the post-freeze ones too, but we'll classify them
     # by timestamp below.
     subs = (
         db.query(models.Submission)
@@ -1348,7 +1348,7 @@ def _rows_from_live(
         submitted = _aware(s.submitted_at)
         is_post_freeze = submitted is not None and submitted >= cutoff
         if cell["solved"]:
-            # Pre-freeze AC — ignore later submissions, they can't
+            # Pre-freeze AC - ignore later submissions, they can't
             # change the cell and leaking their count risks revealing
             # "someone is re-trying after AC" (unusual but possible).
             continue
@@ -1473,7 +1473,7 @@ def create_clarification(
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
     if not contest:
         raise HTTPException(status_code=404, detail="Concours introuvable")
-    # Only participants may open a clarification — otherwise any verified
+    # Only participants may open a clarification - otherwise any verified
     # user could post into any visible contest.
     if not _user_is_participant(db, contest, user):
         raise HTTPException(status_code=403, detail="Réservé aux participants de ce concours")
@@ -1527,7 +1527,7 @@ def update_clarification(
     admin: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Admin edit for an existing clarification — change the answer text,
+    """Admin edit for an existing clarification - change the answer text,
     or flip visibility between public/private. Omit ``answer`` (send an
     empty string) to only toggle visibility."""
     c = db.query(models.Clarification).filter(models.Clarification.id == clar_id).first()
@@ -1723,7 +1723,7 @@ def export_problem_zip(
     shortname = p.external_id or f"problem-{p.id}"
     buf = _io.BytesIO()
     with _zipfile.ZipFile(buf, "w", _zipfile.ZIP_DEFLATED) as zf:
-        # problem.yaml — minimal valid DOMjudge/Kattis shape.
+        # problem.yaml - minimal valid DOMjudge/Kattis shape.
         yaml_lines = [
             f"name: {p.name}",
             f"label: {p.label}",
@@ -1747,7 +1747,7 @@ def export_problem_zip(
             yaml_lines.append("validation: default")
         zf.writestr(f"{shortname}/problem.yaml", "\n".join(yaml_lines) + "\n")
 
-        # Statement PDF — if we have one on disk.
+        # Statement PDF - if we have one on disk.
         if p.statement_pdf_path and os.path.exists(p.statement_pdf_path):
             with open(p.statement_pdf_path, "rb") as f:
                 zf.writestr(f"{shortname}/problem_statement/{shortname}.pdf", f.read())
@@ -1791,7 +1791,7 @@ def delete_affiliation(
     a = db.query(models.Affiliation).filter(models.Affiliation.id == aff_id).first()
     if not a:
         raise HTTPException(status_code=404, detail="Affiliation introuvable")
-    # FKs are ON DELETE SET NULL on teams + users — losing an affiliation
+    # FKs are ON DELETE SET NULL on teams + users - losing an affiliation
     # drops the badge from the scoreboard but nothing else breaks.
     db.delete(a)
     db.commit()
@@ -1811,10 +1811,10 @@ def override_judging(
     judging. Does NOT re-run the judger; just flips the stored verdict,
     stamps override metadata, and re-materialises the ICPC scoreboard
     cell so the change shows immediately. The owning contest decides
-    who is allowed to call this — admin always passes, organizers only
+    who is allowed to call this - admin always passes, organizers only
     on contests they created.
 
-    The original verdict isn't preserved in the Judging row — the audit
+    The original verdict isn't preserved in the Judging row - the audit
     log entry we emit is the paper trail."""
     j = db.query(models.Judging).filter(models.Judging.id == judging_id).first()
     if not j:
@@ -1848,14 +1848,14 @@ def override_judging(
           detail=f"{old_verdict} → {new_verdict}: {j.override_reason}")
     db.commit()
 
-    # Re-derive the cached ICPC scoreboard cell — the new verdict may
+    # Re-derive the cached ICPC scoreboard cell - the new verdict may
     # change solved / attempts / first_solve_minutes.
     if problem is not None and contest is not None:
         from ..icpc_scoreboard_cache import update_icpc_entry
         update_icpc_entry(db, sub, problem, new_verdict, contest)
         db.commit()
     # Drop the response cache so the override is visible to viewers
-    # within milliseconds, not within the 2 s TTL — this is what an
+    # within milliseconds, not within the 2 s TTL - this is what an
     # admin clicking "override" rightly expects.
     if contest is not None:
         from ..scoreboard_response_cache import invalidate_contest
@@ -2074,7 +2074,7 @@ def icpc_event_feed(
             "penalty_time": 20,
         })
 
-        # Languages — only the ones enabled.
+        # Languages - only the ones enabled.
         for lang in db.query(models.Language).filter(models.Language.enabled.is_(True)).all():
             yield from _ev("languages", {
                 "id": lang.id,
@@ -2112,7 +2112,7 @@ def icpc_event_feed(
                 "time_limit": (p.time_limit_ms or 1000) / 1000.0,
             })
 
-        # Teams — both real teams and solos registered for this contest.
+        # Teams - both real teams and solos registered for this contest.
         regs = (
             db.query(models.ContestRegistration)
             .filter(models.ContestRegistration.contest_id == contest_id)

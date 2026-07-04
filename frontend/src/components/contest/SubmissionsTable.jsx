@@ -36,7 +36,7 @@ export default function SubmissionsTable({
             </button>
             <span className="text-zinc-500 dark:text-zinc-500">
               {submissionPage * pageSize + 1}
-              –
+              -
               {Math.min(submissionsTotal, (submissionPage + 1) * pageSize)}
               {' '}/ {submissionsTotal}
             </span>

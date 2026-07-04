@@ -1,6 +1,6 @@
 # 3. Arbres binaires de recherche & équilibrage (AVL)
 
-## 3.1 — L'arbre binaire de recherche
+## 3.1 - L'arbre binaire de recherche
 
 Un **BST** est un arbre binaire dans lequel, pour chaque nœud $v$ de
 clé $v.k$ :
@@ -9,7 +9,7 @@ $$\forall u \in \text{sous-arbre gauche}(v),\ u.k < v.k \quad\text{et}\quad \for
 
 Cette propriété donne immédiatement :
 
-- **Parcours in-order** : visite les clés en ordre croissant — $\Theta(n)$.
+- **Parcours in-order** : visite les clés en ordre croissant - $\Theta(n)$.
 - **Recherche** d'une clé : descente le long d'un chemin, $\Theta(h)$
   où $h$ est la hauteur.
 - **Insertion** : descente jusqu'à une feuille, puis attache d'un
@@ -40,20 +40,20 @@ def insert(root, k):
 
 > **Le drame.** Si on insère $1, 2, 3, \dots, n$ dans cet ordre, le
 > BST devient une chaîne, $h = n$, toutes les opérations en
-> $\Theta(n)$. C'est le pire cas — fréquent en pratique (entrées
+> $\Theta(n)$. C'est le pire cas - fréquent en pratique (entrées
 > triées).
 
 :::viz-bst{keys="50,30,70,20,40,60,80"}
 :::
 
-Reset, puis insère $1, 2, 3, 4, 5$ un par un — l'arbre dégénère en
+Reset, puis insère $1, 2, 3, 4, 5$ un par un - l'arbre dégénère en
 chaîne (hauteur $5$). Maintenant reset et insère un BST équilibré
 comme `4,2,6,1,3,5,7` : hauteur $3$. Même $n = 7$, même clés,
 **hauteur radicalement différente selon l'ordre d'insertion**.
 
 ---
 
-## 3.2 — Rotations
+## 3.2 - Rotations
 
 Une **rotation** restructure un sous-arbre **sans casser la propriété
 BST** et change la hauteur localement.
@@ -87,7 +87,7 @@ $\Theta(1)$ sont la brique de base de tous les arbres équilibrés.
 
 ---
 
-## 3.3 — AVL : invariant de hauteur
+## 3.3 - AVL : invariant de hauteur
 
 Inventés en 1962 par Adelson-Velsky et Landis. **Invariant** : pour
 chaque nœud $v$,
@@ -120,7 +120,7 @@ $\Theta(\log n)$ pire cas dans un AVL.
 
 ---
 
-## 3.4 — Insertion AVL : algorithme
+## 3.4 - Insertion AVL : algorithme
 
 Après une insertion BST classique, on remonte la trace de récursion ;
 à chaque ancêtre :
@@ -201,7 +201,7 @@ premier rééquilibrage. Coût total $\Theta(\log n)$. $\square$
 
 ---
 
-## 3.5 — Exercices
+## 3.5 - Exercices
 
 :::exercise{id="{{EX_BST_INORDER}}"}
 :::

@@ -123,7 +123,7 @@ LESSONS: list[dict] = [
                     "**Entrée** :\n\n"
                     "- ligne 1 : $n$ ($1 \\le n \\le 10^5$)\n"
                     "- ligne 2 : $n$ entiers ($|a_i| \\le 10^9$)\n\n"
-                    "**Sortie** : un seul entier — le nombre d'inversions.\n\n"
+                    "**Sortie** : un seul entier - le nombre d'inversions.\n\n"
                     "**Indice** : la solution naïve est $O(n^2)$, trop lente. "
                     "Le tri par fusion les compte en $O(n \\log n)$ : à chaque "
                     "fusion, quand on prend un élément du tableau de droite, "
@@ -137,7 +137,7 @@ LESSONS: list[dict] = [
                     "**Input**:\n\n"
                     "- line 1: $n$ ($1 \\le n \\le 10^5$)\n"
                     "- line 2: $n$ integers ($|a_i| \\le 10^9$)\n\n"
-                    "**Output**: one integer — the inversion count.\n\n"
+                    "**Output**: one integer - the inversion count.\n\n"
                     "**Hint**: the naive solution is $O(n^2)$, too slow. "
                     "Mergesort counts them in $O(n \\log n)$: during each "
                     "merge, when picking an element from the right array, "
@@ -259,7 +259,7 @@ LESSONS: list[dict] = [
                     "- ligne 1 : la position **0-indexée** du pivot après partition\n"
                     "- ligne 2 : le tableau partitionné, séparé par des espaces\n\n"
                     "**Note** : suivre exactement le pseudo-code de la "
-                    "leçon — d'autres ordres de swap donnent un tableau "
+                    "leçon - d'autres ordres de swap donnent un tableau "
                     "valide mais différent."
                 ),
                 "prompt_en": (
@@ -272,7 +272,7 @@ LESSONS: list[dict] = [
                     "**Output**:\n\n"
                     "- line 1: pivot's **0-indexed** final position\n"
                     "- line 2: partitioned array, space-separated\n\n"
-                    "**Note**: follow exactly the lesson pseudocode — different "
+                    "**Note**: follow exactly the lesson pseudocode - different "
                     "swap orders give a valid but different layout."
                 ),
                 "starter_code": (
@@ -375,7 +375,7 @@ LESSONS: list[dict] = [
                     "- ligne 2 : $n$ entiers ($|a_i| \\le 10^9$)\n\n"
                     "**Sortie** : les $n$ valeurs $2 \\times$ médiane, séparées "
                     "par des espaces.\n\n"
-                    "**Algorithme cible** : deux tas — un max-heap pour la "
+                    "**Algorithme cible** : deux tas - un max-heap pour la "
                     "moitié basse, un min-heap pour la moitié haute, équilibrés "
                     "à chaque insertion. Coût $O(n \\log n)$."
                 ),
@@ -390,7 +390,7 @@ LESSONS: list[dict] = [
                     "- line 2: $n$ integers ($|a_i| \\le 10^9$)\n\n"
                     "**Output**: the $n$ values of $2 \\times$ median, "
                     "space-separated.\n\n"
-                    "**Target algorithm**: two heaps — a max-heap for the lower "
+                    "**Target algorithm**: two heaps - a max-heap for the lower "
                     "half, a min-heap for the upper half, balanced after each "
                     "insertion. Cost $O(n \\log n)$."
                 ),
@@ -661,7 +661,7 @@ LESSONS: list[dict] = [
                     "Find **the minimum and maximum** of an array of $n$ "
                     "integers.\n\n"
                     "Naive: $2(n-1)$ comparisons. Optimal: only "
-                    "$\\lceil 3n/2 \\rceil - 2$ — compare elements **in pairs**, "
+                    "$\\lceil 3n/2 \\rceil - 2$ - compare elements **in pairs**, "
                     "then compare the smaller of the pair to the running min "
                     "and the larger to the running max. This is about cutting "
                     "constants rather than asymptotics.\n\n"
@@ -708,7 +708,7 @@ LESSONS: list[dict] = [
                     "**Indice** : *quickselect partiel*. Après quickselect "
                     "trouvant le $k$-ème, on a un préfixe non trié des $k$ "
                     "plus petits. Le trier coûte $O(k \\log k)$. Total "
-                    "$O(n + k \\log k)$ — meilleur que $O(n \\log n)$ quand "
+                    "$O(n + k \\log k)$ - meilleur que $O(n \\log n)$ quand "
                     "$k \\ll n$."
                 ),
                 "prompt_en": (
@@ -721,7 +721,7 @@ LESSONS: list[dict] = [
                     "ascending order.\n\n"
                     "**Hint**: *partial quickselect*. After quickselect on the "
                     "$k$-th, you have an unsorted prefix of the $k$ smallest. "
-                    "Sort it for $O(k \\log k)$. Total $O(n + k \\log k)$ — "
+                    "Sort it for $O(k \\log k)$. Total $O(n + k \\log k)$ - "
                     "beats $O(n \\log n)$ when $k \\ll n$."
                 ),
                 "starter_code": (

@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from .conftest import auth_header  # noqa: F401 — used to bootstrap the DB schema
+from .conftest import auth_header  # noqa: F401 - used to bootstrap the DB schema
 
 
 def _make_pending_row(db, **overrides):
@@ -32,7 +32,7 @@ def _make_pending_row(db, **overrides):
 
 
 @pytest.fixture
-def db_session(client):  # noqa: ARG001 — `client` triggers the schema setup
+def db_session(client):  # noqa: ARG001 - `client` triggers the schema setup
     from backend import database
     s = database.SessionLocal()
     try:
@@ -99,7 +99,7 @@ def test_permanent_failure_marks_failed_immediately(db_session, monkeypatch):
     assert result["failed"] == 1
     assert result["retried"] == 0
     db_session.refresh(row)
-    # SMTPRecipientsRefused is a SMTPException subclass — permanent.
+    # SMTPRecipientsRefused is a SMTPException subclass - permanent.
     assert row.status == "failed"
     assert row.attempts == 1
 
@@ -125,7 +125,7 @@ def test_exhausted_retries_become_failed(db_session, monkeypatch):
 
 
 def test_future_next_attempt_at_skipped(db_session, monkeypatch):
-    """Rows whose next_attempt_at is in the future stay untouched —
+    """Rows whose next_attempt_at is in the future stay untouched -
     that's the backoff at work."""
     monkeypatch.setattr(
         "backend.email_utils._smtp_dispatch",
@@ -165,7 +165,7 @@ def test_purge_outbox_drops_old_sent_rows(db_session):
     _make_pending_row(db_session, status="failed", next_attempt_at=old)
     _make_pending_row(db_session, status="pending", next_attempt_at=old)
     _make_pending_row(db_session, status="sent", next_attempt_at=new)
-    # Force the created_at column too — purge filters by created_at.
+    # Force the created_at column too - purge filters by created_at.
     from backend import models
     rows = db_session.query(models.EmailOutbox).all()
     rows[0].created_at = old
@@ -179,7 +179,7 @@ def test_purge_outbox_drops_old_sent_rows(db_session):
     db_session.commit()
 
     # Two old rows in {sent, failed} purged. The pending one stays
-    # even though it's old — operators may still want to drain it.
+    # even though it's old - operators may still want to drain it.
     assert n == 2
     remaining = db_session.query(models.EmailOutbox).all()
     statuses = sorted(r.status for r in remaining)

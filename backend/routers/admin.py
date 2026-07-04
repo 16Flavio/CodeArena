@@ -32,7 +32,7 @@ def scoring_workers(
             "mode": "thread-pool",
             "workers": [],
             "queue": {"pending": 0, "started": 0, "finished": 0, "failed": 0},
-            "note": "REDIS_URL is unset — scoring runs in the API's thread pool, no separate worker containers.",
+            "note": "REDIS_URL is unset - scoring runs in the API's thread pool, no separate worker containers.",
         }
     try:
         from redis import Redis
@@ -81,7 +81,7 @@ def requeue_failed_jobs(
     admin: models.User = Depends(require_admin),
 ):
     """Move every job in the ``failed`` registry back into the queue.
-    Useful after a worker crash or a transient upstream failure — the
+    Useful after a worker crash or a transient upstream failure - the
     submissions they were trying to score get another attempt without an
     admin hand-requeueing each one."""
     redis_url = os.environ.get("REDIS_URL")
@@ -350,7 +350,7 @@ def list_all_submissions(
         .offset(offset).limit(limit).all()
     )
     # Pull the active verdict + problem label for ICPC submissions in one
-    # query each, keyed by id — avoids the N+1 walk of sub.judgings /
+    # query each, keyed by id - avoids the N+1 walk of sub.judgings /
     # sub.problem during serialisation.
     icpc_ids = [s.id for s in rows if s.problem_id is not None]
     verdicts: dict[int, str] = {}
@@ -370,7 +370,7 @@ def list_all_submissions(
     labels: dict[int, str] = {}
     if prob_ids:
         for p in db.query(models.Problem).filter(models.Problem.id.in_(prob_ids)).all():
-            labels[p.id] = f"{p.label} — {p.name}"
+            labels[p.id] = f"{p.label} - {p.name}"
 
     items = [
         schemas.SubmissionOut(
@@ -566,7 +566,7 @@ def purge_email_outbox(
     db: Session = Depends(get_db),
 ):
     """Drop email_outbox rows older than ``days`` (default 30) whose
-    status is ``sent`` or ``failed``. The table grows otherwise — the
+    status is ``sent`` or ``failed``. The table grows otherwise - the
     worker only writes, never deletes. ``pending`` rows are kept even
     if old (an operator may want to drain them later)."""
     if days < 1:
@@ -592,10 +592,10 @@ def purge_audit_log(
     db: Session = Depends(get_db),
 ):
     """Drop audit_log rows older than ``days`` (default 90). The table
-    grows unbounded otherwise — there's no automatic background pruning,
+    grows unbounded otherwise - there's no automatic background pruning,
     so this is the manual / cron-driven escape hatch."""
     if days < 7:
-        # Refuse a too-aggressive purge — losing forensic data within a
+        # Refuse a too-aggressive purge - losing forensic data within a
         # week defeats the point of the log.
         raise HTTPException(
             status_code=400,
@@ -618,7 +618,7 @@ def unlock_user_account(
     admin: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Clear ``failed_login_count`` and ``locked_until`` on a user — for
+    """Clear ``failed_login_count`` and ``locked_until`` on a user - for
     when an admin needs to let someone back in before the 15-minute
     lockout window expires (helpdesk scenario, password reset flow)."""
     user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -642,7 +642,7 @@ def admin_disable_totp(
     admin: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Wipe a user's 2FA state — the "lost phone" escape hatch. The
+    """Wipe a user's 2FA state - the "lost phone" escape hatch. The
     user lost their device + lost the recovery codes; verifying their
     identity is the admin's offline responsibility (matching email,
     student ID, in-person check, etc.). The action is loud in the
@@ -678,7 +678,7 @@ async def import_teams_csv(
     The first listed member becomes the team owner; the rest are added
     as regular members. Teams whose name already exists are skipped with
     a note; members we can't resolve to an existing User are also
-    skipped. Everything is best-effort — a bad row doesn't abort the
+    skipped. Everything is best-effort - a bad row doesn't abort the
     whole import."""
     from ..upload_utils import read_upload_capped, MAX_TEAMS_CSV_BYTES
     body = await read_upload_capped(file, MAX_TEAMS_CSV_BYTES)

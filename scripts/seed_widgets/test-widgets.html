@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Test widgets en isolation</title><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:900px;margin:20px auto;padding:0 20px;color:#18181b;}h1{font-size:22px;}.widget-card{margin:24px 0;padding:16px;border-radius:8px;border:1px solid #e4e4e7;background:#fff;box-shadow:0 1px 2px 0 rgba(0,0,0,0.05);}.widget-card-head{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;color:#3a6690;margin-bottom:10px;}.widget-card iframe{width:100%;height:460px;border:0;border-radius:8px;background:transparent;display:block;}.meta{margin:6px 0 0;font-size:12px;color:#71717a;}code{background:#f4f4f5;padding:2px 6px;border-radius:4px;font-size:12px;}p.note{color:#71717a;font-size:13px;}@media (prefers-color-scheme: dark){body{background:#09090b;color:#e4e4e7;}.widget-card{background:#18181b;border-color:#27272a;}.widget-card-head{color:#9cbbd6;}code{background:#27272a;color:#e4e4e7;}}</style></head><body><h1>Test widgets — iframe sandboxé identique à l'app</h1><p class="note">Cette page reproduit le wrapper extérieur (carte + titre accent) et le préambule CSS commun de <code>CustomWidget.jsx</code>. Si un widget s'affiche correctement ici, son code est OK. Sinon, clique-droit dans l'iframe → Inspect → Console pour voir l'erreur exacte.</p><div class="widget-card">  <div class="widget-card-head">Comparaison des courbes de complexité</div>  <iframe id="iframe-0" sandbox="allow-scripts"></iframe></div><p class="meta">  <code>:::viz-big-o</code></p>
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Test widgets en isolation</title><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:900px;margin:20px auto;padding:0 20px;color:#18181b;}h1{font-size:22px;}.widget-card{margin:24px 0;padding:16px;border-radius:8px;border:1px solid #e4e4e7;background:#fff;box-shadow:0 1px 2px 0 rgba(0,0,0,0.05);}.widget-card-head{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;color:#3a6690;margin-bottom:10px;}.widget-card iframe{width:100%;height:460px;border:0;border-radius:8px;background:transparent;display:block;}.meta{margin:6px 0 0;font-size:12px;color:#71717a;}code{background:#f4f4f5;padding:2px 6px;border-radius:4px;font-size:12px;}p.note{color:#71717a;font-size:13px;}@media (prefers-color-scheme: dark){body{background:#09090b;color:#e4e4e7;}.widget-card{background:#18181b;border-color:#27272a;}.widget-card-head{color:#9cbbd6;}code{background:#27272a;color:#e4e4e7;}}</style></head><body><h1>Test widgets - iframe sandboxé identique à l'app</h1><p class="note">Cette page reproduit le wrapper extérieur (carte + titre accent) et le préambule CSS commun de <code>CustomWidget.jsx</code>. Si un widget s'affiche correctement ici, son code est OK. Sinon, clique-droit dans l'iframe → Inspect → Console pour voir l'erreur exacte.</p><div class="widget-card">  <div class="widget-card-head">Comparaison des courbes de complexité</div>  <iframe id="iframe-0" sandbox="allow-scripts"></iframe></div><p class="meta">  <code>:::viz-big-o</code></p>
 <div class="widget-card">  <div class="widget-card-head">Table de hachage avec chaînage</div>  <iframe id="iframe-1" sandbox="allow-scripts"></iframe></div><p class="meta">  <code>:::viz-hash-table{keys="5,12,19,7,42,26,33"}</code></p>
 <div class="widget-card">  <div class="widget-card-head">Arbre binaire de recherche (BST)</div>  <iframe id="iframe-2" sandbox="allow-scripts"></iframe></div><p class="meta">  <code>:::viz-bst{keys="50,30,70,20,40,60,80"}</code></p>
 <div class="widget-card">  <div class="widget-card-head">Tas binaire (max-heap)</div>  <iframe id="iframe-3" sandbox="allow-scripts"></iframe></div><p class="meta">  <code>:::viz-heap{data="5,12,3,8,17,9,21"}</code></p>
@@ -298,7 +298,7 @@ window.__svg = function (name) {
     var collide = buckets[idx].length > 0 &amp;&amp; buckets[idx].indexOf(k) === -1;
     if (buckets[idx].indexOf(k) === -1) buckets[idx].push(k);
     lastInsertedAt = idx;
-    statusEl.textContent = 'h(' + k + ') = ' + idx + (collide ? ' — collision' : '');
+    statusEl.textContent = 'h(' + k + ') = ' + idx + (collide ? ' - collision' : '');
     render();
   }
 
@@ -487,7 +487,7 @@ window.__svg = function (name) {
     if (isNaN(k)) return;
     root = insert(root, k);
     freshKey = k;
-    document.getElementById('info').textContent = 'inséré : ' + k + ' — hauteur = ' + depth(root);
+    document.getElementById('info').textContent = 'inséré : ' + k + ' - hauteur = ' + depth(root);
     render();
   });
 
@@ -630,7 +630,7 @@ window.__svg = function (name) {
     heap.push(x);
     siftUp(heap.length - 1);
     fresh = heap.indexOf(x);
-    document.getElementById('info').textContent = 'insert(' + x + ') — taille = ' + heap.length;
+    document.getElementById('info').textContent = 'insert(' + x + ') - taille = ' + heap.length;
     render();
   }
 
@@ -850,9 +850,9 @@ window.__svg = function (name) {
       if (arr[j] &lt;= pivot) {
         if (i !== j) { var t = arr[i]; arr[i] = arr[j]; arr[j] = t; }
         i++;
-        document.getElementById('info').textContent = 'a[' + j + '] = ' + arr[i - 1] + ' ≤ pivot — swap puis i++';
+        document.getElementById('info').textContent = 'a[' + j + '] = ' + arr[i - 1] + ' ≤ pivot - swap puis i++';
       } else {
-        document.getElementById('info').textContent = 'a[' + j + '] = ' + arr[j] + ' > pivot — j++';
+        document.getElementById('info').textContent = 'a[' + j + '] = ' + arr[j] + ' > pivot - j++';
       }
       j++;
       render();
@@ -993,7 +993,7 @@ window.__svg = function (name) {
   &lt;span>profondeur : &lt;b id="depth">0&lt;/b>&lt;/span>
   &lt;span>swaps : &lt;b id="nswaps">0&lt;/b>&lt;/span>
   &lt;span>comparaisons : &lt;b id="ncmp">0&lt;/b>&lt;/span>
-  &lt;span>fenêtre : &lt;b id="window">—&lt;/b>&lt;/span>
+  &lt;span>fenêtre : &lt;b id="window">-&lt;/b>&lt;/span>
 &lt;/div>
 &lt;div class="controls">
   &lt;label class="field">tableau &lt;input type="text" id="data" />&lt;/label>
@@ -1083,12 +1083,12 @@ window.__svg = function (name) {
     }
     var msg;
     switch (s.kind) {
-      case 'enter':     msg = 'partition [' + s.lo + ', ' + s.hi + '] — pivot = ' + s.snap[s.pivotIdx]; break;
+      case 'enter':     msg = 'partition [' + s.lo + ', ' + s.hi + '] - pivot = ' + s.snap[s.pivotIdx]; break;
       case 'compare':   msg = 'compare a[' + s.j + '] = ' + s.snap[s.j] + ' au pivot'; break;
       case 'swap':      msg = 'swap a[' + s.i + '] ↔ a[' + s.j + ']'; break;
-      case 'place':     msg = 'pivot placé en ' + s.i + ' — récursion sur [' + s.lo + ',' + (s.i - 1) + '] et [' + (s.i + 1) + ',' + s.hi + ']'; break;
+      case 'place':     msg = 'pivot placé en ' + s.i + ' - récursion sur [' + s.lo + ',' + (s.i - 1) + '] et [' + (s.i + 1) + ',' + s.hi + ']'; break;
       case 'singleton': msg = 'singleton en ' + s.i; break;
-      case 'done':      msg = 'tri terminé — ' + nCmp + ' cmp, ' + nSwaps + ' swaps'; break;
+      case 'done':      msg = 'tri terminé - ' + nCmp + ' cmp, ' + nSwaps + ' swaps'; break;
     }
     document.getElementById('info').textContent = msg;
     render(s);
@@ -1145,7 +1145,7 @@ window.__svg = function (name) {
     document.getElementById('depth').textContent = s.depth;
     document.getElementById('nswaps').textContent = nSwaps;
     document.getElementById('ncmp').textContent = nCmp;
-    document.getElementById('window').textContent = (s.kind === 'done') ? '—' : '[' + s.lo + ', ' + s.hi + ']';
+    document.getElementById('window').textContent = (s.kind === 'done') ? '-' : '[' + s.lo + ', ' + s.hi + ']';
   }
 
   document.getElementById('reset').addEventListener('click', load);

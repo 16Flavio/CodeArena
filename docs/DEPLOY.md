@@ -13,8 +13,8 @@ bash start.sh
 docker compose up -d --build
 
 # Build BOTH sandbox images used by SCORING_MODE=docker:
-#   * scoring-image   — Python-only, for output-scoring validators.
-#   * icpc-sandbox    — g++/gcc/javac/python3, for ICPC compile+run.
+#   * scoring-image   - Python-only, for output-scoring validators.
+#   * icpc-sandbox    - g++/gcc/javac/python3, for ICPC compile+run.
 docker compose --profile build-only build scoring-image icpc-sandbox
 ```
 
@@ -24,7 +24,7 @@ Frontend → `http://localhost`. API → `http://localhost:8000`.
 
 **Strongly recommended before any contest where contestants submit source
 code (ICPC problems).** In the default `subprocess` mode, contestant code
-runs on the worker host — the env is scrubbed of secrets and POSIX rlimits
+runs on the worker host - the env is scrubbed of secrets and POSIX rlimits
 apply, but there is **no network or filesystem isolation**. Docker mode puts
 each compile+run inside a throwaway, network-less container.
 
@@ -52,7 +52,7 @@ over pipes, applying the user's memory cap per-process while the container's
 
 In **subprocess mode** (no container), C/C++ submissions are additionally
 scanned before compilation and rejected (CE) if they try to read a host file
-at compile time — `#include` of an absolute/`..` path, `#embed`, `.incbin`,
+at compile time - `#include` of an absolute/`..` path, `#embed`, `.incbin`,
 or `__has_include` of an absolute path. Legitimate submissions (`<vector>`,
 `<bits/stdc++.h>`, local `"helper.h"`) are unaffected. Docker mode contains
 this anyway via the read-only isolated rootfs.
@@ -61,7 +61,7 @@ this anyway via the read-only isolated rootfs.
 - Container startup adds latency; TLE is enforced by the in-container
   `timeout` (not wall-clock measured across startup), but validate your time
   limits against the sandbox image before the contest.
-- The Docker socket mount grants root-equivalent on the host — run this on a
+- The Docker socket mount grants root-equivalent on the host - run this on a
   single-tenant contest box only.
 - Compiled (non-Python) interactors write the expected-output file into the
   judge workdir; prefer Python interactors (the default), where the expected
@@ -71,7 +71,7 @@ this anyway via the read-only isolated rootfs.
 
 | Variable              | Default | What it does                                                        |
 | --------------------- | ------- | ------------------------------------------------------------------- |
-| `TRUST_PROXY_HEADERS` | unset   | When set (`1`), honour `X-Forwarded-For` for the recorded submitter IP. **Set this only when a trusted reverse proxy (Caddy/nginx) is in front** — the compose deployment is. Left unset, the header is ignored (it is otherwise attacker-spoofable) and the socket peer is used. |
+| `TRUST_PROXY_HEADERS` | unset   | When set (`1`), honour `X-Forwarded-For` for the recorded submitter IP. **Set this only when a trusted reverse proxy (Caddy/nginx) is in front** - the compose deployment is. Left unset, the header is ignored (it is otherwise attacker-spoofable) and the socket peer is used. |
 | `METRICS_TOKEN`       | unset   | When set, `/api/metrics` requires it via `X-Metrics-Token:` header or `?token=`. Left unset, the endpoint stays open (aggregate counts only) for existing scrapers. |
 | `CORS_ORIGINS`        | dev localhosts | Comma-separated allowed origins. Set to your real frontend origin in prod; `*` is opt-in and disables credentialed CORS. |
 
@@ -93,7 +93,7 @@ docker compose --profile postgres up -d postgres
 docker compose exec backend alembic upgrade head
 
 # If migrating from an existing SQLite DB, you need to dump + reload or run a
-# one-off ETL script — Alembic doesn't cross-migrate data between dialects.
+# one-off ETL script - Alembic doesn't cross-migrate data between dialects.
 
 # Restart the backend so it picks up the new DATABASE_URL.
 docker compose up -d --no-deps --force-recreate backend
@@ -138,18 +138,18 @@ Every release that touches the schema ships an Alembic migration under
 docker compose run --rm backend alembic upgrade head
 ```
 
-Run this **before** restarting the backend on a new image — otherwise the
+Run this **before** restarting the backend on a new image - otherwise the
 backend boots against a schema it doesn't recognise and fails health
 checks. List unapplied migrations with `alembic current` / `alembic history`.
 
 Recent migrations (≥ April 2026):
-- `2026_04_25_a1` — `contest_bans` table (DQ persistence + scope-switching guard)
-- `2026_04_25_a2` — CHECK constraints on `contests.participation_mode` and `kind`
-- `2026_04_25_a3` — `email_outbox` table (durable email queue)
-- `2026_04_25_a4` — `users.totp_*` columns (2FA)
+- `2026_04_25_a1` - `contest_bans` table (DQ persistence + scope-switching guard)
+- `2026_04_25_a2` - CHECK constraints on `contests.participation_mode` and `kind`
+- `2026_04_25_a3` - `email_outbox` table (durable email queue)
+- `2026_04_25_a4` - `users.totp_*` columns (2FA)
 
 All four are additive (no data loss on rollback via `alembic downgrade -1`).
-The CHECK migration may fail if a row has an invalid mode/kind — verify
+The CHECK migration may fail if a row has an invalid mode/kind - verify
 first with `SELECT id, participation_mode, kind FROM contests WHERE
 participation_mode NOT IN ('team','solo','both') OR kind NOT IN ('output','icpc');`.
 
@@ -165,10 +165,10 @@ just retries it, so worst case is the row's `attempts` counter is off
 by one).
 
 Tunable env vars:
-- `DISABLE_EMAIL_WORKER=1` — boot without spawning the worker thread.
+- `DISABLE_EMAIL_WORKER=1` - boot without spawning the worker thread.
   Useful when running multiple backend replicas: enable on one,
   disable on the others, so exactly one process drains the outbox.
-- `SMTP_*` — standard SMTP creds. With `SMTP_HOST` unset, the system
+- `SMTP_*` - standard SMTP creds. With `SMTP_HOST` unset, the system
   prints a stub to stdout instead (dev mode).
 
 Retry policy: 6 attempts max, backoff `[0, 30, 120, 300, 900, 1800]s`
@@ -184,7 +184,7 @@ a cron purge:
 
 ## Audit log retention
 
-Same pattern — the `audit_log` table grows unbounded otherwise. The
+Same pattern - the `audit_log` table grows unbounded otherwise. The
 default minimum retention is 7 days (the endpoint refuses anything
 shorter):
 
@@ -230,7 +230,7 @@ Three escape hatches, in order of preference:
     WHERE username = 'YOUR_USERNAME';
    ```
 
-No restart needed — next login skips straight to the password form.
+No restart needed - next login skips straight to the password form.
 
 ### Server clock
 
@@ -243,7 +243,7 @@ against an authoritative NTP source.
 
 The frontend image must be rebuilt when `frontend/package.json` changes.
 Notable recent additions:
-- `qrcode.react` — local QR rendering for 2FA enrollment.
+- `qrcode.react` - local QR rendering for 2FA enrollment.
 
 ```bash
 docker compose build frontend
@@ -254,7 +254,7 @@ docker push $DOCKER_USER/codearena-frontend:$IMAGE_TAG
 
 The defaults shipped in `docker-compose.yml` are tuned for a contest with
 **~200 active users** (5 sub/s sustained, scoreboard polled every 10s).
-Past that, or if you want margin, turn the knobs below. All are env-driven —
+Past that, or if you want margin, turn the knobs below. All are env-driven -
 no rebuild needed unless noted.
 
 ### Capacity knobs (`.env`)
@@ -280,14 +280,14 @@ Stay 20% under `POSTGRES_MAX_CONNECTIONS`.
 
 | Contest size           | UVICORN_WORKERS | SCORING_WORKER_REPLICAS | POSTGRES_MAX_CONNECTIONS |
 | ---------------------- | --------------- | ----------------------- | ------------------------ |
-| Dev / smoke (1–5)      | 1               | 1                       | 100 (default)            |
+| Dev / smoke (1-5)      | 1               | 1                       | 100 (default)            |
 | Small (≤ 50)           | 2               | 2                       | 150                      |
-| Medium (≤ 200) — **default** | 4         | 4                       | 200                      |
+| Medium (≤ 200) - **default** | 4         | 4                       | 200                      |
 | Large (≤ 500)          | 8               | 8                       | 400                      |
 
 For >500 active users, the scoreboard endpoint becomes the bottleneck
 (per-request DB scan + JSON serialise). Add server-side TTL caching
-(2–5 s) before scaling further; details in `routers/scoreboard.py`.
+(2-5 s) before scaling further; details in `routers/scoreboard.py`.
 
 ### Applying a config change
 
@@ -325,7 +325,7 @@ Healthy thresholds (200 users):
 * Error rate 0%
 
 If you see `transport error` rows in the metrics, something is timing out
-or the connection pool is exhausted — first thing to check is
+or the connection pool is exhausted - first thing to check is
 `docker compose logs backend | grep -iE 'error|timeout|pool'`.
 
 ## Rollback procedure
@@ -338,6 +338,6 @@ docker compose run --rm backend alembic downgrade -1   # or specify a revision
 docker compose up -d --no-deps --force-recreate backend worker frontend
 ```
 
-Schema migrations are reversible with `alembic downgrade <revision>` —
+Schema migrations are reversible with `alembic downgrade <revision>` -
 test the downgrade path locally before relying on it in prod, especially
 for migrations that drop columns.

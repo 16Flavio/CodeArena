@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   Trophy, Plus, Trash2, Edit, X, Upload, FileText, Code, Target, Eye,
-  EyeOff, FlaskConical, Copy, Pause, Play,
+  EyeOff, FlaskConical, Copy, Pause, Play, BarChart3,
 } from 'lucide-react';
 import {
   getContest, updateContest, deleteContest,
@@ -23,18 +23,18 @@ import { extractErrorMessage } from '../../utils/apiError';
 // reload the contest list.
 
 // "Hidden" for the quick toggle = hidden_at set and already in the past.
-// (A future hidden_at is a scheduled hide, managed via the edit form —
+// (A future hidden_at is a scheduled hide, managed via the edit form -
 // the toggle leaves visible_at alone in both directions.)
 const isContestHidden = (c) =>
   !!c.hidden_at && new Date(c.hidden_at) <= new Date();
 export default function ContestsTab({ contests, users, onChange }) {
   const { t } = useTranslation();
   const confirm = useConfirm();
-  // Full contest being edited (null = create mode) — fetched fresh
+  // Full contest being edited (null = create mode) - fetched fresh
   // before the form opens so instances/scripts are current.
   const [editContest, setEditContest] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  // Step 1 of contest creation — admin picks "output scoring" vs "ICPC"
+  // Step 1 of contest creation - admin picks "output scoring" vs "ICPC"
   // before any form shows up. Cleaner than hiding a dropdown in the middle
   // of the long form.
   const [showKindPicker, setShowKindPicker] = useState(false);
@@ -46,7 +46,7 @@ export default function ContestsTab({ contests, users, onChange }) {
     unlock_at_absolute: '',
     unlock_mode: 'relative', // 'relative' | 'absolute'
   });
-  // Instance currently being edited (full row) — opens the edit modal.
+  // Instance currently being edited (full row) - opens the edit modal.
   const [editingInstance, setEditingInstance] = useState(null);
 
   const startEdit = async (contest) => {
@@ -259,7 +259,7 @@ export default function ContestsTab({ contests, users, onChange }) {
                     className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-accent-500 transition-colors dark:hover:bg-zinc-700/50 dark:text-zinc-400 dark:hover:text-accent-400"
                     title={t('admin.contests.viewBoard')}
                   >
-                    <Eye className="w-4 h-4" />
+                    <BarChart3 className="w-4 h-4" />
                   </Link>
                   <button
                     onClick={async () => {

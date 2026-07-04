@@ -1,5 +1,5 @@
 // Admin CRUD for affiliations (schools / universities / rooms). Tiny
-// table editor — the list is expected to be short (dozens, not
+// table editor - the list is expected to be short (dozens, not
 // thousands), so no pagination or search.
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, Edit, Save, X, Building2 } from 'lucide-react';
@@ -170,8 +170,8 @@ export default function AffiliationsPanel() {
             {rows.map((a) => (
               <tr key={a.id} className="border-t border-zinc-200/60 dark:border-zinc-700/60">
                 <td className="py-2 px-3 text-zinc-800 dark:text-zinc-100">{a.name}</td>
-                <td className="py-2 px-3 text-zinc-600 font-mono text-xs dark:text-zinc-300">{a.short_name || '—'}</td>
-                <td className="py-2 px-3 text-zinc-600 font-mono text-xs dark:text-zinc-300">{a.country_code || '—'}</td>
+                <td className="py-2 px-3 text-zinc-600 font-mono text-xs dark:text-zinc-300">{a.short_name || '-'}</td>
+                <td className="py-2 px-3 text-zinc-600 font-mono text-xs dark:text-zinc-300">{a.country_code || '-'}</td>
                 <td className="py-2 px-3 text-right">
                   <button
                     type="button" onClick={() => startEdit(a)}

@@ -465,7 +465,7 @@ class MyRegistrationOut(BaseModel):
     reason: Optional[str] = None  # when can_register is False
     # Surfaced so the contest page can render a "banned" banner instead
     # of the usual submit/unregister controls. The user can't clear this
-    # by unregistering — only an admin can.
+    # by unregistering - only an admin can.
     disqualified: bool = False
     disqualified_reason: Optional[str] = None
 
@@ -494,7 +494,7 @@ class SubmissionOut(BaseModel):
     problem_label: str = ""
     source_language: Optional[str] = None
     # Latest judging verdict for ICPC submissions ("AC"/"WA"/…). Empty for
-    # output-scoring — they use ``status`` + ``score`` instead.
+    # output-scoring - they use ``status`` + ``score`` instead.
     latest_verdict: str = ""
     latest_judging_id: Optional[int] = None
     file_name: str
@@ -598,7 +598,7 @@ class ProblemOut(BaseModel):
     has_statement_pdf: bool = False
     # File mtime (int seconds). Used by the frontend as a cache-buster
     # query param so the URL is stable while the PDF is unchanged but
-    # flips on an admin replace — defeats stale browser cache entries
+    # flips on an admin replace - defeats stale browser cache entries
     # that accumulated before we deployed ``Cache-Control: no-store`` on
     # the download endpoint.
     statement_pdf_version: int | None = None
@@ -644,7 +644,7 @@ class JudgingRunOut(BaseModel):
 
 
 class TestcaseOutline(BaseModel):
-    """Identity-only view of a Testcase — id, ordering, and whether it's a
+    """Identity-only view of a Testcase - id, ordering, and whether it's a
     sample. No input/expected so the secret testcases stay secret. Lets
     the UI render an "unknown" grey chip for testcases that didn't run
     when the judge short-circuited on first failure."""
@@ -898,7 +898,7 @@ class ScoreboardOut(BaseModel):
 
 
 class ScoringInstanceBest(BaseModel):
-    """Per-instance "winner" for the scoring presentation — the team
+    """Per-instance "winner" for the scoring presentation - the team
     holding the highest best_score on the instance in the final state.
     Analogue of IcpcFirstSolver for output-style contests."""
     instance_id: int
@@ -994,7 +994,7 @@ class LessonIn(BaseModel):
 
 
 class LessonSummary(BaseModel):
-    """Listing entry — no body, cheap to fetch en masse."""
+    """Listing entry - no body, cheap to fetch en masse."""
     id: int
     section_id: int
     slug: str
@@ -1021,7 +1021,7 @@ class LessonAssetOut(BaseModel):
 
 
 class LessonOut(BaseModel):
-    """Full lesson payload — body included. Returned on GET /lessons/{id}."""
+    """Full lesson payload - body included. Returned on GET /lessons/{id}."""
     id: int
     section_id: int
     slug: str
@@ -1053,7 +1053,7 @@ class LessonProgressIn(BaseModel):
 class LessonExerciseTestCase(BaseModel):
     """One test case in an exercise. ``is_sample`` controls whether the
     student sees the input/expected (sample) or only a pass/fail
-    (hidden — typical for "are you cheating?" guards)."""
+    (hidden - typical for "are you cheating?" guards)."""
     input: str = ""
     expected: str = ""
     is_sample: bool = True
@@ -1082,7 +1082,7 @@ class LessonExerciseIn(BaseModel):
 
 
 class LessonExerciseOut(BaseModel):
-    """Returned to admins for editing — full content. Student-facing
+    """Returned to admins for editing - full content. Student-facing
     listings come through ``LessonExercisePublicOut`` which redacts
     hidden test cases."""
     id: int
@@ -1215,7 +1215,7 @@ class LeagueEventOut(BaseModel):
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     coefficient: float
-    # True once end_time has passed — only then does the event feed the
+    # True once end_time has passed - only then does the event feed the
     # standings.
     finished: bool
     participants: int

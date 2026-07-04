@@ -1,6 +1,6 @@
 // Minimal line-based diff using an LCS table. Returns an array of
 // { kind: 'same' | 'add' | 'del', left, right } rows suitable for rendering
-// side-by-side. Large inputs are truncated — this is for glance comparisons,
+// side-by-side. Large inputs are truncated - this is for glance comparisons,
 // not a Git-grade engine.
 const MAX_LINES = 4000;
 

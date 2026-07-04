@@ -41,12 +41,12 @@ def build_digest(db: Session, since: datetime) -> str:
     )
 
     lines = [
-        "CodeArena — daily digest",
+        "CodeArena - daily digest",
         f"Window: last 24h (since {since.isoformat()})",
         "",
         f"New users:               {new_users} ({verified} verified)",
         f"New contest registrations: {new_regs}",
-        f"Submissions:             {sub_total} total — "
+        f"Submissions:             {sub_total} total - "
         f"{sub_scored} scored, {sub_errors} errors",
     ]
     if recent_errors:

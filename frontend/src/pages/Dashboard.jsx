@@ -104,7 +104,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Compact single-team pill. Not a full grid — one team doesn't need one. */}
+      {/* Compact single-team pill. Not a full grid - one team doesn't need one. */}
       <div>
         {myTeam ? (
           <Link
@@ -206,7 +206,7 @@ export default function Dashboard() {
                       {contest.title}
                     </h3>
                     <p className="text-zinc-500 text-sm mt-1 line-clamp-2 dark:text-zinc-400">
-                      {contest.description || '—'}
+                      {contest.description || '-'}
                     </p>
                   </div>
                   <span className="badge-active">{t('dashboard.active')}</span>
@@ -265,7 +265,7 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <p className="text-zinc-500 text-sm mb-3 line-clamp-2 dark:text-zinc-500">
-                  {contest.description || '—'}
+                  {contest.description || '-'}
                 </p>
                 {contest.start_time && (
                   <p className="text-xs text-zinc-500 mb-4 flex items-center gap-1.5 dark:text-zinc-500">
@@ -298,7 +298,7 @@ export default function Dashboard() {
                     <span className="badge-inactive">{t('dashboard.ended')}</span>
                   </div>
                   <p className="text-zinc-500 text-sm mb-4 line-clamp-2 dark:text-zinc-500">
-                    {contest.description || '—'}
+                    {contest.description || '-'}
                   </p>
                   <div className="flex items-center gap-3 flex-wrap">
                     <Link

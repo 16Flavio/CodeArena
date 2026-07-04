@@ -1,6 +1,6 @@
 # 4. Selection: Quickselect & Median of Medians
 
-## 4.1 — The selection problem
+## 4.1 - The selection problem
 
 **Problem**: given an array $A$ of $n$ elements and an integer
 $k \in [1, n]$, find the **$k$-th smallest** element ($k$-th order
@@ -23,7 +23,7 @@ problem.
 
 ---
 
-## 4.2 — Quickselect
+## 4.2 - Quickselect
 
 ### Idea
 
@@ -42,7 +42,7 @@ right $>$ pivot, at position $p$:
 import random
 
 def quickselect(A, k):
-    """k-th smallest (1-indexed) of A — destroys A."""
+    """k-th smallest (1-indexed) of A - destroys A."""
     lo, hi = 0, len(A) - 1
     while lo <= hi:
         # Random pivot to break adversarial worst case.
@@ -81,7 +81,7 @@ random pivot, but possible.
 
 ---
 
-## 4.3 — Median of medians: $\Theta(n)$ **deterministic**
+## 4.3 - Median of medians: $\Theta(n)$ **deterministic**
 
 The Blum-Floyd-Pratt-Rivest-Tarjan algorithm (1973) reaches
 $\Theta(n)$ worst case by picking a pivot **guaranteed not to be
@@ -99,7 +99,7 @@ def select(A, k):
     groups = [A[i:i+5] for i in range(0, len(A), 5)]
     medians = [sorted(g)[len(g) // 2] for g in groups]
 
-    # 2. Recursive median of medians — that's our pivot.
+    # 2. Recursive median of medians - that's our pivot.
     pivot = select(medians, (len(medians) + 1) // 2)
 
     # 3. Partition around pivot.
@@ -154,7 +154,7 @@ of 5 → it works. (And 5 is smaller than 7, so smaller constants.)
 
 ---
 
-## 4.4 — Summary
+## 4.4 - Summary
 
 | Algo | Worst | Average | Memory | Random? |
 |------|-------|---------|--------|---------|
@@ -165,7 +165,7 @@ of 5 → it works. (And 5 is smaller than 7, so smaller constants.)
 
 ---
 
-## 4.5 — Exercises
+## 4.5 - Exercises
 
 :::exercise{id="{{EX_SO_SELECT}}"}
 :::
