@@ -27,7 +27,7 @@ const BLANK_DRAFT = {
   external_id: '',
   label: '',
   name: '',
-  color: '#94a3b8',
+  color: '#8ba39d',
   time_limit_ms: 1000,
   memory_limit_mb: 256,
   checker_kind: 'tokens',
@@ -81,7 +81,7 @@ export default function IcpcProblemsPanel({ contestId }) {
       external_id: p.external_id,
       label: p.label,
       name: p.name,
-      color: p.color || '#94a3b8',
+      color: p.color || '#8ba39d',
       time_limit_ms: p.time_limit_ms,
       memory_limit_mb: p.memory_limit_mb,
       checker_kind: p.checker_kind || 'tokens',
@@ -205,10 +205,10 @@ export default function IcpcProblemsPanel({ contestId }) {
                 <>
                   <div className="flex items-center gap-3">
                     <span
-                      className="w-8 h-8 rounded text-sm font-bold flex items-center justify-center flex-shrink-0"
+                      className="w-8 h-8 rounded-full text-sm font-bold flex items-center justify-center flex-shrink-0"
                       style={{
-                        background: p.color || '#94a3b8',
-                        color: textOn(p.color || '#94a3b8'),
+                        background: p.color || '#8ba39d',
+                        color: textOn(p.color || '#8ba39d'),
                       }}
                     >
                       {p.label}
@@ -315,7 +315,7 @@ function EditForm({ draft, setDraft, onSave, onCancel, t, isNew }) {
         <div>
           <label className="block text-[10px] uppercase text-zinc-400 dark:text-zinc-500">{t('icpcProblems.colorField')}</label>
           <input type="color" className="input-field h-[32px] p-0.5"
-            value={draft.color || '#94a3b8'} onChange={(e) => setDraft({ ...draft, color: e.target.value })} />
+            value={draft.color || '#8ba39d'} onChange={(e) => setDraft({ ...draft, color: e.target.value })} />
         </div>
       </div>
       <div className="grid grid-cols-4 gap-2">

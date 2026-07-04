@@ -148,16 +148,16 @@ export default function IcpcScoreboard({ contestId }) {
                     <button
                       type="button"
                       onClick={() => openStatementPdf(contestId, p.id, p.statement_pdf_version)}
-                      className="inline-block w-6 h-6 rounded text-xs font-bold leading-6 cursor-pointer transition-opacity hover:opacity-75 focus:outline-none focus:ring-2 focus:ring-accent-500"
-                      style={{ background: p.color || '#a1a1aa', color: textOn(p.color || '#a1a1aa') }}
+                      className="inline-block w-6 h-6 rounded-full text-xs font-bold leading-6 cursor-pointer transition-opacity hover:opacity-75 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                      style={{ background: p.color || '#8ba39d', color: textOn(p.color || '#8ba39d') }}
                       title={`${p.label}${p.name ? ` - ${p.name}` : ''} · ${t('icpcScoreboard.openStatement')}`}
                     >
                       {p.label}
                     </button>
                   ) : (
                     <div
-                      className="inline-block w-6 h-6 rounded text-xs font-bold leading-6"
-                      style={{ background: p.color || '#a1a1aa', color: textOn(p.color || '#a1a1aa') }}
+                      className="inline-block w-6 h-6 rounded-full text-xs font-bold leading-6"
+                      style={{ background: p.color || '#8ba39d', color: textOn(p.color || '#8ba39d') }}
                       title={p.name || p.label}
                     >
                       {p.label}
