@@ -154,6 +154,55 @@ def test_league_standings_linear_points_coefficient_and_absence(client):
     assert by_name["carol"]["per_event"][1]["points"] == 0.0
 
 
+def test_league_event_participants_counts_entrants_not_problem_cells(client):
+    """Regression: IcpcScoreboardEntry is one row per (scope, problem),
+    so a plain count() reported attempted problems as the participant
+    count. One team attempting 3 problems + one solo attempting 1 must
+    show 2 participants, not 4."""
+    admin = auth_header(client, "root")
+
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    r = client.post("/api/contests", json={
+        "title": "ICPC ev", "is_active": True, "is_public": True,
+        "kind": "icpc",
+        "start_time": _iso(now - timedelta(hours=1)),
+        "end_time": _iso(now + timedelta(hours=1)),
+    }, headers=admin)
+    cid = r.json()["id"]
+
+    from backend import database, models
+    sess = database.SessionLocal()
+    try:
+        team = models.Team(name="TT", join_code="LGTEST01")
+        sess.add(team)
+        solo = sess.query(models.User).filter(models.User.username == "root").first()
+        probs = [
+            models.Problem(contest_id=cid, external_id=f"p{i}", label=chr(65 + i), name=f"P{i}")
+            for i in range(3)
+        ]
+        sess.add_all(probs)
+        sess.flush()
+        # Team attempts 3 problems (3 cells), solo attempts 1 (1 cell).
+        for p in probs:
+            sess.add(models.IcpcScoreboardEntry(
+                contest_id=cid, team_id=team.id, user_id=None,
+                problem_id=p.id, solved=False, attempts_total=1,
+            ))
+        sess.add(models.IcpcScoreboardEntry(
+            contest_id=cid, team_id=None, user_id=solo.id,
+            problem_id=probs[0].id, solved=True, attempts_total=1,
+        ))
+        sess.commit()
+    finally:
+        sess.close()
+
+    lid = client.post("/api/leagues", json={"name": "L"}, headers=admin).json()["id"]
+    ev = client.post(
+        f"/api/leagues/{lid}/events", json={"contest_id": cid}, headers=admin,
+    ).json()["events"][0]
+    assert ev["participants"] == 2
+
+
 def test_league_team_event_credits_every_member(client):
     admin = auth_header(client, "root")
     alice = auth_header(client, "alice")
