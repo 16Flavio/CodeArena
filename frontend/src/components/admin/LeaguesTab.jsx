@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
-  Medal, Plus, Trash2, Eye, EyeOff, Save, X, Code, FlaskConical,
+  Medal, Plus, Trash2, Eye, EyeOff, Save, X, Code, FlaskConical, RotateCw,
 } from 'lucide-react';
 import {
   listLeagues, createLeague, updateLeague, deleteLeague,
-  addLeagueEvent, updateLeagueEvent, removeLeagueEvent,
+  addLeagueEvent, updateLeagueEvent, removeLeagueEvent, recomputeLeagueEvent,
 } from '../../api';
 import { useConfirm } from '../Confirm';
 import { extractErrorMessage } from '../../utils/apiError';
@@ -97,10 +97,17 @@ export default function LeaguesTab({ contests }) {
       toast.error(t('admin.leagues.toastNeedContest'));
       return;
     }
+    // Same rule as handleSaveCoef: a coefficient must be a finite number
+    // strictly greater than 0 - no silent coercion of 0/empty to 1.
+    const coefficient = Number(form.coefficient);
+    if (!Number.isFinite(coefficient) || coefficient <= 0) {
+      toast.error(t('admin.leagues.toastBadCoefficient'));
+      return;
+    }
     try {
       const r = await addLeagueEvent(league.id, {
         contest_id: Number(form.contest_id),
-        coefficient: Number(form.coefficient) || 1,
+        coefficient,
       });
       patchLeague(r.data);
       setAddForms((f) => ({ ...f, [league.id]: { contest_id: '', coefficient: '1' } }));
@@ -122,6 +129,16 @@ export default function LeaguesTab({ contests }) {
       patchLeague(r.data);
       setCoefDrafts((d) => { const n = { ...d }; delete n[ev.id]; return n; });
       toast.success(t('admin.leagues.toastEventUpdated'));
+    } catch (err) {
+      toast.error(extractErrorMessage(err, t('admin.leagues.toastFailed')));
+    }
+  };
+
+  const handleRecomputeEvent = async (league, ev) => {
+    try {
+      const r = await recomputeLeagueEvent(league.id, ev.id);
+      patchLeague(r.data);
+      toast.success(t('admin.leagues.toastEventRecomputed'));
     } catch (err) {
       toast.error(extractErrorMessage(err, t('admin.leagues.toastFailed')));
     }
@@ -280,11 +297,19 @@ export default function LeaguesTab({ contests }) {
                             <span className="text-sm text-zinc-700 truncate dark:text-zinc-200">
                               {ev.contest_title}
                             </span>
-                            <span className={ev.finished ? 'badge-active' : 'badge-inactive'}>
-                              {ev.finished
-                                ? t('admin.leagues.finished')
-                                : t('admin.leagues.upcoming')}
-                            </span>
+                            {/* 3 states: upcoming, finished awaiting
+                                publication, finished and counted. */}
+                            {ev.finished && ev.counted === false ? (
+                              <span className="badge bg-amber-500/10 text-amber-700 border border-amber-500/30 dark:text-amber-400">
+                                {t('admin.leagues.pendingReveal')}
+                              </span>
+                            ) : (
+                              <span className={ev.finished ? 'badge-active' : 'badge-inactive'}>
+                                {ev.finished
+                                  ? t('admin.leagues.finished')
+                                  : t('admin.leagues.upcoming')}
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             <input
@@ -307,6 +332,13 @@ export default function LeaguesTab({ contests }) {
                                 <Save className="w-3.5 h-3.5" />
                               </button>
                             )}
+                            <button
+                              onClick={() => handleRecomputeEvent(league, ev)}
+                              className="p-1 rounded hover:bg-accent-500/10 text-zinc-400 hover:text-accent-500 transition-colors dark:text-zinc-500 dark:hover:text-accent-400"
+                              title={t('admin.leagues.recompute')}
+                            >
+                              <RotateCw className="w-3.5 h-3.5" />
+                            </button>
                             <button
                               onClick={() => handleRemoveEvent(league, ev)}
                               className="p-1 rounded hover:bg-red-500/10 text-zinc-400 hover:text-red-500 transition-colors dark:text-zinc-500 dark:hover:text-red-400"

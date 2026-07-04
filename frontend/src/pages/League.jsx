@@ -16,9 +16,14 @@ const MEDALS = [
   'text-amber-600',
 ];
 
-// Points come out of 100 × (N − rank)/(N − 1) × coefficient, so they're
-// rarely integers - one decimal keeps columns aligned without noise.
-const fmtPoints = (x) => Number(x ?? 0).toFixed(1);
+// Points come out of 100 × (N − rank)/(N − 1) × coefficient and the
+// backend rounds them to 2 decimals - show both decimals when the value
+// is not integral (66.66 must read "66.66", not "66.7"), and keep
+// integral values bare.
+const fmtPoints = (x) => {
+  const n = Number(x ?? 0);
+  return Number.isInteger(n) ? String(n) : n.toFixed(2);
+};
 
 export default function League() {
   const { t } = useTranslation();
@@ -27,6 +32,8 @@ export default function League() {
   const [selectedId, setSelectedId] = useState(null);
   const [detail, setDetail] = useState(null); // { league, rows }
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [reloadTick, setReloadTick] = useState(0); // bumped by the retry button
 
   // Load the league list once, auto-select the first one.
   useEffect(() => {
@@ -39,33 +46,46 @@ export default function League() {
         else setLoading(false);
       })
       .catch(() => {
-        if (!cancelled) setLoading(false);
-        toast.error(t('league.toastLoadFailed'));
+        if (!cancelled) {
+          setLoading(false);
+          toast.error(t('league.toastLoadFailed'));
+        }
       });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch standings whenever the selected league changes.
+  // Fetch standings whenever the selected league changes. Clearing
+  // `detail` up front means switching leagues shows the spinner instead
+  // of the previous league's standings, and a failed fetch never leaves
+  // stale data behind.
   useEffect(() => {
     if (!selectedId) return;
     let cancelled = false;
     setLoading(true);
+    setError(false);
+    setDetail(null);
     getLeague(selectedId)
       .then((r) => { if (!cancelled) setDetail(r.data); })
-      .catch(() => toast.error(t('league.toastLoadFailed')))
+      .catch(() => {
+        if (!cancelled) {
+          setError(true);
+          toast.error(t('league.toastLoadFailed'));
+        }
+      })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+  }, [selectedId, reloadTick]);
 
   const league = detail?.league;
   const rows = detail?.rows || [];
 
-  // Only finished events get a standings column - upcoming ones exist
-  // in the strip but have no points yet.
-  const finishedEvents = useMemo(
-    () => (league?.events || []).filter((e) => e.finished),
+  // Only counted events get a standings column. A finished event that is
+  // not counted yet ("pending reveal") stays out: its points are frozen
+  // until publication, so a column would just read as absences.
+  const countedEvents = useMemo(
+    () => (league?.events || []).filter((e) => e.finished && e.counted !== false),
     [league],
   );
 
@@ -179,9 +199,17 @@ export default function League() {
                       {t('league.coefficient', { value: ev.coefficient })}
                     </span>
                   )}
-                  <span className={ev.finished ? 'badge-active' : 'badge-inactive'}>
-                    {ev.finished ? t('league.finished') : t('league.upcoming')}
-                  </span>
+                  {/* 3 states: upcoming, finished awaiting publication
+                      (reveal ceremony), finished and counted. */}
+                  {ev.finished && ev.counted === false ? (
+                    <span className="badge bg-amber-500/10 text-amber-700 border border-amber-500/30 dark:text-amber-400">
+                      {t('league.pendingReveal')}
+                    </span>
+                  ) : (
+                    <span className={ev.finished ? 'badge-active' : 'badge-inactive'}>
+                      {ev.finished ? t('league.finished') : t('league.upcoming')}
+                    </span>
+                  )}
                 </div>
               </Link>
             ))}
@@ -189,19 +217,34 @@ export default function League() {
         </div>
       )}
 
-      {/* Standings table - one column per finished event. */}
+      {/* Load failure - distinct from "no standings yet": we never keep
+          the previous league's rows around, we offer a retry instead. */}
+      {error ? (
+        <div className="card p-12 text-center">
+          <Medal className="w-14 h-14 text-zinc-300 mx-auto mb-4 dark:text-zinc-600" />
+          <p className="text-zinc-500 mb-4 dark:text-zinc-400">{t('league.loadError')}</p>
+          <button
+            onClick={() => setReloadTick((n) => n + 1)}
+            className="btn-primary"
+          >
+            {t('common.retry')}
+          </button>
+        </div>
+      ) : (
+      /* Standings table - one column per counted event. */
       <div className="card overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm" aria-label={t('league.standingsTable')}>
           <thead className="bg-zinc-100/60 dark:bg-zinc-800/50">
             <tr>
-              <th className="text-left font-semibold py-2 px-3">{t('league.colRank')}</th>
-              <th className="text-left font-semibold py-2 px-3">{t('league.colPlayer')}</th>
-              <th className="text-right font-semibold py-2 px-3">{t('league.colTotal')}</th>
-              <th className="text-right font-semibold py-2 px-3">{t('league.colWins')}</th>
-              <th className="text-right font-semibold py-2 px-3">{t('league.colPlayed')}</th>
-              {finishedEvents.map((ev) => (
+              <th scope="col" className="text-left font-semibold py-2 px-3">{t('league.colRank')}</th>
+              <th scope="col" className="text-left font-semibold py-2 px-3">{t('league.colPlayer')}</th>
+              <th scope="col" className="text-right font-semibold py-2 px-3">{t('league.colTotal')}</th>
+              <th scope="col" className="text-right font-semibold py-2 px-3">{t('league.colWins')}</th>
+              <th scope="col" className="text-right font-semibold py-2 px-3">{t('league.colPlayed')}</th>
+              {countedEvents.map((ev) => (
                 <th
                   key={ev.id}
+                  scope="col"
                   className="text-right font-semibold py-2 px-3 min-w-[90px] max-w-[140px] truncate"
                   title={ev.contest_title}
                 >
@@ -243,11 +286,13 @@ export default function League() {
                   <td className="py-2 px-3 text-right font-mono tabular-nums text-zinc-600 dark:text-zinc-300">
                     {row.events_played}
                   </td>
-                  {finishedEvents.map((ev) => {
+                  {countedEvents.map((ev) => {
                     const pe = perEvent[ev.id];
                     // null rank = did not take part → 0 points, shown as
-                    // an em-dash so absences read differently from a
-                    // genuine last-place 0.0.
+                    // a dash so absences read differently from a genuine
+                    // last-place 0. The sr-only span carries the meaning
+                    // for screen readers (a title tooltip alone is not
+                    // reliably announced).
                     if (!pe || pe.rank == null) {
                       return (
                         <td
@@ -255,7 +300,8 @@ export default function League() {
                           className="py-2 px-3 text-right text-zinc-300 dark:text-zinc-700"
                           title={t('league.absentTooltip')}
                         >
-                          -
+                          <span aria-hidden="true">-</span>
+                          <span className="sr-only">{t('league.absentTooltip')}</span>
                         </td>
                       );
                     }
@@ -275,7 +321,7 @@ export default function League() {
             {rows.length === 0 && (
               <tr>
                 <td
-                  colSpan={5 + finishedEvents.length}
+                  colSpan={5 + countedEvents.length}
                   className="py-10 text-center text-zinc-400 italic dark:text-zinc-600"
                 >
                   {t('league.noStandings')}
@@ -285,6 +331,7 @@ export default function League() {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }

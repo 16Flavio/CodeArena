@@ -332,6 +332,8 @@ export const updateLeagueEvent = (leagueId, eventId, data) =>
   api.put(`/leagues/${leagueId}/events/${eventId}`, data);
 export const removeLeagueEvent = (leagueId, eventId) =>
   api.delete(`/leagues/${leagueId}/events/${eventId}`);
+export const recomputeLeagueEvent = (leagueId, eventId) =>
+  api.post(`/leagues/${leagueId}/events/${eventId}/recompute`);
 
 // Admin
 export const getUsers = () => api.get('/admin/users');

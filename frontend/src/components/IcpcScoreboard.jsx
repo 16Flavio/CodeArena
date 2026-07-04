@@ -173,7 +173,7 @@ export default function IcpcScoreboard({ contestId }) {
                 key={`${row.team_id || row.team_name}-${idx}`}
                 className="border-t border-zinc-100 dark:border-zinc-800/30"
               >
-                <td className="py-2 px-3 font-mono sticky left-0 bg-white/95 dark:bg-zinc-900/95">
+                <td className="py-2 px-3 font-mono tabular-nums sticky left-0 bg-white/95 dark:bg-zinc-900/95">
                   <span className={idx < 3 ? MEDALS[idx] : 'text-zinc-500 dark:text-zinc-500'}>
                     {idx + 1}
                   </span>
@@ -194,10 +194,10 @@ export default function IcpcScoreboard({ contestId }) {
                     </span>
                   )}
                 </td>
-                <td className="py-2 px-3 text-right font-mono font-bold text-accent-700 dark:text-accent-300">
+                <td className="py-2 px-3 text-right font-mono tabular-nums font-bold text-accent-700 dark:text-accent-300">
                   {row.solved_count}
                 </td>
-                <td className="py-2 px-3 text-right font-mono text-zinc-600 dark:text-zinc-300">
+                <td className="py-2 px-3 text-right font-mono tabular-nums text-zinc-600 dark:text-zinc-300">
                   {row.total_penalty}
                 </td>
                 {data.problems.map((p) => {
@@ -229,7 +229,7 @@ export default function IcpcScoreboard({ contestId }) {
                             </span>
                           )}
                           <CheckCircle className="w-4 h-4" />
-                          <span className="text-[10px] font-mono">
+                          <span className="text-[10px] font-mono tabular-nums">
                             {cell.first_solve_minutes ?? 0}
                           </span>
                           {cell.attempts > 1 && (
@@ -257,7 +257,7 @@ export default function IcpcScoreboard({ contestId }) {
                       >
                         <div className="inline-flex flex-col items-center gap-0.5">
                           <Snowflake className="w-3 h-3 text-sky-500 dark:text-sky-300" />
-                          <div className="inline-flex items-baseline gap-0.5 text-xs font-mono">
+                          <div className="inline-flex items-baseline gap-0.5 text-xs font-mono tabular-nums">
                             {cell.attempts > 0 && (
                               <span className="text-red-500 dark:text-red-400">
                                 {cell.attempts}
@@ -276,7 +276,7 @@ export default function IcpcScoreboard({ contestId }) {
                   }
                   return (
                     <td key={p.id} className="py-2 px-2 text-center text-red-500 dark:text-red-400">
-                      <span className="text-xs font-mono">
+                      <span className="text-xs font-mono tabular-nums">
                         {t('icpcScoreboard.wrongAttempts', { n: cell.attempts })}
                       </span>
                     </td>
