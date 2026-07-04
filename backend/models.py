@@ -917,8 +917,13 @@ class League(Base):
 class LeagueEvent(Base):
     """Attaches one contest to a league. ``coefficient`` scales the
     event's points (double points for a final, half for a fun round).
-    A contest only feeds the standings once its end_time has passed -
-    attached-but-unfinished events are listed as upcoming."""
+
+    A contest only feeds the standings once its end_time has passed AND
+    its scoreboard freeze (if any) has been lifted. At that moment the
+    per-user results are SNAPSHOTTED into LeagueEventResult and
+    ``result_computed_at`` / ``field_size`` are stamped - so later team
+    roster changes, user deletions or rejudges don't silently rewrite
+    season history (admins recompute explicitly instead)."""
     __tablename__ = "league_events"
     __table_args__ = (
         UniqueConstraint("league_id", "contest_id", name="uq_league_event"),
@@ -928,6 +933,35 @@ class LeagueEvent(Base):
     league_id = Column(Integer, ForeignKey("leagues.id", ondelete="CASCADE"), nullable=False, index=True)
     contest_id = Column(Integer, ForeignKey("contests.id", ondelete="CASCADE"), nullable=False, index=True)
     coefficient = Column(Float, nullable=False, default=1.0)
+    # Set once the results snapshot has been taken (lazily, on the first
+    # standings read after the event becomes countable).
+    result_computed_at = Column(DateTime, nullable=True)
+    # Number of ranked rows (teams + solos) the points were normalised
+    # against - also what the event card displays as "participants".
+    field_size = Column(Integer, nullable=True)
 
     league = relationship("League", back_populates="events")
     contest = relationship("Contest")
+    results = relationship(
+        "LeagueEventResult", back_populates="event",
+        cascade="all, delete-orphan",
+    )
+
+
+class LeagueEventResult(Base):
+    """One user's frozen result for one league event: the rank of the
+    row (team or solo) they were part of, and the points it converted
+    to. Written once by the snapshot; only the admin recompute endpoint
+    rewrites it."""
+    __tablename__ = "league_event_results"
+    __table_args__ = (
+        UniqueConstraint("event_id", "user_id", name="uq_league_event_result"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(Integer, ForeignKey("league_events.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    rank = Column(Integer, nullable=False)
+    points = Column(Float, nullable=False, default=0.0)
+
+    event = relationship("LeagueEvent", back_populates="results")

@@ -107,6 +107,15 @@ def update_entry_for_submission(db: Session, submission: models.Submission) -> N
         )
         .first()
     )
+    # A scope whose submissions are ALL practice must not exist on the
+    # scoreboard at all - otherwise a post-end practice submitter gains a
+    # phantom 0-score row that pads the ranking (and the league's field
+    # size). Mirrors the ICPC cache, which drops empty cells.
+    if total == 0:
+        if entry is not None:
+            db.delete(entry)
+        return
+
     now = datetime.now(timezone.utc)
     if entry is None:
         entry = models.ScoreboardEntry(

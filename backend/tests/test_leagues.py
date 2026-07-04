@@ -154,6 +154,179 @@ def test_league_standings_linear_points_coefficient_and_absence(client):
     assert by_name["carol"]["per_event"][1]["points"] == 0.0
 
 
+def test_league_respects_scoreboard_freeze(client):
+    """A finished contest whose scoreboard is still frozen must NOT feed
+    the standings (it would leak the final ranking before the reveal
+    ceremony). Clearing the freeze publishes it."""
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+
+    cid = _make_solo_contest(client, admin, "Frozen ev")
+    iid = _make_instance(client, admin, cid)
+    client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
+    _submit_scored(client, alice, cid, iid, b"aaa")
+    # Freeze from before the submission, then finish the contest.
+    past = datetime.now(timezone.utc) - timedelta(hours=1)
+    r = client.put(f"/api/contests/{cid}", json={"freeze_scoreboard_at": _iso(past)}, headers=admin)
+    assert r.status_code == 200, r.text
+    _finish_contest(client, admin, cid)
+
+    lid = client.post("/api/leagues", json={"name": "L"}, headers=admin).json()["id"]
+    client.post(f"/api/leagues/{lid}/events", json={"contest_id": cid}, headers=admin)
+
+    data = client.get(f"/api/leagues/{lid}", headers=admin).json()
+    ev = data["league"]["events"][0]
+    assert ev["finished"] is True
+    assert ev["counted"] is False
+    assert data["rows"] == []
+
+    # Admin lifts the freeze -> event counts, points appear.
+    r = client.put(f"/api/contests/{cid}", json={"freeze_scoreboard_at": None}, headers=admin)
+    assert r.status_code == 200, r.text
+    data = client.get(f"/api/leagues/{lid}", headers=admin).json()
+    assert data["league"]["events"][0]["counted"] is True
+    assert data["rows"][0]["username"] == "alice"
+    assert data["rows"][0]["total_points"] == 100.0
+
+
+def test_practice_submission_creates_no_scoreboard_phantom(client):
+    """A user whose only submission is practice (post-end, practice_mode
+    on) must not appear on the scoreboard nor in the league field."""
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    bob = auth_header(client, "bob")
+
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    r = client.post("/api/contests", json={
+        "title": "Practice ev", "is_active": True, "is_public": True,
+        "participation_mode": "solo", "practice_mode": True,
+        "start_time": _iso(now - timedelta(minutes=10)),
+        "end_time": _iso(now + timedelta(hours=1)),
+        "scoring_script": "score = len(submission_data)",
+    }, headers=admin)
+    cid = r.json()["id"]
+    iid = _make_instance(client, admin, cid)
+    for h in (alice, bob):
+        client.post(f"/api/contests/{cid}/register", json={}, headers=h)
+
+    # alice competes for real; the contest then ends.
+    _submit_scored(client, alice, cid, iid, b"aa")
+    _finish_contest(client, admin, cid)
+    # bob only ever submits AFTER the end -> practice, no scoreboard row.
+    _submit_scored(client, bob, cid, iid, b"bbbb")
+
+    from backend import database, models
+    sess = database.SessionLocal()
+    try:
+        bob_user = sess.query(models.User).filter(models.User.username == "bob").first()
+        phantom = (
+            sess.query(models.ScoreboardEntry)
+            .filter(
+                models.ScoreboardEntry.contest_id == cid,
+                models.ScoreboardEntry.user_id == bob_user.id,
+            )
+            .count()
+        )
+        assert phantom == 0
+    finally:
+        sess.close()
+
+    lid = client.post("/api/leagues", json={"name": "L"}, headers=admin).json()["id"]
+    client.post(f"/api/leagues/{lid}/events", json={"contest_id": cid}, headers=admin)
+    data = client.get(f"/api/leagues/{lid}", headers=admin).json()
+    names = [row["username"] for row in data["rows"]]
+    assert names == ["alice"]
+    # Sole real entrant -> field of 1 -> 100 points, not diluted by bob.
+    assert data["rows"][0]["total_points"] == 100.0
+    assert data["league"]["events"][0]["participants"] == 1
+
+
+def test_all_zero_field_awards_no_points_or_wins(client):
+    """If nobody scores, nobody gets points or a win - a too-hard event
+    must not hand the whole field 100 x coeff each."""
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    bob = auth_header(client, "bob")
+
+    cid = _make_solo_contest(client, admin, "Zero ev")
+    # Validator always scores 0 whatever is submitted.
+    r = client.put(f"/api/contests/{cid}", json={"scoring_script": "score = 0"}, headers=admin)
+    assert r.status_code == 200, r.text
+    iid = _make_instance(client, admin, cid)
+    for h in (alice, bob):
+        client.post(f"/api/contests/{cid}/register", json={}, headers=h)
+    _submit_scored(client, alice, cid, iid, b"x")
+    _submit_scored(client, bob, cid, iid, b"y")
+    _finish_contest(client, admin, cid)
+
+    lid = client.post("/api/leagues", json={"name": "L"}, headers=admin).json()["id"]
+    client.post(f"/api/leagues/{lid}/events", json={"contest_id": cid}, headers=admin)
+    rows = client.get(f"/api/leagues/{lid}", headers=admin).json()["rows"]
+    assert len(rows) == 2
+    for row in rows:
+        assert row["total_points"] == 0.0
+        assert row["wins"] == 0
+
+
+def test_snapshot_freezes_history_and_recompute_refreshes(client):
+    """Once an event is snapshotted, later roster changes don't rewrite
+    the standings; the admin recompute endpoint does."""
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    dave = auth_header(client, "dave")
+
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    r = client.post("/api/contests", json={
+        "title": "Snap ev", "is_active": True, "is_public": True,
+        "participation_mode": "team",
+        "start_time": _iso(now - timedelta(minutes=5)),
+        "end_time": _iso(now + timedelta(hours=1)),
+        "scoring_script": "score = len(submission_data)",
+    }, headers=admin)
+    cid = r.json()["id"]
+    iid = _make_instance(client, admin, cid)
+
+    client.post("/api/teams", json={"name": "T"}, headers=alice)
+    tid = client.get("/api/teams/my", headers=alice).json()[0]["id"]
+    client.post(f"/api/contests/{cid}/register", json={"team_id": tid}, headers=alice)
+    _submit_scored(client, alice, cid, iid, b"xxx", team_id=tid)
+    _finish_contest(client, admin, cid)
+
+    lid = client.post("/api/leagues", json={"name": "L"}, headers=admin).json()["id"]
+    ev_id = client.post(
+        f"/api/leagues/{lid}/events", json={"contest_id": cid}, headers=admin,
+    ).json()["events"][0]["id"]
+
+    # First read takes the snapshot: only alice is credited.
+    rows = client.get(f"/api/leagues/{lid}", headers=admin).json()["rows"]
+    assert [row["username"] for row in rows] == ["alice"]
+
+    # dave joins the team AFTER the event: standings must not change.
+    from backend import database, models
+    sess = database.SessionLocal()
+    try:
+        dave_user = sess.query(models.User).filter(models.User.username == "dave").first()
+        sess.add(models.TeamMember(team_id=tid, user_id=dave_user.id))
+        sess.commit()
+    finally:
+        sess.close()
+    rows = client.get(f"/api/leagues/{lid}", headers=admin).json()["rows"]
+    assert [row["username"] for row in rows] == ["alice"]
+
+    # Explicit recompute re-reads the roster.
+    r = client.post(f"/api/leagues/{lid}/events/{ev_id}/recompute", headers=admin)
+    assert r.status_code == 200, r.text
+    rows = client.get(f"/api/leagues/{lid}", headers=admin).json()["rows"]
+    assert sorted(row["username"] for row in rows) == ["alice", "dave"]
+
+
+def test_update_league_rejects_blank_name(client):
+    admin = auth_header(client, "root")
+    lid = client.post("/api/leagues", json={"name": "L"}, headers=admin).json()["id"]
+    assert client.put(f"/api/leagues/{lid}", json={"name": "  "}, headers=admin).status_code == 400
+    assert client.put(f"/api/leagues/{lid}", json={"name": "Renommée"}, headers=admin).status_code == 200
+
+
 def test_league_event_participants_counts_entrants_not_problem_cells(client):
     """Regression: IcpcScoreboardEntry is one row per (scope, problem),
     so a plain count() reported attempted problems as the participant
