@@ -1,15 +1,15 @@
 <style>
   .qs-bars { display: flex; gap: 3px; align-items: flex-end; height: 220px; padding: 6px 0; }
-  .qs-bar { flex: 1 0 0; min-width: 18px; background: #a1a1aa; border-radius: 4px 4px 0 0;
+  .qs-bar { flex: 1 0 0; min-width: 18px; background: #8ba39d; border-radius: 4px 4px 0 0;
             position: relative;
             transition: background 0.18s, height 0.25s, color 0.18s, outline-color 0.18s; }
   .qs-bar > span { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
-                   font-size: 11px; padding: 0 2px; color: #52525b;
+                   font-size: 11px; padding: 0 2px; color: #4d6560;
                    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 600; }
-  .qs-bar.active   { background: #9cbbd6; }
-  .qs-bar.le-pivot { background: #4b7ca8; }
-  .qs-bar.gt-pivot { background: #a1a1aa; }
-  .qs-bar.cur      { outline: 2px solid #4b7ca8; outline-offset: 2px; }
+  .qs-bar.active   { background: #85c1b6; }
+  .qs-bar.le-pivot { background: #2f9a8d; }
+  .qs-bar.gt-pivot { background: #8ba39d; }
+  .qs-bar.cur      { outline: 2px solid #2f9a8d; outline-offset: 2px; }
   .qs-bar.boundary { outline: 2px dashed #f97316; outline-offset: 2px; }
   .qs-bar.pivot    { background: #f97316; }
   .qs-bar.placed   { background: #f97316; outline: 2px solid #c2410c; outline-offset: 2px; }
@@ -17,8 +17,8 @@
   .qs-bar.pivot > span, .qs-bar.placed > span, .qs-bar.sorted > span,
   .qs-bar.le-pivot > span, .qs-bar.gt-pivot > span { color: white; bottom: 4px; top: auto; }
   @media (prefers-color-scheme: dark) {
-    .qs-bar { background: #52525b; }
-    .qs-bar > span { color: #e4e4e7; }
+    .qs-bar { background: #4d6560; }
+    .qs-bar > span { color: #e4ebe8; }
   }
 </style>
 <div class="stage">

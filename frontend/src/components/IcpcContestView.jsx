@@ -246,10 +246,10 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                 }`}
               >
                 <span
-                  className="w-6 h-6 rounded font-mono font-bold text-xs flex items-center justify-center"
+                  className="w-6 h-6 rounded-full font-mono font-bold text-xs flex items-center justify-center"
                   style={{
-                    background: p.color || '#94a3b8',
-                    color: textOn(p.color || '#94a3b8'),
+                    background: p.color || '#8ba39d',
+                    color: textOn(p.color || '#8ba39d'),
                   }}
                 >
                   {p.label}
