@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { getScoreboard, getContests, getContest, scoreboardStreamUrl, scoreboardCsvUrl, getStreamTicket } from '../api';
 import IcpcScoreboard from '../components/IcpcScoreboard';
+import PageHeader from '../components/PageHeader';
 import {
   Trophy, ArrowUpDown, RefreshCw, Users, AlertCircle, Snowflake, FileSpreadsheet, X, Medal, Sparkles,
 } from 'lucide-react';
@@ -303,89 +304,87 @@ function OutputScoreboard() {
   });
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-3xl font-bold text-zinc-900 flex items-center gap-3 dark:text-white">
-            <Trophy className="w-8 h-8 text-yellow-500 dark:text-yellow-400" />
-            {t('scoreboard.title')}
-          </h1>
-          <p className="text-zinc-500 mt-1 truncate dark:text-zinc-400">{data.contest_title}</p>
-        </div>
+    <div className="animate-fade-in">
+      <PageHeader
+        eyebrow={t('scoreboard.title')}
+        title={data.contest_title}
+        description={lastUpdate
+          ? t('scoreboard.lastUpdate', { time: lastUpdate.toLocaleTimeString() })
+          : undefined}
+        actions={(
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <div className="relative">
+              <select
+                className="input-field pr-10 text-sm py-2"
+                value={id}
+                onChange={(e) => {
+                  window.location.href = `/scoreboard/${e.target.value}`;
+                }}
+                aria-label={t('scoreboard.changeContest')}
+              >
+                {contests.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative">
-            <select
-              className="input-field pr-10 text-sm py-2"
-              value={id}
-              onChange={(e) => {
-                window.location.href = `/scoreboard/${e.target.value}`;
-              }}
-              aria-label={t('scoreboard.changeContest')}
-            >
-              {contests.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-              autoRefresh
-                ? 'bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400'
-                : 'bg-zinc-100 text-zinc-500 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'
-            }`}
-            title={autoRefresh ? t('scoreboard.liveOn') : t('scoreboard.liveOff')}
-            aria-pressed={autoRefresh}
-          >
-            <RefreshCw
-              className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`}
-              style={autoRefresh ? { animationDuration: '3s' } : {}}
-            />
-            {t('scoreboard.live')}
-          </button>
-
-          <button
-            onClick={() => fetchData(true)}
-            className="btn-secondary text-sm py-2 px-3"
-            title={t('scoreboard.refresh')}
-            aria-label={t('scoreboard.refresh')}
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-
-          {user?.is_admin && (
-            <button
-              onClick={downloadCsv}
-              className="btn-secondary text-sm py-2 px-3"
-              title={t('scoreboard.exportCsv')}
-              aria-label={t('scoreboard.exportCsv')}
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-            </button>
-          )}
-          {user?.is_admin && (
-            <Link
-              to={`/scoreboard/${id}/presentation`}
-              className="btn-secondary text-sm py-2 px-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 border-amber-500/30 dark:text-amber-300"
-              title={t('presentation.entryTooltip')}
-              aria-label={t('presentation.entryTooltip')}
-            >
-              <Sparkles className="w-4 h-4" />
+            <Link to={`/contests/${id}`} className="btn-secondary text-sm py-2 px-3">
+              {t('scoreboard.goToContest')}
             </Link>
-          )}
-        </div>
-      </div>
 
-      {lastUpdate && (
-        <p className="text-xs text-zinc-400 dark:text-zinc-600">
-          {t('scoreboard.lastUpdate', { time: lastUpdate.toLocaleTimeString() })}
-        </p>
-      )}
+            <button
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                autoRefresh
+                  ? 'bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400'
+                  : 'bg-zinc-100 text-zinc-500 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'
+              }`}
+              title={autoRefresh ? t('scoreboard.liveOn') : t('scoreboard.liveOff')}
+              aria-pressed={autoRefresh}
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`}
+                style={autoRefresh ? { animationDuration: '3s' } : {}}
+              />
+              {t('scoreboard.live')}
+            </button>
 
+            <button
+              onClick={() => fetchData(true)}
+              className="btn-secondary text-sm py-2 px-3"
+              title={t('scoreboard.refresh')}
+              aria-label={t('scoreboard.refresh')}
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+
+            {user?.is_admin && (
+              <button
+                onClick={downloadCsv}
+                className="btn-secondary text-sm py-2 px-3"
+                title={t('scoreboard.exportCsv')}
+                aria-label={t('scoreboard.exportCsv')}
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+              </button>
+            )}
+            {user?.is_admin && (
+              <Link
+                to={`/scoreboard/${id}/presentation`}
+                className="btn-secondary text-sm py-2 px-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                title={t('presentation.entryTooltip')}
+                aria-label={t('presentation.entryTooltip')}
+              >
+                <Sparkles className="w-4 h-4" />
+              </Link>
+            )}
+          </div>
+        )}
+      />
+
+      <div className="space-y-6">
       {data.frozen && (
         <div className="card p-4 border border-sky-500/30 flex items-start gap-3 bg-sky-500/5">
           <Snowflake className="w-5 h-5 text-sky-600 flex-shrink-0 mt-0.5 dark:text-sky-400" />
@@ -497,16 +496,19 @@ function OutputScoreboard() {
         </div>
 
         <div className="card overflow-hidden hidden md:block">
-          <div className="overflow-x-auto">
+          {/* The thead is sticky within the card's own scroll container:
+              the horizontal-overflow wrapper breaks viewport-level
+              sticky, so the card scrolls vertically itself. */}
+          <div className="overflow-auto max-h-[75vh]">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-zinc-100/60 dark:bg-zinc-800/50">
-                  <th className="text-left text-zinc-500 font-semibold py-4 px-4 w-16 dark:text-zinc-400">{t('scoreboard.tableRank')}</th>
-                  <th className="text-left text-zinc-500 font-semibold py-4 px-4 dark:text-zinc-400">{t('scoreboard.tableTeam')}</th>
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-zinc-50 dark:bg-zinc-900">
+                  <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold py-4 px-4 w-16 border-b border-zinc-200 dark:border-zinc-800 dark:text-zinc-400">{t('scoreboard.tableRank')}</th>
+                  <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold py-4 px-4 border-b border-zinc-200 dark:border-zinc-800 dark:text-zinc-400">{t('scoreboard.tableTeam')}</th>
                   {data.instances.map((inst) => (
                     <th
                       key={inst.id}
-                      className="text-center text-zinc-500 font-semibold py-4 px-3 select-none dark:text-zinc-400"
+                      className="text-center text-[11px] uppercase tracking-wide text-zinc-500 font-semibold py-4 px-3 select-none border-b border-zinc-200 dark:border-zinc-800 dark:text-zinc-400"
                     >
                       <div className="flex items-center justify-center gap-1">
                         <button
@@ -535,7 +537,7 @@ function OutputScoreboard() {
                   <th
                     role="button"
                     tabIndex={0}
-                    className="text-center text-zinc-500 font-semibold py-4 px-4 cursor-pointer hover:text-accent-600 transition-colors select-none focus:outline-none focus:text-accent-600 dark:text-zinc-400 dark:hover:text-accent-400 dark:focus:text-accent-400"
+                    className="text-center text-[11px] uppercase tracking-wide text-zinc-500 font-semibold py-4 px-4 cursor-pointer hover:text-accent-600 transition-colors select-none border-b border-zinc-200 dark:border-zinc-800 focus:outline-none focus:text-accent-600 dark:text-zinc-400 dark:hover:text-accent-400 dark:focus:text-accent-400"
                     onClick={() => handleSort('total')}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
@@ -567,7 +569,7 @@ function OutputScoreboard() {
                         border-t border-zinc-100 transition-all duration-300 dark:border-zinc-800/30
                         ${isUserTeam
                           ? 'bg-accent-500/5 hover:bg-accent-500/10'
-                          : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/30'}
+                          : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/40'}
                         ${isFlashing ? 'animate-score-flash' : ''}
                       `}
                     >
@@ -747,6 +749,7 @@ function OutputScoreboard() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

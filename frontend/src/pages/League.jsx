@@ -8,6 +8,7 @@ import {
 import { listLeagues, getLeague } from '../api';
 import { useAuth } from '../AuthContext';
 import { formatDateTime } from '../utils/datetime';
+import PageHeader from '../components/PageHeader';
 
 // Same top-3 colour pattern as IcpcScoreboard: gold / silver / bronze.
 const MEDALS = [
@@ -99,11 +100,13 @@ export default function League() {
 
   if (leagues.length === 0) {
     return (
-      <div className="animate-fade-in space-y-6">
-        <h1 className="text-3xl font-bold text-zinc-900 flex items-center gap-3 dark:text-white">
-          <Medal className="w-8 h-8 text-accent-500" />
-          {t('league.title')}
-        </h1>
+      <div className="animate-fade-in">
+        {/* No eyebrow here: nav.league and league.title are the same
+            word, so it would just duplicate the title. */}
+        <PageHeader
+          title={t('league.title')}
+          description={t('league.subtitle')}
+        />
         <div className="card p-12 text-center">
           <Medal className="w-14 h-14 text-zinc-300 mx-auto mb-4 dark:text-zinc-600" />
           <p className="text-zinc-500 dark:text-zinc-400">{t('league.empty')}</p>
@@ -113,42 +116,33 @@ export default function League() {
   }
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-zinc-900 flex items-center gap-3 dark:text-white">
-          <Medal className="w-8 h-8 text-accent-500" />
-          {league ? league.name : t('league.title')}
-          {league?.season && (
-            <span className="badge bg-zinc-100 text-zinc-600 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700">
-              {league.season}
-            </span>
-          )}
-        </h1>
-        <p className="text-sm text-zinc-500 mt-1 dark:text-zinc-400">
-          {t('league.subtitle')}
-        </p>
-      </div>
+    <div className="animate-fade-in">
+      <PageHeader
+        eyebrow={league?.season ? `${t('nav.league')} · ${league.season}` : t('nav.league')}
+        title={league ? league.name : t('league.title')}
+        description={t('league.subtitle')}
+        actions={leagues.length > 1 && (
+          /* League picker - only shown when there is a choice to make. */
+          <div className="flex items-center gap-1 flex-wrap justify-end bg-white p-1 rounded-full border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800">
+            {leagues.map((l) => (
+              <button
+                key={l.id}
+                onClick={() => setSelectedId(l.id)}
+                className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  selectedId === l.id
+                    ? 'bg-accent-600 text-white'
+                    : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60'
+                }`}
+              >
+                {l.name}
+                {l.season && <span className="ml-1.5 opacity-70 text-xs">{l.season}</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      />
 
-      {/* League picker - only shown when there is a choice to make. */}
-      {leagues.length > 1 && (
-        <div className="flex gap-1 bg-white/50 p-1 rounded-lg w-fit border border-zinc-200 dark:bg-zinc-900/50 dark:border-zinc-800/50 flex-wrap">
-          {leagues.map((l) => (
-            <button
-              key={l.id}
-              onClick={() => setSelectedId(l.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                selectedId === l.id
-                  ? 'bg-accent-600 text-white'
-                  : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/50'
-              }`}
-            >
-              {l.name}
-              {l.season && <span className="ml-1.5 opacity-70 text-xs">{l.season}</span>}
-            </button>
-          ))}
-        </div>
-      )}
-
+      <div className="space-y-6">
       {league?.description && (
         <p className="text-sm text-zinc-500 dark:text-zinc-400">{league.description}</p>
       )}
@@ -156,7 +150,7 @@ export default function League() {
       {/* Events strip - each event links to its scoreboard. */}
       {league?.events?.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-zinc-700 mb-2 dark:text-zinc-300">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 mb-3">
             {t('league.events')}
           </h2>
           <div className="flex flex-wrap gap-2">
@@ -231,21 +225,29 @@ export default function League() {
           </button>
         </div>
       ) : (
-      /* Standings table - one column per counted event. */
-      <div className="card overflow-x-auto">
+      /* Standings table - one column per counted event. The thead is
+         sticky within the card's own scroll container (the card sets
+         overflow for wide tables, which breaks viewport-level sticky,
+         so the card scrolls vertically itself). */
+      <div>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 mb-3">
+          {t('league.standingsTable')}
+        </h2>
+        <div className="card overflow-hidden">
+        <div className="overflow-auto max-h-[70vh]">
         <table className="w-full text-sm" aria-label={t('league.standingsTable')}>
-          <thead className="bg-zinc-100/60 dark:bg-zinc-800/50">
-            <tr>
-              <th scope="col" className="text-left font-semibold py-2 px-3">{t('league.colRank')}</th>
-              <th scope="col" className="text-left font-semibold py-2 px-3">{t('league.colPlayer')}</th>
-              <th scope="col" className="text-right font-semibold py-2 px-3">{t('league.colTotal')}</th>
-              <th scope="col" className="text-right font-semibold py-2 px-3">{t('league.colWins')}</th>
-              <th scope="col" className="text-right font-semibold py-2 px-3">{t('league.colPlayed')}</th>
+          <thead className="sticky top-0 z-10">
+            <tr className="bg-zinc-50 dark:bg-zinc-900">
+              <th scope="col" className="text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 py-3 px-3 border-b border-zinc-200 dark:border-zinc-800">{t('league.colRank')}</th>
+              <th scope="col" className="text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 py-3 px-3 border-b border-zinc-200 dark:border-zinc-800">{t('league.colPlayer')}</th>
+              <th scope="col" className="text-right text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 py-3 px-3 border-b border-zinc-200 dark:border-zinc-800">{t('league.colTotal')}</th>
+              <th scope="col" className="text-right text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 py-3 px-3 border-b border-zinc-200 dark:border-zinc-800">{t('league.colWins')}</th>
+              <th scope="col" className="text-right text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 py-3 px-3 border-b border-zinc-200 dark:border-zinc-800">{t('league.colPlayed')}</th>
               {countedEvents.map((ev) => (
                 <th
                   key={ev.id}
                   scope="col"
-                  className="text-right font-semibold py-2 px-3 min-w-[90px] max-w-[140px] truncate"
+                  className="text-right text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 py-3 px-3 border-b border-zinc-200 dark:border-zinc-800 min-w-[90px] max-w-[140px] truncate"
                   title={ev.contest_title}
                 >
                   {ev.contest_title}
@@ -262,8 +264,10 @@ export default function League() {
               return (
                 <tr
                   key={row.user_id}
-                  className={`border-t border-zinc-100 dark:border-zinc-800/30 ${
-                    isMe ? 'bg-accent-500/10' : ''
+                  className={`border-t border-zinc-100 dark:border-zinc-800/30 transition-colors ${
+                    isMe
+                      ? 'bg-accent-500/10 hover:bg-accent-500/15'
+                      : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/40'
                   }`}
                 >
                   <td className="py-2 px-3 font-mono tabular-nums">
@@ -330,8 +334,11 @@ export default function League() {
             )}
           </tbody>
         </table>
+        </div>
+        </div>
       </div>
       )}
+      </div>
     </div>
   );
 }

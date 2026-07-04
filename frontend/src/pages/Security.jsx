@@ -6,6 +6,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../AuthContext';
 import { totpSetup, totpVerify, totpDisable, getMe } from '../api';
 import { copyText } from '../utils/clipboard';
+import PageHeader from '../components/PageHeader';
 import { extractErrorMessage } from '../utils/apiError';
 
 // 2FA setup / disable. The QR rendering is intentionally absent -
@@ -93,23 +94,30 @@ export default function Security() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4 animate-fade-in">
-      <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-2">
-        {t('auth.totp.settings.title')}
-      </h1>
+    <div className="max-w-2xl mx-auto animate-fade-in">
+      <PageHeader
+        eyebrow={t('nav.security')}
+        title={t('auth.totp.settings.title')}
+      />
+
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 mb-3 flex items-center gap-2">
+        {user?.totp_enabled ? (
+          <ShieldCheck className="w-4 h-4 text-emerald-500" />
+        ) : (
+          <ShieldOff className="w-4 h-4" />
+        )}
+        {user?.totp_enabled
+          ? t('auth.totp.settings.statusEnabled')
+          : t('auth.totp.settings.statusDisabled')}
+      </h2>
 
       {stage === 'idle' && user?.totp_enabled && (
-        <div className="card p-6 mt-4 space-y-4">
+        <div className="card p-6 space-y-4">
           <div className="flex items-center gap-3">
-            <ShieldCheck className="w-8 h-8 text-emerald-500" />
-            <div>
-              <p className="font-semibold text-emerald-700 dark:text-emerald-300">
-                {t('auth.totp.settings.statusEnabled')}
-              </p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                {t('auth.totp.settings.intro')}
-              </p>
-            </div>
+            <ShieldCheck className="w-8 h-8 text-emerald-500 shrink-0" />
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              {t('auth.totp.settings.intro')}
+            </p>
           </div>
           <button
             type="button"
@@ -123,17 +131,12 @@ export default function Security() {
       )}
 
       {stage === 'idle' && !user?.totp_enabled && (
-        <div className="card p-6 mt-4 space-y-4">
+        <div className="card p-6 space-y-4">
           <div className="flex items-center gap-3">
-            <ShieldOff className="w-8 h-8 text-zinc-400" />
-            <div>
-              <p className="font-semibold text-zinc-700 dark:text-zinc-200">
-                {t('auth.totp.settings.statusDisabled')}
-              </p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                {t('auth.totp.settings.intro')}
-              </p>
-            </div>
+            <ShieldOff className="w-8 h-8 text-zinc-400 shrink-0" />
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              {t('auth.totp.settings.intro')}
+            </p>
           </div>
           <button
             type="button"
@@ -148,7 +151,7 @@ export default function Security() {
       )}
 
       {stage === 'setup' && (
-        <form onSubmit={handleVerify} className="card p-6 mt-4 space-y-5">
+        <form onSubmit={handleVerify} className="card p-6 space-y-5">
           <p className="text-sm text-zinc-600 dark:text-zinc-300">
             {t('auth.totp.settings.scanQR')}
           </p>
@@ -212,7 +215,7 @@ export default function Security() {
       )}
 
       {stage === 'success' && (
-        <div className="card p-6 mt-4 space-y-4 border border-amber-500/40 bg-amber-500/5">
+        <div className="card p-6 space-y-4 border border-amber-500/40 bg-amber-500/5">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" />
             <div>
@@ -245,7 +248,7 @@ export default function Security() {
       )}
 
       {stage === 'disable' && (
-        <form onSubmit={handleDisable} className="card p-6 mt-4 space-y-4 border border-red-500/30">
+        <form onSubmit={handleDisable} className="card p-6 space-y-4 border border-red-500/30">
           <h3 className="font-bold text-red-700 dark:text-red-300 flex items-center gap-2">
             <ShieldOff className="w-5 h-5" />
             {t('auth.totp.settings.disableTitle')}

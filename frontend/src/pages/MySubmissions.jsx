@@ -7,6 +7,7 @@ import { getMySubmissions, downloadMySubmission } from '../api';
 import { formatScore, formatScoreFull } from '../utils/format';
 import { formatDateTime } from '../utils/datetime';
 import DiffModal from '../components/DiffModal';
+import PageHeader from '../components/PageHeader';
 
 export default function MySubmissions() {
   const { t } = useTranslation();
@@ -89,51 +90,54 @@ export default function MySubmissions() {
   ];
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">{t('mySubmissions.title')}</h1>
-          <p className="text-zinc-500 dark:text-zinc-400 mt-1">{t('mySubmissions.subtitle')}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="inline-flex rounded-lg border border-zinc-200 p-0.5 dark:border-zinc-700">
-            <button
-              type="button"
-              onClick={() => { setKind('output'); setSelected([]); }}
-              className={`text-xs font-medium px-3 py-1 rounded-md transition-colors ${
-                kind === 'output'
-                  ? 'bg-accent-600 text-white'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
-              }`}
-            >
-              {t('admin.submissions.kindOutput')} <span className="opacity-60">({stats.output.total})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => { setKind('icpc'); setSelected([]); }}
-              className={`text-xs font-medium px-3 py-1 rounded-md transition-colors ${
-                kind === 'icpc'
-                  ? 'bg-accent-600 text-white'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
-              }`}
-            >
-              {t('admin.submissions.kindIcpc')} <span className="opacity-60">({stats.icpc.total})</span>
-            </button>
+    <div className="animate-fade-in">
+      {/* No eyebrow: the only fitting existing key (nav.mySubmissions)
+          is the exact same text as the title in both languages. */}
+      <PageHeader
+        title={t('mySubmissions.title')}
+        description={t('mySubmissions.subtitle')}
+        actions={(
+          <div className="flex items-center gap-3 flex-wrap justify-end">
+            <div className="inline-flex rounded-full border border-zinc-200 p-0.5 dark:border-zinc-700">
+              <button
+                type="button"
+                onClick={() => { setKind('output'); setSelected([]); }}
+                className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
+                  kind === 'output'
+                    ? 'bg-accent-600 text-white'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+                }`}
+              >
+                {t('admin.submissions.kindOutput')} <span className="opacity-60 font-mono tabular-nums">({stats.output.total})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setKind('icpc'); setSelected([]); }}
+                className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
+                  kind === 'icpc'
+                    ? 'bg-accent-600 text-white'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+                }`}
+              >
+                {t('admin.submissions.kindIcpc')} <span className="opacity-60 font-mono tabular-nums">({stats.icpc.total})</span>
+              </button>
+            </div>
+            {kind === 'output' && (
+              <button
+                type="button"
+                disabled={selected.length !== 2}
+                onClick={() => setDiffPair([selected[0], selected[1]])}
+                className="btn-primary text-sm disabled:opacity-50"
+              >
+                <GitCompare className="w-4 h-4 mr-2 inline" />
+                {t('mySubmissions.compare', { count: selected.length })}
+              </button>
+            )}
           </div>
-          {kind === 'output' && (
-            <button
-              type="button"
-              disabled={selected.length !== 2}
-              onClick={() => setDiffPair([selected[0], selected[1]])}
-              className="btn-primary text-sm disabled:opacity-50"
-            >
-              <GitCompare className="w-4 h-4 mr-2 inline" />
-              {t('mySubmissions.compare', { count: selected.length })}
-            </button>
-          )}
-        </div>
-      </div>
+        )}
+      />
 
+      <div className="space-y-6">
       <div className="flex flex-wrap gap-2 text-[11px]">
         {pills.map((p) => (
           <span key={p.k} className={`px-2 py-0.5 rounded ${p.cls} font-mono`}>
@@ -154,26 +158,26 @@ export default function MySubmissions() {
               <thead>
                 <tr className="border-b border-zinc-200 dark:border-zinc-700/50">
                   {kind === 'output' && <th className="pb-3 pr-2 w-6"></th>}
-                  <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colContest')}</th>
-                  <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">
+                  <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colContest')}</th>
+                  <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 pr-4 dark:text-zinc-400">
                     {kind === 'icpc' ? t('admin.submissions.colProblem') : t('mySubmissions.colInstance')}
                   </th>
-                  <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">
+                  <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 pr-4 dark:text-zinc-400">
                     {kind === 'icpc' ? t('admin.submissions.colVerdict') : t('mySubmissions.colScore')}
                   </th>
                   {kind === 'output' && (
-                    <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colStatus')}</th>
+                    <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colStatus')}</th>
                   )}
                   {kind === 'icpc' && (
-                    <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colLanguage')}</th>
+                    <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colLanguage')}</th>
                   )}
-                  <th className="text-left text-zinc-500 font-medium pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colWhen')}</th>
-                  <th className="text-right text-zinc-500 font-medium pb-3 dark:text-zinc-400">{t('mySubmissions.colActions')}</th>
+                  <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colWhen')}</th>
+                  <th className="text-right text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 dark:text-zinc-400">{t('mySubmissions.colActions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {visible.map((s) => (
-                  <tr key={s.id} className="border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-800/20">
+                  <tr key={s.id} className="border-b border-zinc-100 transition-colors hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-800/40">
                     {kind === 'output' && (
                       <td className="py-3 pr-2">
                         <input
@@ -232,7 +236,7 @@ export default function MySubmissions() {
                         {s.source_language || '-'}
                       </td>
                     )}
-                    <td className="py-3 pr-4 text-zinc-400 text-xs dark:text-zinc-500">
+                    <td className="py-3 pr-4 text-zinc-400 text-xs font-mono tabular-nums dark:text-zinc-500">
                       {formatDateTime(s.submitted_at)}
                     </td>
                     <td className="py-3 text-right">
@@ -254,6 +258,7 @@ export default function MySubmissions() {
             </table>
           </div>
         )}
+      </div>
       </div>
       {diffPair && (
         <DiffModal leftId={diffPair[0]} rightId={diffPair[1]} onClose={() => setDiffPair(null)} />

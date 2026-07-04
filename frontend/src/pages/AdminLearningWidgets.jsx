@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
-  Sparkles, Plus, Trash2, Save, Code2, ArrowLeft,
+  Plus, Trash2, Save, Code2, ArrowLeft,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../AuthContext';
 import { useConfirm } from '../components/Confirm';
+import PageHeader from '../components/PageHeader';
 import {
   adminLearnListWidgets, adminLearnCreateWidget, adminLearnGetWidget,
   adminLearnUpdateWidget, adminLearnDeleteWidget,
@@ -177,24 +178,24 @@ export default function AdminLearningWidgets() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <button
-            onClick={() => navigate('/admin/learning')}
-            className="text-sm text-accent-600 hover:text-accent-500 inline-flex items-center gap-1 dark:text-accent-400"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            {t('admin.learningWidgets.backToLearning')}
-          </button>
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-3 mt-2">
-            <Sparkles className="w-8 h-8 text-accent-500" />
-            {t('admin.learningWidgets.title')}
-          </h1>
-        </div>
-        <button onClick={handleCreate} className="btn-primary inline-flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          {t('admin.learningWidgets.newWidget')}
+      <div>
+        <button
+          onClick={() => navigate('/admin/learning')}
+          className="text-sm font-medium text-accent-600 hover:text-accent-500 inline-flex items-center gap-1.5 mb-4 dark:text-accent-400 dark:hover:text-accent-300"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          {t('admin.learningWidgets.backToLearning')}
         </button>
+        <PageHeader
+          eyebrow={t('admin.learning.title')}
+          title={t('admin.learningWidgets.title')}
+          actions={(
+            <button onClick={handleCreate} className="btn-primary inline-flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              {t('admin.learningWidgets.newWidget')}
+            </button>
+          )}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

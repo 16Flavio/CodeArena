@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { copyText } from '../utils/clipboard';
 import { useConfirm } from '../components/Confirm';
+import PageHeader from '../components/PageHeader';
 import { extractErrorMessage } from '../utils/apiError';
 
 const MAX_TEAM_SIZE = 4;
@@ -265,32 +266,33 @@ export default function Teams() {
 
   return (
     <div className="animate-fade-in space-y-8">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">{t('teams.title')}</h1>
-          <p className="text-zinc-500 mt-1 dark:text-zinc-400">{t('teams.subtitle')}</p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => setShowJoin(true)}
-            className="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={alreadyInTeam}
-            title={alreadyInTeam ? t('teams.alreadyInTeamTooltip') : undefined}
-          >
-            <LogIn className="w-4 h-4 mr-2 inline" />
-            {t('teams.joinByCode')}
-          </button>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={alreadyInTeam}
-            title={alreadyInTeam ? t('teams.alreadyInTeamTooltip') : undefined}
-          >
-            <Plus className="w-4 h-4 mr-2 inline" />
-            {t('teams.createTeam')}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={t('nav.teams')}
+        title={t('teams.title')}
+        description={t('teams.subtitle')}
+        actions={(
+          <>
+            <button
+              onClick={() => setShowJoin(true)}
+              className="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={alreadyInTeam}
+              title={alreadyInTeam ? t('teams.alreadyInTeamTooltip') : undefined}
+            >
+              <LogIn className="w-4 h-4 mr-2 inline" />
+              {t('teams.joinByCode')}
+            </button>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={alreadyInTeam}
+              title={alreadyInTeam ? t('teams.alreadyInTeamTooltip') : undefined}
+            >
+              <Plus className="w-4 h-4 mr-2 inline" />
+              {t('teams.createTeam')}
+            </button>
+          </>
+        )}
+      />
 
       {alreadyInTeam && (
         <div className="card p-4 border border-amber-500/30 flex items-start gap-3">
@@ -305,10 +307,10 @@ export default function Teams() {
 
       {incoming.length > 0 && (
         <div className="card p-5 border-accent-500/30 border">
-          <h2 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2 dark:text-white">
-            <MailQuestion className="w-5 h-5 text-accent-500 dark:text-accent-400" />
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 mb-4 flex items-center gap-2">
+            <MailQuestion className="w-4 h-4 text-accent-500 dark:text-accent-400" />
             {t('teams.incomingRequests')}
-            <span className="badge bg-accent-500/15 text-accent-700 border border-accent-500/30 dark:bg-accent-500/20 dark:text-accent-300">
+            <span className="badge bg-accent-500/15 text-accent-700 border border-accent-500/30 font-mono tabular-nums dark:bg-accent-500/20 dark:text-accent-300">
               {incoming.length}
             </span>
           </h2>
@@ -484,7 +486,10 @@ export default function Teams() {
       )}
 
       <div>
-        <h2 className="text-xl font-bold text-zinc-900 mb-4 dark:text-white">{t('teams.myTeams')}</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 mb-3 flex items-center gap-2">
+          <Users className="w-4 h-4" />
+          {t('teams.myTeams')}
+        </h2>
         {teams.length === 0 ? (
           <div className="card p-12 text-center">
             <Users className="w-14 h-14 text-zinc-300 mx-auto mb-4 dark:text-zinc-600" />
@@ -518,7 +523,8 @@ export default function Teams() {
                     <div>
                       <h3 className="text-xl font-bold text-zinc-900 dark:text-white">{team.name}</h3>
                       <p className="text-zinc-500 text-sm mt-1 dark:text-zinc-500">
-                        {team.members.length}/{MAX_TEAM_SIZE} {t('teams.memberCountSuffix')}
+                        <span className="font-mono tabular-nums">{team.members.length}/{MAX_TEAM_SIZE}</span>{' '}
+                        {t('teams.memberCountSuffix')}
                       </p>
                     </div>
                     {isOwner && (
@@ -653,8 +659,8 @@ export default function Teams() {
 
       {pendingOutgoing.length > 0 && (
         <div>
-          <h2 className="text-xl font-bold text-zinc-900 mb-4 flex items-center gap-2 dark:text-white">
-            <Clock className="w-5 h-5 text-zinc-400 dark:text-zinc-400" />
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 mb-3 flex items-center gap-2">
+            <Clock className="w-4 h-4" />
             {t('teams.yourPendingRequests')}
           </h2>
           <div className="grid sm:grid-cols-2 gap-3">
@@ -684,8 +690,11 @@ export default function Teams() {
       )}
 
       <div>
-        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-          <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{t('teams.browseTeams')}</h2>
+        <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 flex items-center gap-2">
+            <Search className="w-4 h-4" />
+            {t('teams.browseTeams')}
+          </h2>
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none dark:text-zinc-500" />
             <input
@@ -718,7 +727,8 @@ export default function Teams() {
                       <h3 className="font-semibold text-zinc-900 truncate dark:text-white">{bt.name}</h3>
                       <p className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1.5 dark:text-zinc-500">
                         <Users className="w-3 h-3" />
-                        {bt.member_count}/{MAX_TEAM_SIZE} {t('teams.memberCountSuffix')}
+                        <span className="font-mono tabular-nums">{bt.member_count}/{MAX_TEAM_SIZE}</span>{' '}
+                        {t('teams.memberCountSuffix')}
                       </p>
                     </div>
                     {bt.is_member && (
@@ -777,7 +787,7 @@ export default function Teams() {
 
       {outgoing.filter((r) => r.status !== 'pending').length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-zinc-600 mb-3 dark:text-zinc-400">{t('teams.historyHeading')}</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 mb-3">{t('teams.historyHeading')}</h2>
           <div className="space-y-1.5">
             {outgoing
               .filter((r) => r.status !== 'pending')

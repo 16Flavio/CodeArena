@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
-  GraduationCap, Plus, Trash2, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight,
+  Plus, Trash2, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight,
   FolderPlus, FilePlus, Save, Eye, EyeOff, Image as ImageIcon, Globe, Sparkles, FileDown, Maximize2, Minimize2, Pencil, X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../AuthContext';
 import { useConfirm } from '../components/Confirm';
+import PageHeader from '../components/PageHeader';
 import {
   adminLearnListSections, adminLearnCreateSection, adminLearnUpdateSection, adminLearnDeleteSection,
   adminLearnListLessons, adminLearnCreateLesson, adminLearnUpdateLesson, adminLearnDeleteLesson,
@@ -240,51 +241,51 @@ export default function AdminLearning() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-3">
-          <GraduationCap className="w-8 h-8 text-accent-500" />
-          {t('admin.learning.title')}
-        </h1>
-        <div className="flex items-center gap-2">
-          <div className="relative group">
-            <button
-              disabled={exporting}
-              className="btn-secondary inline-flex items-center gap-2"
-              title={t('admin.learning.exportHint')}
-            >
-              <FileDown className="w-4 h-4" />
-              {exporting ? t('admin.learning.exporting') : t('admin.learning.export')}
-            </button>
-            {/* Lightweight dropdown - hover/focus reveals language picker. */}
-            <div className="absolute right-0 mt-1 hidden group-hover:block group-focus-within:block bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg overflow-hidden z-10 min-w-[160px]">
+      <PageHeader
+        eyebrow={t('nav.admin')}
+        title={t('admin.learning.title')}
+        actions={(
+          <>
+            <div className="relative group">
               <button
-                onClick={() => handleExportLatex('fr')}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700"
+                disabled={exporting}
+                className="btn-secondary inline-flex items-center gap-2"
+                title={t('admin.learning.exportHint')}
               >
-                LaTeX · FR
+                <FileDown className="w-4 h-4" />
+                {exporting ? t('admin.learning.exporting') : t('admin.learning.export')}
               </button>
-              <button
-                onClick={() => handleExportLatex('en')}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700"
-              >
-                LaTeX · EN
-              </button>
+              {/* Lightweight dropdown - hover/focus reveals language picker. */}
+              <div className="absolute right-0 mt-1 hidden group-hover:block group-focus-within:block bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg overflow-hidden z-10 min-w-[160px]">
+                <button
+                  onClick={() => handleExportLatex('fr')}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700"
+                >
+                  LaTeX · FR
+                </button>
+                <button
+                  onClick={() => handleExportLatex('en')}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700"
+                >
+                  LaTeX · EN
+                </button>
+              </div>
             </div>
-          </div>
-          <button
-            onClick={() => navigate('/admin/learning/widgets')}
-            className="btn-secondary inline-flex items-center gap-2"
-            title={t('admin.learning.manageWidgetsHint')}
-          >
-            <Sparkles className="w-4 h-4" />
-            {t('admin.learning.manageWidgets')}
-          </button>
-          <button onClick={handleAddSection} className="btn-primary inline-flex items-center gap-2">
-            <FolderPlus className="w-4 h-4" />
-            {t('admin.learning.newSection')}
-          </button>
-        </div>
-      </div>
+            <button
+              onClick={() => navigate('/admin/learning/widgets')}
+              className="btn-secondary inline-flex items-center gap-2"
+              title={t('admin.learning.manageWidgetsHint')}
+            >
+              <Sparkles className="w-4 h-4" />
+              {t('admin.learning.manageWidgets')}
+            </button>
+            <button onClick={handleAddSection} className="btn-primary inline-flex items-center gap-2">
+              <FolderPlus className="w-4 h-4" />
+              {t('admin.learning.newSection')}
+            </button>
+          </>
+        )}
+      />
 
       <div className={`grid grid-cols-1 gap-6 ${treeCollapsed ? 'lg:grid-cols-[40px_1fr]' : 'lg:grid-cols-12'}`}>
         {/* Tree of sections + lessons. Collapsed = a thin rail with a
