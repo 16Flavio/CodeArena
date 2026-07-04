@@ -3,7 +3,7 @@ import { lazy, Suspense } from 'react';
 import { useAuth } from './AuthContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
-// Public auth flow pages stay eager — they're on the critical path for
+// Public auth flow pages stay eager - they're on the critical path for
 // first-time visitors and the landing bundle is already small.
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -14,7 +14,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 
 // Lazy-load the heavier authenticated pages. ContestDetail pulls CodeMirror +
-// ReactMarkdown, Admin pulls the whole form tree — splitting these out drops
+// ReactMarkdown, Admin pulls the whole form tree - splitting these out drops
 // the initial bundle significantly.
 const Teams = lazy(() => import('./pages/Teams'));
 const MySubmissions = lazy(() => import('./pages/MySubmissions'));

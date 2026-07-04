@@ -1,7 +1,7 @@
 """lesson_exercises table
 
 Inline coding exercises embedded in lessons via ``:::exercise{id=N}``.
-Pure additive — safe to run on a populated DB.
+Pure additive - safe to run on a populated DB.
 
 Revision ID: 2026_04_27_a2
 Revises: 2026_04_27_a1

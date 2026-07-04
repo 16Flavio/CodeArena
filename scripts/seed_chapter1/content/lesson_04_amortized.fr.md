@@ -1,6 +1,6 @@
 # 4. Analyse amortie & tableau dynamique
 
-## 4.1 — L'idée : moyenner les coûts
+## 4.1 - L'idée : moyenner les coûts
 
 Certaines opérations sont *occasionnellement* coûteuses mais
 *globalement* bon marché. Les analyser au pire cas surestime
@@ -8,7 +8,7 @@ massivement leur coût réel.
 
 **Exemple introductif.** On veut insérer $n$ entiers dans un tableau
 dynamique (style `list` Python ou `std::vector` C++). De temps en
-temps, le tableau **double** sa capacité — c'est une opération en
+temps, le tableau **double** sa capacité - c'est une opération en
 $O(\text{capacité})$. Au pire cas, une insertion coûte $O(n)$. Mais sur
 $n$ insertions consécutives, le coût total reste $O(n)$ : le coût
 **amorti** par insertion est $O(1)$.
@@ -18,7 +18,7 @@ L'analyse amortie formalise ce raisonnement avec **trois méthodes
 
 ---
 
-## 4.2 — Méthode de l'agrégat
+## 4.2 - Méthode de l'agrégat
 
 On calcule le coût total de $n$ opérations, puis on divise par $n$.
 
@@ -37,7 +37,7 @@ Coût amorti : $3n / n = O(1)$. $\square$
 
 ---
 
-## 4.3 — Méthode du banquier (accounting)
+## 4.3 - Méthode du banquier (accounting)
 
 On *facture* à chaque opération un coût artificiel (le **coût amorti**)
 qui peut être supérieur à son vrai coût. La différence est stockée
@@ -57,7 +57,7 @@ coût amorti reste $3 = O(1)$ par insertion. $\square$
 
 ---
 
-## 4.4 — Méthode du potentiel
+## 4.4 - Méthode du potentiel
 
 On définit une fonction $\Phi$ de l'état de la structure vers
 $\mathbb{R}_{\ge 0}$ avec $\Phi(\text{état initial}) = 0$. Le coût
@@ -90,7 +90,7 @@ Coût amorti **constant**, $O(1)$ par insertion. $\square$
 
 ---
 
-## 4.5 — Algorithme et preuve de correction
+## 4.5 - Algorithme et preuve de correction
 
 ```python
 class DynamicArray:
@@ -124,7 +124,7 @@ insertions consécutives.
 
 ---
 
-## 4.6 — Exercices
+## 4.6 - Exercices
 
 :::exercise{id="{{EX_AMO_STD}}"}
 :::

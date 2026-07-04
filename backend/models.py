@@ -39,7 +39,7 @@ class User(Base):
     locked_until = Column(DateTime, nullable=True)
     # Session revocation counter. Every access/stream token embeds this
     # value as a ``tv`` claim at mint time and ``get_current_user``
-    # rejects tokens whose claim doesn't match — so bumping it kills all
+    # rejects tokens whose claim doesn't match - so bumping it kills all
     # outstanding sessions at once (done on password change/reset).
     # Tokens minted before this column existed carry no claim and are
     # treated as tv=0, so the deploy itself logs nobody out.
@@ -65,7 +65,7 @@ class User(Base):
 class Affiliation(Base):
     """School / university / institution that teams and solo contestants
     belong to. DOMjudge calls these "organizations"; the CLICS event feed
-    exposes them as ``organizations``. Purely cosmetic on the scoreboard —
+    exposes them as ``organizations``. Purely cosmetic on the scoreboard -
     no gating or permissioning attaches to an affiliation."""
     __tablename__ = "affiliations"
 
@@ -151,7 +151,7 @@ class Contest(Base):
     # Public contests are visible/joinable by any authenticated user. Private
     # contests only show up for users in ContestParticipant.
     is_public = Column(Boolean, default=True, nullable=False)
-    # Discriminator: "output" (Hashcode-style — upload an output, script grades
+    # Discriminator: "output" (Hashcode-style - upload an output, script grades
     # it on a numeric score) or "icpc" (source code submitted, judged against
     # testcases with AC/WA/TLE/... verdicts).
     kind = Column(String(16), default="output", nullable=False)
@@ -159,10 +159,10 @@ class Contest(Base):
     # submissions are excluded from the official scoreboard.
     practice_mode = Column(Boolean, default=False, nullable=False)
     # Contest-scale hardening knobs (all optional; 0/null means "no limit"):
-    #   dedup_block        — reject identical-hash submissions (409) instead of auditing
-    #   min_seconds_between_submits — per team/solo cooldown on the same instance
-    #   max_submissions_per_instance — per team/solo quota per instance
-    #   output_validator_script — runs before scoring; failures mark submission
+    #   dedup_block        - reject identical-hash submissions (409) instead of auditing
+    #   min_seconds_between_submits - per team/solo cooldown on the same instance
+    #   max_submissions_per_instance - per team/solo quota per instance
+    #   output_validator_script - runs before scoring; failures mark submission
     #                             as "invalid_output" and bypass scoring entirely
     dedup_block = Column(Boolean, default=False, nullable=False)
     min_seconds_between_submits = Column(Integer, default=0, nullable=False)
@@ -250,7 +250,7 @@ class EmailOutbox(Base):
     """Durable email queue. ``email_utils._send_email`` enqueues here
     (commit-safe with the request transaction) instead of dispatching
     SMTP inline; a background worker picks rows up and sends them with
-    retry. Surviving a backend restart is the whole point — the
+    retry. Surviving a backend restart is the whole point - the
     previous in-memory ``BackgroundTasks + retry loop`` would lose
     every queued email on a redeploy."""
     __tablename__ = "email_outbox"
@@ -301,7 +301,7 @@ class JoinRequest(Base):
 
 
 class ContestParticipant(Base):
-    """Allowlist row for private contests — polymorphic on team_id/user_id.
+    """Allowlist row for private contests - polymorphic on team_id/user_id.
     Exactly one of team_id / user_id is set depending on the contest's
     participation_mode. Absent = that entity cannot register."""
     __tablename__ = "contest_participants"
@@ -324,7 +324,7 @@ class ContestParticipant(Base):
 
 
 class ContestRegistration(Base):
-    """Self-service registration — polymorphic on team_id/user_id. A user (or
+    """Self-service registration - polymorphic on team_id/user_id. A user (or
     team, via its owner) presses "Register" to opt into a contest. Non-registered
     users can still view the scoreboard but can't submit."""
     __tablename__ = "contest_registrations"
@@ -358,7 +358,7 @@ class ContestBan(Base):
     register for that contest because at least one member is banned.
 
     Created by ``set_registration_disqualified`` (one row per affected
-    user — for team DQs, one row per current member). Cleared by the
+    user - for team DQs, one row per current member). Cleared by the
     same endpoint on requalify."""
     __tablename__ = "contest_bans"
 
@@ -397,7 +397,7 @@ class Submission(Base):
     submitted_at = Column(DateTime, default=utcnow)
     submitted_by = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    # True when submitted after end_time in practice mode — excluded from the
+    # True when submitted after end_time in practice mode - excluded from the
     # official scoreboard but still scored for user feedback.
     is_practice = Column(Boolean, default=False, nullable=False)
     # Submitter's IP at upload time, for anti-cheat forensics. May be the
@@ -413,7 +413,7 @@ class Submission(Base):
     problem_id = Column(Integer, ForeignKey("problems.id", ondelete="CASCADE"), nullable=True, index=True)
     source_language = Column(String(32), nullable=True)
     # Partial-credit score for subtask-mode problems. Null for plain ICPC
-    # (AC/WA) — the scoreboard keeps using ``verdict`` in that case.
+    # (AC/WA) - the scoreboard keeps using ``verdict`` in that case.
     total_points = Column(Float, nullable=True)
     # Captured stdout when a team submits source code for an output
     # contest (scoring kind=="output" + source_language set). The worker
@@ -460,7 +460,7 @@ class ScoreboardEntry(Base):
     instance_id = Column(Integer, ForeignKey("instances.id", ondelete="CASCADE"), nullable=False, index=True)
     team_id = Column(Integer, ForeignKey("teams.id", ondelete="CASCADE"), nullable=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
-    # "best score so far" — excludes practice submissions + errors.
+    # "best score so far" - excludes practice submissions + errors.
     best_score = Column(Float, default=0.0, nullable=False)
     # Score of the is_final submission if any, otherwise null. Scoreboard
     # prefers this over best_score when present.
@@ -507,7 +507,7 @@ class Language(Base):
     # compile_cmd = interpreted languages (no compile step).
     compile_cmd = Column(Text, nullable=False, default="")
     run_cmd = Column(Text, nullable=False)
-    # Per-language slowdown multiplier — Java and Python get 2-3× the
+    # Per-language slowdown multiplier - Java and Python get 2-3× the
     # problem's base time limit. Matches DOMjudge's wallclock_time_factor.
     time_factor = Column(Float, nullable=False, default=1.0)
     enabled = Column(Boolean, nullable=False, default=True)
@@ -520,22 +520,22 @@ class Problem(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     contest_id = Column(Integer, ForeignKey("contests.id", ondelete="CASCADE"), nullable=False, index=True)
-    # DOMjudge "shortname" — used to round-trip imports (unique per contest).
+    # DOMjudge "shortname" - used to round-trip imports (unique per contest).
     external_id = Column(String(64), nullable=False)
     label = Column(String(8), nullable=False)        # "A", "B", "C", ...
     color = Column(String(16), nullable=False, default="")  # scoreboard balloon
     name = Column(String(200), nullable=False)
     time_limit_ms = Column(Integer, nullable=False, default=1000)
     # 2 GB matches DOMjudge's default. The earlier 256 MB was too tight
-    # for Python/Java — the interpreter alone eats hundreds of MB of
+    # for Python/Java - the interpreter alone eats hundreds of MB of
     # virtual address space once RLIMIT_AS is clamped, surfacing as MLE.
     memory_limit_mb = Column(Integer, nullable=False, default=2048)
     # Built-in checker kinds cover ~90% of Kattis problems:
-    #   "diff"        — exact byte match (minus trailing whitespace)
-    #   "tokens"      — whitespace-insensitive token match
-    #   "float"       — tokens + per-token float tolerance (epsilon field)
-    #   "custom"      — run checker_script (future; stubbed for now)
-    #   "interactive" — user program + interactor_script talk via pipes;
+    #   "diff"        - exact byte match (minus trailing whitespace)
+    #   "tokens"      - whitespace-insensitive token match
+    #   "float"       - tokens + per-token float tolerance (epsilon field)
+    #   "custom"      - run checker_script (future; stubbed for now)
+    #   "interactive" - user program + interactor_script talk via pipes;
     #                   interactor's exit code is the verdict
     checker_kind = Column(String(16), nullable=False, default="tokens")
     checker_epsilon = Column(Float, nullable=True)
@@ -557,8 +557,8 @@ class Problem(Base):
     statement_pdf_path = Column(String(255), nullable=True)
     order_idx = Column(Integer, nullable=False, default=0)
     # Scoring mode:
-    #   "icpc"     — binary AC/WA, short-circuit on first non-AC (default).
-    #   "subtasks" — run every testcase, group by Testcase.group_name.
+    #   "icpc"     - binary AC/WA, short-circuit on first non-AC (default).
+    #   "subtasks" - run every testcase, group by Testcase.group_name.
     #                A group scores its full points only if every testcase
     #                in it is AC. total_points on the Submission is the sum.
     scoring_mode = Column(String(16), nullable=False, default="icpc")
@@ -637,7 +637,7 @@ class JudgingRun(Base):
     runtime_ms = Column(Integer, nullable=True)
     memory_used_mb = Column(Integer, nullable=True)
     # Truncated stdout/stderr (first ~1 KB) for the jury view. Full output
-    # is discarded — we don't want to retain arbitrary team-controlled data.
+    # is discarded - we don't want to retain arbitrary team-controlled data.
     stdout_truncated = Column(Text, nullable=True)
     stderr_truncated = Column(Text, nullable=True)
 
@@ -665,7 +665,7 @@ class Clarification(Base):
 
 
 class IcpcScoreboardEntry(Base):
-    """Materialised (team, problem) cell for the ICPC scoreboard — the
+    """Materialised (team, problem) cell for the ICPC scoreboard - the
     penalty-time layout is too different from the output-scoring cache to
     share. Updated by the judging worker on every finished Judging."""
     __tablename__ = "icpc_scoreboard_entries"
@@ -697,7 +697,7 @@ class IcpcScoreboardEntry(Base):
 # sections (categories) -> lessons (markdown bodies) and the frontend
 # renders them with custom widget directives. Bilingual at the column
 # level (FR + EN) so the platform reads identical regardless of which
-# language the viewer picked — no fallback needed at query time.
+# language the viewer picked - no fallback needed at query time.
 
 class LearningSection(Base):
     """A category of lessons (e.g. "Bases", "Structures de données",
@@ -734,7 +734,7 @@ class Lesson(Base):
     that the frontend resolves to React widgets.
 
     ``exercise_problem_id`` optionally pins one ICPC-style ``Problem``
-    to the lesson — students reuse the existing submit pipeline to
+    to the lesson - students reuse the existing submit pipeline to
     practice. Practice submissions are flagged so they don't pollute
     contest scoreboards."""
     __tablename__ = "lessons"
@@ -777,7 +777,7 @@ class LessonAsset(Base):
 
     ``kind`` is ``image`` for inline embedding (rendered via standard
     markdown image syntax) or ``file`` for downloadable attachments
-    (PDFs, datasets, …). Animations are NOT assets — they're directives
+    (PDFs, datasets, …). Animations are NOT assets - they're directives
     rendered by the frontend widget registry, not files."""
     __tablename__ = "lesson_assets"
 
@@ -799,7 +799,7 @@ class LessonProgress(Base):
     "started" (the user opened the lesson) from "completed" (they
     clicked the explicit "mark as completed" button at the bottom).
 
-    Only one row per (user, lesson) — re-completing a lesson updates
+    Only one row per (user, lesson) - re-completing a lesson updates
     ``completed_at``; un-completing is fine, sets ``status="started"``."""
     __tablename__ = "lesson_progress"
 
@@ -824,7 +824,7 @@ class LessonProgress(Base):
 class LessonExercise(Base):
     """Inline coding exercise embedded in a lesson via the
     ``:::exercise{id=N}`` directive. Lighter than a full ``Problem``:
-    no contest, no deadlines, no scoreboard — just a code editor +
+    no contest, no deadlines, no scoreboard - just a code editor +
     test cases the student can iterate against until everything
     turns green.
 
@@ -832,7 +832,7 @@ class LessonExercise(Base):
     "is_sample": bool}``. Sample testcases are shown to the student;
     hidden ones are summarised (X passed / Y failed) without
     revealing the inputs. ``time_limit_ms`` caps each run (default
-    2 s — generous for pedagogical exercises).
+    2 s - generous for pedagogical exercises).
 
     The exercise belongs to a single lesson; deleting the lesson
     cascades to delete the exercise. Storing the test cases as JSON
@@ -893,7 +893,7 @@ class League(Base):
     standings table. Points per event: ``100 * (N - rank) / (N - 1)``
     (linear by rank, normalised to the field size), times the event's
     coefficient. Team events credit every member with the team's
-    points. No drop policy — a missed event simply earns 0.
+    points. No drop policy - a missed event simply earns 0.
 
     ``is_published`` gates student visibility so a league can be
     assembled in draft (same pattern as learning sections)."""
@@ -917,7 +917,7 @@ class League(Base):
 class LeagueEvent(Base):
     """Attaches one contest to a league. ``coefficient`` scales the
     event's points (double points for a final, half for a fun round).
-    A contest only feeds the standings once its end_time has passed —
+    A contest only feeds the standings once its end_time has passed -
     attached-but-unfinished events are listed as upcoming."""
     __tablename__ = "league_events"
     __table_args__ = (

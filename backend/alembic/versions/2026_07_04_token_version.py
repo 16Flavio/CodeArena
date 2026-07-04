@@ -1,9 +1,9 @@
-"""users.token_version — session revocation counter
+"""users.token_version - session revocation counter
 
 Every access/stream JWT now embeds the user's ``token_version`` as a
 ``tv`` claim; ``get_current_user`` rejects mismatches. Password change
 and reset bump the column, killing every outstanding session at once.
-Pure additive with server_default=0 — tokens minted before this deploy
+Pure additive with server_default=0 - tokens minted before this deploy
 carry no claim, decode as tv=0, and stay valid until the first bump.
 
 Revision ID: 2026_07_04_a1

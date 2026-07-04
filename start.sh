@@ -60,7 +60,7 @@ kill_pid() {
 cleanup() {
   echo ""
   echo "Shutting down..."
-  # Kill by port — reliable across MSYS/Windows PID mismatch.
+  # Kill by port - reliable across MSYS/Windows PID mismatch.
   for port in "$BACKEND_PORT" "$FRONTEND_PORT"; do
     pid=$(find_pid_on_port "$port")
     kill_pid "$pid"

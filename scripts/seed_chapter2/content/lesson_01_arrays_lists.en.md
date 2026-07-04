@@ -1,6 +1,6 @@
 # 1. Arrays, Linked Lists, Stacks, Queues & Deques
 
-## 1.1 — Arrays, the workhorse
+## 1.1 - Arrays, the workhorse
 
 An **array** is a contiguous sequence of memory cells. Indexed by an
 integer $i \in [0, n[$, the access $A[i]$ is $\Theta(1)$ thanks to
@@ -19,7 +19,7 @@ every following element.
 
 ---
 
-## 1.2 — Linked lists
+## 1.2 - Linked lists
 
 To make insertion/removal $\Theta(1)$ *at a known location*, we
 replace memory contiguity by **links** between nodes.
@@ -35,7 +35,7 @@ class Node:
 
 - **Head insertion**: $\Theta(1)$.
 - **Head removal**: $\Theta(1)$.
-- **Index access**: $\Theta(i)$ — must traverse.
+- **Index access**: $\Theta(i)$ - must traverse.
 - **Insertion after a known node**: $\Theta(1)$.
 
 ### Doubly linked list
@@ -55,7 +55,7 @@ At the cost of one extra word per node.
 
 ---
 
-## 1.3 — Stacks, queues, deques
+## 1.3 - Stacks, queues, deques
 
 Three interfaces, all implementable on top of a dynamic array or a
 doubly linked list.
@@ -78,13 +78,13 @@ Operations: `enqueue` (push back), `dequeue` (pop front).
 Operations: `push_front`, `push_back`, `pop_front`, `pop_back`. All
 $\Theta(1)$ with a doubly linked list or a doubling circular array.
 
-> **The deque is the secret weapon of sliding-window algorithms** —
+> **The deque is the secret weapon of sliding-window algorithms** -
 > we use it in the lesson below (sliding maximum) to maintain a sorted
 > window with amortized $\Theta(1)$ per element.
 
 ---
 
-## 1.4 — Algorithm: queue with two stacks
+## 1.4 - Algorithm: queue with two stacks
 
 A classic that shows how to compose data structures.
 
@@ -143,7 +143,7 @@ exit.
 
 ---
 
-## 1.5 — Exercises
+## 1.5 - Exercises
 
 :::exercise{id="{{EX_DS_QUEUE}}"}
 :::

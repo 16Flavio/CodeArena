@@ -10,11 +10,11 @@ log = logging.getLogger(__name__)
 # Outbox-driven retry policy. Each row in ``email_outbox`` carries an
 # ``attempts`` count and a ``next_attempt_at`` timestamp; the worker
 # computes the next backoff from this table at retry time. Up to 6
-# attempts spread over ~30 minutes — enough to weather a brief SMTP
+# attempts spread over ~30 minutes - enough to weather a brief SMTP
 # outage without burning hours per email.
 MAX_EMAIL_ATTEMPTS = 6
 _BACKOFF_SECONDS = [0, 30, 120, 300, 900, 1800]  # 0s → 30m
-# NB: don't add ``OSError`` here — ``smtplib.SMTPException`` itself is
+# NB: don't add ``OSError`` here - ``smtplib.SMTPException`` itself is
 # a subclass of OSError in Python 3.4+, so OSError would shadow the
 # permanent-error catch downstream and silently retry auth failures
 # / recipient refusals forever.
@@ -49,7 +49,7 @@ def _print_stub(to_email: str, subject: str, body: str) -> None:
     print(
         "\n"
         f"{separator}\n"
-        f"  Email (stub — SMTP not configured)\n"
+        f"  Email (stub - SMTP not configured)\n"
         f"  To: {to_email}\n"
         f"  Subject: {subject}\n\n"
         f"  {body}\n"
@@ -60,7 +60,7 @@ def _print_stub(to_email: str, subject: str, body: str) -> None:
 
 
 def _smtp_dispatch(to_email: str, subject: str, body: str) -> None:
-    """Synchronous SMTP send for ONE message. Raises on failure — the
+    """Synchronous SMTP send for ONE message. Raises on failure - the
     outbox worker (or a legacy direct call) catches and decides retry."""
     host = os.environ.get("SMTP_HOST")
     if not host:
@@ -99,7 +99,7 @@ def _send_email(to_email: str, subject: str, body: str) -> None:
     ``email_outbox`` for the worker to dispatch with retry. Survives
     backend restart, mid-flight SMTP outage, and concurrent crashes.
 
-    The DB write opens its own session — ``BackgroundTasks`` callers
+    The DB write opens its own session - ``BackgroundTasks`` callers
     don't have one once the request closes."""
     if not os.environ.get("SMTP_HOST"):
         _print_stub(to_email, subject, body)
@@ -118,7 +118,7 @@ def _send_email(to_email: str, subject: str, body: str) -> None:
             body=body,
         ))
         s.commit()
-    except Exception as err:  # pragma: no cover — keep email best-effort
+    except Exception as err:  # pragma: no cover - keep email best-effort
         log.error("email enqueue failed (to=%s subject=%r): %s", to_email, subject, err)
         s.rollback()
     finally:
@@ -127,7 +127,7 @@ def _send_email(to_email: str, subject: str, body: str) -> None:
 
 def purge_outbox_older_than(db, *, days: int, statuses: tuple = ("sent", "failed")) -> int:
     """Drop email_outbox rows older than ``days`` whose status is in
-    ``statuses``. ``pending`` is intentionally excluded by default —
+    ``statuses``. ``pending`` is intentionally excluded by default -
     a stuck pending row may still drain after operator intervention,
     losing it would be a real data loss. Caller commits."""
     if days <= 0:
@@ -148,7 +148,7 @@ def purge_outbox_older_than(db, *, days: int, statuses: tuple = ("sent", "failed
 def process_outbox_once(db, *, batch_size: int = 25) -> dict:
     """Drain up to ``batch_size`` rows from email_outbox whose
     ``next_attempt_at`` has passed. Returns counters for logging /
-    monitoring. Idempotent — caller commits inside the loop, so a
+    monitoring. Idempotent - caller commits inside the loop, so a
     crash mid-batch only loses the in-progress row's attempt count."""
     from . import models
 
@@ -175,7 +175,7 @@ def process_outbox_once(db, *, batch_size: int = 25) -> dict:
             row.last_error = None
             sent += 1
         except _SMTP_RETRYABLE as err:
-            # Transient — schedule a retry unless we've burned all
+            # Transient - schedule a retry unless we've burned all
             # attempts.
             row.last_error = f"{type(err).__name__}: {err}"[:2000]
             if row.attempts >= MAX_EMAIL_ATTEMPTS:
@@ -188,7 +188,7 @@ def process_outbox_once(db, *, batch_size: int = 25) -> dict:
                 row.next_attempt_at = datetime.now(timezone.utc) + timedelta(seconds=delay)
                 retried += 1
         except smtplib.SMTPException as err:
-            # Permanent — auth failure, bad recipient, etc. No retry.
+            # Permanent - auth failure, bad recipient, etc. No retry.
             row.status = "failed"
             row.last_error = f"{type(err).__name__}: {err}"[:2000]
             failed += 1
@@ -223,7 +223,7 @@ def send_join_request_email(
 
 
 def send_email_verification(to_email: str, raw_token: str) -> None:
-    # Same fragment-not-query reasoning as ``build_reset_url`` above —
+    # Same fragment-not-query reasoning as ``build_reset_url`` above -
     # don't leak the verification token via Referer / proxy logs.
     url = f"{_frontend_base_url()}/verify-email#token={raw_token}"
     body = (
@@ -251,4 +251,4 @@ def send_password_reset_email(to_email: str, raw_token: str) -> None:
 
 def send_admin_digest(to_email: str, body: str) -> None:
     """Send the daily admin digest (text email)."""
-    _send_email(to_email, subject="CodeArena — Daily admin digest", body=body)
+    _send_email(to_email, subject="CodeArena - Daily admin digest", body=body)

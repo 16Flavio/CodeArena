@@ -1,12 +1,12 @@
 # 2. Loop Analysis & Useful Sums
 
-## 2.1 — The core idea
+## 2.1 - The core idea
 
 The cost of a loop is the **sum** of the costs of its iterations. To
 analyse an algorithm with nested loops, we translate each level into a
 sum and simplify. Three sums show up everywhere.
 
-## 2.2 — The three sums to know by heart
+## 2.2 - The three sums to know by heart
 
 ### Arithmetic sum
 
@@ -46,7 +46,7 @@ i.e. $\ln(n+1) \le H_n \le 1 + \ln n$. $\square$
 
 ---
 
-## 2.3 — Three analysis patterns
+## 2.3 - Three analysis patterns
 
 ### Triangular nested loops
 
@@ -97,7 +97,7 @@ Cost: $T(n) = n \cdot \log_2 n = \Theta(n \log n)$.
 
 ---
 
-## 2.4 — Exercises
+## 2.4 - Exercises
 
 :::exercise{id="{{EX_LOOP_STD}}"}
 :::

@@ -65,7 +65,7 @@ export default function Login() {
     } catch (err) {
       toast.error(extractErrorMessage(err, t('auth.loginFailed')));
       // Clear the code so the user sees the input emptied and can
-      // retype — keeps the challenge alive (still valid for ~5 min).
+      // retype - keeps the challenge alive (still valid for ~5 min).
       setCode('');
     } finally {
       setLoading(false);
@@ -128,7 +128,7 @@ export default function Login() {
                   placeholder="000000"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  // Allow recovery codes too — those are 20 hex chars,
+                  // Allow recovery codes too - those are 20 hex chars,
                   // longer than the 6-digit TOTP. No maxLength gate.
                   required
                   autoFocus

@@ -8,7 +8,7 @@ import { totpSetup, totpVerify, totpDisable, getMe } from '../api';
 import { copyText } from '../utils/clipboard';
 import { extractErrorMessage } from '../utils/apiError';
 
-// 2FA setup / disable. The QR rendering is intentionally absent —
+// 2FA setup / disable. The QR rendering is intentionally absent -
 // we show the otpauth:// URL as a tap-to-open link (works on mobile)
 // and the raw base32 secret for manual entry. Adding a QR library
 // (qrcode.js or similar) is a future enhancement.
@@ -34,7 +34,7 @@ export default function Security() {
     try {
       const { data } = await getMe();
       setUser(data);
-    } catch { /* ignore — the user can refresh manually */ }
+    } catch { /* ignore - the user can refresh manually */ }
   };
 
   const handleStartSetup = async () => {
@@ -153,7 +153,7 @@ export default function Security() {
             {t('auth.totp.settings.scanQR')}
           </p>
 
-          {/* QR rendered locally with qrcode.react — never hits a third
+          {/* QR rendered locally with qrcode.react - never hits a third
               party, the secret stays inside the user's browser. */}
           <div className="flex justify-center">
             <div className="bg-white p-4 rounded-lg inline-block">
@@ -167,7 +167,7 @@ export default function Security() {
             </label>
             <div className="flex items-center gap-2 mt-1">
               <code className="flex-1 px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800/60 font-mono text-sm break-all tracking-wider">
-                {/* Group every 4 chars for readability — Google Authenticator
+                {/* Group every 4 chars for readability - Google Authenticator
                     accepts this format on manual entry. */}
                 {secret.match(/.{1,4}/g)?.join(' ') || secret}
               </code>

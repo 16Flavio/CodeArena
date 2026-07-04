@@ -1,5 +1,5 @@
 """Smoke tests for the learning zone endpoints. Covers the contract,
-not the rendering — the React markdown pipeline is exercised by the
+not the rendering - the React markdown pipeline is exercised by the
 frontend's own tests."""
 from .conftest import auth_header
 
@@ -62,7 +62,7 @@ def test_section_lesson_lifecycle(client):
     r = client.get("/api/learning/sections/bases/lessons", headers=student)
     assert any(l["id"] == lid for l in r.json())
 
-    # Read the lesson body — should auto-create progress="started".
+    # Read the lesson body - should auto-create progress="started".
     r = client.get(f"/api/learning/lessons/{lid}", headers=student)
     assert r.status_code == 200
     body = r.json()
@@ -178,7 +178,7 @@ def test_exercise_crud_and_run(client):
     assert len(pub["sample_test_cases"]) == 1
     assert pub["hidden_count"] == 1
 
-    # Run with the starter code (which echoes correctly) — both tests pass.
+    # Run with the starter code (which echoes correctly) - both tests pass.
     r = client.post(
         f"/api/learning/exercises/{ex['id']}/run",
         json={"code": payload["starter_code"], "language": "py3"},

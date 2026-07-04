@@ -39,7 +39,7 @@ export default function LeaguesTab({ contests }) {
 
   useEffect(() => { refresh(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Event endpoints return the updated LeagueOut — patch it in place
+  // Event endpoints return the updated LeagueOut - patch it in place
   // instead of refetching the whole list.
   const patchLeague = (updated) =>
     setLeagues((ls) => ls.map((l) => (l.id === updated.id ? updated : l)));

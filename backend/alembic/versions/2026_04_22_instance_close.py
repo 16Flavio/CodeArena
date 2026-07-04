@@ -2,7 +2,7 @@
 
 Per-instance close time. Once the wall clock passes this point, the
 instance stops accepting submissions even while the contest is still
-open. Useful when the admin wants staggered availability windows —
+open. Useful when the admin wants staggered availability windows -
 release a hard problem late, close an easy one early, etc.
 
 Revision ID: 2026_04_22_a3

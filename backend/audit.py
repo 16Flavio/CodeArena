@@ -23,7 +23,7 @@ def record(
     target_id: Optional[int] = None,
     detail: str = "",
 ) -> None:
-    """Append an audit entry. Does NOT commit — the caller is responsible for
+    """Append an audit entry. Does NOT commit - the caller is responsible for
     committing along with whatever operation triggered the log."""
     entry = models.AuditLogEntry(
         actor_id=actor.id if actor else None,

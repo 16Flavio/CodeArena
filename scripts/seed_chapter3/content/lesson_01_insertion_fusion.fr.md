@@ -1,6 +1,6 @@
 # 1. Tri par insertion & tri par fusion
 
-## 1.1 — Le tri par insertion : intuitif comme une main de cartes
+## 1.1 - Le tri par insertion : intuitif comme une main de cartes
 
 Quand on aligne des cartes en main, on **insère** chaque nouvelle carte
 à sa place dans la partie déjà triée. C'est exactement le tri par
@@ -38,7 +38,7 @@ $\square$
 ### Complexité
 
 - Pire cas (tableau inversé) : $T(n) = \sum_{i=1}^{n-1} i = \Theta(n^2)$.
-- Meilleur cas (tableau déjà trié) : $\Theta(n)$ — la boucle interne
+- Meilleur cas (tableau déjà trié) : $\Theta(n)$ - la boucle interne
   s'arrête tout de suite.
 - En espérance sur permutation aléatoire : $\Theta(n^2)$.
 
@@ -49,7 +49,7 @@ $\square$
 
 ---
 
-## 1.2 — Le tri par fusion : diviser pour régner
+## 1.2 - Le tri par fusion : diviser pour régner
 
 ### Idée
 
@@ -96,15 +96,15 @@ La récurrence est
 
 $$T(n) = 2\,T(n/2) + cn,\qquad T(1) = c'.$$
 
-**Approche 1 — Master Theorem.** $a = 2$, $b = 2$, $\alpha = \log_b a = 1$,
+**Approche 1 - Master Theorem.** $a = 2$, $b = 2$, $\alpha = \log_b a = 1$,
 $f(n) = cn = \Theta(n^\alpha)$ : on est dans le **cas 2** du Master
 Theorem (cf. ch. 1) et $T(n) = \Theta(n \log n)$.
 
-**Approche 2 — Arbre de récurrence (à la main).**
+**Approche 2 - Arbre de récurrence (à la main).**
 
 - Niveau 0 : 1 nœud de coût $cn$.
 - Niveau $k$ : $2^k$ nœuds, chacun de coût $c \cdot n / 2^k$.
-- Coût d'un niveau : $2^k \cdot (cn/2^k) = cn$ — **constant** par niveau.
+- Coût d'un niveau : $2^k \cdot (cn/2^k) = cn$ - **constant** par niveau.
 - Profondeur : $\log_2 n$ niveaux jusqu'aux feuilles.
 
 $$T(n) = \sum_{k=0}^{\log_2 n} cn = cn\,(\log_2 n + 1) = \Theta(n \log n).$$
@@ -114,14 +114,14 @@ $\square$
 ### Stabilité, mémoire, en pratique
 
 - **Stable** : oui (la fusion préserve l'ordre relatif quand les
-  clés sont égales — `<=` dans le test).
+  clés sont égales - `<=` dans le test).
 - **Mémoire** : $\Theta(n)$ supplémentaires (le tableau `out`).
 - **Forte** : la borne $n \log n$ est **garantie** quel que soit
-  l'input — pas de pire cas pathologique comme quicksort.
+  l'input - pas de pire cas pathologique comme quicksort.
 
 ---
 
-## 1.3 — Exercices
+## 1.3 - Exercices
 
 :::exercise{id="{{EX_SO_MERGE2}}"}
 :::

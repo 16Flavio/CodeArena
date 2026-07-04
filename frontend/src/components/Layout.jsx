@@ -13,7 +13,7 @@ import SessionWarning from './SessionWarning';
 import toast from 'react-hot-toast';
 import { extractErrorMessage } from '../utils/apiError';
 
-// Persist the collapsed-sidebar preference per user — reading it on
+// Persist the collapsed-sidebar preference per user - reading it on
 // load avoids a flash from expanded → collapsed during render.
 const SIDEBAR_KEY = 'codearena-sidebar-collapsed';
 function readSidebarPref() {
@@ -220,7 +220,7 @@ export default function Layout() {
             )}
           </button>
 
-          {/* Single account entry — opens a centered, tabbed modal
+          {/* Single account entry - opens a centered, tabbed modal
               with password / username / affiliation / security. The
               previous 3-button cramming in the sidebar was the
               "tout petit dans le côté" complaint. */}
@@ -309,7 +309,7 @@ export default function Layout() {
         </main>
       </div>
 
-      {/* Sibling of the <aside> — NOT a child. Rendering inside the
+      {/* Sibling of the <aside> - NOT a child. Rendering inside the
           sidebar would inherit its transform-induced containing block,
           which clips the modal's ``fixed inset-0`` to a 256-px slice
           and makes it look like nothing happened on click. */}

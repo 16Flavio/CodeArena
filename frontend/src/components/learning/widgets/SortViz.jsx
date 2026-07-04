@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { Play, Pause, RotateCcw, ChevronsRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-// Sorting algorithms — yield steps. Each step is a snapshot of the array
+// Sorting algorithms - yield steps. Each step is a snapshot of the array
 // plus indices being compared / swapped, so the widget can paint the
 // state at any time. Keep these pure: no DOM, no React. The animation
 // loop pulls one step at a time on a timer. Adding a new algo = add a
-// generator to ALGOS — the directive type is the key.
+// generator to ALGOS - the directive type is the key.
 
 function* bubbleSort(arr) {
   const a = [...arr];
@@ -87,7 +87,7 @@ export default function SortViz({ algo = 'bubble', data = '[5,2,8,1,9,3]' }) {
   const generator = ALGOS[algo];
   const valid = parsed && generator;
 
-  // Materialise all steps in a memo — derived from the inputs, no
+  // Materialise all steps in a memo - derived from the inputs, no
   // ref involved. Reading a useRef during render is now flagged by
   // react-hooks/refs (and rightfully so: refs aren't reactive). The
   // memo value IS reactive on (parsed, generator) which is what we
@@ -102,7 +102,7 @@ export default function SortViz({ algo = 'bubble', data = '[5,2,8,1,9,3]' }) {
 
   // Reset the playhead when the steps array changes (new algo / new
   // data). React-hooks 7+ warns on setState-in-effect; left as a
-  // warning project-wide. The pattern is intentional here — stepIdx
+  // warning project-wide. The pattern is intentional here - stepIdx
   // is genuinely stateful (the user scrubs / plays).
   useEffect(() => {
     setStepIdx(0);

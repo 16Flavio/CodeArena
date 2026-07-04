@@ -1,7 +1,7 @@
 """The scoreboard response cache MUST keep admin/public audiences
 isolated. If an admin's view leaks into the public cache slot, every
 non-admin participant would briefly see "frozen=False" and the live
-ranking during a freeze — which is precisely what freeze exists to
+ranking during a freeze - which is precisely what freeze exists to
 prevent.
 
 These tests pin that contract:
@@ -9,7 +9,7 @@ These tests pin that contract:
 - After any sequence of (admin, public) calls, an admin always gets
   ``frozen=False`` and a non-admin always gets ``frozen=True`` during
   the freeze window.
-- Order-independent — the test runs both orderings.
+- Order-independent - the test runs both orderings.
 - The visibility 404 is served *before* the cache lookup, so a
   freshly-hidden contest doesn't keep returning a stale public view.
 """
@@ -48,17 +48,17 @@ def test_cache_does_not_leak_admin_view_to_public(client):
     alice = auth_header(client, "alice")
     cid = _make_frozen_contest(client, admin)
 
-    # Admin first — populates the ("scoreboard.output", cid, "admin") slot.
+    # Admin first - populates the ("scoreboard.output", cid, "admin") slot.
     r = client.get(f"/api/contests/{cid}/scoreboard", headers=admin)
     assert r.status_code == 200, r.text
     assert r.json()["frozen"] is False, "admin must see through the freeze"
 
-    # Now alice — must hit the *public* slot, NOT inherit admin's view.
+    # Now alice - must hit the *public* slot, NOT inherit admin's view.
     r = client.get(f"/api/contests/{cid}/scoreboard", headers=alice)
     assert r.status_code == 200, r.text
     assert r.json()["frozen"] is True, "non-admin must see frozen=True"
 
-    # Repeat both — second calls must be served from cache, but with the
+    # Repeat both - second calls must be served from cache, but with the
     # right audience for each viewer.
     r1 = client.get(f"/api/contests/{cid}/scoreboard", headers=admin)
     r2 = client.get(f"/api/contests/{cid}/scoreboard", headers=alice)
@@ -67,13 +67,13 @@ def test_cache_does_not_leak_admin_view_to_public(client):
 
 
 def test_cache_does_not_leak_public_view_to_admin(client):
-    """Same isolation, opposite order — public hits first, then admin."""
+    """Same isolation, opposite order - public hits first, then admin."""
     scoreboard_response_cache.clear()
     admin = auth_header(client, "root")
     alice = auth_header(client, "alice")
     cid = _make_frozen_contest(client, admin)
 
-    # Public first — populates the public slot.
+    # Public first - populates the public slot.
     r = client.get(f"/api/contests/{cid}/scoreboard", headers=alice)
     assert r.json()["frozen"] is True
 
@@ -83,7 +83,7 @@ def test_cache_does_not_leak_public_view_to_admin(client):
 
 
 def test_cache_serves_repeated_calls_from_memory(client):
-    """A cached call should not re-run the heavy compute — verified
+    """A cached call should not re-run the heavy compute - verified
     indirectly by patching the build function and counting invocations."""
     scoreboard_response_cache.clear()
     admin = auth_header(client, "root")
@@ -112,7 +112,7 @@ def test_cache_serves_repeated_calls_from_memory(client):
 
 def test_visibility_check_runs_before_cache(client):
     """If a contest is hidden after the cache is populated, the next
-    call from a non-admin must 404 — the visibility check is in front
+    call from a non-admin must 404 - the visibility check is in front
     of the cache."""
     scoreboard_response_cache.clear()
     admin = auth_header(client, "root")
@@ -123,7 +123,7 @@ def test_visibility_check_runs_before_cache(client):
     r = client.get(f"/api/contests/{cid}/scoreboard", headers=alice)
     assert r.status_code == 200
 
-    # Admin pushes hidden_at into the past — that's what _is_contest_visible
+    # Admin pushes hidden_at into the past - that's what _is_contest_visible
     # actually keys on (is_active is a submission gate, not a visibility one).
     past = (datetime.now(timezone.utc) - timedelta(minutes=1)).replace(microsecond=0)
     r = client.put(

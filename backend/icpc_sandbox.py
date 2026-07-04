@@ -3,15 +3,15 @@
 Activated when ``SCORING_MODE=docker``. Each compile / run of untrusted
 contestant code happens inside a throwaway sibling container with:
 
-  * ``--network=none``            — no outbound sockets, no reaching the
+  * ``--network=none``            - no outbound sockets, no reaching the
                                     internal Postgres/Redis network.
-  * ``--read-only`` root fs       — plus a small writable ``/tmp`` tmpfs.
+  * ``--read-only`` root fs       - plus a small writable ``/tmp`` tmpfs.
   * the judge workdir bind-mounted at the SAME absolute path it has on the
     host, so the compile/run command strings (which embed host paths) need
     no rewriting inside the container.
   * ``--cap-drop=ALL`` + ``--security-opt no-new-privileges`` + a non-root
-    uid — the code can't escalate.
-  * ``--memory`` / ``--cpus`` / ``--pids-limit`` — fork-bomb / OOM / CPU
+    uid - the code can't escalate.
+  * ``--memory`` / ``--cpus`` / ``--pids-limit`` - fork-bomb / OOM / CPU
     caps enforced by the kernel cgroup, not a best-effort preexec.
   * a coreutils ``timeout`` wrapper as the container entrypoint so the
     per-testcase time limit is enforced regardless of container startup
@@ -105,7 +105,7 @@ def run_in_container(
     image: Optional[str] = None,
 ) -> tuple[int, str, str, int]:
     """Run ``cmd`` inside a locked-down container. Returns
-    ``(exit_code, stdout, stderr, elapsed_ms)`` — same shape as the
+    ``(exit_code, stdout, stderr, elapsed_ms)`` - same shape as the
     subprocess path so callers are agnostic. A timed-out run comes back as
     rc 124/137; the caller maps that to TLE."""
     argv = build_docker_argv(

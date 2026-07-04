@@ -1,10 +1,10 @@
 # 4. Tas binaires & heapsort
 
-## 4.1 — L'idée : un arbre presque complet en tableau
+## 4.1 - L'idée : un arbre presque complet en tableau
 
 Un **tas binaire** (max-heap) est un arbre binaire qui satisfait :
 
-1. **Forme** : c'est un arbre **presque complet** — toutes les
+1. **Forme** : c'est un arbre **presque complet** - toutes les
    profondeurs sont remplies, sauf la dernière qui se remplit de
    gauche à droite.
 2. **Ordre** : pour chaque nœud $v$, $v.k \ge$ toutes les clés de
@@ -31,11 +31,11 @@ def right(i):   return 2 * i + 2
 > **Pourquoi pas un BST ?** Un BST est bien plus puissant (recherche,
 > ordre total) mais coûte plus en mémoire (pointeurs) et en
 > constante. Le tas se contente de fournir le **min/max** à coût
-> minimal — c'est exactement ce qu'il faut pour une *priority queue*.
+> minimal - c'est exactement ce qu'il faut pour une *priority queue*.
 
 ---
 
-## 4.2 — Opérations primitives : sift-up et sift-down
+## 4.2 - Opérations primitives : sift-up et sift-down
 
 Quand on viole l'ordre localement, on **fait descendre/monter** le
 fauteur de troubles jusqu'à restaurer la propriété.
@@ -53,7 +53,7 @@ def sift_up(A, i):
         i = parent(i)
 ```
 
-Coût : $\Theta(\log n)$ — au pire, on remonte de la feuille à la
+Coût : $\Theta(\log n)$ - au pire, on remonte de la feuille à la
 racine.
 
 ### `sift_down(i)` : descendre
@@ -76,7 +76,7 @@ Coût : $\Theta(\log n)$.
 
 ---
 
-## 4.3 — `insert` et `extract_max`
+## 4.3 - `insert` et `extract_max`
 
 ```python
 def insert(A, x):
@@ -99,7 +99,7 @@ chaque opération, par construction des sift.
 
 ---
 
-## 4.4 — `build_heap` : construire un tas en $\Theta(n)$
+## 4.4 - `build_heap` : construire un tas en $\Theta(n)$
 
 Étant donné un tableau $A$ quelconque, on veut le transformer en tas.
 
@@ -141,11 +141,11 @@ $\square$
 
 ---
 
-## 4.5 — Heapsort
+## 4.5 - Heapsort
 
 ### Idée
 
-1. `build_heap(A)` — $\Theta(n)$.
+1. `build_heap(A)` - $\Theta(n)$.
 2. Répéter $n$ fois : `extract_max` et placer le résultat à la fin
    du tableau (in-place).
 
@@ -172,14 +172,14 @@ sur les $k+1$ éléments restants.
   rétablit l'invariant heap sur `A[0..end[` via `sift_down`.
 
 À la fin, `A[1..n[` est trié (croissant) et `A[0]` est le plus
-petit — d'où l'invariant satisfait globalement. $\square$
+petit - d'où l'invariant satisfait globalement. $\square$
 
 ### Complexité
 
 - `build_heap` : $\Theta(n)$.
 - $n$ extractions × $\Theta(\log n)$ : $\Theta(n \log n)$.
 - **Total** : $\Theta(n \log n)$, dans le pire cas comme dans le
-  meilleur — pas de garantie probabiliste à faire (contrairement à
+  meilleur - pas de garantie probabiliste à faire (contrairement à
   quicksort).
 - **In-place** : $O(1)$ mémoire supplémentaire.
 - **Stabilité** : non stable (les rotations dans le tas brouillent
@@ -198,11 +198,11 @@ maintient son invariant via sift-up et sift-down.
 :::
 
 Essaie une suite `extract-max` : tu vas extraire les éléments dans
-l'ordre décroissant — c'est exactement le ressort de **heapsort**.
+l'ordre décroissant - c'est exactement le ressort de **heapsort**.
 
 ---
 
-## 4.6 — Exercices
+## 4.6 - Exercices
 
 :::exercise{id="{{EX_HP_HEAPSORT}}"}
 :::

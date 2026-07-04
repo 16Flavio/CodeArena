@@ -8,7 +8,7 @@ function readInitialTheme() {
     const stored = localStorage.getItem('theme');
     if (stored === 'dark' || stored === 'light') return stored;
   } catch {
-    // localStorage disabled — fall through.
+    // localStorage disabled - fall through.
   }
   if (typeof window !== 'undefined' && window.matchMedia) {
     return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
@@ -26,7 +26,7 @@ export function ThemeProvider({ children }) {
     try {
       localStorage.setItem('theme', theme);
     } catch {
-      // localStorage disabled — no-op.
+      // localStorage disabled - no-op.
     }
   }, [theme]);
 

@@ -25,7 +25,7 @@ import { AlertTriangle, X } from 'lucide-react';
 const DialogContext = createContext(null);
 
 export function ConfirmProvider({ children }) {
-  // Single dialog state — only one prompt/confirm can be open at a time,
+  // Single dialog state - only one prompt/confirm can be open at a time,
   // matching the native browser semantics callers are migrating from.
   const [dialog, setDialog] = useState(null);
   const resolveRef = useRef(null);
@@ -76,7 +76,7 @@ function DialogShell({ dialog, closeWith }) {
   const { t } = useTranslation();
   const isPrompt = dialog.kind === 'prompt';
   // The component is freshly mounted each time the parent opens a
-  // new dialog, so the lazy initializer is enough — no separate reset
+  // new dialog, so the lazy initializer is enough - no separate reset
   // effect needed.
   const [value, setValue] = useState(dialog.defaultValue ?? '');
   const dialogRef = useRef(null);
@@ -93,7 +93,7 @@ function DialogShell({ dialog, closeWith }) {
     }
   }, [isPrompt]);
 
-  // Global key handlers — ESC cancels, Enter confirms (when not in
+  // Global key handlers - ESC cancels, Enter confirms (when not in
   // a multi-line input).
   useEffect(() => {
     const onKey = (e) => {

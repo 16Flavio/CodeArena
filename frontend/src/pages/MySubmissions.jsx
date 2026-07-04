@@ -13,7 +13,7 @@ export default function MySubmissions() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   // "output" (Hashcode instances) | "icpc" (source submissions against problems).
-  // Admin uses the same toggle on /admin — we mirror it here so the user
+  // Admin uses the same toggle on /admin - we mirror it here so the user
   // never sees a mixed table where half the columns are meaningless.
   const [kind, setKind] = useState('output');
   const [selected, setSelected] = useState([]);
@@ -32,14 +32,14 @@ export default function MySubmissions() {
       .then((r) => setItems(r.data || []))
       .catch(() => toast.error(t('mySubmissions.loadFailed')))
       .finally(() => setLoading(false));
-    // ``t`` is intentionally absent — re-fetching submissions when the
+    // ``t`` is intentionally absent - re-fetching submissions when the
     // user toggles the language is wasteful (the backend payload is
     // language-agnostic). The closure does call ``t`` on error, but it
     // captures the latest reference at toast time via i18next.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Split once — the backend endpoint returns everything and we bucket
+  // Split once - the backend endpoint returns everything and we bucket
   // client-side. Small enough (up to 100 rows) that filtering locally is
   // cheaper than two round trips.
   const icpcItems = useMemo(() => items.filter((s) => s.problem_id != null), [items]);
@@ -190,7 +190,7 @@ export default function MySubmissions() {
                       </Link>
                     </td>
                     <td className="py-3 pr-4 text-zinc-800 dark:text-zinc-200">
-                      {kind === 'icpc' ? (s.problem_label || '—') : (s.instance_name || '—')}
+                      {kind === 'icpc' ? (s.problem_label || '-') : (s.instance_name || '-')}
                     </td>
                     <td className="py-3 pr-4">
                       {kind === 'icpc' ? (
@@ -229,7 +229,7 @@ export default function MySubmissions() {
                     )}
                     {kind === 'icpc' && (
                       <td className="py-3 pr-4 text-xs font-mono text-zinc-500 dark:text-zinc-400">
-                        {s.source_language || '—'}
+                        {s.source_language || '-'}
                       </td>
                     )}
                     <td className="py-3 pr-4 text-zinc-400 text-xs dark:text-zinc-500">

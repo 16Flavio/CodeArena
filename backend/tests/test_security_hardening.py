@@ -20,7 +20,7 @@ def _iso(dt):
 
 def test_sandbox_env_withholds_secrets(monkeypatch):
     """The environment handed to untrusted submitted code must not carry
-    platform secrets — leaking SECRET_KEY would enable admin-JWT forgery."""
+    platform secrets - leaking SECRET_KEY would enable admin-JWT forgery."""
     monkeypatch.setenv("SECRET_KEY", "super-secret-signing-key")
     monkeypatch.setenv("DATABASE_URL", "postgresql://u:p@db/x")
     monkeypatch.setenv("SMTP_PASS", "hunter2")
@@ -42,7 +42,7 @@ def test_sandbox_env_withholds_secrets(monkeypatch):
 # ── Containerised ICPC sandbox: isolation flags ──────────────────────────────
 
 def test_icpc_sandbox_docker_argv_is_locked_down():
-    """The docker argv for contestant code must carry every isolation flag —
+    """The docker argv for contestant code must carry every isolation flag -
     a regression here silently de-fangs the sandbox."""
     from backend.icpc_sandbox import build_docker_argv
 
@@ -81,7 +81,7 @@ def test_icpc_docker_mode_fails_closed_without_daemon(monkeypatch):
 
     with pytest.raises(RuntimeError, match="Docker daemon is not reachable"):
         icpc_runner._use_docker()
-    # The failure must NOT be cached as "docker off" — a later call with a
+    # The failure must NOT be cached as "docker off" - a later call with a
     # healthy daemon should switch to containers without a worker restart.
     monkeypatch.setattr(icpc_sandbox, "docker_available", lambda: True)
     assert icpc_runner._use_docker() is True
@@ -116,7 +116,7 @@ def test_scripts_hidden_from_non_manager(client):
     assert "SECRET GRADING LOGIC" in seen_by_admin["scoring_script"]
     assert seen_by_admin["output_validator_script"] and "SECRET VALIDATOR" in seen_by_admin["output_validator_script"]
 
-    # A plain contestant must NOT — they'd reverse-engineer the answer.
+    # A plain contestant must NOT - they'd reverse-engineer the answer.
     seen_by_bob = client.get(f"/api/contests/{cid}", headers=bob)
     assert seen_by_bob.status_code == 200, seen_by_bob.text
     body = seen_by_bob.json()
@@ -139,7 +139,7 @@ def test_join_code_hidden_from_non_member(client):
     as_member = client.get(f"/api/teams/{tid}", headers=alice).json()
     assert as_member["join_code"] == team["join_code"]
 
-    # Outsider must not — otherwise they could POST /teams/join with it.
+    # Outsider must not - otherwise they could POST /teams/join with it.
     as_outsider = client.get(f"/api/teams/{tid}", headers=bob)
     assert as_outsider.status_code == 200, as_outsider.text
     assert as_outsider.json()["join_code"] == ""
@@ -318,7 +318,7 @@ def test_compile_exploit_scan_unit():
 def test_cpp_absolute_include_rejected_without_leaking_file(client):
     """An ICPC C submission that tries to #include an absolute host path is
     rejected at compile time, and the returned compile output contains our
-    message — never the file's contents."""
+    message - never the file's contents."""
     admin = auth_header(client, "root")
     alice = auth_header(client, "alice")
     now = datetime.now(timezone.utc).replace(microsecond=0)

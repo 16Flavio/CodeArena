@@ -4,8 +4,8 @@
 Must not import FastAPI routers (circular at worker boot).
 
 Dispatches on ``Contest.kind``:
-  * ``output`` — runs the admin's scoring script; writes numeric score.
-  * ``icpc``   — compiles source, runs against testcases, writes Judging
+  * ``output`` - runs the admin's scoring script; writes numeric score.
+  * ``icpc``   - compiles source, runs against testcases, writes Judging
                  + JudgingRun rows with AC/WA/TLE/... verdicts."""
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ def score_submission(submission_id: int) -> None:
     also catch their own exceptions, but if anything slips past (e.g., a
     SQLAlchemy reload error, an OSError in the preexec_fn) we mark the
     submission as an error here too. Nothing must leave this function
-    with ``status="pending"`` — that's the "stuck forever" failure we're
+    with ``status="pending"`` - that's the "stuck forever" failure we're
     guarding against."""
     log.info("score_submission start id=%s", submission_id)
     db = database.SessionLocal()
@@ -165,7 +165,7 @@ def _score_output(db, sub: models.Submission, contest: models.Contest) -> None:
             sub.status = "error"
             sub.error_message = (
                 f"Score is not finite ({score!r}). The scoring script "
-                f"produced inf/NaN — clamp it or pick a finite value."
+                f"produced inf/NaN - clamp it or pick a finite value."
             )
         else:
             sub.score = score
@@ -192,8 +192,8 @@ def _judge_icpc(db, sub: models.Submission, contest: models.Contest) -> None:
     Writes a Judging row with an aggregate verdict and one JudgingRun per
     testcase reached before short-circuit.
 
-    Wraps the actual work in a try/except: any unexpected error — missing
-    toolchain, sandbox crash, bad language config — is caught, written
+    Wraps the actual work in a try/except: any unexpected error - missing
+    toolchain, sandbox crash, bad language config - is caught, written
     onto the submission and the judging as a clear verdict, and the row
     committed. Prevents the "stuck on pending forever" failure mode."""
     try:
@@ -223,7 +223,7 @@ def _judge_icpc(db, sub: models.Submission, contest: models.Contest) -> None:
             sub.error_message = f"Judge error: {type(e).__name__}: {e}"[:2000]
             sub.score = 0.0
             db.commit()
-        except Exception:  # noqa: BLE001 — last resort, don't re-raise
+        except Exception:  # noqa: BLE001 - last resort, don't re-raise
             log.exception("Secondary failure recording IE for submission %s", sub.id)
 
 
@@ -265,7 +265,7 @@ def _judge_icpc_inner(db, sub: models.Submission, contest: models.Contest) -> No
     ]
 
     # For compiled-language interactors, fetch the Language row so we pass
-    # the right compile/run templates. ``py3`` doesn't need one — the
+    # the right compile/run templates. ``py3`` doesn't need one - the
     # runner executes the inline wrapper directly.
     ilang_id = (problem.interactor_language or "py3").lower()
     inter_compile_cmd = ""

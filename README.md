@@ -5,7 +5,7 @@ A self-hostable programming-contest platform with a bilingual (FR/EN) learning s
 CodeArena runs two kinds of contests:
 
 - **Output-only contests** (Hashcode-style): teams download an instance, compute a result offline, and upload the output file. Scoring is done by a contest-specific Python validator, sandboxed in a throwaway Docker container.
-- **ICPC-style contests**: contestants submit source code (C, C++, Python, …) which is compiled and run against hidden testcases — with verdicts (AC/WA/TLE/RTE/CE), penalty time, scoreboard freeze, subtask partial credit, interactive problems, and DOMjudge package import.
+- **ICPC-style contests**: contestants submit source code (C, C++, Python, …) which is compiled and run against hidden testcases - with verdicts (AC/WA/TLE/RTE/CE), penalty time, scoreboard freeze, subtask partial credit, interactive problems, and DOMjudge package import.
 
 The **Learn** section serves seeded lessons (French + English) with KaTeX math, interactive visualization widgets, and inline graded coding exercises.
 
@@ -49,15 +49,15 @@ docker compose run --rm backup          # timestamped pg_dump + uploads tarball
 
 See **[docs/DEPLOY.md](docs/DEPLOY.md)** for the full runbook: Postgres sizing, worker scaling, TLS/Caddy edge, backup/restore, migration discipline, and the security model (what runs sandboxed, what the Docker socket mount implies, 2FA recovery).
 
-> **Security note:** `SCORING_MODE=docker` is required for anything public — it isolates both organizer-authored validators and contestant-submitted code in locked-down containers. `subprocess` mode is for trusted classroom use only, and ICPC judging refuses to run (fails closed) if docker mode is configured but the daemon is unreachable.
+> **Security note:** `SCORING_MODE=docker` is required for anything public - it isolates both organizer-authored validators and contestant-submitted code in locked-down containers. `subprocess` mode is for trusted classroom use only, and ICPC judging refuses to run (fails closed) if docker mode is configured but the daemon is unreachable.
 
 ## Repository layout
 
 ```
-backend/            FastAPI app — routers/, models.py, scoring pipeline, ICPC judge
+backend/            FastAPI app - routers/, models.py, scoring pipeline, ICPC judge
 backend/alembic/    migrations (must work on both SQLite and Postgres)
 backend/tests/      pytest suite
-frontend/           React app — src/pages, src/components, src/i18n/{fr,en}.json
+frontend/           React app - src/pages, src/components, src/i18n/{fr,en}.json
 scripts/seed_chapterN/  Learn-section lesson seeds (FR/EN markdown pairs)
 scripts/seed_widgets/   interactive widget catalog for lessons
 docs/DEPLOY.md      production runbook
@@ -72,4 +72,4 @@ python scripts/seed_chapter1/seed_chapter1.py            # validates then seeds
 python scripts/seed_chapter1/seed_chapter1.py --validate-only
 ```
 
-Lessons follow a fixed 3-part format — intuition, algorithm + proof + complexity, then three graded inline exercises — and seeding preserves student progress.
+Lessons follow a fixed 3-part format - intuition, algorithm + proof + complexity, then three graded inline exercises - and seeding preserves student progress.

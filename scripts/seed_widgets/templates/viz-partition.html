@@ -76,9 +76,9 @@
       if (arr[j] <= pivot) {
         if (i !== j) { var t = arr[i]; arr[i] = arr[j]; arr[j] = t; }
         i++;
-        document.getElementById('info').textContent = 'a[' + j + '] = ' + arr[i - 1] + ' ≤ pivot — swap puis i++';
+        document.getElementById('info').textContent = 'a[' + j + '] = ' + arr[i - 1] + ' ≤ pivot - swap puis i++';
       } else {
-        document.getElementById('info').textContent = 'a[' + j + '] = ' + arr[j] + ' > pivot — j++';
+        document.getElementById('info').textContent = 'a[' + j + '] = ' + arr[j] + ' > pivot - j++';
       }
       j++;
       render();

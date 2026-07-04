@@ -1,6 +1,6 @@
 # 1. Modèle RAM & notations asymptotiques
 
-## 1.1 — Pourquoi un modèle de coût ?
+## 1.1 - Pourquoi un modèle de coût ?
 
 Quand on dit *« cet algo tourne en $O(n \log n)$ »*, qu'est-ce qu'on
 compte exactement ? Une addition vaut-elle autant qu'un accès mémoire ?
@@ -13,7 +13,7 @@ de la machine.
 ### Le modèle RAM (Random Access Machine)
 
 - Mémoire : un tableau infini de cellules, chaque cellule contient un
-  entier d'au plus $w$ bits ($w = O(\log n)$ — assez pour indexer
+  entier d'au plus $w$ bits ($w = O(\log n)$ - assez pour indexer
   l'entrée).
 - Opérations élémentaires en **temps unitaire** :
   - lecture / écriture d'une cellule,
@@ -43,7 +43,7 @@ $T(n) = \Theta(n)$.
 
 ---
 
-## 1.2 — Notations asymptotiques : définitions formelles
+## 1.2 - Notations asymptotiques : définitions formelles
 
 Soient $f, g : \mathbb{N} \to \mathbb{R}_{\ge 0}$.
 
@@ -83,7 +83,7 @@ $$f(n) = \omega(g(n)) \iff \forall\, c > 0,\ \exists\, n_0,\ \forall n \ge n_0,\
 
 ### Visualiser les ordres de grandeur
 
-:::viz-bigO
+:::viz-big-o
 :::
 
 Bouge le curseur : tant que $n$ reste petit, $n^2$ domine $n \log n$
@@ -105,7 +105,7 @@ Donc $c = 15$ et $n_0 = 1$ conviennent. $\square$
 
 ---
 
-## 1.3 — Exercices
+## 1.3 - Exercices
 
 :::exercise{id="{{EX_RAM_STD}}"}
 :::

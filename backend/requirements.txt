@@ -12,7 +12,7 @@ slowapi==0.1.9
 # Optional: if SENTRY_DSN is set, the backend auto-initialises it.
 sentry-sdk==2.17.0
 # Optional: pick a driver matching your DATABASE_URL. psycopg2-binary is the
-# easiest path for PostgreSQL; leave installed even for SQLite deployments —
+# easiest path for PostgreSQL; leave installed even for SQLite deployments -
 # it's ~3 MB and means no rebuild when you migrate off SQLite.
 psycopg2-binary==2.9.10
 # Redis-backed scoring queue. Optional: if REDIS_URL is unset the backend

@@ -49,8 +49,8 @@ def _client_ip(request: "Request") -> Optional[str]:
 
     ``X-Forwarded-For`` is only honoured when ``TRUST_PROXY_HEADERS`` is set,
     i.e. a trusted reverse proxy (Caddy/nginx) is actually in front and
-    rewrites it. Otherwise the header is fully attacker-controlled — a
-    contestant could forge the recorded submitter IP — so we use the real
+    rewrites it. Otherwise the header is fully attacker-controlled - a
+    contestant could forge the recorded submitter IP - so we use the real
     socket peer instead. Set TRUST_PROXY_HEADERS=1 in the compose/prod deploy
     where the backend sits behind the edge proxy."""
     try:
@@ -123,7 +123,7 @@ def _is_instance_open_for_submit(
     is_admin: bool = False,
 ) -> bool:
     """Single predicate combining unlock + close windows. Callers using
-    the two separately still work — this is just a convenience."""
+    the two separately still work - this is just a convenience."""
     if is_admin:
         return True
     if not _is_instance_unlocked(instance, contest, now):
@@ -209,7 +209,7 @@ def _team_registration(db, contest_id: int, team_id: int):
 
 
 def _can_see_contest(contest: models.Contest, user: models.User, now: datetime, db) -> bool:
-    """Visibility gate — private contests are still VISIBLE to everyone (so they
+    """Visibility gate - private contests are still VISIBLE to everyone (so they
     can see the scoreboard), but participation requires the allowlist. The time
     window (visible_at/hidden_at) still applies."""
     if user and user.is_admin:
@@ -225,7 +225,7 @@ def _is_contest_open(contest: models.Contest, now: datetime, is_admin: bool = Fa
     if start and now < start:
         return False
     if end and now >= end:
-        # Practice mode keeps submissions open after the end — results are
+        # Practice mode keeps submissions open after the end - results are
         # accepted and scored but never count toward the official scoreboard.
         return bool(contest.practice_mode)
     return True
@@ -235,8 +235,8 @@ def _is_contest_started(contest: models.Contest, now: datetime, is_admin: bool =
     """Gate for problem-content visibility. Stricter than
     ``_is_contest_visible`` (which only checks visible_at/hidden_at) but
     looser than ``_is_contest_open`` (which also requires is_active and
-    the end_time window). Returns True iff start_time has passed — or is
-    unset — so the statement appears when submissions open, never sooner."""
+    the end_time window). Returns True iff start_time has passed - or is
+    unset - so the statement appears when submissions open, never sooner."""
     if is_admin:
         return True
     start = _aware(contest.start_time)
@@ -256,7 +256,7 @@ def _is_scoreboard_frozen(contest: models.Contest, now: datetime, is_admin: bool
         return False
     if now < freeze_at:
         return False
-    # Stays frozen indefinitely once we cross ``freeze_scoreboard_at`` —
+    # Stays frozen indefinitely once we cross ``freeze_scoreboard_at`` -
     # the admin clears ``freeze_scoreboard_at`` (via the contest edit
     # form) to publish the un-frozen truth, typically right after running
     # the post-contest presentation/reveal.
@@ -295,11 +295,11 @@ def _serialize_contest(
     is_admin = bool(user and user.is_admin)
     # The scoring / validator scripts are executable secrets: they reveal the
     # expected output and the grading logic. Only a contest manager may see
-    # them — a contestant reading them can reverse-engineer the answer. Gate
+    # them - a contestant reading them can reverse-engineer the answer. Gate
     # them exactly like a management action, not merely "logged in".
     can_manage = bool(user) and can_manage_contest(user, contest)
     # The problem statement (text or PDF) stays hidden until the contest
-    # has actually started — being "visible" only means the entry appears
+    # has actually started - being "visible" only means the entry appears
     # in the list and the schedule/description are readable, not that the
     # problem content is out.
     started = _is_contest_started(contest, now, is_admin=is_admin)
@@ -440,7 +440,7 @@ def list_my_submissions(
     labels: dict[int, str] = {}
     if prob_ids:
         for p in db.query(models.Problem).filter(models.Problem.id.in_(prob_ids)).all():
-            labels[p.id] = f"{p.label} — {p.name}"
+            labels[p.id] = f"{p.label} - {p.name}"
 
     return [
         schemas.MySubmissionOut(
@@ -507,7 +507,7 @@ def update_contest(
         setattr(contest, key, value)
 
     # If the participation_mode changed, clean up registrations + allowlist
-    # entries that no longer fit the new mode — otherwise stale rows linger
+    # entries that no longer fit the new mode - otherwise stale rows linger
     # and show up in the "registered" list even though they can't submit.
     new_mode = (contest.participation_mode or "team").lower()
     if new_mode != old_mode:
@@ -542,7 +542,7 @@ def update_contest(
             )
             _delete_submission_files(solo_subs)
             purged_subs = solo_subs.delete(synchronize_session=False)
-            # Drop solo scoreboard cache rows — purging submissions
+            # Drop solo scoreboard cache rows - purging submissions
             # alone leaves stale "solo user X with score Y" cells on
             # the scoreboard until a full rescore.
             db.query(models.ScoreboardEntry).filter(
@@ -579,7 +579,7 @@ def update_contest(
                 models.IcpcScoreboardEntry.contest_id == contest.id,
                 models.IcpcScoreboardEntry.team_id.isnot(None),
             ).delete(synchronize_session=False)
-        # "both" keeps everyone — nothing to purge.
+        # "both" keeps everyone - nothing to purge.
         if purged_regs or purged_allowlist or purged_subs:
             audit(
                 db, action="mode_change_cleanup", actor=admin,
@@ -600,7 +600,7 @@ def update_contest(
         )
     db.commit()
     db.refresh(contest)
-    # Any contest mutation can change scoreboard rendering — most
+    # Any contest mutation can change scoreboard rendering - most
     # notably ``freeze_scoreboard_at``, ``visible_at``, ``hidden_at``,
     # ``participation_mode`` (which we may have just used to purge
     # rows above). Drop the cached payload unconditionally so the
@@ -678,7 +678,7 @@ async def upload_problem_statement(
         raise HTTPException(status_code=404, detail="Concours introuvable")
 
     from ..upload_utils import read_upload_capped
-    # Stream-cap the PDF read like the rest of the upload endpoints —
+    # Stream-cap the PDF read like the rest of the upload endpoints -
     # rejects oversized payloads early instead of buffering the full
     # body in memory before checking len().
     content = await read_upload_capped(file, PDF_MAX_BYTES)
@@ -721,7 +721,7 @@ async def upload_problem_statement(
 def _user_is_participant(db, contest: models.Contest, user: models.User) -> bool:
     """Admins bypass. Otherwise must have an active **non-disqualified**
     registration, either via a team they're in or a direct solo
-    registration. A DQ'd registration must NOT grant access — the
+    registration. A DQ'd registration must NOT grant access - the
     same predicate guards problem-statement / instance downloads, so
     a banned participant who keeps a stale registration row would
     otherwise still read the contest material."""
@@ -761,7 +761,7 @@ def download_problem_statement(
         raise HTTPException(status_code=404, detail="Concours introuvable")
     if not _user_is_participant(db, contest, user):
         raise HTTPException(status_code=403, detail="Inscrivez-vous pour accéder à l'énoncé")
-    # Don't reveal the statement before the contest has started — same
+    # Don't reveal the statement before the contest has started - same
     # gate as _serialize_contest so a URL-guessing client can't leak it.
     if not _is_contest_started(contest, _utcnow(), is_admin=bool(user and user.is_admin)):
         raise HTTPException(status_code=403, detail="L'énoncé n'est pas encore disponible")
@@ -810,7 +810,7 @@ def delete_problem_statement(
 
 
 # ── Participant allowlist + self-registration + DQ ──────────────────────
-# Moved to routers/registrations.py — same /api/contests URL prefix.
+# Moved to routers/registrations.py - same /api/contests URL prefix.
 
 
 # ── Instances ─────────────────────────────────────────────────────────────────
@@ -911,7 +911,7 @@ async def update_instance(
     """Admin / organizer edit for an output-scoring instance (what users
     see as a "problem"). Any field may be omitted to leave it
     unchanged. Sending a new file replaces the stored input; existing
-    submissions against this instance are *not* auto-rescored — trigger
+    submissions against this instance are *not* auto-rescored - trigger
     rescore manually after replacing the input if you want the new
     data applied to prior submissions."""
     instance = db.query(models.Instance).filter(models.Instance.id == instance_id).first()
@@ -1109,7 +1109,7 @@ async def submit_solution(
     if mode == "team" and team_id is None:
         raise HTTPException(status_code=400, detail="Ce concours ne permet que les soumissions en équipe")
     if mode == "solo" and team_id is not None:
-        raise HTTPException(status_code=400, detail="Ce concours est en mode solo — ne spécifiez pas d'équipe")
+        raise HTTPException(status_code=400, detail="Ce concours est en mode solo - ne spécifiez pas d'équipe")
 
     if team_id is not None:
         membership = db.query(models.TeamMember).filter(
@@ -1198,7 +1198,7 @@ async def submit_solution(
     content_hash = _content_hash(submission_data)
     safe_name = safe_filename(file.filename)
 
-    # Optional dedup block — reject identical submissions from the same
+    # Optional dedup block - reject identical submissions from the same
     # team/solo user (the most common anti-cheat trigger is spam-submitting
     # the exact same output). The check is two-phase: a fast pre-check
     # below (rejects 99% of cases without writing anything), and a
@@ -1248,7 +1248,7 @@ async def submit_solution(
     # Race-safe dedup check: re-run the same-scope query after the flush
     # and look for an EARLIER row (lower id). With Postgres READ
     # COMMITTED, a concurrent transaction that committed between our
-    # pre-check and our flush is now visible — we rollback and 409.
+    # pre-check and our flush is now visible - we rollback and 409.
     # No orphan file: the disk write happens further down, after this
     # check passes.
     if not user.is_admin and contest.dedup_block:
@@ -1604,7 +1604,7 @@ def download_submission_file(
         raise HTTPException(status_code=403, detail="Accès refusé")
     # Output-scoring contests persist the uploaded file to disk and set
     # ``file_path``. ICPC contests only keep the source text in
-    # ``submission_data`` — fall back to streaming that as a text file so
+    # ``submission_data`` - fall back to streaming that as a text file so
     # the download button works for either kind.
     if s.file_path and os.path.exists(s.file_path):
         return FileResponse(
@@ -2046,7 +2046,7 @@ def rescore_contest(
     from ..scoreboard_cache import rebuild_for_contest
     rebuild_for_contest(db, contest_id)
     db.commit()
-    # Drop the response cache too — without this, every viewer sees
+    # Drop the response cache too - without this, every viewer sees
     # the pre-rescore numbers for up to 2 s after the rebuild.
     from ..scoreboard_response_cache import invalidate_contest
     invalidate_contest(contest_id)

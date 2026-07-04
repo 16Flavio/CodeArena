@@ -1,5 +1,5 @@
 """Smoke tests for the LaTeX export. Focus on the converter
-correctness — the ZIP plumbing is exercised by the endpoint test."""
+correctness - the ZIP plumbing is exercised by the endpoint test."""
 import io
 import zipfile
 
@@ -58,7 +58,7 @@ def test_widget_directive():
     assert r"\learnwidget{viz-sort}" in out
     assert "algo=bubble" in out
     # Body content between fences is dropped, by design (the body is
-    # the live JSX rendering — only the directive name + attrs survive).
+    # the live JSX rendering - only the directive name + attrs survive).
     assert "body ignored" not in out
 
 

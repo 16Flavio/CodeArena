@@ -1,6 +1,6 @@
 # 4. Sliding window
 
-## 4.1 — Intuition
+## 4.1 - Intuition
 
 A **sliding window** is a special case of two-pointers where the
 zone $[i, j]$ represents a **contiguous subsequence** of a stream
@@ -15,7 +15,7 @@ the alphabet size.
 
 ---
 
-## 4.2 — **Fixed-size** window of length $k$
+## 4.2 - **Fixed-size** window of length $k$
 
 > Largest sum over all subarrays of length $k$.
 
@@ -35,7 +35,7 @@ recomputing in $O(k)$. General pattern: **add** what enters,
 
 ---
 
-## 4.3 — **Variable-size** window: the pattern
+## 4.3 - **Variable-size** window: the pattern
 
 This is the most powerful case. We want the longest (or
 shortest) window satisfying a predicate $P$ "monotone under
@@ -65,11 +65,11 @@ def longest_valid(A, predicate):
 
 **Why $O(n)$?** $i$ never goes back, so total increments are
 $\le n$. The inner `while` runs at most $n$ times across the
-whole algorithm — it **doesn't increase** the total cost.
+whole algorithm - it **doesn't increase** the total cost.
 
 ---
 
-## 4.4 — Application: longest substring without repetition
+## 4.4 - Application: longest substring without repetition
 
 > Given a string $s$, find the length of the longest substring
 > with **no repeated character**.
@@ -96,20 +96,20 @@ $O(n)$) but a better constant.
 
 ---
 
-## 4.5 — Application: subarray with sum $\ge S$
+## 4.5 - Application: subarray with sum $\ge S$
 
-That's lesson 3's example — already seen. The boundary between
+That's lesson 3's example - already seen. The boundary between
 "two-pointer" and "sliding window" is fuzzy: same idea, different
 emphasis (two indices vs an aggregated statistic).
 
 ---
 
-## 4.6 — Pitfalls
+## 4.6 - Pitfalls
 
 1. **Non-monotone predicate**: if shrinking a valid window can
    make it invalid, the pattern fails.
    *Counter-example*: "longest window whose sum equals exactly
-   $S$" with negative values — adding can swing the sum either
+   $S$" with negative values - adding can swing the sum either
    way.
 2. **Statistic too expensive to update**: if `add` or `remove`
    cost $O(\log n)$ (insertion in a sorted set, …), the total
@@ -121,7 +121,7 @@ emphasis (two indices vs an aggregated statistic).
 
 ---
 
-## 4.7 — Exercises
+## 4.7 - Exercises
 
 :::exercise{id="{{EX_SE_FIXEDSUM}}"}
 :::

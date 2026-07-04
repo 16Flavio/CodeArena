@@ -1,4 +1,4 @@
-"""Learning zone — sections, lessons, assets, progress.
+"""Learning zone - sections, lessons, assets, progress.
 
 Two surfaces share this router:
 
@@ -44,7 +44,7 @@ os.makedirs(_LEARNING_UPLOAD_DIR, exist_ok=True)
 
 def _asset_url(path: str) -> str:
     """Map an on-disk path under uploads/learning/ to the GET URL the
-    frontend uses to fetch it. Kept relative — the SPA prepends the
+    frontend uses to fetch it. Kept relative - the SPA prepends the
     API host."""
     rel = os.path.relpath(path, _LEARNING_UPLOAD_DIR).replace(os.sep, "/")
     return f"/api/learning/assets/{rel}"
@@ -257,7 +257,7 @@ def serve_asset(rel: str):
     """Serve a lesson asset (image / file). Public on purpose: HTML
     ``<img src=...>`` tags don't carry the Authorization header, so an
     auth-walled URL renders blank in the markdown body. The path layout
-    is ``<lesson_id>/<asset_id>-<safe-filename>`` — unguessable enough
+    is ``<lesson_id>/<asset_id>-<safe-filename>`` - unguessable enough
     that accidental disclosure is hard, and lesson content is meant to
     be reachable by every logged-in user anyway.
 
@@ -278,7 +278,7 @@ def admin_list_sections(
     db: Session = Depends(get_db),
 ):
     """Admin sees ALL sections, drafts included. Lesson + completion
-    counts left at 0 here — the admin UI doesn't care about user
+    counts left at 0 here - the admin UI doesn't care about user
     progress on the listing page."""
     sections = (
         db.query(models.LearningSection)
@@ -466,7 +466,7 @@ def admin_update_lesson(
     if not lesson:
         raise HTTPException(status_code=404, detail="Leçon introuvable")
     # Uniqueness check inside the section (slug can collide across
-    # sections — that's the unique constraint shape).
+    # sections - that's the unique constraint shape).
     if data.slug != lesson.slug and db.query(models.Lesson).filter(
         models.Lesson.section_id == lesson.section_id,
         models.Lesson.slug == data.slug,
@@ -503,7 +503,7 @@ def admin_delete_lesson(
     lesson = db.query(models.Lesson).filter(models.Lesson.id == lesson_id).first()
     if not lesson:
         raise HTTPException(status_code=404, detail="Leçon introuvable")
-    # Drop on-disk assets too — FK CASCADE handles the rows but the
+    # Drop on-disk assets too - FK CASCADE handles the rows but the
     # files would orphan otherwise.
     for asset in db.query(models.LessonAsset).filter(
         models.LessonAsset.lesson_id == lesson_id,
@@ -541,7 +541,7 @@ async def admin_upload_asset(
     if kind not in ("image", "file"):
         raise HTTPException(status_code=400, detail="kind doit être image ou file")
 
-    # 8 MB cap — generous for screenshots / SVGs, tight enough that a
+    # 8 MB cap - generous for screenshots / SVGs, tight enough that a
     # bad upload doesn't blow up the disk.
     from ..upload_utils import read_upload_capped
     content = await read_upload_capped(file, 8 * 1024 * 1024)
@@ -709,7 +709,7 @@ def run_exercise(
         )
         compile_output = compile_res.compile_output or ""
         if compile_res.verdict != "AC":
-            # Compile failed — every test counts as failed and we
+            # Compile failed - every test counts as failed and we
             # return immediately so the student sees the diagnostic.
             for c in cases:
                 results.append(schemas.LessonExerciseRunResult(
@@ -859,10 +859,10 @@ def admin_delete_exercise(
 
 @student_router.get("/widgets", response_model=list[schemas.LearningWidgetOut])
 def list_published_widgets(
-    user: models.User = Depends(get_current_user),  # noqa: ARG001 — auth-walled
+    user: models.User = Depends(get_current_user),  # noqa: ARG001 - auth-walled
     db: Session = Depends(get_db),
 ):
-    """Listed by every lesson reader at boot — the frontend builds its
+    """Listed by every lesson reader at boot - the frontend builds its
     runtime widget registry from this. Drafts excluded."""
     rows = (
         db.query(models.LearningWidget)
@@ -972,10 +972,10 @@ def admin_export_latex(
     db: Session = Depends(get_db),
 ):
     """Stream a self-contained .zip of the published syllabus as a
-    LaTeX project — main.tex + sections/*.tex + assets/ + README.
+    LaTeX project - main.tex + sections/*.tex + assets/ + README.
 
     The admin chooses which language's content to export via the
-    ``?lang=fr|en`` query param. Drafts are excluded — the export
+    ``?lang=fr|en`` query param. Drafts are excluded - the export
     represents the syllabus the public sees today.
 
     Heavy operation (rebuilds the whole thing in memory) so we audit

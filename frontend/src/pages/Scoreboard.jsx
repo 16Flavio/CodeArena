@@ -107,7 +107,7 @@ function OutputScoreboard() {
   useEffect(() => {
     hasLoadedOnce.current = false;
     prevScores.current = {};
-    // Resetting state when the id changes IS the intended behaviour —
+    // Resetting state when the id changes IS the intended behaviour -
     // we want the spinner + cleared data while the new contest's
     // scoreboard loads. The cascading-render warning is a generic
     // recommendation, not applicable here.
@@ -162,7 +162,7 @@ function OutputScoreboard() {
 
     // Fetch a short-lived stream ticket (sent with the normal Bearer header)
     // and open the EventSource with that instead of the long-lived session
-    // token — EventSource can't set headers, so the ticket is the only thing
+    // token - EventSource can't set headers, so the ticket is the only thing
     // that lands in the URL, and it expires in ~60s.
     getStreamTicket()
       .then((r) => {
@@ -180,7 +180,7 @@ function OutputScoreboard() {
       })
       .catch(() => {
         if (cancelled) return;
-        // No EventSource / couldn't get a ticket — degrade to polling.
+        // No EventSource / couldn't get a ticket - degrade to polling.
         fetchData();
         pollInterval = setInterval(() => fetchData(), 10000);
       });
@@ -473,7 +473,7 @@ function OutputScoreboard() {
                     if (!s || s.submission_count === 0) {
                       return (
                         <div key={inst.id} className="text-[10px] text-zinc-400 px-2 py-1 rounded bg-zinc-50 dark:bg-zinc-800/30 dark:text-zinc-600 truncate">
-                          {inst.name}: —
+                          {inst.name}: -
                         </div>
                       );
                     }
@@ -662,7 +662,7 @@ function OutputScoreboard() {
                                 <span className="font-mono font-bold text-sm text-zinc-700 dark:text-zinc-200">?</span>
                               </div>
                             ) : (
-                              <span className="text-zinc-300 dark:text-zinc-700">—</span>
+                              <span className="text-zinc-300 dark:text-zinc-700">-</span>
                             )}
                           </td>
                         );

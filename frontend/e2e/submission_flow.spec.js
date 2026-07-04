@@ -43,7 +43,7 @@ async function registerOrLogin(api, { username, email, password }) {
 
 async function ensureUser(api, adminToken, { username, email, password }) {
   // Idempotent: register, then force email_verified via the seeded
-  // admin's privilege (no public endpoint for that — we go through a
+  // admin's privilege (no public endpoint for that - we go through a
   // direct registration that auto-verifies in test mode? actually
   // the test config doesn't auto-verify; we need to either skip
   // verification or use a backend test seam. Easier: just register +
@@ -51,7 +51,7 @@ async function ensureUser(api, adminToken, { username, email, password }) {
   const reg = await api.post('/api/auth/register', {
     data: { username, email, password },
   });
-  // 200 first time, 400 if already exists — both fine.
+  // 200 first time, 400 if already exists - both fine.
   if (reg.status() !== 200 && reg.status() !== 400) {
     throw new Error(`register ${reg.status()}: ${await reg.text()}`);
   }
@@ -65,7 +65,7 @@ test('contest lifecycle: admin creates, registers, submits via API, sees score',
   const api = await playwright.request.newContext({ baseURL: 'http://localhost:5174' });
 
   // 1. Auth as the bootstrapped admin. The first registered user
-  //    becomes admin automatically — register-or-login keeps the
+  //    becomes admin automatically - register-or-login keeps the
   //    test independent of smoke.spec.js running first.
   const adminToken = await registerOrLogin(api, {
     username: ADMIN.username,
@@ -130,7 +130,7 @@ test('contest lifecycle: admin creates, registers, submits via API, sees score',
   const sub = await submission.json();
 
   // 6. Poll until the submission is scored (test fixture inlines the
-  //    scoring, prod uses the queue — the dev server runs the prod
+  //    scoring, prod uses the queue - the dev server runs the prod
   //    path, so this can take a few hundred ms).
   let scored = null;
   for (let i = 0; i < 50; i += 1) {
@@ -150,7 +150,7 @@ test('contest lifecycle: admin creates, registers, submits via API, sees score',
   // 7. Open the scoreboard in the UI and verify the new contest +
   //    score appear. This catches SPA routing / data-binding bugs the
   //    API wouldn't.
-  // First we need a logged-in browser context — drive the login form.
+  // First we need a logged-in browser context - drive the login form.
   await page.goto('/login');
   await page.locator('input[type="text"]').first().fill(ADMIN.username);
   await page.locator('input[type="password"]').first().fill(ADMIN.password);

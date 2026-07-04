@@ -29,7 +29,7 @@ const VERDICT_STYLE = {
   RE: 'bg-red-500/15 text-red-700 border-red-500/30 dark:text-red-400',
   CE: 'bg-zinc-500/15 text-zinc-700 border-zinc-500/30 dark:text-zinc-300',
   pending: 'bg-zinc-200 text-zinc-700 border-zinc-300 dark:bg-zinc-700 dark:text-zinc-300 dark:border-zinc-600',
-  // "Not evaluated" — testcase the judge never reached because it short-
+  // "Not evaluated" - testcase the judge never reached because it short-
   // circuited at an earlier failure (or because the submission stopped at
   // compile-time). Faded so it visually recedes behind the real verdicts.
   unknown: 'bg-zinc-100 text-zinc-400 border-zinc-200 dark:bg-zinc-800/40 dark:text-zinc-500 dark:border-zinc-700/40',
@@ -138,7 +138,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
 
   // Auto-pick the language from the file extension (case-insensitive),
   // matching the Language.extensions column the backend seeds. Leaves the
-  // language alone if no match — the admin may have named the file weirdly.
+  // language alone if no match - the admin may have named the file weirdly.
   const pickFile = (file) => {
     setSourceFile(file || null);
     if (!file) return;
@@ -471,7 +471,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                       const runs = currentJudging.runs || [];
                       const allTcs = currentJudging.all_testcases || [];
                       // Only render the grid once the judge has started
-                      // producing runs (or finished without any — e.g. CE).
+                      // producing runs (or finished without any - e.g. CE).
                       // Pending + no runs = the worker hasn't picked up the
                       // job yet; the spinner above already covers that.
                       const judgingStarted = runs.length > 0 || currentJudging.verdict !== 'pending';

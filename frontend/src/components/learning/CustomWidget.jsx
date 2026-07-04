@@ -15,8 +15,8 @@ import { useTranslation } from 'react-i18next';
  *     ``srcdoc``. Why: ``srcdoc`` inherits the parent's CSP, and our
  *     parent forbids inline scripts (``script-src 'self'``), which
  *     would block every ``<script>`` inside the widget. ``data:``
- *     URLs load with their own (empty) policy — the parent CSP does
- *     not transfer — so widget scripts can run. The sandbox attribute
+ *     URLs load with their own (empty) policy - the parent CSP does
+ *     not transfer - so widget scripts can run. The sandbox attribute
  *     keeps the iframe in an opaque origin regardless.
  *
  * Params injection: the directive's attributes (``algo="bubble"`` …)

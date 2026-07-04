@@ -1,9 +1,9 @@
 """Scoring dispatch abstraction.
 
 Two modes, selected at runtime based on REDIS_URL:
-  * Redis/RQ — durable queue, survives API restarts, processed by the
+  * Redis/RQ - durable queue, survives API restarts, processed by the
     `worker` service (can scale horizontally).
-  * In-process ThreadPoolExecutor — fallback for dev and tests where
+  * In-process ThreadPoolExecutor - fallback for dev and tests where
     Redis isn't available.
 
 The caller doesn't care which mode is active:
@@ -12,7 +12,7 @@ The caller doesn't care which mode is active:
     enqueue_scoring(submission_id)
 
 The actual scoring job lives in ``backend.scoring_jobs.score_submission``
-(must be importable by the worker process — don't inline it here)."""
+(must be importable by the worker process - don't inline it here)."""
 from __future__ import annotations
 
 import logging

@@ -1,7 +1,7 @@
 """In-memory TTL cache for the assembled scoreboard responses.
 
 The ``/scoreboard`` and ``/icpc-scoreboard`` endpoints are by far the
-hottest path in the app — every connected participant polls them every
+hottest path in the app - every connected participant polls them every
 ~10 s, and each call does a per-request fan-out across submissions,
 hint unlocks, and the materialised score table. Above ~100 active users
 the per-request compute saturates the worker pool faster than the DB
@@ -12,14 +12,14 @@ Most of those calls return the *same* JSON. The output depends only on:
 * ``contest_id`` (obvious),
 * whether the caller can see through a scoreboard freeze (``admin`` vs
   ``public`` audience). Hint-cost penalties apply per-row to that row's
-  owner, **not** to the viewer — so two non-admin viewers always get
+  owner, **not** to the viewer - so two non-admin viewers always get
   byte-identical responses.
 
 That means at most two cached payloads per contest, regardless of how
 many users hit the endpoint. With a 2 s TTL we serve every burst of
 polls from one compute.
 
-Per-process: each uvicorn worker has its own copy. Acceptable — at 4
+Per-process: each uvicorn worker has its own copy. Acceptable - at 4
 workers the cache hit rate is still ≥ 75% under steady polling, and we
 avoid Redis as a hard dependency on the request path.
 
@@ -36,7 +36,7 @@ from typing import Callable, Hashable, TypeVar
 
 T = TypeVar("T")
 
-# Default TTL — short enough that operators perceive the scoreboard as
+# Default TTL - short enough that operators perceive the scoreboard as
 # "live", long enough to absorb a burst of polls. Caller can override.
 DEFAULT_TTL_SECONDS = 2.0
 
@@ -93,13 +93,13 @@ def get_or_compute(
         cached = _CACHE.get(key)
     if cached is not None:
         return cached[1]  # type: ignore[return-value]
-    # Fallback (rare — owner errored out before populating the cache):
+    # Fallback (rare - owner errored out before populating the cache):
     # do our own compute. Worst case this just degrades to "no cache".
     return compute()
 
 
 def invalidate(key: Hashable) -> None:
-    """Drop a single cache entry. Safe to call from anywhere — used
+    """Drop a single cache entry. Safe to call from anywhere - used
     when an event makes the cached payload immediately stale (e.g. a
     contest's scoreboard is reset, or freeze toggled by an admin)."""
     with _LOCK:
@@ -107,7 +107,7 @@ def invalidate(key: Hashable) -> None:
 
 
 def invalidate_prefix(prefix: tuple) -> None:
-    """Drop every cache entry whose key starts with ``prefix`` —
+    """Drop every cache entry whose key starts with ``prefix`` -
     convenient for invalidating "all audiences for contest N" by
     passing ``("scoreboard", contest_id)``."""
     with _LOCK:
@@ -131,14 +131,14 @@ def invalidate_contest(contest_id: int) -> None:
     to be visible immediately rather than within the TTL window
     (DQ/requalify, freeze toggle, rescore, judging override, ...).
 
-    Cheap in the common case (cache empty for this contest) — just
+    Cheap in the common case (cache empty for this contest) - just
     iterates a small dict under the lock."""
     invalidate_prefix(("scoreboard.output", contest_id))
     invalidate_prefix(("scoreboard.icpc", contest_id))
 
 
 def stats() -> dict:
-    """Cheap introspection — useful from the admin debug endpoint or
+    """Cheap introspection - useful from the admin debug endpoint or
     during a load test."""
     with _LOCK:
         return {

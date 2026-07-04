@@ -35,7 +35,7 @@ export default function ChangeAffiliationModal({ onClose }) {
         const { data: me } = await getMe();
         const token = getToken();
         if (token) login(token, me, { remember: tokenIsPersistent() });
-      } catch { /* non-fatal — modal still closes */ }
+      } catch { /* non-fatal - modal still closes */ }
       toast.success(t('accountModal.toastAffiliationSaved'));
       onClose();
     } catch (err) {

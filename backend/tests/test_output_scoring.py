@@ -151,7 +151,7 @@ def test_admin_audit_log_purge_drops_old_rows(client):
 
     # Create something that emits an audit row.
     _make_solo_contest(client, admin)  # registers via "register_contest"? no
-    # Trigger something that audits — disqualify is a clean one.
+    # Trigger something that audits - disqualify is a clean one.
     # Easier: just hit the purge endpoint with a valid retention.
     r = client.post("/api/admin/audit-log/purge", params={"days": 30}, headers=admin)
     assert r.status_code == 200, r.text

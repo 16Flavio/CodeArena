@@ -3,7 +3,7 @@
 // recovery code consumption.
 //
 // We compute the TOTP code in JS (not by calling the backend) so the
-// test exercises the actual algorithm both sides have to agree on —
+// test exercises the actual algorithm both sides have to agree on -
 // if the backend's pyotp ever drifts from the client's expectation,
 // this spec catches it.
 import { test, expect } from '@playwright/test';
@@ -15,7 +15,7 @@ const USER = {
   password: 'totp-secret-pw-1',
 };
 
-// RFC 6238 TOTP — implemented inline so we don't depend on yet
+// RFC 6238 TOTP - implemented inline so we don't depend on yet
 // another npm package in the e2e tree. Same algorithm pyotp runs.
 function base32Decode(b32) {
   const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -61,13 +61,13 @@ async function registerOrLogin(api, { username, email, password }) {
 test('TOTP enrollment + login challenge + recovery code consumption', async ({ playwright }) => {
   const api = await playwright.request.newContext({ baseURL: 'http://localhost:5174' });
 
-  // 1. Bootstrap a user. (First registered user becomes admin —
+  // 1. Bootstrap a user. (First registered user becomes admin -
   //    the smoke spec already does this; we register a second user
   //    so we don't fight over the bootstrap admin row.)
   const token = await registerOrLogin(api, USER);
   const headers = { Authorization: `Bearer ${token}` };
 
-  // 2. Setup 2FA — secret + otpauth URL come back.
+  // 2. Setup 2FA - secret + otpauth URL come back.
   let r = await api.post('/api/auth/2fa/setup', { headers });
   expect(r.ok(), `setup ${r.status()}: ${await r.text()}`).toBeTruthy();
   const { secret, otpauth_url } = await r.json();
@@ -84,7 +84,7 @@ test('TOTP enrollment + login challenge + recovery code consumption', async ({ p
   expect(recovery_codes).toHaveLength(8);
   expect(recovery_codes[0]).toMatch(/^[a-f0-9]{20}$/);
 
-  // 4. Plain login — backend now refuses with 401 + TOTP_REQUIRED.
+  // 4. Plain login - backend now refuses with 401 + TOTP_REQUIRED.
   r = await api.post('/api/auth/login', {
     data: { username: USER.username, password: USER.password },
   });
@@ -106,7 +106,7 @@ test('TOTP enrollment + login challenge + recovery code consumption', async ({ p
   expect(r.ok(), `login-verify ${r.status()}: ${await r.text()}`).toBeTruthy();
   expect(typeof (await r.json()).access_token).toBe('string');
 
-  // 7. Recovery code path — fresh challenge, recovery code instead of TOTP.
+  // 7. Recovery code path - fresh challenge, recovery code instead of TOTP.
   r = await api.post('/api/auth/login', {
     data: { username: USER.username, password: USER.password },
   });
@@ -134,7 +134,7 @@ test('UI: login screen pivots to TOTP form when challenge returned', async ({ pa
   // The previous test ran against a freshly-2FA-enabled user, so a UI
   // login attempt as that user should swap the form to the TOTP input.
   const api = await playwright.request.newContext({ baseURL: 'http://localhost:5174' });
-  // Re-derive the secret by re-enrolling — the previous test left
+  // Re-derive the secret by re-enrolling - the previous test left
   // the user with 2FA on, so we can't /setup again. Instead we use
   // the admin escape hatch to clear and re-enroll.
   // ... actually simpler: just verify the form swap visually.
@@ -145,7 +145,7 @@ test('UI: login screen pivots to TOTP form when challenge returned', async ({ pa
   await page.locator('button[type="submit"]').click();
 
   // The TOTP code input should appear (placeholder "000000" is the
-  // anchor — language-stable).
+  // anchor - language-stable).
   await expect(page.locator('input[placeholder="000000"]')).toBeVisible({ timeout: 10_000 });
   await api.dispose();
 });

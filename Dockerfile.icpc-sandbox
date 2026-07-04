@@ -1,4 +1,4 @@
-# ICPC judging sandbox image — carries the language toolchains so that
+# ICPC judging sandbox image - carries the language toolchains so that
 # contestant compile+run can happen inside a locked-down throwaway container
 # (SCORING_MODE=docker). Kept separate from Dockerfile.scoring (which is
 # Python-only, for the output-scoring validator path).

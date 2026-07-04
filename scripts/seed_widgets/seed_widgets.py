@@ -70,13 +70,13 @@ WIDGETS = [
         "description_fr": (
             "Construit un BST naïf à partir d'une suite de clés et l'affiche. "
             "Insère interactivement de nouvelles clés et observe la hauteur "
-            "(qui peut dégénérer en chaîne — c'est le pire cas dont parle la "
+            "(qui peut dégénérer en chaîne - c'est le pire cas dont parle la "
             "leçon)."
         ),
         "description_en": (
             "Builds a plain BST from a sequence of keys and renders it. "
             "Interactively insert new keys and observe the height (which can "
-            "degenerate to a chain — the worst case the lesson warns about)."
+            "degenerate to a chain - the worst case the lesson warns about)."
         ),
         "template_file": "viz-bst.html",
         "params_schema": [

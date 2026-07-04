@@ -11,7 +11,7 @@ const KEY = 'token';
 // Marker written next to the token whenever the user explicitly opted
 // into "remember me". Lets the AuthContext bootstrap distinguish a
 // legitimately-persistent token (keep it) from a legacy localStorage
-// token left over by the pre-dual-storage build (purge it — see the
+// token left over by the pre-dual-storage build (purge it - see the
 // shared-browser inheritance bug that motivated the dual scheme).
 export const PERSIST_FLAG = 'token_persistent';
 

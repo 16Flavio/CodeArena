@@ -65,7 +65,7 @@ SECTION = {
 
 LESSONS: list[dict] = [
     # =================================================================
-    # Lesson 1 — Recherche dichotomique classique
+    # Lesson 1 - Recherche dichotomique classique
     # =================================================================
     {
         "slug": "dichotomie",
@@ -204,7 +204,7 @@ LESSONS: list[dict] = [
                     "**Sortie** : un seul entier, le plus grand $k$ tel que "
                     "$k^2 \\le N$.\n\n"
                     "**Indice** : dichotomie sur $k \\in [0, 10^9]$. Le "
-                    "predicat $P(k) = (k^2 \\le N)$ est monotone — on "
+                    "predicat $P(k) = (k^2 \\le N)$ est monotone - on "
                     "cherche son plus grand vrai. Patron `search_max` de la "
                     "lecon 2."
                 ),
@@ -216,7 +216,7 @@ LESSONS: list[dict] = [
                     "**Output**: a single integer, the largest $k$ with "
                     "$k^2 \\le N$.\n\n"
                     "**Hint**: binary search on $k \\in [0, 10^9]$. The "
-                    "predicate $P(k) = (k^2 \\le N)$ is monotone — we "
+                    "predicate $P(k) = (k^2 \\le N)$ is monotone - we "
                     "look for its largest true point. Use the lesson 2 "
                     "`search_max` pattern."
                 ),
@@ -245,7 +245,7 @@ LESSONS: list[dict] = [
     },
 
     # =================================================================
-    # Lesson 2 — Dichotomie sur les reels & sur la reponse
+    # Lesson 2 - Dichotomie sur les reels & sur la reponse
     # =================================================================
     {
         "slug": "binsearch-answer",
@@ -267,7 +267,7 @@ LESSONS: list[dict] = [
                     "- ligne 1 : $n$ et $k$ ($2 \\le k \\le n \\le 10^5$)\n"
                     "- ligne 2 : $n$ entiers $x_i$ ($0 \\le x_i \\le 10^9$, "
                     "non necessairement tries)\n\n"
-                    "**Sortie** : un entier — la distance minimale "
+                    "**Sortie** : un entier - la distance minimale "
                     "maximisable.\n\n"
                     "**Indice** : trier les positions, puis dichotomie sur "
                     "la reponse $d \\in [0, x_n - x_1]$. Verifier `feasible(d)` "
@@ -281,7 +281,7 @@ LESSONS: list[dict] = [
                     "- line 1: $n$ and $k$ ($2 \\le k \\le n \\le 10^5$)\n"
                     "- line 2: $n$ integers $x_i$ ($0 \\le x_i \\le 10^9$, "
                     "not necessarily sorted)\n\n"
-                    "**Output**: one integer — the maximizable minimum "
+                    "**Output**: one integer - the maximizable minimum "
                     "distance.\n\n"
                     "**Hint**: sort positions, then binary search on the "
                     "answer $d \\in [0, x_n - x_1]$. Check `feasible(d)` "
@@ -326,7 +326,7 @@ LESSONS: list[dict] = [
                     "- ligne 1 : $n$ et $k$ ($1 \\le k \\le n \\le 10^5$)\n"
                     "- ligne 2 : $n$ entiers $\\ell_i$ ($1 \\le \\ell_i "
                     "\\le 10^4$)\n\n"
-                    "**Sortie** : un entier — le temps minimum.\n\n"
+                    "**Sortie** : un entier - le temps minimum.\n\n"
                     "**Indice** : dichotomie sur $T \\in [\\max \\ell_i, "
                     "\\sum \\ell_i]$. `feasible(T)` : balayer les "
                     "planches, ouvrir un nouveau peintre des qu'un "
@@ -343,7 +343,7 @@ LESSONS: list[dict] = [
                     "- line 1: $n$ and $k$ ($1 \\le k \\le n \\le 10^5$)\n"
                     "- line 2: $n$ integers $\\ell_i$ ($1 \\le \\ell_i "
                     "\\le 10^4$)\n\n"
-                    "**Output**: one integer — the minimum time.\n\n"
+                    "**Output**: one integer - the minimum time.\n\n"
                     "**Hint**: binary search on $T \\in [\\max \\ell_i, "
                     "\\sum \\ell_i]$. `feasible(T)`: scan the boards, "
                     "open a new painter whenever a chunk would exceed "
@@ -386,7 +386,7 @@ LESSONS: list[dict] = [
                     "au plus 9 decimales).\n\n"
                     "**Sortie** : la racine, formatee avec **6 decimales** "
                     "(`{:.6f}` en Python).\n\n"
-                    "**Indice** : intervalle initial $[0, \\max(1, x)]$ — "
+                    "**Indice** : intervalle initial $[0, \\max(1, x)]$ - "
                     "necessaire car pour $x < 1$, $\\sqrt{x} > x$. Boucler "
                     "100 fois (largement assez : $\\log_2(10^{12} \\cdot "
                     "10^6) \\approx 60$). Comparaison flottante : "
@@ -401,7 +401,7 @@ LESSONS: list[dict] = [
                     "at most 9 decimals).\n\n"
                     "**Output**: the root, formatted with **6 decimals** "
                     "(`{:.6f}` in Python).\n\n"
-                    "**Hint**: initial interval $[0, \\max(1, x)]$ — "
+                    "**Hint**: initial interval $[0, \\max(1, x)]$ - "
                     "necessary because for $x < 1$, $\\sqrt{x} > x$. Run "
                     "100 iterations (more than enough: $\\log_2(10^{12} "
                     "\\cdot 10^6) \\approx 60$). Floating compare: "
@@ -431,7 +431,7 @@ LESSONS: list[dict] = [
     },
 
     # =================================================================
-    # Lesson 3 — Two pointers
+    # Lesson 3 - Two pointers
     # =================================================================
     {
         "slug": "two-pointers",
@@ -505,7 +505,7 @@ LESSONS: list[dict] = [
                 "prompt_fr": (
                     "Trouver tous les triplets **distincts** $(a, b, c)$ "
                     "avec $a \\le b \\le c$, $a + b + c = 0$, sans "
-                    "doublon — sortie triee.\n\n"
+                    "doublon - sortie triee.\n\n"
                     "**Entree** :\n\n"
                     "- ligne 1 : $n$ ($3 \\le n \\le 3000$)\n"
                     "- ligne 2 : $n$ entiers ($|a_i| \\le 10^5$)\n\n"
@@ -519,7 +519,7 @@ LESSONS: list[dict] = [
                 "prompt_en": (
                     "Find all **distinct** triples $(a, b, c)$ with "
                     "$a \\le b \\le c$, $a + b + c = 0$, no duplicates "
-                    "— output sorted.\n\n"
+                    "- output sorted.\n\n"
                     "**Input**:\n\n"
                     "- line 1: $n$ ($3 \\le n \\le 3000$)\n"
                     "- line 2: $n$ integers ($|a_i| \\le 10^5$)\n\n"
@@ -570,7 +570,7 @@ LESSONS: list[dict] = [
                     "**Sortie** :\n\n"
                     "- ligne 1 : $k$, la nouvelle taille\n"
                     "- ligne 2 : les $k$ premiers elements (vide si $k = 0$ "
-                    "— ligne vide)\n\n"
+                    "- ligne vide)\n\n"
                     "**Indice** : deux pointeurs avancant dans le meme "
                     "sens, $w$ pour ecrire (`write`), $j$ pour lire."
                 ),
@@ -618,7 +618,7 @@ LESSONS: list[dict] = [
     },
 
     # =================================================================
-    # Lesson 4 — Sliding window
+    # Lesson 4 - Sliding window
     # =================================================================
     {
         "slug": "sliding-window",
@@ -639,7 +639,7 @@ LESSONS: list[dict] = [
                     "**Entree** :\n\n"
                     "- ligne 1 : $n$ et $k$ ($1 \\le k \\le n \\le 10^6$)\n"
                     "- ligne 2 : $n$ entiers ($|a_i| \\le 10^9$)\n\n"
-                    "**Sortie** : un seul entier — la somme maximale.\n\n"
+                    "**Sortie** : un seul entier - la somme maximale.\n\n"
                     "**Indice** : maintenir la somme glissante en $O(1)$ "
                     "par decalage."
                 ),
@@ -650,7 +650,7 @@ LESSONS: list[dict] = [
                     "**Input**:\n\n"
                     "- line 1: $n$ and $k$ ($1 \\le k \\le n \\le 10^6$)\n"
                     "- line 2: $n$ integers ($|a_i| \\le 10^9$)\n\n"
-                    "**Output**: one integer — the maximum sum.\n\n"
+                    "**Output**: one integer - the maximum sum.\n\n"
                     "**Hint**: keep the rolling sum in $O(1)$ per "
                     "shift."
                 ),
@@ -782,7 +782,7 @@ LESSONS: list[dict] = [
 
 
 # --------------------------------------------------------------------- #
-# Reference solutions — used by --validate-only to confirm the test     #
+# Reference solutions - used by --validate-only to confirm the test     #
 # cases above are self-consistent. Every key must match an exercise.   #
 # --------------------------------------------------------------------- #
 
@@ -866,7 +866,7 @@ def main():
                 if painters > k: return False
         return painters <= k
     lo, hi = max(L), sum(L)
-    # Largest T NOT feasible — but we want smallest T feasible. search_min.
+    # Largest T NOT feasible - but we want smallest T feasible. search_min.
     while lo < hi:
         mid = (lo + hi) // 2
         if feasible(mid): hi = mid
@@ -1023,7 +1023,7 @@ def _floats_close(actual: str, expected: str, tol: float) -> bool:
 
 def validate_reference_solutions() -> int:
     """Run every REFERENCE_SOLUTIONS entry against its DB-bound test
-    cases. Exits non-zero on the first mismatch — this catches
+    cases. Exits non-zero on the first mismatch - this catches
     test-case bugs before they ship to students."""
     failures: list[str] = []
     for ex in _flatten_exercises():
@@ -1064,7 +1064,7 @@ def validate_reference_solutions() -> int:
         for f in failures: print(" -", f)
         return 1
     total = sum(len(ex["test_cases"]) for ex in _flatten_exercises())
-    print(f"VALIDATION OK — {total} test cases across "
+    print(f"VALIDATION OK - {total} test cases across "
           f"{sum(1 for _ in _flatten_exercises())} exercises.")
     return 0
 

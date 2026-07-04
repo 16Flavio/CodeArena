@@ -1,6 +1,6 @@
 # 1. Insertion Sort & Merge Sort
 
-## 1.1 — Insertion sort: like a hand of cards
+## 1.1 - Insertion sort: like a hand of cards
 
 Lining up cards in your hand, you **insert** each new card into its
 slot in the already-sorted prefix. That's exactly insertion sort.
@@ -37,7 +37,7 @@ $\square$
 ### Complexity
 
 - Worst case (reversed array): $T(n) = \sum_{i=1}^{n-1} i = \Theta(n^2)$.
-- Best case (already sorted): $\Theta(n)$ — the inner loop exits
+- Best case (already sorted): $\Theta(n)$ - the inner loop exits
   immediately.
 - Expected over a random permutation: $\Theta(n^2)$.
 
@@ -47,7 +47,7 @@ $\square$
 
 ---
 
-## 1.2 — Merge sort: divide and conquer
+## 1.2 - Merge sort: divide and conquer
 
 ### Idea
 
@@ -93,15 +93,15 @@ Recurrence:
 
 $$T(n) = 2\,T(n/2) + cn,\qquad T(1) = c'.$$
 
-**Approach 1 — Master Theorem.** $a = 2$, $b = 2$, $\alpha = \log_b a = 1$,
+**Approach 1 - Master Theorem.** $a = 2$, $b = 2$, $\alpha = \log_b a = 1$,
 $f(n) = cn = \Theta(n^\alpha)$: this is **case 2** of the Master
 Theorem (cf. ch. 1), so $T(n) = \Theta(n \log n)$.
 
-**Approach 2 — Recursion tree (by hand).**
+**Approach 2 - Recursion tree (by hand).**
 
 - Level 0: 1 node of cost $cn$.
 - Level $k$: $2^k$ nodes, each of cost $c \cdot n / 2^k$.
-- Cost per level: $2^k \cdot (cn/2^k) = cn$ — **constant** per level.
+- Cost per level: $2^k \cdot (cn/2^k) = cn$ - **constant** per level.
 - Depth: $\log_2 n$ levels down to leaves.
 
 $$T(n) = \sum_{k=0}^{\log_2 n} cn = cn\,(\log_2 n + 1) = \Theta(n \log n).$$
@@ -111,14 +111,14 @@ $\square$
 ### Stable? Memory? In practice?
 
 - **Stable**: yes (the merge preserves relative order on equal keys
-  — the `<=` in the test).
+  - the `<=` in the test).
 - **Memory**: $\Theta(n)$ extra (the `out` array).
-- **Strong**: the $n \log n$ bound is **guaranteed** on any input —
+- **Strong**: the $n \log n$ bound is **guaranteed** on any input -
   no pathological worst case like quicksort.
 
 ---
 
-## 1.3 — Exercises
+## 1.3 - Exercises
 
 :::exercise{id="{{EX_SO_MERGE2}}"}
 :::

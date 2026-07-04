@@ -1,13 +1,13 @@
 # 2. Binary Search on the Reals and on the Answer
 
 Lesson 1 binary-searched a **sorted array**. The real engine was
-not the array — it was **monotonicity**. So we can binary-search
+not the array - it was **monotonicity**. So we can binary-search
 whenever we have a monotone function, real or discrete, sometimes
 with no array at all.
 
 ---
 
-## 2.1 — On the reals: bisection
+## 2.1 - On the reals: bisection
 
 Let $f : [a, b] \to \mathbb{R}$ be **continuous** with $f(a) < 0 <
 f(b)$. The intermediate value theorem guarantees a root $r \in [a,
@@ -50,7 +50,7 @@ for _ in range(100):
 
 ---
 
-## 2.2 — Binary search on the answer
+## 2.2 - Binary search on the answer
 
 The single most rewarding move in competitive programming: instead
 of looking for $x$ in an array, **guess the answer's value** and
@@ -68,7 +68,7 @@ $$
 
 (or the increasing version: feasible above some threshold). This
 is **monotonicity of the predicate**. The boundary between `true`
-and `false` is unique — and that's what we look for.
+and `false` is unique - and that's what we look for.
 
 ### Pattern
 
@@ -84,12 +84,12 @@ def search_max(lo, hi, feasible):
 ```
 
 > **The `+1` rounding.** Without `+1`, when `hi = lo + 1` and
-> `feasible(mid)`, we set `lo = mid = lo` — infinite loop. With
+> `feasible(mid)`, we set `lo = mid = lo` - infinite loop. With
 > `+1`, `mid = lo + 1 = hi` and we make progress.
 
 ---
 
-## 2.3 — Example: Aggressive Cows
+## 2.3 - Example: Aggressive Cows
 
 > $n$ stalls at positions $x_1 < \dots < x_n$, place $k$ cows so
 > as to **maximize the minimum distance** between two consecutive
@@ -113,13 +113,13 @@ def feasible(d, X, k):
     return count >= k
 ```
 
-The trick **isn't** the greedy check — it's the reformulation:
+The trick **isn't** the greedy check - it's the reformulation:
 *solving* the optimization version is hard, *checking* a value is
 easy.
 
 ---
 
-## 2.4 — When to use it
+## 2.4 - When to use it
 
 Spot these signals in a statement:
 
@@ -135,7 +135,7 @@ reformulation makes a whole class of problems trivial.
 
 ---
 
-## 2.5 — Exercises
+## 2.5 - Exercises
 
 :::exercise{id="{{EX_SE_AGGRCOWS}}"}
 :::

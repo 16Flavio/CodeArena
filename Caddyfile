@@ -9,7 +9,7 @@
         max_size 500MB
     }
 
-    # Security headers — applied here too in case nginx upstream is
+    # Security headers - applied here too in case nginx upstream is
     # bypassed by a future deploy change. HSTS is set assuming the host
     # nginx terminates TLS; if Caddy is *the* edge, raise max-age and
     # add ``preload``. ``include_subdomains`` left off until you're sure
@@ -20,7 +20,7 @@
         X-Content-Type-Options "nosniff"
         Referrer-Policy "same-origin"
         Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
-        # Suppress the default Caddy server header — small info-leak
+        # Suppress the default Caddy server header - small info-leak
         # reduction.
         -Server
     }

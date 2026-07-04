@@ -1,6 +1,6 @@
 # 3. Borne inférieure $\Omega(n \log n)$ & tris linéaires
 
-## 3.1 — Pourquoi cherche-t-on une borne inférieure ?
+## 3.1 - Pourquoi cherche-t-on une borne inférieure ?
 
 Les tris en $\Theta(n \log n)$ s'enchaînent : mergesort, heapsort,
 quicksort en moyenne. Question naturelle : **peut-on faire mieux ?**
@@ -12,7 +12,7 @@ $\Omega(n \log n)$ dans le pire cas. La preuve passe par les
 
 ---
 
-## 3.2 — L'arbre de décision
+## 3.2 - L'arbre de décision
 
 Tout algorithme déterministe qui trie en utilisant uniquement des
 comparaisons peut être représenté comme un **arbre de décision
@@ -52,12 +52,12 @@ comparaisons dans le pire cas.** Mergesort et heapsort sont
 **asymptotiquement optimaux** dans ce modèle. $\square$
 
 > **Conséquence directe.** Pour aller en deçà, il faut **sortir du
-> modèle des comparaisons** — tirer parti d'une structure connue des
+> modèle des comparaisons** - tirer parti d'une structure connue des
 > clés. C'est ce que font les tris linéaires.
 
 ---
 
-## 3.3 — Tri par comptage (counting sort)
+## 3.3 - Tri par comptage (counting sort)
 
 ### Hypothèse
 
@@ -78,7 +78,7 @@ def counting_sort(A, k):
 
 ### Complexité
 
-$\Theta(n + k)$ — linéaire si $k = O(n)$.
+$\Theta(n + k)$ - linéaire si $k = O(n)$.
 
 ### Stabilité (version générale)
 
@@ -103,7 +103,7 @@ deux éléments de même clé restent dans leur ordre d'origine.
 
 ---
 
-## 3.4 — Tri par base (radix sort, LSD)
+## 3.4 - Tri par base (radix sort, LSD)
 
 ### Hypothèse
 
@@ -142,17 +142,17 @@ plus significatif), $A$ est trié par les **$i$ derniers chiffres**.
 
 *Hérédité.* Le passage sur le chiffre $i+1$ utilise un counting sort
 **stable** : deux clés ayant le même chiffre $i+1$ conservent leur
-ordre relatif établi à l'étape précédente — donc l'ordre global
+ordre relatif établi à l'étape précédente - donc l'ordre global
 sur les $i+1$ derniers chiffres. $\square$
 
 ### Complexité
 
-$\Theta(d \cdot (n + b))$ — linéaire en $n$ quand $d$ et $b$ sont
+$\Theta(d \cdot (n + b))$ - linéaire en $n$ quand $d$ et $b$ sont
 constantes (entiers à 32 bits par octets : $d = 4$, $b = 256$).
 
 ---
 
-## 3.5 — Tri par paquets (bucket sort)
+## 3.5 - Tri par paquets (bucket sort)
 
 ### Hypothèse
 
@@ -170,7 +170,7 @@ Les clés sont des **réels uniformément distribués** dans $[0, 1]$.
 Sous l'hypothèse uniforme, le nombre attendu d'éléments par paquet
 est $1$. Insertion sort dans un paquet de taille $m$ coûte
 $\Theta(m^2)$. La somme des $\mathbb{E}[m^2]$ sur les $n$ paquets
-donne $\Theta(n)$ — calcul classique mais hors champ ici.
+donne $\Theta(n)$ - calcul classique mais hors champ ici.
 
 → **$\Theta(n)$ en espérance** quand l'hypothèse uniforme tient.
 Pire cas : $\Theta(n^2)$ si tous les éléments tombent dans le même
@@ -178,7 +178,7 @@ paquet.
 
 ---
 
-## 3.6 — Tableau récapitulatif
+## 3.6 - Tableau récapitulatif
 
 | Algo | Hypothèse | Pire cas | Stable |
 |------|-----------|----------|--------|
@@ -189,7 +189,7 @@ paquet.
 
 ---
 
-## 3.7 — Exercices
+## 3.7 - Exercices
 
 :::exercise{id="{{EX_SO_COUNTING}}"}
 :::

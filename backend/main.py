@@ -21,7 +21,7 @@ except ImportError:
 
 
 class JsonFormatter(logging.Formatter):
-    """One-line JSON log records — parse-friendly for Grafana / Loki / jq.
+    """One-line JSON log records - parse-friendly for Grafana / Loki / jq.
     Falls back to the flat text format if LOG_FORMAT is unset or 'text'."""
 
     def format(self, record: logging.LogRecord) -> str:
@@ -68,7 +68,7 @@ logging.config.dictConfig({
 log = logging.getLogger("contest.main")
 
 # Optional error tracking. If SENTRY_DSN is set, install the SDK; otherwise
-# skip silently — the app doesn't require it.
+# skip silently - the app doesn't require it.
 if os.environ.get("SENTRY_DSN"):
     try:
         import sentry_sdk  # type: ignore
@@ -101,7 +101,7 @@ from .rate_limit import limiter
 from .routers import auth, teams, contests, admin, packages, icpc, scoreboard, announcements
 
 # Create all tables (development convenience; production uses Alembic).
-# Create missing tables at startup. This is a dev convenience — in
+# Create missing tables at startup. This is a dev convenience - in
 # production we rely on Alembic migrations (see docs/DEPLOY.md). When
 # Alembic has already been used on this DB, ``create_all`` is skipped:
 # it would otherwise silently create new tables the ORM defines but
@@ -120,7 +120,7 @@ def _init_schema() -> None:
             log.info("Schema init: alembic_version present, create_all skipped "
                      "(run `alembic upgrade head` to apply pending migrations)")
             return
-    except Exception:  # noqa: BLE001 — fall through to create_all
+    except Exception:  # noqa: BLE001 - fall through to create_all
         pass
     Base.metadata.create_all(bind=engine)
 
@@ -131,7 +131,7 @@ _init_schema()
 def _seed_languages() -> None:
     """Ensure the default ICPC languages exist. The Alembic migration seeds
     them in production DBs; tests that use create_all skip migrations so we
-    need a safety net here. Idempotent — never overwrites admin edits."""
+    need a safety net here. Idempotent - never overwrites admin edits."""
     from .database import SessionLocal
     from . import models as _m
     defaults = [
@@ -164,7 +164,7 @@ def _warn_insecure_scoring() -> None:
     """Loud warning on boot if the scoring sandbox isn't Docker.
 
     Two classes of user-controlled code run here: organizer-authored scripts
-    (scoring / output validators / ICPC interactors — organizers are trusted
+    (scoring / output validators / ICPC interactors - organizers are trusted
     to author these for contests they own) and, more importantly, CONTESTANT-
     submitted source in ICPC problems. In docker mode both the output-scoring
     path and the ICPC batch compile+run are isolated in throwaway containers;
@@ -173,13 +173,13 @@ def _warn_insecure_scoring() -> None:
     mode = (os.environ.get("SCORING_MODE") or "").lower()
     if mode == "docker":
         log.info(
-            "Scoring sandbox: docker mode — output-scoring and ICPC "
+            "Scoring sandbox: docker mode - output-scoring and ICPC "
             "compile/run (batch and interactive) run in isolated containers."
         )
         return
     banner = "=" * 72
     log.warning(
-        "\n%s\n  SCORING_MODE is %r — admin-authored scoring / interactor code\n"
+        "\n%s\n  SCORING_MODE is %r - admin-authored scoring / interactor code\n"
         "  will run directly on this host with no container isolation.\n"
         "  Set SCORING_MODE=docker in .env and build the sandbox image:\n"
         "      docker compose --profile build-only build scoring-image\n"
@@ -194,7 +194,7 @@ app = FastAPI(title="Contest Platform", version="1.0.0")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS — restrictive by default. The previous default ``"*"`` is a footgun
+# CORS - restrictive by default. The previous default ``"*"`` is a footgun
 # in production: any origin can pull data from the API. We now ship a dev-
 # safe default (localhost ports for `npm run dev` + `vite preview`), and the
 # operator must set CORS_ORIGINS explicitly in `.env` for prod (e.g. their
@@ -217,7 +217,7 @@ else:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    # allow_credentials must be False when origins is "*" — FastAPI/Starlette
+    # allow_credentials must be False when origins is "*" - FastAPI/Starlette
     # silently refuses credentialed CORS with wildcard. We use Bearer tokens,
     # not cookies, so this is fine either way.
     allow_credentials=(_cors_origins != ["*"]),
@@ -234,7 +234,7 @@ app.include_router(icpc.router)
 app.include_router(icpc.global_router)
 app.include_router(scoreboard.router)
 app.include_router(announcements.router)
-from .routers import registrations  # noqa: E402 — module-level router include
+from .routers import registrations  # noqa: E402 - module-level router include
 app.include_router(registrations.router)
 from .routers import learning  # noqa: E402
 app.include_router(learning.student_router)
@@ -339,7 +339,7 @@ def health():
 
 @app.get("/api/metrics")
 def metrics(request: Request):
-    """Lightweight internal metrics. Not a full Prometheus endpoint —
+    """Lightweight internal metrics. Not a full Prometheus endpoint -
     returns JSON so an external scraper / cron can shape it as needed.
 
     Exposes request volume + latency averages and a snapshot of scoring
@@ -347,7 +347,7 @@ def metrics(request: Request):
 
     Access: open by default (backwards-compatible with existing scrapers).
     If ``METRICS_TOKEN`` is set, the caller must present it via the
-    ``X-Metrics-Token`` header or a ``?token=`` query param — lets an
+    ``X-Metrics-Token`` header or a ``?token=`` query param - lets an
     operator lock the endpoint without wiring full admin auth into a
     scraper."""
     required = (os.environ.get("METRICS_TOKEN") or "").strip()

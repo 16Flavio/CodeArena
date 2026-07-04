@@ -1,4 +1,4 @@
-"""ICPC scoreboard — write path.
+"""ICPC scoreboard - write path.
 
 Unlike the output-scoring cache (best score per instance), ICPC tracks
 ``(solved, attempts_before_ac, first_solve_minutes)`` per (team-or-solo,
@@ -40,7 +40,7 @@ def update_icpc_entry(
     contest: models.Contest,
 ) -> None:
     """Re-derive the cached ICPC entry for the (scope, problem) cell from
-    every submission in that scope. Idempotent — safe to call multiple
+    every submission in that scope. Idempotent - safe to call multiple
     times, so rejudges and retries Just Work.
 
     Race-protected: two judging workers that flush their results at the
@@ -48,7 +48,7 @@ def update_icpc_entry(
     otherwise both see ``entry is None`` and INSERT twice. SQL UNIQUE
     treats NULL as distinct, so the existing constraint doesn't catch
     solo (team_id NULL) duplicates. SELECT FOR UPDATE on the contest
-    serialises every ICPC scoreboard write for this contest — coarse
+    serialises every ICPC scoreboard write for this contest - coarse
     but correct."""
     db.query(models.Contest).filter(
         models.Contest.id == contest.id,
@@ -78,7 +78,7 @@ def update_icpc_entry(
     attempts_total = 0
     first_solve_minutes = None
     for s in rows:
-        # A submission contributes once judged — pending ones don't count.
+        # A submission contributes once judged - pending ones don't count.
         if s.status == "pending":
             continue
         attempts_total += 1
@@ -113,7 +113,7 @@ def update_icpc_entry(
         .first()
     )
     # Nothing left in scope (e.g. admin deleted the last submission for this
-    # cell) — drop the cache row so the read path falls back to the "never
+    # cell) - drop the cache row so the read path falls back to the "never
     # attempted" rendering instead of showing a 0-attempt cell in red.
     if attempts_total == 0 and not solved:
         if entry is not None:

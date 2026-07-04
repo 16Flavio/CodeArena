@@ -1,4 +1,4 @@
-"""League feature: CRUD + publish gating, and the standings math —
+"""League feature: CRUD + publish gating, and the standings math -
 linear-by-rank points normalised to field size, per-event coefficient,
 absence = 0, team events crediting every member."""
 import io
@@ -173,7 +173,7 @@ def test_league_team_event_credits_every_member(client):
     cid = r.json()["id"]
     iid = _make_instance(client, admin, cid)
 
-    # Team "T" = alice + bob (bob added directly in the DB — the join
+    # Team "T" = alice + bob (bob added directly in the DB - the join
     # flow is covered by test_teams and irrelevant here). Team "S" = dave.
     client.post("/api/teams", json={"name": "T"}, headers=alice)
     tid = client.get("/api/teams/my", headers=alice).json()[0]["id"]

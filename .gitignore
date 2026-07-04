@@ -1,4 +1,4 @@
-# Local environment / secrets — never commit real credentials.
+# Local environment / secrets - never commit real credentials.
 .env
 .env.*
 !.env.example
@@ -26,7 +26,7 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 
-# Claude Code workspace state — local-only, never push.
+# Claude Code workspace state - local-only, never push.
 .claude/
 
 # Test cache

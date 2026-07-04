@@ -26,7 +26,7 @@ export default function ChangeUsernameModal({ onClose }) {
         new_username: form.new_username.trim(),
       });
       const token = getToken();
-      // Keep the "remember me" preference — don't silently demote
+      // Keep the "remember me" preference - don't silently demote
       // a persistent login to session-only just because the user
       // changed their username.
       if (token) login(token, data, { remember: tokenIsPersistent() });

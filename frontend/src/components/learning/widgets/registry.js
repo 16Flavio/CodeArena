@@ -6,9 +6,9 @@ import Exercise from './Exercise';
  *
  * The same registry is consumed by:
  *
- * - the markdown renderer (LessonMarkdown.jsx) — to map directive
+ * - the markdown renderer (LessonMarkdown.jsx) - to map directive
  *   names to React components,
- * - the admin editor's widget catalog modal — to list what's
+ * - the admin editor's widget catalog modal - to list what's
  *   available, with the directive syntax + a copy-pasteable example.
  *
  * Adding a new widget = adding a new entry here. Each entry MUST
@@ -17,7 +17,7 @@ import Exercise from './Exercise';
  * - ``component``: the React component to render
  * - ``label``: short human-readable name (FR/EN keys)
  * - ``description``: 1-2 sentences (FR/EN keys)
- * - ``params``: ordered array of {name, description, example} —
+ * - ``params``: ordered array of {name, description, example} -
  *   shown in the catalog as a small attribute reference
  * - ``snippet``: a ready-to-paste directive string
  *

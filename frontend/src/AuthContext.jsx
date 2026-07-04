@@ -14,7 +14,7 @@ export function AuthProvider({ children }) {
     // close and let the next browser visitor inherit the previous
     // user's session. Tokens written by the new dual-storage scheme
     // carry PERSIST_FLAG when remember-me is on; legacy tokens don't.
-    // Only purge unmarked persistent tokens — keep the legitimate
+    // Only purge unmarked persistent tokens - keep the legitimate
     // remember-me ones so the feature actually works across restarts.
     try {
       const ls = localStorage.getItem('token');

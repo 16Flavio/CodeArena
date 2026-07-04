@@ -1,6 +1,6 @@
 # 1. RAM Model & Asymptotic Notations
 
-## 1.1 — Why a cost model?
+## 1.1 - Why a cost model?
 
 When we say *"this algorithm runs in $O(n \log n)$"*, what exactly are
 we counting? Is an addition worth as much as a memory access? What
@@ -12,7 +12,7 @@ algorithms from bad ones, simple enough to be machine-independent.
 ### The RAM model (Random Access Machine)
 
 - Memory: an infinite array of cells, each holding an integer of at
-  most $w$ bits ($w = O(\log n)$ — enough to index the input).
+  most $w$ bits ($w = O(\log n)$ - enough to index the input).
 - **Unit-time** elementary operations:
   - cell read / write,
   - arithmetic on two words ($+$, $-$, $\times$, $/$, comparison,
@@ -41,7 +41,7 @@ $T(n) = \Theta(n)$.
 
 ---
 
-## 1.2 — Asymptotic notations: formal definitions
+## 1.2 - Asymptotic notations: formal definitions
 
 Let $f, g : \mathbb{N} \to \mathbb{R}_{\ge 0}$.
 
@@ -81,7 +81,7 @@ $$f(n) = \omega(g(n)) \iff \forall\, c > 0,\ \exists\, n_0,\ \forall n \ge n_0,\
 
 ### Visualise the orders of magnitude
 
-:::viz-bigO
+:::viz-big-o
 :::
 
 Drag the slider: while $n$ stays small, $n^2$ barely dominates
@@ -102,7 +102,7 @@ So $c = 15$ and $n_0 = 1$ work. $\square$
 
 ---
 
-## 1.3 — Exercises
+## 1.3 - Exercises
 
 :::exercise{id="{{EX_RAM_STD}}"}
 :::

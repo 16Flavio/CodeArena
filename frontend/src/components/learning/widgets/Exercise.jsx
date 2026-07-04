@@ -17,7 +17,7 @@ import { extractErrorMessage } from '../../../utils/apiError';
  * the same sandbox the contest pipeline uses.
  *
  * Hidden test cases (admin-marked ``is_sample=False``) appear as
- * "Test caché #N — réussi/raté" without revealing input/expected.
+ * "Test caché #N - réussi/raté" without revealing input/expected.
  */
 export default function Exercise({ id }) {
   const { t, i18n } = useTranslation();
@@ -68,7 +68,7 @@ export default function Exercise({ id }) {
 
   // CodeMirror language extension. Default to Python; could branch on
   // exercise.language for C/C++/Java but the syntax highlight isn't
-  // critical — the bigger win is the editor UX (line numbers, brace
+  // critical - the bigger win is the editor UX (line numbers, brace
   // matching).
   const cmExtensions = useMemo(() => [python()], []);
 

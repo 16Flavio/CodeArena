@@ -1,10 +1,10 @@
 # 4. Binary Heaps & Heapsort
 
-## 4.1 — The idea: an almost-complete tree in an array
+## 4.1 - The idea: an almost-complete tree in an array
 
 A **binary heap** (max-heap) is a binary tree satisfying:
 
-1. **Shape**: it is **almost complete** — every depth is filled
+1. **Shape**: it is **almost complete** - every depth is filled
    except the last, which fills left-to-right.
 2. **Order**: for every node $v$, $v.k \ge$ all keys in its
    descendants. (Min-heap: $\le$.)
@@ -28,12 +28,12 @@ def right(i):   return 2 * i + 2
 
 > **Why not a BST?** A BST is more powerful (search, total order)
 > but costs more in memory (pointers) and constants. A heap simply
-> exposes **min/max** at minimal cost — exactly what a *priority
+> exposes **min/max** at minimal cost - exactly what a *priority
 > queue* needs.
 
 ---
 
-## 4.2 — Primitive ops: sift-up and sift-down
+## 4.2 - Primitive ops: sift-up and sift-down
 
 When the order is locally violated, we **slide the offender
 up/down** until the property is restored.
@@ -50,7 +50,7 @@ def sift_up(A, i):
         i = parent(i)
 ```
 
-Cost: $\Theta(\log n)$ — at worst, climb leaf-to-root.
+Cost: $\Theta(\log n)$ - at worst, climb leaf-to-root.
 
 ### `sift_down(i)`: move down
 
@@ -72,7 +72,7 @@ Cost: $\Theta(\log n)$.
 
 ---
 
-## 4.3 — `insert` and `extract_max`
+## 4.3 - `insert` and `extract_max`
 
 ```python
 def insert(A, x):
@@ -95,7 +95,7 @@ of each op, by construction of the sifts.
 
 ---
 
-## 4.4 — `build_heap`: heapify in $\Theta(n)$
+## 4.4 - `build_heap`: heapify in $\Theta(n)$
 
 Given an arbitrary $A$, turn it into a heap.
 
@@ -136,11 +136,11 @@ $\sum h x^h = x/(1-x)^2$ at $x = 1/2$). So $T(n) = O(n)$. $\square$
 
 ---
 
-## 4.5 — Heapsort
+## 4.5 - Heapsort
 
 ### Idea
 
-1. `build_heap(A)` — $\Theta(n)$.
+1. `build_heap(A)` - $\Theta(n)$.
 2. Repeat $n$ times: `extract_max` and place the result at the end
    of the array (in-place).
 
@@ -167,13 +167,13 @@ $k+1$ elements.
   the heap invariant on `A[0..end[` via `sift_down`.
 
 At the end, `A[1..n[` is sorted ascending and `A[0]` is the
-smallest — global invariant holds. $\square$
+smallest - global invariant holds. $\square$
 
 ### Complexity
 
 - `build_heap`: $\Theta(n)$.
 - $n$ extractions × $\Theta(\log n)$: $\Theta(n \log n)$.
-- **Total**: $\Theta(n \log n)$, worst case as well as best —
+- **Total**: $\Theta(n \log n)$, worst case as well as best -
   no probabilistic argument needed (unlike quicksort).
 - **In-place**: $O(1)$ extra memory.
 - **Stable**: no (heap rotations scramble relative order).
@@ -191,11 +191,11 @@ its invariant via sift-up and sift-down.
 :::
 
 Try a sequence of `extract-max` calls: you pull elements in
-descending order — that's exactly the engine of **heapsort**.
+descending order - that's exactly the engine of **heapsort**.
 
 ---
 
-## 4.6 — Exercises
+## 4.6 - Exercises
 
 :::exercise{id="{{EX_HP_HEAPSORT}}"}
 :::

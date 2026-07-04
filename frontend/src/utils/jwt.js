@@ -1,4 +1,4 @@
-// Decode the `exp` claim from a JWT without verifying the signature — we only
+// Decode the `exp` claim from a JWT without verifying the signature - we only
 // need it to detect local token expiry for UI warnings.
 export function getJwtExpMs(token) {
   if (!token || typeof token !== 'string') return null;

@@ -129,7 +129,7 @@ def uninstall_package(
     admin: models.User = Depends(require_admin),
 ):
     spec = _validate_requirement(name)
-    # Refuse to touch pip / setuptools / wheel — removing these bricks pip itself.
+    # Refuse to touch pip / setuptools / wheel - removing these bricks pip itself.
     if _normalize(spec) in {"pip", "setuptools", "wheel"}:
         raise HTTPException(
             status_code=400,

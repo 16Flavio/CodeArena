@@ -1,4 +1,4 @@
-"""Centralised guards for file uploads — caps the body size before it
+"""Centralised guards for file uploads - caps the body size before it
 hits memory and sanitises client-supplied filenames so they can't escape
 the upload directory.
 
@@ -29,14 +29,14 @@ _FILENAME_SAFE = re.compile(r"[^A-Za-z0-9._-]+")
 
 def safe_filename(raw: str | None, fallback: str = "upload.bin") -> str:
     """Strip any directory component, normalise unicode, drop unsafe
-    characters. Always returns a non-empty filename — falls back to
+    characters. Always returns a non-empty filename - falls back to
     ``fallback`` if everything was stripped or ``raw`` was ``None``.
 
     The returned name is safe to embed in a filesystem path: no path
     separators, no leading dots, no NUL bytes, no traversal sequences."""
     if not raw:
         return fallback
-    # Take basename twice — once with each separator family — so that
+    # Take basename twice - once with each separator family - so that
     # ``a\b/c.txt`` reduces to ``c.txt`` regardless of platform.
     base = os.path.basename(raw.replace("\\", "/"))
     # Normalise NFKC so visually-identical unicode collapses to the same

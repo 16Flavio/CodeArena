@@ -1,6 +1,6 @@
 """Markdown → LaTeX export for the learning zone.
 
-Focused converter — handles the markdown subset the admin UI can
+Focused converter - handles the markdown subset the admin UI can
 produce, plus our custom directive widgets. We deliberately avoid
 pulling in pandoc: it's a 200 MB binary dependency for a use case
 this small. The trade-off is that exotic markdown (footnotes,
@@ -33,7 +33,7 @@ from . import models
 
 # LaTeX-special characters that need escaping in arbitrary text. We
 # convert them to their command form so they render as the literal
-# character. Order matters — backslash first so we don't double-escape.
+# character. Order matters - backslash first so we don't double-escape.
 _LATEX_ESCAPES = [
     ("\\", r"\textbackslash{}"),
     ("&", r"\&"),
@@ -60,11 +60,11 @@ def _latex_escape(text: str) -> str:
 # the rest.
 #
 # Inline code uses ``\texttt{...}`` rather than ``\verb`` because ``\verb``
-# is a fragile command — illegal inside the argument of another command
+# is a fragile command - illegal inside the argument of another command
 # (``\subsection``, ``\href``, ``\textbf``...). ``\texttt`` is robust
 # everywhere; we just escape the LaTeX-special chars inside.
 _INLINE_PATTERNS = [
-    # Math display ``$$...$$`` and inline ``$...$`` — body is passed
+    # Math display ``$$...$$`` and inline ``$...$`` - body is passed
     # through unchanged. Display first so ``$$`` isn't split as two
     # adjacent inline empties. Multi-line bodies survive because by the
     # time we get here paragraphs have been joined with spaces (cf.
@@ -87,8 +87,8 @@ def _render_inline(text: str) -> str:
     syntax matches are replaced by their command form. The order in
     ``_INLINE_PATTERNS`` controls precedence (code spans win over bold).
 
-    The naive approach — repeated regex substitution on the whole
-    string — over-escapes since we'd re-escape inside our own
+    The naive approach - repeated regex substitution on the whole
+    string - over-escapes since we'd re-escape inside our own
     replacements. Instead we tokenise: for each match we keep its
     pre-substituted output, escape the surrounding plain text, and
     join."""
@@ -166,14 +166,14 @@ def _render_widget(name: str, attrs: dict[str, str], lesson_url: str) -> str:
     """A widget directive becomes a call to ``\learnwidget``. The
     main.tex defines this macro; redefine it to customise rendering.
 
-    The URL goes through ``\href`` in the macro body — hyperref handles
+    The URL goes through ``\href`` in the macro body - hyperref handles
     its own escaping, so we pass the URL **raw** (escaping ``_`` to
     ``\_`` would break the link). Args have already been escaped at
     construction so we don't double-escape them either.
     """
     args = ", ".join(
         f"{_latex_escape(k)}={_latex_escape(v)}" for k, v in attrs.items()
-    ) or "—"
+    ) or "-"
     return (
         r"\learnwidget{" + _latex_escape(name) + "}{"
         + args + "}{" + lesson_url + "}"
@@ -242,7 +242,7 @@ def markdown_to_latex(
             i += 1
             continue
 
-        # Image standalone — `![alt](url)` on its own line
+        # Image standalone - `![alt](url)` on its own line
         m = re.match(r"^!\[([^\]]*)\]\(([^)]+)\)\s*$", line)
         if m is not None:
             out.append(_render_image(m.group(1), m.group(2), asset_map))
@@ -255,7 +255,7 @@ def markdown_to_latex(
             i += 1
             continue
 
-        # Unordered list — collect contiguous ``- `` lines
+        # Unordered list - collect contiguous ``- `` lines
         if re.match(r"^[-*]\s+", line):
             items: list[str] = []
             while i < len(lines) and re.match(r"^[-*]\s+", lines[i]):
@@ -279,7 +279,7 @@ def markdown_to_latex(
             out.append(r"\end{enumerate}")
             continue
 
-        # Blank line — paragraph separator.
+        # Blank line - paragraph separator.
         if not line.strip():
             out.append("")
             i += 1
@@ -293,7 +293,7 @@ def markdown_to_latex(
             i += 1
         out.append(_render_inline(" ".join(p.strip() for p in para)))
 
-    # Flush any open code block (defensive — markdown that doesn't
+    # Flush any open code block (defensive - markdown that doesn't
     # close its fence still escapes cleanly).
     if in_code:
         out.append(r"\begin{verbatim}")
@@ -428,7 +428,7 @@ _README = """# Syllabus LaTeX export
 
 This zip is a self-contained LaTeX project. To compile it to PDF:
 
-## Option 1 — local
+## Option 1 - local
 
 ```bash
 cd export-extracted/
@@ -438,7 +438,7 @@ pdflatex main.tex   # second pass for the table of contents
 
 You'll need a TeX distribution installed (TeX Live, MiKTeX, MacTeX).
 
-## Option 2 — Overleaf
+## Option 2 - Overleaf
 
 1. Create a new Overleaf project.
 2. Upload this zip via "Menu → Upload project".
@@ -472,7 +472,7 @@ def build_export_zip(db: Session, *, lang: str = "fr",
                      site_url: str = "") -> bytes:
     """Generate the export. ``lang`` picks which content_* / title_*
     columns to read. ``site_url`` is the public base URL of the
-    platform — embedded in widget links so the printed reader can
+    platform - embedded in widget links so the printed reader can
     click back to the live animation.
     """
     if lang not in ("fr", "en"):
@@ -487,8 +487,8 @@ def build_export_zip(db: Session, *, lang: str = "fr",
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        # Preamble — main.tex
-        title = "CodeArena — Syllabus" if lang == "en" else "CodeArena — Syllabus"
+        # Preamble - main.tex
+        title = "CodeArena - Syllabus" if lang == "en" else "CodeArena - Syllabus"
         author = "CodeArena"
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         main_lines = [

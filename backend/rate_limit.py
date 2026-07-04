@@ -14,7 +14,7 @@ from .auth import SECRET_KEY, ALGORITHM
 
 def _rate_limit_key(request: Request) -> str:
     """Return ``user:<id>`` when the request carries a valid *access*
-    JWT, else the remote IP. We never hit the DB here — only the
+    JWT, else the remote IP. We never hit the DB here - only the
     signature + ``purpose`` claim are verified. Crucially, a 2FA
     challenge token (purpose=``totp_challenge``) MUST NOT key on the
     victim's user id: otherwise a leaked challenge could be used to

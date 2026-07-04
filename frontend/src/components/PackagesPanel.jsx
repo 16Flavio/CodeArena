@@ -113,7 +113,7 @@ export default function PackagesPanel() {
             <div className="min-w-0">
               <p className="text-sm text-zinc-500 dark:text-zinc-400">{t('packages.python')}</p>
               <p className="font-mono text-sm text-zinc-900 dark:text-white">
-                {envInfo?.python_version || '—'}
+                {envInfo?.python_version || '-'}
               </p>
               <p className="font-mono text-xs text-zinc-400 truncate dark:text-zinc-500" title={envInfo?.python_executable}>
                 {envInfo?.python_executable}

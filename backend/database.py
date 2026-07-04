@@ -23,7 +23,7 @@ else:
     # users: each uvicorn worker holds its own pool, so the total
     # connection footprint is (workers × pool_size) plus bursts up to
     # (workers × (pool_size + max_overflow)). At UVICORN_WORKERS=4 and
-    # the defaults below: 40 steady, 100 burst — fits inside a stock
+    # the defaults below: 40 steady, 100 burst - fits inside a stock
     # Postgres ``max_connections=200`` with headroom for psql sessions
     # / pg_dump / migrations.
     #
@@ -34,12 +34,12 @@ else:
         "pool_size": int(os.environ.get("DB_POOL_SIZE", "10")),
         "max_overflow": int(os.environ.get("DB_MAX_OVERFLOW", "15")),
         "pool_pre_ping": True,
-        "pool_recycle": 1800,  # 30 min — well under any idle-timeout we've ever seen
+        "pool_recycle": 1800,  # 30 min - well under any idle-timeout we've ever seen
     })
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, **_engine_kwargs)
 
-# Boot-time diagnostic — echoes the DB URL the backend resolved to,
+# Boot-time diagnostic - echoes the DB URL the backend resolved to,
 # plus, for SQLite, whether the file path is writable. Saves a lot of
 # guesswork when a deploy / CI run mysteriously fails with
 # "readonly database" or "no such file": the next line up in the
@@ -73,7 +73,7 @@ def _enable_sqlite_foreign_keys(dbapi_connection, _connection_record):
     """SQLite ignores FOREIGN KEY constraints by default. Other backends
     (Postgres, MySQL) handle FKs themselves, so this is a no-op there."""
     # Postgres/other backends don't have a plain `cursor.execute("PRAGMA...")`
-    # and we'd trip errors — dispatch only for SQLite.
+    # and we'd trip errors - dispatch only for SQLite.
     if not _is_sqlite:
         return
     try:

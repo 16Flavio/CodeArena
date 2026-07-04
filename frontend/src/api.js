@@ -11,14 +11,14 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Throttle the 429 toast — a burst of rate-limited requests shouldn't stack
+// Throttle the 429 toast - a burst of rate-limited requests shouldn't stack
 // identical toasts on screen.
 let last429ToastAt = 0;
 
 // FastAPI's 422 returns ``detail`` as an *array* of validation objects
 // (``[{loc, msg, type}, ...]``). Most call sites pipe
 // ``err.response.data.detail`` straight into ``toast.error()``, which
-// passes it as React children — and React throws "Objects are not
+// passes it as React children - and React throws "Objects are not
 // valid as a React child" on raw objects, blanking the whole page
 // when no error boundary catches it (real bug report: AccountModal's
 // wrong-field-name change-username crash). Collapse the array to a
@@ -26,7 +26,7 @@ let last429ToastAt = 0;
 //
 // Object-shape ``detail`` (e.g. the TOTP_REQUIRED challenge: ``{code:
 // "TOTP_REQUIRED", params: {challenge_token: "..."}}``) is *intentional
-// structured data* — the login UI reads ``detail.code`` to pivot to
+// structured data* - the login UI reads ``detail.code`` to pivot to
 // the TOTP form. We must leave it alone. Likewise plain strings.
 function _normaliseErrorDetail(err) {
   const detail = err?.response?.data?.detail;
@@ -194,7 +194,7 @@ export const getScoringStats = () => api.get('/admin/scoring-stats');
 // Admin digest
 export const triggerAdminDigest = () => api.post('/admin/send-digest');
 
-// Admin rejudge — works for both output-scoring and ICPC submissions.
+// Admin rejudge - works for both output-scoring and ICPC submissions.
 export const rejudgeSubmission = (submissionId) =>
   api.post(`/admin/submissions/${submissionId}/rejudge`);
 
@@ -273,7 +273,7 @@ export const getStreamTicket = () => api.post('/auth/stream-ticket');
 // Open a problem-statement PDF in a new tab without ever putting the durable
 // session token in a URL. We mint a short-lived stream ticket, fetch the PDF
 // as a blob with that ticket (a fetch URL isn't recorded in browser history),
-// then point the tab at the blob: URL — so the visible URL carries no token
+// then point the tab at the blob: URL - so the visible URL carries no token
 // at all, and the ticket itself expires in ~60s. Mirrors the CSV download.
 export async function openStatementPdf(contestId, problemId, version = 0) {
   // Open the tab synchronously (inside the click gesture) so popup blockers
@@ -319,7 +319,7 @@ export const getServerTime = () => api.get('/time');
 // Rankings
 export const getMyRankings = () => api.get('/teams/my/rankings');
 
-// Leagues — season-long rankings over a set of contests. Students only
+// Leagues - season-long rankings over a set of contests. Students only
 // see published leagues; the admin CRUD lives in LeaguesTab.
 export const listLeagues = () => api.get('/leagues');
 export const getLeague = (id) => api.get(`/leagues/${id}`);
@@ -352,7 +352,7 @@ export const adminGetSubmissionContent = (id) =>
 export const adminDeleteSubmission = (id) =>
   api.delete(`/admin/submissions/${id}`);
 
-// Scoring workers — live RQ snapshot + requeue-failed action.
+// Scoring workers - live RQ snapshot + requeue-failed action.
 export const getScoringWorkers = () => api.get('/admin/scoring/workers');
 export const requeueFailedJobs = () => api.post('/admin/scoring/requeue-failed');
 
@@ -374,14 +374,14 @@ export const setMySoloAffiliation = (affiliation_id) =>
 export const setTeamAffiliation = (teamId, affiliation_id) =>
   api.post(`/icpc/teams/${teamId}/affiliation`, { affiliation_id });
 
-// Learning zone — student-facing
+// Learning zone - student-facing
 export const learnListSections = () => api.get('/learning/sections');
 export const learnListLessons = (slug) => api.get(`/learning/sections/${encodeURIComponent(slug)}/lessons`);
 export const learnGetLesson = (id) => api.get(`/learning/lessons/${id}`);
 export const learnSetProgress = (id, status) =>
   api.put(`/learning/lessons/${id}/progress`, { status });
 
-// Learning zone — admin-only
+// Learning zone - admin-only
 export const adminLearnListSections = () => api.get('/admin/learning/sections');
 export const adminLearnCreateSection = (data) => api.post('/admin/learning/sections', data);
 export const adminLearnUpdateSection = (id, data) =>
@@ -408,7 +408,7 @@ export const adminLearnExportLatex = (lang = 'fr') =>
     timeout: 60000,
   });
 
-// Lesson exercises — inline coding tasks.
+// Lesson exercises - inline coding tasks.
 export const learnGetExercise = (id) => api.get(`/learning/exercises/${id}`);
 export const learnRunExercise = (id, code, language = '') =>
   api.post(`/learning/exercises/${id}/run`, { code, language }, { timeout: 60000 });
@@ -421,7 +421,7 @@ export const adminLearnUpdateExercise = (id, data) =>
 export const adminLearnDeleteExercise = (id) =>
   api.delete(`/admin/learning/exercises/${id}`);
 
-// Custom widgets — student-facing list (used to hydrate the runtime
+// Custom widgets - student-facing list (used to hydrate the runtime
 // registry) + admin CRUD.
 export const learnListWidgets = () => api.get('/learning/widgets');
 export const adminLearnListWidgets = () => api.get('/admin/learning/widgets');
@@ -440,7 +440,7 @@ export const overrideJudging = (judgingId, payload) =>
 export const getIcpcStats = (contestId) =>
   api.get(`/contests/${contestId}/icpc-stats`);
 
-// CLICS event feed — admin-only NDJSON snapshot, fetched as raw text.
+// CLICS event feed - admin-only NDJSON snapshot, fetched as raw text.
 export const getIcpcEventFeedUrl = (contestId) =>
   `/api/contests/${contestId}/event-feed`;
 

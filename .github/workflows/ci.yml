@@ -62,7 +62,7 @@ jobs:
         env:
           DATABASE_URL: postgresql+psycopg2://ci:ci@localhost:5432/ci
         # Catches migrations that only work against SQLite (batch_alter_table
-        # issues, server_default mismatches, etc.) — a class of bug we've hit
+        # issues, server_default mismatches, etc.) - a class of bug we've hit
         # repeatedly. Downgrade is not gated because not every historical
         # migration is reversible against a populated DB.
         run: alembic upgrade head

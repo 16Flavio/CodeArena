@@ -1,6 +1,6 @@
-"""TOTP 2FA scaffold — setup, verify, disable, recovery code consumption.
+"""TOTP 2FA scaffold - setup, verify, disable, recovery code consumption.
 
-The login flow is NOT yet 2fa-aware (deferred — needs a challenge-token
+The login flow is NOT yet 2fa-aware (deferred - needs a challenge-token
 roundtrip). These tests cover the enrollment + management endpoints
 plus the ``backend.totp`` helpers in isolation.
 """
@@ -118,7 +118,7 @@ def _enable_2fa_for(client, username, password="test-pw-123456"):
 
 def test_login_with_2fa_returns_challenge(client):
     _enable_2fa_for(client, "gabriel")
-    # Now login with password alone — should return TOTP_REQUIRED + challenge.
+    # Now login with password alone - should return TOTP_REQUIRED + challenge.
     r = client.post("/api/auth/login", json={"username": "gabriel", "password": "test-pw-123456"})
     assert r.status_code == 401, r.text
     body = r.json()
@@ -198,7 +198,7 @@ def test_login_2fa_verify_locks_after_threshold_wrong_codes(client):
 
 
 def test_admin_can_force_disable_totp(client):
-    """The "lost phone + lost recovery codes" escape hatch — admin
+    """The "lost phone + lost recovery codes" escape hatch - admin
     wipes the user's 2FA state after offline identity check."""
     admin_h = auth_header(client, "rootadm")  # first user → admin
     _, _, _ = _enable_2fa_for(client, "victim", password="test-pw-123456")

@@ -20,7 +20,7 @@ RESET_TOKEN_EXPIRE_HOURS = 1
 # imposing rules that frustrate users (mandatory symbols, frequent
 # rotation). The blocklist catches the absolute worst (top-of-leaks
 # passwords) so users who paste "password123" get rejected at register
-# time. Frontend has a strength meter — backend is the ultimate gate.
+# time. Frontend has a strength meter - backend is the ultimate gate.
 PASSWORD_MIN_LENGTH = 10
 _PASSWORD_BLOCKLIST = frozenset(
     p.lower() for p in (
@@ -194,7 +194,7 @@ def change_password(
     user.password_hash = hash_password(data.new_password)
     # The lockout counter is shared between password and 2FA failures.
     # If the legitimate user just changed their password, any prior
-    # bad-attempt streak is moot — clear it so they're not surprised
+    # bad-attempt streak is moot - clear it so they're not surprised
     # by a 15-minute lockout the first time they mistype.
     user.failed_login_count = 0
     user.locked_until = None
@@ -225,7 +225,7 @@ def login(request: Request, data: schemas.UserLogin, db: Session = Depends(get_d
         verify_password(data.password, _DUMMY_PASSWORD_HASH)
 
     # Refuse early if the account is locked, *before* touching the hash
-    # — same response shape as a wrong password, so we don't leak "this
+    # - same response shape as a wrong password, so we don't leak "this
     # username exists, it's just locked" to scanners.
     if user is not None and user.locked_until is not None:
         locked_until = user.locked_until
@@ -249,7 +249,7 @@ def login(request: Request, data: schemas.UserLogin, db: Session = Depends(get_d
             if user.failed_login_count >= LOCKOUT_THRESHOLD:
                 user.locked_until = now + timedelta(seconds=LOCKOUT_DURATION)
                 # Reset the counter so the next burst starts fresh after
-                # the lockout window — avoids a cascading permanent lock
+                # the lockout window - avoids a cascading permanent lock
                 # when a legitimate user forgets their password twice.
                 user.failed_login_count = 0
             db.commit()
@@ -265,7 +265,7 @@ def login(request: Request, data: schemas.UserLogin, db: Session = Depends(get_d
         user.locked_until = None
         db.commit()
 
-    # If the user enabled 2FA, the password alone isn't enough — return
+    # If the user enabled 2FA, the password alone isn't enough - return
     # a short-lived challenge that proves "step 1 passed" so the
     # follow-up call to /2fa/login-verify doesn't have to re-check the
     # password. The challenge encodes the user_id + a TTL of 5 minutes.
@@ -274,7 +274,7 @@ def login(request: Request, data: schemas.UserLogin, db: Session = Depends(get_d
             {"sub": str(user.id), "purpose": "totp_challenge", "remember_me": bool(data.remember_me)},
             expires_delta=timedelta(minutes=5),
         )
-        # Status 401 with code TOTP_REQUIRED — the frontend swaps the
+        # Status 401 with code TOTP_REQUIRED - the frontend swaps the
         # password form for a code-input form on this code.
         raise_error(
             code=ErrorCode.TOTP_REQUIRED,
@@ -314,7 +314,7 @@ def totp_login_verify(
         raise_error(
             code=ErrorCode.TOTP_INVALID,
             status=400,
-            message="Challenge expired or invalid — restart login",
+            message="Challenge expired or invalid - restart login",
         )
     if payload.get("purpose") != "totp_challenge":
         raise_error(
@@ -328,12 +328,12 @@ def totp_login_verify(
         raise_error(
             code=ErrorCode.TOTP_NOT_ENABLED,
             status=400,
-            message="2FA is no longer enabled — restart login",
+            message="2FA is no longer enabled - restart login",
         )
 
     # Same lockout as /login: a wrong 2FA code increments the same
     # counter and triggers the same 15-minute lockout. Without this,
-    # a 6-digit code is brute-forceable in ~17h at 10/min — and the
+    # a 6-digit code is brute-forceable in ~17h at 10/min - and the
     # IP-based slowapi limit doesn't help against a botnet.
     now = datetime.now(timezone.utc)
     if user.locked_until is not None:
@@ -373,7 +373,7 @@ def totp_login_verify(
             message="Invalid 2FA code",
         )
 
-    # Success — clear the counters from any prior failures.
+    # Success - clear the counters from any prior failures.
     if user.failed_login_count or user.locked_until is not None:
         user.failed_login_count = 0
         user.locked_until = None
@@ -476,7 +476,7 @@ def reset_password(
     user.password_hash = hash_password(data.new_password)
     user.reset_token_hash = None
     user.reset_token_expires_at = None
-    # Clear the lockout counter — the original purpose of password
+    # Clear the lockout counter - the original purpose of password
     # reset is "I forgot mine", and an attacker who's been spraying
     # passwords against this account has just been deprecated. Without
     # this, a legitimate reset still leaves the user locked out for up
@@ -485,7 +485,7 @@ def reset_password(
     user.failed_login_count = 0
     user.locked_until = None
     # "I forgot my password" usually really means "someone may have my
-    # password" — revoke every session minted with the old credentials.
+    # password" - revoke every session minted with the old credentials.
     user.token_version = (user.token_version or 0) + 1
     db.commit()
 
@@ -506,7 +506,7 @@ def reset_password(
 #   3. POST /2fa/disable    → requires current password + valid OTP or
 #                             recovery code. Wipes all TOTP state.
 #
-# The login endpoint itself is NOT yet 2FA-aware in this scaffold —
+# The login endpoint itself is NOT yet 2FA-aware in this scaffold -
 # enabling it on the existing flow needs a challenge-token round-trip
 # that affects every login client. Tracked as the next-step gap.
 
@@ -524,7 +524,7 @@ def totp_setup(
         raise_error(
             code=ErrorCode.TOTP_ALREADY_ENABLED,
             status=400,
-            message="2FA is already enabled — disable it first if you want a new secret",
+            message="2FA is already enabled - disable it first if you want a new secret",
         )
     secret = _totp.generate_secret()
     user.totp_secret = secret
@@ -603,7 +603,7 @@ def totp_disable(
                 status=400,
                 message="Invalid 2FA code or recovery code",
             )
-        # We're disabling anyway, so the trimmed list doesn't matter —
+        # We're disabling anyway, so the trimmed list doesn't matter -
         # just clear everything.
         used_recovery = True
     else:
@@ -612,7 +612,7 @@ def totp_disable(
     user.totp_secret = None
     user.totp_recovery_codes = None
     db.commit()
-    # Notify the account owner — disabling 2FA is high-impact, and a
+    # Notify the account owner - disabling 2FA is high-impact, and a
     # recovery-code-based disable means an attacker holding a leaked
     # recovery code could silently undo the protection. The user must
     # see this email and act if it wasn't them.
@@ -632,6 +632,6 @@ def totp_disable(
                 "3. Contactez un administrateur.\n"
             ),
         )
-    except Exception:  # pragma: no cover — email is best-effort
+    except Exception:  # pragma: no cover - email is best-effort
         pass
     return {"detail": "2FA disabled"}

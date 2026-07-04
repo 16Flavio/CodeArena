@@ -2,7 +2,7 @@
 points and accumulate into a yearly standings table.
 
 Points per event: ``coefficient * 100 * (N - rank) / (N - 1)`` where N
-is the number of ranked entries — linear by rank, normalised to the
+is the number of ranked entries - linear by rank, normalised to the
 field size, so a win is worth 100 * coefficient regardless of turnout
 and the last finisher gets 0. Ties share the better rank. Team events
 credit every current member of the team with the team's points; a
@@ -10,7 +10,7 @@ missed event simply earns 0 (no drop policy).
 
 Standings are recomputed on request from the materialised scoreboard
 caches (`_build_scoreboard` / `_build_icpc_scoreboard` with
-``is_admin=True`` — the final, un-frozen, DQ-stripped truth). A league
+``is_admin=True`` - the final, un-frozen, DQ-stripped truth). A league
 season has tens of events at most, so this stays cheap; no extra cache
 layer until proven necessary."""
 from __future__ import annotations
@@ -52,7 +52,7 @@ def _event_finished(contest: models.Contest, now: datetime) -> bool:
 def _ranked_entries(db: Session, contest: models.Contest) -> list[tuple[int, list[int]]]:
     """Final ranking of a finished contest as ``(rank, [user_ids])``
     tuples, pre-sorted. Ties (identical sort keys) share the better
-    rank — competition ranking — so the arbitrary tie ORDER inside the
+    rank - competition ranking - so the arbitrary tie ORDER inside the
     scoreboard rows can't skew points."""
     if contest.kind == "icpc":
         out = _build_icpc_scoreboard(contest.id, is_admin=True, db=db)
@@ -116,7 +116,7 @@ def _event_out(ev: models.LeagueEvent, now: datetime, participants: int) -> sche
 
 
 def _participant_count(db: Session, contest: models.Contest) -> int:
-    """Cheap distinct-scope count from the materialised caches — enough
+    """Cheap distinct-scope count from the materialised caches - enough
     for the event list; the standings recount from the real rows."""
     if contest.kind == "icpc":
         q = db.query(models.IcpcScoreboardEntry).filter(

@@ -62,7 +62,7 @@ export default function WorkersPanel() {
           <Cpu className="w-5 h-5 text-accent-500 dark:text-accent-400" />
           {t('workers.heading')}
           <span className="text-xs font-normal text-zinc-400 dark:text-zinc-500">
-            ({workers.length}{state?.mode ? ` — ${state.mode}` : ''})
+            ({workers.length}{state?.mode ? ` - ${state.mode}` : ''})
           </span>
         </h2>
         <div className="flex items-center gap-2">
@@ -131,10 +131,10 @@ export default function WorkersPanel() {
                     }>{w.state}</span>
                   </td>
                   <td className="py-1 px-2 font-mono text-[11px]">
-                    {w.current_job ? `#${w.current_job.id}` : '—'}
+                    {w.current_job ? `#${w.current_job.id}` : '-'}
                   </td>
-                  <td className="py-1 px-2">{w.last_heartbeat ? formatDateTime(w.last_heartbeat) : '—'}</td>
-                  <td className="py-1 px-2">{w.birth_date ? formatDateTime(w.birth_date) : '—'}</td>
+                  <td className="py-1 px-2">{w.last_heartbeat ? formatDateTime(w.last_heartbeat) : '-'}</td>
+                  <td className="py-1 px-2">{w.birth_date ? formatDateTime(w.birth_date) : '-'}</td>
                 </tr>
               ))}
             </tbody>

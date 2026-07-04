@@ -1,6 +1,6 @@
 // Pick a text colour (black or white) that stays readable on top of an
 // arbitrary background. Used for the problem-label badges / balloons on
-// the scoreboard — balloons come in every colour and a few pastel ones
+// the scoreboard - balloons come in every colour and a few pastel ones
 // (pink, cyan, light grey) are illegible in white text.
 //
 // Formula: relative luminance from WCAG (0.299 R + 0.587 G + 0.114 B is

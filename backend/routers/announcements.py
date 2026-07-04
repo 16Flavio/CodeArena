@@ -1,4 +1,4 @@
-"""Contest announcements — jury → all-teams broadcast. Extracted from
+"""Contest announcements - jury → all-teams broadcast. Extracted from
 ``contests.py`` to keep that file focused on Contest + Instance CRUD."""
 from __future__ import annotations
 
