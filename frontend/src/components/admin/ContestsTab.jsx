@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   Trophy, Plus, Trash2, Edit, X, Upload, FileText, Code, Target, Eye,
-  FlaskConical, Copy, Pause, Play,
+  EyeOff, FlaskConical, Copy, Pause, Play,
 } from 'lucide-react';
 import {
   getContest, updateContest, deleteContest,
@@ -21,6 +21,12 @@ import { extractErrorMessage } from '../../utils/apiError';
 // and the per-contest instance management. ``users`` is threaded down
 // to the form's allowlist picker; ``onChange`` asks Admin.jsx to
 // reload the contest list.
+
+// "Hidden" for the quick toggle = hidden_at set and already in the past.
+// (A future hidden_at is a scheduled hide, managed via the edit form —
+// the toggle leaves visible_at alone in both directions.)
+const isContestHidden = (c) =>
+  !!c.hidden_at && new Date(c.hidden_at) <= new Date();
 export default function ContestsTab({ contests, users, onChange }) {
   const { t } = useTranslation();
   const confirm = useConfirm();
@@ -228,6 +234,12 @@ export default function ContestsTab({ contests, users, onChange }) {
                     <span className={c.is_active ? 'badge-active' : 'badge-inactive'}>
                       {c.is_active ? t('admin.contests.active') : t('admin.contests.inactive')}
                     </span>
+                    {isContestHidden(c) && (
+                      <span className="badge bg-zinc-100 text-zinc-500 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-600">
+                        <EyeOff className="w-3 h-3 mr-1" />
+                        {t('admin.contests.hiddenBadge')}
+                      </span>
+                    )}
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium border ${
                       c.kind === 'icpc'
                         ? 'bg-sky-500/15 text-sky-700 border-sky-500/30 dark:text-sky-300'
@@ -269,6 +281,28 @@ export default function ContestsTab({ contests, users, onChange }) {
                     {c.is_active
                       ? <Pause className="w-4 h-4" />
                       : <Play className="w-4 h-4" />}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const hidden = isContestHidden(c);
+                      try {
+                        await updateContest(c.id, { hidden_at: hidden ? null : toUtcIso(new Date()) });
+                        toast.success(hidden ? t('admin.contests.toastUnhidden') : t('admin.contests.toastHidden'));
+                        onChange();
+                      } catch (err) {
+                        toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
+                      }
+                    }}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isContestHidden(c)
+                        ? 'hover:bg-emerald-500/10 text-zinc-400 hover:text-emerald-500 dark:text-zinc-400 dark:hover:text-emerald-400'
+                        : 'hover:bg-amber-500/10 text-zinc-400 hover:text-amber-500 dark:text-zinc-400 dark:hover:text-amber-400'
+                    }`}
+                    title={isContestHidden(c) ? t('admin.contests.unhide') : t('admin.contests.hide')}
+                  >
+                    {isContestHidden(c)
+                      ? <Eye className="w-4 h-4" />
+                      : <EyeOff className="w-4 h-4" />}
                   </button>
                   <button
                     onClick={() => startEdit(c)}
