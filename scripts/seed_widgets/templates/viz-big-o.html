@@ -1,13 +1,13 @@
 <style>
   canvas { width: 100%; max-width: 100%; display: block; background: transparent; }
   .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; margin-top: 6px;
-            justify-content: center; color: #71717a; }
+            justify-content: center; color: #64807b; }
   .legend span { display: inline-flex; align-items: center; gap: 4px; }
   .swatch { display: inline-block; width: 14px; height: 3px; border-radius: 2px; }
-  .nval { font-weight: 700; color: #3a6690; min-width: 36px; display: inline-block; text-align: right; }
+  .nval { font-weight: 700; color: #0e6b63; min-width: 36px; display: inline-block; text-align: right; }
   @media (prefers-color-scheme: dark) {
-    .legend { color: #a1a1aa; }
-    .nval { color: #9cbbd6; }
+    .legend { color: #8ba39d; }
+    .nval { color: #85c1b6; }
   }
 </style>
 <div class="stage">
@@ -22,10 +22,10 @@
 <script>
 (function () {
   var fns = [
-    { name: '1',       fn: function (n) { return 1; },                                color: '#a1a1aa' },
+    { name: '1',       fn: function (n) { return 1; },                                color: '#8ba39d' },
     { name: 'log n',   fn: function (n) { return Math.max(0.01, Math.log2(n)); },     color: '#3b82f6' },
     { name: 'n',       fn: function (n) { return n; },                                color: '#10b981' },
-    { name: 'n log n', fn: function (n) { return n * Math.max(0.01, Math.log2(n)); }, color: '#4b7ca8' },
+    { name: 'n log n', fn: function (n) { return n * Math.max(0.01, Math.log2(n)); }, color: '#2f9a8d' },
     { name: 'n²',      fn: function (n) { return n * n; },                            color: '#f97316' },
     { name: '2ⁿ',      fn: function (n) { return Math.min(1e18, Math.pow(2, n)); },   color: '#ef4444' },
   ];
@@ -83,7 +83,7 @@
       }
       ctx.stroke();
     }
-    ctx.fillStyle = dark ? '#a1a1aa' : '#71717a';
+    ctx.fillStyle = dark ? '#8ba39d' : '#64807b';
     ctx.font = '11px system-ui';
     ctx.fillText('n', pad.l + w - 8, pad.t + h + 16);
     ctx.fillText(logy.checked ? 'log T(n)' : 'T(n)', 4, pad.t + 8);
