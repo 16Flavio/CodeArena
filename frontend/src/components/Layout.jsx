@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
 import {
-  LayoutDashboard, Users, Shield, LogOut, Menu, Zap, Sun, Moon, Globe, Mail, FileText, ShieldCheck, GraduationCap, UserRound, ChevronLeft, ChevronsRight,
+  LayoutDashboard, Users, Shield, LogOut, Menu, Zap, Sun, Moon, Globe, Mail, FileText, ShieldCheck, GraduationCap, Medal, UserRound, ChevronLeft, ChevronsRight,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -84,6 +84,7 @@ export default function Layout() {
     { to: '/teams', icon: Users, label: t('nav.teams'), badge: pendingRequests },
     { to: '/my-submissions', icon: FileText, label: t('nav.mySubmissions') },
     { to: '/learn', icon: GraduationCap, label: t('nav.learn') },
+    { to: '/league', icon: Medal, label: t('nav.league') },
   ];
 
   const linkClass = ({ isActive }) =>

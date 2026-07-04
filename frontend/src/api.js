@@ -319,6 +319,20 @@ export const getServerTime = () => api.get('/time');
 // Rankings
 export const getMyRankings = () => api.get('/teams/my/rankings');
 
+// Leagues — season-long rankings over a set of contests. Students only
+// see published leagues; the admin CRUD lives in LeaguesTab.
+export const listLeagues = () => api.get('/leagues');
+export const getLeague = (id) => api.get(`/leagues/${id}`);
+export const createLeague = (data) => api.post('/leagues', data);
+export const updateLeague = (id, data) => api.put(`/leagues/${id}`, data);
+export const deleteLeague = (id) => api.delete(`/leagues/${id}`);
+export const addLeagueEvent = (leagueId, data) =>
+  api.post(`/leagues/${leagueId}/events`, data);
+export const updateLeagueEvent = (leagueId, eventId, data) =>
+  api.put(`/leagues/${leagueId}/events/${eventId}`, data);
+export const removeLeagueEvent = (leagueId, eventId) =>
+  api.delete(`/leagues/${leagueId}/events/${eventId}`);
+
 // Admin
 export const getUsers = () => api.get('/admin/users');
 export const toggleAdmin = (id) => api.put(`/admin/users/${id}/toggle-admin`);

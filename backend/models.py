@@ -885,3 +885,49 @@ class LearningWidget(Base):
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
 
 
+
+
+class League(Base):
+    """A season-long student league: a set of contests ("events") whose
+    final rankings convert to points and accumulate into a yearly
+    standings table. Points per event: ``100 * (N - rank) / (N - 1)``
+    (linear by rank, normalised to the field size), times the event's
+    coefficient. Team events credit every member with the team's
+    points. No drop policy — a missed event simply earns 0.
+
+    ``is_published`` gates student visibility so a league can be
+    assembled in draft (same pattern as learning sections)."""
+    __tablename__ = "leagues"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), nullable=False)
+    # Season label shown in the UI, e.g. "2026-2027".
+    season = Column(String(50), nullable=False, default="")
+    description = Column(Text, nullable=False, default="")
+    is_published = Column(Boolean, default=False, nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+    events = relationship(
+        "LeagueEvent", back_populates="league",
+        cascade="all, delete-orphan", order_by="LeagueEvent.id",
+    )
+
+
+class LeagueEvent(Base):
+    """Attaches one contest to a league. ``coefficient`` scales the
+    event's points (double points for a final, half for a fun round).
+    A contest only feeds the standings once its end_time has passed —
+    attached-but-unfinished events are listed as upcoming."""
+    __tablename__ = "league_events"
+    __table_args__ = (
+        UniqueConstraint("league_id", "contest_id", name="uq_league_event"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    league_id = Column(Integer, ForeignKey("leagues.id", ondelete="CASCADE"), nullable=False, index=True)
+    contest_id = Column(Integer, ForeignKey("contests.id", ondelete="CASCADE"), nullable=False, index=True)
+    coefficient = Column(Float, nullable=False, default=1.0)
+
+    league = relationship("League", back_populates="events")
+    contest = relationship("Contest")
