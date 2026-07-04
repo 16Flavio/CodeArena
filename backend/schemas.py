@@ -1181,3 +1181,77 @@ class LearningWidgetOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ─── Leagues ─────────────────────────────────────────────────────────────────
+
+class LeagueCreate(BaseModel):
+    name: str
+    season: str = ""
+    description: str = ""
+
+
+class LeagueUpdate(BaseModel):
+    name: Optional[str] = None
+    season: Optional[str] = None
+    description: Optional[str] = None
+    is_published: Optional[bool] = None
+
+
+class LeagueEventIn(BaseModel):
+    contest_id: int
+    coefficient: float = 1.0
+
+
+class LeagueEventUpdate(BaseModel):
+    coefficient: float
+
+
+class LeagueEventOut(BaseModel):
+    id: int
+    contest_id: int
+    contest_title: str
+    contest_kind: str
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    coefficient: float
+    # True once end_time has passed — only then does the event feed the
+    # standings.
+    finished: bool
+    participants: int
+
+
+class LeagueEventScoreOut(BaseModel):
+    event_id: int
+    contest_id: int
+    contest_title: str
+    rank: Optional[int] = None       # None = did not take part
+    points: float
+
+
+class LeagueStandingRowOut(BaseModel):
+    rank: int
+    user_id: int
+    username: str
+    total_points: float
+    events_played: int
+    wins: int
+    per_event: list[LeagueEventScoreOut]
+
+
+class LeagueOut(BaseModel):
+    id: int
+    name: str
+    season: str
+    description: str
+    is_published: bool
+    created_at: Optional[datetime] = None
+    events: list[LeagueEventOut] = []
+
+    class Config:
+        from_attributes = True
+
+
+class LeagueStandingsOut(BaseModel):
+    league: LeagueOut
+    rows: list[LeagueStandingRowOut]

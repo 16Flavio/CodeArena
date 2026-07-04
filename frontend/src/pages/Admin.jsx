@@ -4,7 +4,7 @@ import { Navigate } from 'react-router-dom';
 import { getUsers, getContests, getContest } from '../api';
 import {
   Users, Trophy, Shield, Package,
-  ScrollText, Inbox, Cpu, Building2,
+  ScrollText, Inbox, Cpu, Building2, Medal,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,7 @@ import UsersTab from '../components/admin/UsersTab';
 import AuditLogTab from '../components/admin/AuditLogTab';
 import SubmissionsTab from '../components/admin/SubmissionsTab';
 import ContestsTab from '../components/admin/ContestsTab';
+import LeaguesTab from '../components/admin/LeaguesTab';
 
 export default function Admin() {
   const { user } = useAuth();
@@ -72,6 +73,7 @@ export default function Admin() {
       <div className="flex gap-1 bg-white/50 p-1 rounded-lg w-fit border border-zinc-200 dark:bg-zinc-900/50 dark:border-zinc-800/50">
         {[
           { key: 'contests', label: t('admin.tabContests'), icon: Trophy },
+          { key: 'leagues', label: t('admin.tabLeagues'), icon: Medal },
           { key: 'submissions', label: t('admin.tabSubmissions'), icon: Inbox },
           { key: 'users', label: t('admin.tabUsers'), icon: Users },
           { key: 'affiliations', label: t('admin.tabAffiliations'), icon: Building2 },
@@ -105,6 +107,8 @@ export default function Admin() {
       {tab === 'contests' && (
         <ContestsTab contests={contests} users={users} onChange={refresh} />
       )}
+
+      {tab === 'leagues' && <LeaguesTab contests={contests} />}
 
       {tab === 'submissions' && <SubmissionsTab contests={contests} />}
       {tab === 'packages' && <PackagesPanel />}

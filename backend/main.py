@@ -239,6 +239,8 @@ app.include_router(registrations.router)
 from .routers import learning  # noqa: E402
 app.include_router(learning.student_router)
 app.include_router(learning.admin_router)
+from .routers import leagues  # noqa: E402
+app.include_router(leagues.router)
 
 
 # Background email-outbox drainer. The worker picks up rows the request
