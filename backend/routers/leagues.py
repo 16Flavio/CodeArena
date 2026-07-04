@@ -117,20 +117,22 @@ def _event_out(ev: models.LeagueEvent, now: datetime, participants: int) -> sche
 
 def _participant_count(db: Session, contest: models.Contest) -> int:
     """Cheap distinct-scope count from the materialised caches - enough
-    for the event list; the standings recount from the real rows."""
-    if contest.kind == "icpc":
-        q = db.query(models.IcpcScoreboardEntry).filter(
-            models.IcpcScoreboardEntry.contest_id == contest.id
-        )
-    else:
-        entries = (
-            db.query(models.ScoreboardEntry.team_id, models.ScoreboardEntry.user_id)
-            .filter(models.ScoreboardEntry.contest_id == contest.id)
-            .distinct()
-            .all()
-        )
-        return len(entries)
-    return q.count()
+    for the event list; the standings recount from the real rows.
+
+    Both caches hold one row per (scope, instance/problem) - a plain
+    count() would report attempted problems, not entrants - so count
+    distinct (team_id, user_id) scopes."""
+    model = (
+        models.IcpcScoreboardEntry if contest.kind == "icpc"
+        else models.ScoreboardEntry
+    )
+    entries = (
+        db.query(model.team_id, model.user_id)
+        .filter(model.contest_id == contest.id)
+        .distinct()
+        .all()
+    )
+    return len(entries)
 
 
 def _league_out(db: Session, league: models.League, now: datetime) -> schemas.LeagueOut:
