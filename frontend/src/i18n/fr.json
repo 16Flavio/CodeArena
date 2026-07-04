@@ -564,13 +564,29 @@
     "instances_plural": "instances",
     "startsOn": "Début : {{date}}",
     "endsOn": "Fin : {{date}}",
-    "toastLoadFailed": "Impossible de charger le tableau de bord"
+    "toastLoadFailed": "Impossible de charger le tableau de bord",
+    "happeningNow": "En ce moment",
+    "nextUp": "Prochain rendez-vous",
+    "leagueTeaser": "Vos points de saison et le classement annuel de la classe.",
+    "leagueCta": "Voir le classement de la ligue"
   },
   "landing": {
     "welcome": "Bienvenue sur CodeArena",
     "welcomeSub": "Créez un compte pour participer aux concours, soumettre vos solutions et suivre le classement.",
     "registerCta": "Créer un compte",
-    "footer": "CodeArena"
+    "footer": "CodeArena",
+    "heroEyebrow": "Plateforme de concours de programmation",
+    "heroTitle": "Codez. Affrontez-vous. Grimpez au classement.",
+    "heroSub": "Concours ICPC et defis d'optimisation, lecons interactives d'algorithmique, et une ligue qui court toute l'annee. Tout au meme endroit.",
+    "previewLive": "En direct",
+    "previewTeam": "Équipe",
+    "previewPen": "Pén.",
+    "featContestsTitle": "Des concours qui jugent vraiment",
+    "featContestsBody": "Soumettez votre code, il est compilé et exécuté contre des tests cachés : verdicts AC/WA/TLE, pénalités et gel du scoreboard comme en vraie finale ICPC.",
+    "featLearnTitle": "Apprenez avec des leçons vivantes",
+    "featLearnBody": "Des chapitres bilingues avec math, visualisations interactives et exercices notés en ligne, du Big-O aux structures avancées.",
+    "featLeagueTitle": "Une saison, un classement",
+    "featLeagueBody": "Chaque compétition rapporte des points selon votre rang. Le classement annuel départage les meilleurs sur la durée, pas sur un seul soir."
   },
   "teams": {
     "title": "Équipes",
@@ -772,7 +788,11 @@
     "confirmDeleteAnn": "Supprimer cette annonce ?",
     "notFoundHeading": "Concours introuvable",
     "notFoundBody": "Il a peut-être été supprimé ou vous n'y avez pas accès.",
-    "backToDashboard": "Retour au tableau de bord"
+    "backToDashboard": "Retour au tableau de bord",
+    "tabStatement": "Énoncé",
+    "tabSubmit": "Soumettre",
+    "tabMySubmissions": "Mes soumissions",
+    "tabParticipants": "Participants"
   },
   "scoreboard": {
     "title": "Classement",

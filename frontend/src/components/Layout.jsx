@@ -2,9 +2,10 @@ import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
 import {
-  LayoutDashboard, Users, Shield, LogOut, Menu, Zap, Sun, Moon, Globe, Mail, FileText, ShieldCheck, GraduationCap, Medal, UserRound, ChevronLeft, ChevronsRight,
+  LayoutDashboard, Users, Shield, LogOut, Menu, X, Zap, Sun, Moon, Mail,
+  FileText, ShieldCheck, GraduationCap, Medal, UserRound, ChevronDown,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getIncomingRequestsCount, resendVerification } from '../api';
 import AccountModal from './AccountModal';
@@ -13,34 +14,21 @@ import SessionWarning from './SessionWarning';
 import toast from 'react-hot-toast';
 import { extractErrorMessage } from '../utils/apiError';
 
-// Persist the collapsed-sidebar preference per user - reading it on
-// load avoids a flash from expanded → collapsed during render.
-const SIDEBAR_KEY = 'codearena-sidebar-collapsed';
-function readSidebarPref() {
-  try { return localStorage.getItem(SIDEBAR_KEY) === '1'; } catch { return false; }
-}
-function writeSidebarPref(collapsed) {
-  try { localStorage.setItem(SIDEBAR_KEY, collapsed ? '1' : '0'); } catch { /* ignore */ }
-}
-
 const POLL_MS = 30000;
 
+// Product-style shell: a sticky top navigation bar (brand, primary nav,
+// utilities and account on the right) instead of the old admin-template
+// sidebar. Mobile gets a slide-down sheet with the same entries.
 export default function Layout() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(readSidebarPref);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [pendingRequests, setPendingRequests] = useState(0);
   const [showAccountModal, setShowAccountModal] = useState(false);
-
-  const toggleCollapsed = () => {
-    setCollapsed((c) => {
-      writeSidebarPref(!c);
-      return !c;
-    });
-  };
+  const accountRef = useRef(null);
 
   const handleResendVerification = async () => {
     try {
@@ -79,6 +67,18 @@ export default function Layout() {
     };
   }, []);
 
+  // Close the account menu on any outside click.
+  useEffect(() => {
+    if (!accountOpen) return undefined;
+    const onClick = (e) => {
+      if (accountRef.current && !accountRef.current.contains(e.target)) {
+        setAccountOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [accountOpen]);
+
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
     { to: '/teams', icon: Users, label: t('nav.teams'), badge: pendingRequests },
@@ -86,233 +86,197 @@ export default function Layout() {
     { to: '/learn', icon: GraduationCap, label: t('nav.learn') },
     { to: '/league', icon: Medal, label: t('nav.league') },
   ];
+  const adminItems = user?.is_admin
+    ? [
+        { to: '/admin', icon: Shield, label: t('nav.admin') },
+        { to: '/admin/learning', icon: GraduationCap, label: t('admin.learning.title') },
+      ]
+    : [];
 
-  const linkClass = ({ isActive }) =>
-    `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+  // Top-bar links: quiet text, active state = ink text + a 2px accent
+  // rule sitting on the header's bottom border.
+  const topLinkClass = ({ isActive }) =>
+    `relative flex items-center gap-1.5 px-1 h-16 text-sm font-medium transition-colors ${
       isActive
-        ? 'bg-accent-600/15 text-accent-700 border border-accent-500/30 dark:bg-accent-600/20 dark:text-accent-300'
-        : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800/50'
+        ? 'text-zinc-900 dark:text-white after:absolute after:left-0 after:right-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-accent-600 dark:after:bg-accent-400'
+        : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
     }`;
 
+  const sheetLinkClass = ({ isActive }) =>
+    `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+      isActive
+        ? 'bg-accent-600/10 text-accent-700 dark:bg-accent-500/15 dark:text-accent-300'
+        : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800/60'
+    }`;
+
+  const iconBtn =
+    'p-2 rounded-full text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800';
+
   return (
-    <div className="min-h-screen flex">
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <div className="min-h-screen flex flex-col">
+      <SessionWarning />
 
-      <aside
-        className={`fixed lg:sticky top-0 left-0 z-50 h-screen bg-white border-r border-zinc-200 flex flex-col transition-all duration-300 dark:bg-zinc-950 dark:border-zinc-800/50 ${
-          collapsed ? 'w-16' : 'w-64'
-        } ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
-      >
-        <div className={`flex items-center gap-3 ${collapsed ? 'p-3 justify-center' : 'p-6'}`}>
-          <div className="w-9 h-9 rounded-lg bg-accent-600 flex items-center justify-center shrink-0">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
-          {!collapsed && <span className="text-lg font-bold text-zinc-900 dark:text-white">CodeArena</span>}
-          {!collapsed && (
-            <button
-              onClick={toggleCollapsed}
-              className="ml-auto p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition-colors hidden lg:block dark:hover:bg-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-200"
-              aria-label={t('nav.collapseSidebar')}
-              title={t('nav.collapseSidebar')}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+      <header className="sticky top-0 z-40 bg-white/95 border-b border-zinc-200 dark:bg-zinc-950/95 dark:border-zinc-800">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 h-16 flex items-center gap-6">
+          {/* Brand */}
+          <Link to="/dashboard" className="flex items-center gap-2.5 shrink-0" aria-label="CodeArena">
+            <span className="w-8 h-8 rounded-full bg-accent-600 flex items-center justify-center">
+              <Zap className="w-4 h-4 text-white" />
+            </span>
+            <span className="text-[17px] font-bold tracking-tight text-zinc-900 dark:text-white">
+              CodeArena
+            </span>
+          </Link>
 
-        {/* In collapsed mode, the only visible chrome is icons. The
-            ChevronsRight expand button sits below the logo so the
-            user has somewhere to click to bring labels back. */}
-        {collapsed && (
-          <button
-            onClick={toggleCollapsed}
-            className="mx-auto mb-2 p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 hidden lg:block dark:hover:bg-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-200"
-            aria-label={t('nav.expandSidebar')}
-            title={t('nav.expandSidebar')}
-          >
-            <ChevronsRight className="w-4 h-4" />
-          </button>
-        )}
-
-        <nav className={`flex-1 ${collapsed ? 'px-2' : 'px-4'} space-y-1`}>
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={linkClass}
-              onClick={() => setSidebarOpen(false)}
-              title={collapsed ? item.label : undefined}
-            >
-              <item.icon className="w-4 h-4 shrink-0" />
-              {!collapsed && <span className="flex-1">{item.label}</span>}
-              {item.badge > 0 && !collapsed && (
-                <span
-                  className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-accent-600 text-white text-[11px] font-bold"
-                  title={t('nav.pendingRequests', { count: item.badge })}
-                >
-                  {item.badge > 99 ? '99+' : item.badge}
-                </span>
-              )}
-              {item.badge > 0 && collapsed && (
-                <span
-                  className="absolute top-0 right-0 w-2 h-2 rounded-full bg-accent-600"
-                  title={t('nav.pendingRequests', { count: item.badge })}
-                />
-              )}
-            </NavLink>
-          ))}
-
-          {user?.is_admin && (
-            <>
-              <NavLink
-                to="/admin"
-                className={linkClass}
-                onClick={() => setSidebarOpen(false)}
-                title={collapsed ? t('nav.admin') : undefined}
-              >
-                <Shield className="w-4 h-4 shrink-0" />
-                {!collapsed && <span className="flex-1">{t('nav.admin')}</span>}
+          {/* Primary navigation (desktop) */}
+          <nav className="hidden lg:flex items-center gap-5 h-16" aria-label={t('nav.dashboard')}>
+            {navItems.map((item) => (
+              <NavLink key={item.to} to={item.to} className={topLinkClass}>
+                <span>{item.label}</span>
+                {item.badge > 0 && (
+                  <span
+                    className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-accent-600 text-white text-[10px] font-bold font-mono"
+                    title={t('nav.pendingRequests', { count: item.badge })}
+                  >
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </span>
+                )}
               </NavLink>
-              <NavLink
-                to="/admin/learning"
-                className={linkClass}
-                onClick={() => setSidebarOpen(false)}
-                title={collapsed ? t('admin.learning.title') : undefined}
-              >
-                <GraduationCap className="w-4 h-4 shrink-0" />
-                {!collapsed && <span className="flex-1">{t('admin.learning.title')}</span>}
+            ))}
+            {adminItems.length > 0 && (
+              <span className="h-5 w-px bg-zinc-200 dark:bg-zinc-800" aria-hidden="true" />
+            )}
+            {adminItems.map((item) => (
+              <NavLink key={item.to} to={item.to} className={topLinkClass}>
+                <item.icon className="w-3.5 h-3.5" />
+                <span>{item.label}</span>
               </NavLink>
-            </>
-          )}
-        </nav>
+            ))}
+          </nav>
 
-        <div className={`${collapsed ? 'p-2' : 'p-4'} border-t border-zinc-200 dark:border-zinc-800/50 space-y-1`}>
-          {/* Theme + language toggles. In collapsed mode they shrink
-              to icon-only buttons; in expanded mode they show a label. */}
-          <button
-            onClick={toggleTheme}
-            className={`flex items-center ${collapsed ? 'justify-center w-full p-2' : 'gap-3 w-full px-4 py-2.5'} rounded-lg text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800/50`}
-            aria-label={t('nav.toggleTheme')}
-            title={collapsed ? (theme === 'dark' ? t('nav.lightMode') : t('nav.darkMode')) : undefined}
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            {!collapsed && (
-              <span className="flex-1 text-left">
-                {theme === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={toggleLng}
-            className={`flex items-center ${collapsed ? 'justify-center w-full p-2' : 'gap-3 w-full px-4 py-2.5'} rounded-lg text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800/50`}
-            aria-label={t('nav.language')}
-            title={collapsed ? t('nav.language') : t('nav.language')}
-          >
-            <Globe className="w-4 h-4" />
-            {!collapsed && (
-              <span className="flex-1 text-left uppercase font-mono tabular-nums">{currentLng}</span>
-            )}
-          </button>
-
-          {/* Single account entry - opens a centered, tabbed modal
-              with password / username / affiliation / security. The
-              previous 3-button cramming in the sidebar was the
-              "tout petit dans le côté" complaint. */}
-          <button
-            onClick={() => setShowAccountModal(true)}
-            className={`flex items-center ${collapsed ? 'justify-center w-full p-2' : 'gap-3 w-full px-3 py-2'} rounded-lg text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800/50`}
-            title={collapsed ? t('nav.account') : undefined}
-          >
-            <div className="w-8 h-8 rounded-lg bg-accent-500 flex items-center justify-center text-sm font-bold text-white shrink-0">
-              {user?.username?.[0]?.toUpperCase() || <UserRound className="w-4 h-4" />}
-            </div>
-            {!collapsed && (
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-medium text-zinc-900 truncate dark:text-zinc-200">
-                  {user?.username}
-                </p>
-                <p className="text-xs text-zinc-500 truncate dark:text-zinc-500">{t('nav.account')}</p>
-              </div>
-            )}
-            {!collapsed && user?.totp_enabled && (
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" title={t('nav.security')} />
-            )}
-          </button>
-
-          {user && !user.email_verified && (
-            <button
-              onClick={handleResendVerification}
-              className={`flex items-center ${collapsed ? 'justify-center w-full p-2' : 'gap-3 w-full px-4 py-2.5'} rounded-lg text-sm font-medium text-amber-700 hover:bg-amber-500/10 transition-all duration-200 dark:text-amber-400`}
-              title={collapsed ? t('nav.resendVerification') : t('nav.unverifiedTitle')}
-            >
-              <Mail className="w-4 h-4" />
-              {!collapsed && <span className="flex-1 text-left">{t('nav.resendVerification')}</span>}
-            </button>
-          )}
-
-          <button
-            onClick={handleLogout}
-            className={`flex items-center ${collapsed ? 'justify-center w-full p-2' : 'gap-3 w-full px-4 py-2.5'} rounded-lg text-sm text-zinc-600 hover:text-red-600 hover:bg-red-500/10 transition-all duration-200 dark:text-zinc-400 dark:hover:text-red-400`}
-            title={collapsed ? t('nav.signOut') : undefined}
-          >
-            <LogOut className="w-4 h-4" />
-            {!collapsed && t('nav.signOut')}
-          </button>
-        </div>
-      </aside>
-
-      <div className="flex-1 min-w-0">
-        <SessionWarning />
-        <header className="lg:hidden sticky top-0 z-30 bg-white/80 border-b border-zinc-200 px-4 py-3 flex items-center justify-between dark:bg-zinc-950/80 dark:border-zinc-800/50">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-lg hover:bg-zinc-100 transition-colors dark:hover:bg-zinc-800"
-            aria-label={t('nav.openMenu')}
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-accent-500" />
-            <span className="font-bold text-zinc-900 dark:text-white">CodeArena</span>
-          </div>
-          <div className="flex items-center gap-1">
+          {/* Utilities */}
+          <div className="ml-auto flex items-center gap-1">
             <NotificationsBell />
-            <button
-              onClick={toggleLng}
-              className="p-2 rounded-lg hover:bg-zinc-100 transition-colors dark:hover:bg-zinc-800 text-xs font-semibold uppercase"
-              aria-label={t('nav.language')}
-            >
+            <button onClick={toggleLng} className={`${iconBtn} text-xs font-semibold uppercase font-mono w-9 h-9 flex items-center justify-center`} aria-label={t('nav.language')}>
               {currentLng}
             </button>
+            <button onClick={toggleTheme} className={iconBtn} aria-label={t('nav.toggleTheme')}>
+              {theme === 'dark' ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
+            </button>
+
+            {/* Account menu (desktop) */}
+            <div className="relative hidden lg:block" ref={accountRef}>
+              <button
+                onClick={() => setAccountOpen((o) => !o)}
+                className="flex items-center gap-2 pl-1.5 pr-2 py-1.5 ml-1 rounded-full hover:bg-zinc-100 transition-colors dark:hover:bg-zinc-800"
+                aria-haspopup="menu"
+                aria-expanded={accountOpen}
+              >
+                <span className="w-7 h-7 rounded-full bg-accent-500 flex items-center justify-center text-[13px] font-bold text-white dark:text-accent-950">
+                  {user?.username?.[0]?.toUpperCase() || <UserRound className="w-4 h-4" />}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 transition-transform ${accountOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {accountOpen && (
+                <div
+                  className="absolute right-0 top-full mt-2 w-60 card p-1.5 shadow-lg shadow-zinc-950/5 dark:shadow-black/30"
+                  role="menu"
+                >
+                  <div className="px-3 py-2.5 border-b border-zinc-100 dark:border-zinc-800 mb-1">
+                    <p className="text-sm font-semibold text-zinc-900 truncate dark:text-white flex items-center gap-1.5">
+                      {user?.username}
+                      {user?.totp_enabled && (
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" title={t('nav.security')} />
+                      )}
+                    </p>
+                    <p className="text-xs text-zinc-500 truncate dark:text-zinc-400">{user?.email}</p>
+                  </div>
+                  <button
+                    onClick={() => { setAccountOpen(false); setShowAccountModal(true); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-zinc-700 hover:bg-zinc-100 transition-colors dark:text-zinc-200 dark:hover:bg-zinc-800"
+                    role="menuitem"
+                  >
+                    <UserRound className="w-4 h-4 text-zinc-400" />
+                    {t('nav.account')}
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-zinc-700 hover:bg-red-50 hover:text-red-700 transition-colors dark:text-zinc-200 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                    role="menuitem"
+                  >
+                    <LogOut className="w-4 h-4 text-zinc-400" />
+                    {t('nav.signOut')}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile menu trigger */}
             <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-zinc-100 transition-colors dark:hover:bg-zinc-800"
-              aria-label={t('nav.toggleTheme')}
+              onClick={() => setMenuOpen((o) => !o)}
+              className={`${iconBtn} lg:hidden`}
+              aria-label={t('nav.openMenu')}
+              aria-expanded={menuOpen}
             >
-              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
-        </header>
-
-        <div className="hidden lg:flex justify-end px-8 pt-4">
-          <NotificationsBell />
         </div>
 
-        <main className="p-6 lg:p-8 max-w-7xl mx-auto">
-          <Outlet />
-        </main>
-      </div>
+        {/* Mobile sheet */}
+        {menuOpen && (
+          <nav className="lg:hidden border-t border-zinc-200 bg-white px-3 py-3 space-y-0.5 dark:bg-zinc-950 dark:border-zinc-800">
+            {[...navItems, ...adminItems].map((item) => (
+              <NavLink key={item.to} to={item.to} className={sheetLinkClass} onClick={() => setMenuOpen(false)}>
+                <item.icon className="w-4 h-4 shrink-0" />
+                <span className="flex-1">{item.label}</span>
+                {item.badge > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-accent-600 text-white text-[11px] font-bold">
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </span>
+                )}
+              </NavLink>
+            ))}
+            <div className="border-t border-zinc-200 dark:border-zinc-800 my-2" />
+            <button
+              onClick={() => { setMenuOpen(false); setShowAccountModal(true); }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-zinc-600 hover:bg-zinc-100 transition-colors dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+            >
+              <UserRound className="w-4 h-4" />
+              <span className="flex-1 text-left">{user?.username}</span>
+              {user?.totp_enabled && <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-zinc-600 hover:bg-red-50 hover:text-red-700 transition-colors dark:text-zinc-300 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+            >
+              <LogOut className="w-4 h-4" />
+              {t('nav.signOut')}
+            </button>
+          </nav>
+        )}
+      </header>
 
-      {/* Sibling of the <aside> - NOT a child. Rendering inside the
-          sidebar would inherit its transform-induced containing block,
-          which clips the modal's ``fixed inset-0`` to a 256-px slice
-          and makes it look like nothing happened on click. */}
+      {/* Unverified-email notice: a proper banner instead of a nav button. */}
+      {user && !user.email_verified && (
+        <div className="bg-amber-50 border-b border-amber-200 dark:bg-amber-950/40 dark:border-amber-900">
+          <div className="max-w-7xl mx-auto px-4 lg:px-8 py-2 flex items-center gap-3 text-sm text-amber-800 dark:text-amber-300">
+            <Mail className="w-4 h-4 shrink-0" />
+            <span className="flex-1">{t('nav.unverifiedTitle')}</span>
+            <button
+              onClick={handleResendVerification}
+              className="font-semibold underline underline-offset-2 hover:no-underline shrink-0"
+            >
+              {t('nav.resendVerification')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 lg:px-8 py-8">
+        <Outlet />
+      </main>
+
       {showAccountModal && <AccountModal onClose={() => setShowAccountModal(false)} />}
     </div>
   );

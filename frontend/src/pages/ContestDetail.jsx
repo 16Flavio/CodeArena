@@ -6,10 +6,13 @@ import {
   listContestRegistrations,
 } from '../api';
 import { useAuth } from '../AuthContext';
-import { AlertCircle, Clock, ArrowRight } from 'lucide-react';
+import {
+  AlertCircle, Clock, ArrowRight, Trophy, Lock, Inbox,
+} from 'lucide-react';
 import { useConfirm } from '../components/Confirm';
 import HintsPanel from '../components/HintsPanel';
 import IcpcContestView from '../components/IcpcContestView';
+import PageHeader from '../components/PageHeader';
 import ContestHeader from '../components/contest/ContestHeader';
 import AnnouncementsPanel from '../components/contest/AnnouncementsPanel';
 import ProblemStatementCard from '../components/contest/ProblemStatementCard';
@@ -39,6 +42,9 @@ export default function ContestDetail() {
   const [selectedTeam, setSelectedTeam] = useState('');
   const [submitKind, setSubmitKind] = useState('team'); // 'team' | 'solo' - only relevant when mode is 'both'
   const [sourceLanguages, setSourceLanguages] = useState([]);
+  // null = "no explicit choice yet"; the default is derived below once
+  // the contest and registration have loaded.
+  const [activeTab, setActiveTab] = useState(null);
   useEffect(() => {
     // Languages come from the ICPC-side endpoint (it's the canonical
     // list of what the judging pipeline supports).
@@ -195,115 +201,250 @@ export default function ContestDetail() {
     );
   }
 
+  const isIcpc = contest.kind === 'icpc';
+  // Default tab: land on "submit" when the user can actually act there,
+  // otherwise on the statement. An explicit click always wins.
+  const currentTab = activeTab
+    ?? (canParticipate && contest.is_open_for_submissions ? 'submit' : 'statement');
+
+  const tabs = [
+    { id: 'statement', label: t('contest.tabStatement') },
+    { id: 'submit', label: t('contest.tabSubmit') },
+    { id: 'submissions', label: t('contest.tabMySubmissions'), count: submissionsTotal },
+    { id: 'participants', label: t('contest.tabParticipants'), count: participants.length },
+  ];
+
+  const registrationBadge = isBanned ? (
+    <span className="badge bg-red-500/10 text-red-700 border border-red-500/30 dark:text-red-300">
+      {t('contest.disqualified')}
+    </span>
+  ) : registration?.registered ? (
+    <span className="badge-active">
+      {registration.kind === 'team' ? t('contest.registeredAsTeam') : t('contest.registeredAsSolo')}
+    </span>
+  ) : null;
+
+  const joinTeamNotice = contest.is_open_for_submissions
+    && contest.participation_mode === 'team'
+    && teams.length === 0
+    && !user?.is_admin && (
+    <div className="card p-8 text-center">
+      <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3 dark:text-amber-400" />
+      <p className="text-zinc-700 font-medium dark:text-zinc-300">{t('contest.joinTeamToSubmit')}</p>
+      <Link to="/teams" className="btn-primary text-sm mt-4 inline-block">
+        {t('contest.goToTeams')} <ArrowRight className="w-4 h-4 ml-1 inline" />
+      </Link>
+    </div>
+  );
+
+  const startsInNotice = !contest.is_open_for_submissions
+    && contest.start_time
+    && backendIsoMs(contest.start_time) > now && (
+    <div className="card p-6 text-center bg-sky-500/5 border border-sky-500/20">
+      <Clock className="w-8 h-8 text-sky-600 mx-auto mb-3 dark:text-sky-400" />
+      <p className="text-zinc-700 font-medium dark:text-zinc-200">
+        {t('contest.startsIn')}{' '}
+        <span className="font-mono tabular-nums text-sky-700 dark:text-sky-300">
+          {formatCountdown((backendIsoMs(contest.start_time) - now) / 1000)}
+        </span>
+      </p>
+    </div>
+  );
+
   return (
-    <div className="animate-fade-in space-y-8">
-      <ContestHeader contest={contest} now={now} />
-
-      <AnnouncementsPanel contestId={contest.id} isAdmin={user?.is_admin} />
-
-      {canParticipate && contest.kind !== 'icpc' && <HintsPanel contestId={contest.id} />}
-
-      {contest.kind === 'icpc' && (
-        <IcpcContestView
-          contest={contest}
-          canParticipate={canParticipate}
-          // Solo contests must submit without a team_id, even if the
-          // user happens to be in one. "both" contests follow the
-          // user's explicit submitKind choice.
-          selectedTeamId={
-            contest.participation_mode === 'solo'
-              ? null
-              : contest.participation_mode === 'both'
-                ? (submitKind === 'solo' ? null : (selectedTeam || null))
-                : (selectedTeam || null)
-          }
-        />
-      )}
-
-      <ProblemStatementCard
-        contest={contest}
-        visible={contest.kind !== 'icpc' && canParticipate}
+    <div className="animate-fade-in">
+      <PageHeader
+        eyebrow={isIcpc ? t('admin.submissions.kindIcpc') : t('admin.submissions.kindOutput')}
+        title={contest.title}
+        description={contest.description}
+        actions={(
+          <>
+            <Link to={`/scoreboard/${contest.id}`} className="btn-secondary text-sm">
+              <Trophy className="w-4 h-4 mr-1.5 inline" />
+              {t('contest.scoreboard')}
+            </Link>
+            {registrationBadge}
+          </>
+        )}
       />
 
-      {canParticipate && contest.kind !== 'icpc' && (
-        <InstancesCard contest={contest} now={now} />
-      )}
+      {/* Status / times / copy-link strip, tucked under the header. */}
+      <div className="-mt-2 mb-6">
+        <ContestHeader contest={contest} now={now} />
+      </div>
 
-      <ParticipantsPanel
-        contestId={contest.id}
-        participants={participants}
-        setParticipants={setParticipants}
-        isAdmin={user?.is_admin}
-      />
+      {isIcpc ? (
+        // ICPC contests keep the dedicated stacked view - the whole
+        // problem/submit/clarification flow lives in IcpcContestView.
+        <div className="space-y-8">
+          <AnnouncementsPanel contestId={contest.id} isAdmin={user?.is_admin} />
 
-      {!user?.is_admin && registration && (
-        <RegistrationPanel
-          registration={registration}
-          isBanned={isBanned}
-          registering={registering}
-          teams={teams}
-          selectedTeam={selectedTeam}
-          setSelectedTeam={setSelectedTeam}
-          participationMode={contest.participation_mode}
-          onRegister={handleRegister}
-          onUnregister={handleUnregister}
-        />
-      )}
+          <IcpcContestView
+            contest={contest}
+            canParticipate={canParticipate}
+            // Solo contests must submit without a team_id, even if the
+            // user happens to be in one. "both" contests follow the
+            // user's explicit submitKind choice.
+            selectedTeamId={
+              contest.participation_mode === 'solo'
+                ? null
+                : contest.participation_mode === 'both'
+                  ? (submitKind === 'solo' ? null : (selectedTeam || null))
+                  : (selectedTeam || null)
+            }
+          />
 
-      {contest.kind !== 'icpc'
-        && contest.is_open_for_submissions
-        && canParticipate
-        && (
-          (contest.participation_mode === 'team' && teams.length > 0)
-          || contest.participation_mode === 'solo'
-          || contest.participation_mode === 'both'
-        ) && (
-        <SubmitSolutionForm
-          contest={contest}
-          teams={teams}
-          submitKind={submitKind}
-          setSubmitKind={setSubmitKind}
-          selectedTeam={selectedTeam}
-          setSelectedTeam={setSelectedTeam}
-          submissions={submissions}
-          sourceLanguages={sourceLanguages}
-          onSubmitted={handleSubmitted}
-        />
-      )}
+          {/* Mounted (invisible) so its PDF fetch/403 toast keeps the
+              same timing as when it lived at the page's top level. */}
+          <ProblemStatementCard contest={contest} visible={false} />
 
-      {contest.is_open_for_submissions
-        && contest.participation_mode === 'team'
-        && teams.length === 0
-        && !user?.is_admin && (
-        <div className="card p-8 text-center">
-          <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3 dark:text-amber-400" />
-          <p className="text-zinc-700 font-medium dark:text-zinc-300">{t('contest.joinTeamToSubmit')}</p>
-          <Link to="/teams" className="btn-primary text-sm mt-4 inline-block">
-            {t('contest.goToTeams')} <ArrowRight className="w-4 h-4 ml-1 inline" />
-          </Link>
+          <ParticipantsPanel
+            contestId={contest.id}
+            participants={participants}
+            setParticipants={setParticipants}
+            isAdmin={user?.is_admin}
+          />
+
+          {!user?.is_admin && registration && (
+            <RegistrationPanel
+              registration={registration}
+              isBanned={isBanned}
+              registering={registering}
+              teams={teams}
+              selectedTeam={selectedTeam}
+              setSelectedTeam={setSelectedTeam}
+              participationMode={contest.participation_mode}
+              onRegister={handleRegister}
+              onUnregister={handleUnregister}
+            />
+          )}
+
+          {joinTeamNotice}
+          {startsInNotice}
         </div>
-      )}
+      ) : (
+        <>
+          {/* Tab bar - same underline treatment as the top nav. */}
+          <div
+            className="flex items-center gap-5 border-b border-zinc-200 overflow-x-auto dark:border-zinc-800"
+            role="tablist"
+          >
+            {tabs.map((tb) => (
+              <button
+                key={tb.id}
+                type="button"
+                role="tab"
+                aria-selected={currentTab === tb.id}
+                onClick={() => setActiveTab(tb.id)}
+                className={`relative flex items-center gap-1.5 px-1 pb-3 text-sm font-medium whitespace-nowrap transition-colors ${
+                  currentTab === tb.id
+                    ? 'text-zinc-900 dark:text-white after:absolute after:left-0 after:right-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-accent-600 dark:after:bg-accent-400'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+                }`}
+              >
+                {tb.label}
+                {tb.count > 0 && (
+                  <span className="font-mono tabular-nums text-xs text-zinc-400 dark:text-zinc-500">
+                    {tb.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
 
-      {!contest.is_open_for_submissions && contest.start_time && backendIsoMs(contest.start_time) > now && (
-        <div className="card p-6 text-center bg-sky-500/5 border border-sky-500/20">
-          <Clock className="w-8 h-8 text-sky-600 mx-auto mb-3 dark:text-sky-400" />
-          <p className="text-zinc-700 font-medium dark:text-zinc-200">
-            {t('contest.startsIn')}{' '}
-            <span className="font-mono tabular-nums text-sky-700 dark:text-sky-300">
-              {formatCountdown((backendIsoMs(contest.start_time) - now) / 1000)}
-            </span>
-          </p>
-        </div>
-      )}
+          {/* Every panel stays MOUNTED - tabs only toggle CSS visibility.
+              This keeps the statement's PDF blob, the submit form draft,
+              and the panels' fetch effects exactly as they were when the
+              page stacked everything vertically. */}
+          <div className={currentTab === 'statement' ? 'mt-6 space-y-6' : 'hidden'} role="tabpanel">
+            <ProblemStatementCard contest={contest} visible={canParticipate} />
+            {canParticipate && <InstancesCard contest={contest} now={now} />}
+            {canParticipate && <HintsPanel contestId={contest.id} />}
+            {!canParticipate && (
+              <div className="card p-8 text-center">
+                <Lock className="w-10 h-10 text-zinc-300 mx-auto mb-3 dark:text-zinc-600" />
+                <p className="text-zinc-700 font-medium dark:text-zinc-300">
+                  {isBanned ? t('contest.bannedTitle') : t('contest.registerToSubmit')}
+                </p>
+                {!isBanned && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('submit')}
+                    className="btn-primary text-sm mt-4"
+                  >
+                    {t('contest.register')} <ArrowRight className="w-4 h-4 ml-1 inline" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
-      {contest.kind !== 'icpc' && submissionsTotal > 0 && (
-        <SubmissionsTable
-          submissions={submissions}
-          submissionsTotal={submissionsTotal}
-          submissionPage={submissionPage}
-          setSubmissionPage={setSubmissionPage}
-          pageSize={SUBMISSION_PAGE_SIZE}
-        />
+          <div className={currentTab === 'submit' ? 'mt-6 space-y-6' : 'hidden'} role="tabpanel">
+            {!user?.is_admin && registration && (
+              <RegistrationPanel
+                registration={registration}
+                isBanned={isBanned}
+                registering={registering}
+                teams={teams}
+                selectedTeam={selectedTeam}
+                setSelectedTeam={setSelectedTeam}
+                participationMode={contest.participation_mode}
+                onRegister={handleRegister}
+                onUnregister={handleUnregister}
+              />
+            )}
+
+            {contest.is_open_for_submissions
+              && canParticipate
+              && (
+                (contest.participation_mode === 'team' && teams.length > 0)
+                || contest.participation_mode === 'solo'
+                || contest.participation_mode === 'both'
+              ) && (
+              <SubmitSolutionForm
+                contest={contest}
+                teams={teams}
+                submitKind={submitKind}
+                setSubmitKind={setSubmitKind}
+                selectedTeam={selectedTeam}
+                setSelectedTeam={setSelectedTeam}
+                submissions={submissions}
+                sourceLanguages={sourceLanguages}
+                onSubmitted={handleSubmitted}
+              />
+            )}
+
+            {joinTeamNotice}
+            {startsInNotice}
+          </div>
+
+          <div className={currentTab === 'submissions' ? 'mt-6' : 'hidden'} role="tabpanel">
+            {submissionsTotal > 0 ? (
+              <SubmissionsTable
+                submissions={submissions}
+                submissionsTotal={submissionsTotal}
+                submissionPage={submissionPage}
+                setSubmissionPage={setSubmissionPage}
+                pageSize={SUBMISSION_PAGE_SIZE}
+              />
+            ) : (
+              <div className="card p-8 text-center">
+                <Inbox className="w-10 h-10 text-zinc-300 mx-auto mb-3 dark:text-zinc-600" />
+                <p className="text-zinc-500 dark:text-zinc-400">{t('scoreboard.noSubmissions')}</p>
+              </div>
+            )}
+          </div>
+
+          <div className={currentTab === 'participants' ? 'mt-6 space-y-6' : 'hidden'} role="tabpanel">
+            <ParticipantsPanel
+              contestId={contest.id}
+              participants={participants}
+              setParticipants={setParticipants}
+              isAdmin={user?.is_admin}
+            />
+            <AnnouncementsPanel contestId={contest.id} isAdmin={user?.is_admin} />
+          </div>
+        </>
       )}
     </div>
   );

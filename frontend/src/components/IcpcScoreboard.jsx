@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { Trophy, RefreshCw, CheckCircle, Snowflake, FileSpreadsheet, Sparkles } from 'lucide-react';
+import { RefreshCw, CheckCircle, Snowflake, FileSpreadsheet, Sparkles } from 'lucide-react';
 import { textOn } from '../utils/contrast';
 import { getIcpcScoreboard, icpcScoreboardCsvUrl, openStatementPdf } from '../api';
 import { useAuth } from '../AuthContext';
 import { getToken } from '../utils/tokenStore';
+import PageHeader from './PageHeader';
 
 const MEDALS = [
   'text-yellow-500 dark:text-yellow-400',
@@ -89,57 +90,61 @@ export default function IcpcScoreboard({ contestId }) {
   }
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2 dark:text-white">
-            <Trophy className="w-6 h-6 text-amber-500" />
-            {data.contest_title}
-          </h1>
-          <p className="text-xs text-zinc-500 mt-1 dark:text-zinc-500">
-            {t('icpcScoreboard.subtitle')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link to={`/contests/${contestId}`} className="btn-secondary text-sm">
-            {t('icpcScoreboard.backToContest')}
-          </Link>
-          <button onClick={() => refresh(true)} className="btn-secondary text-sm" title={t('common.refresh')}>
-            <RefreshCw className="w-4 h-4" />
-          </button>
-          {user?.is_admin && (
-            <button
-              onClick={downloadCsv}
-              className="btn-secondary text-sm"
-              title={t('scoreboard.exportCsv')}
-              aria-label={t('scoreboard.exportCsv')}
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-            </button>
-          )}
-          {user?.is_admin && (
-            <Link
-              to={`/scoreboard/${contestId}/presentation`}
-              className="btn-secondary text-sm bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 border-amber-500/30 dark:text-amber-300"
-              title={t('presentation.entryTooltip')}
-              aria-label={t('presentation.entryTooltip')}
-            >
-              <Sparkles className="w-4 h-4" />
+    <div className="animate-fade-in">
+      {/* This component IS the whole scoreboard page for ICPC contests
+          (Scoreboard.jsx returns it directly), so the PageHeader below
+          renders exactly once per page. */}
+      <PageHeader
+        eyebrow={t('scoreboard.title')}
+        title={data.contest_title}
+        description={t('icpcScoreboard.subtitle')}
+        actions={(
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <Link to={`/contests/${contestId}`} className="btn-secondary text-sm">
+              {t('icpcScoreboard.backToContest')}
             </Link>
-          )}
-        </div>
-      </div>
+            <button onClick={() => refresh(true)} className="btn-secondary text-sm" title={t('common.refresh')}>
+              <RefreshCw className="w-4 h-4" />
+            </button>
+            {user?.is_admin && (
+              <button
+                onClick={downloadCsv}
+                className="btn-secondary text-sm"
+                title={t('scoreboard.exportCsv')}
+                aria-label={t('scoreboard.exportCsv')}
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+              </button>
+            )}
+            {user?.is_admin && (
+              <Link
+                to={`/scoreboard/${contestId}/presentation`}
+                className="btn-secondary text-sm bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                title={t('presentation.entryTooltip')}
+                aria-label={t('presentation.entryTooltip')}
+              >
+                <Sparkles className="w-4 h-4" />
+              </Link>
+            )}
+          </div>
+        )}
+      />
 
-      <div className="card overflow-x-auto">
+      <div className="card overflow-hidden">
+        {/* The thead is sticky within the card's own scroll container
+            (the horizontal-overflow wrapper the wide ICPC table needs
+            breaks viewport-level sticky). z-20 keeps it above the
+            row-sticky rank/team cells. */}
+        <div className="overflow-auto max-h-[75vh]">
         <table className="w-full text-sm">
-          <thead className="bg-zinc-100/60 dark:bg-zinc-800/50">
-            <tr>
-              <th className="text-left font-semibold py-2 px-3 sticky left-0 bg-zinc-100/95 dark:bg-zinc-800/95 z-10">#</th>
-              <th className="text-left font-semibold py-2 px-3 sticky left-10 bg-zinc-100/95 dark:bg-zinc-800/95 z-10 max-w-[140px] sm:max-w-none">{t('icpcScoreboard.team')}</th>
-              <th className="text-right font-semibold py-2 px-3">{t('icpcScoreboard.solved')}</th>
-              <th className="text-right font-semibold py-2 px-3">{t('icpcScoreboard.penalty')}</th>
+          <thead className="sticky top-0 z-20">
+            <tr className="bg-zinc-50 dark:bg-zinc-900">
+              <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 font-semibold py-3 px-3 border-b border-zinc-200 dark:border-zinc-800 sticky left-0 bg-zinc-50 dark:bg-zinc-900 z-10">#</th>
+              <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 font-semibold py-3 px-3 border-b border-zinc-200 dark:border-zinc-800 sticky left-10 bg-zinc-50 dark:bg-zinc-900 z-10 max-w-[140px] sm:max-w-none">{t('icpcScoreboard.team')}</th>
+              <th className="text-right text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 font-semibold py-3 px-3 border-b border-zinc-200 dark:border-zinc-800">{t('icpcScoreboard.solved')}</th>
+              <th className="text-right text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 font-semibold py-3 px-3 border-b border-zinc-200 dark:border-zinc-800">{t('icpcScoreboard.penalty')}</th>
               {data.problems.map((p) => (
-                <th key={p.id} className="text-center font-semibold py-2 px-2 min-w-[64px]">
+                <th key={p.id} className="text-center font-semibold py-3 px-2 min-w-[64px] border-b border-zinc-200 dark:border-zinc-800">
                   {/* Clicking the letter opens the statement PDF in a new
                       tab. The backend gates access (403 before contest
                       start / for non-participants), so this stays a plain
@@ -171,14 +176,14 @@ export default function IcpcScoreboard({ contestId }) {
             {data.rows.map((row, idx) => (
               <tr
                 key={`${row.team_id || row.team_name}-${idx}`}
-                className="border-t border-zinc-100 dark:border-zinc-800/30"
+                className="group border-t border-zinc-100 dark:border-zinc-800/30 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
               >
-                <td className="py-2 px-3 font-mono tabular-nums sticky left-0 bg-white/95 dark:bg-zinc-900/95">
+                <td className="py-2 px-3 font-mono tabular-nums sticky left-0 bg-white/95 dark:bg-zinc-900/95 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800 transition-colors">
                   <span className={idx < 3 ? MEDALS[idx] : 'text-zinc-500 dark:text-zinc-500'}>
                     {idx + 1}
                   </span>
                 </td>
-                <td className="py-2 px-3 font-medium text-zinc-900 dark:text-white sticky left-10 bg-white/95 dark:bg-zinc-900/95 max-w-[140px] sm:max-w-none truncate">
+                <td className="py-2 px-3 font-medium text-zinc-900 dark:text-white sticky left-10 bg-white/95 dark:bg-zinc-900/95 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800 transition-colors max-w-[140px] sm:max-w-none truncate">
                   {row.team_name}
                   {row.affiliation_name && (
                     <span
@@ -293,6 +298,7 @@ export default function IcpcScoreboard({ contestId }) {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

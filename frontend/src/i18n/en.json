@@ -564,13 +564,29 @@
     "instances_plural": "instances",
     "startsOn": "Starts: {{date}}",
     "endsOn": "Ends: {{date}}",
-    "toastLoadFailed": "Failed to load dashboard"
+    "toastLoadFailed": "Failed to load dashboard",
+    "happeningNow": "Happening now",
+    "nextUp": "Next up",
+    "leagueTeaser": "Your season points and the class's yearly standings.",
+    "leagueCta": "View the league standings"
   },
   "landing": {
     "welcome": "Welcome to CodeArena",
     "welcomeSub": "Create an account to join contests, submit solutions, and follow the scoreboard.",
     "registerCta": "Create an account",
-    "footer": "CodeArena"
+    "footer": "CodeArena",
+    "heroEyebrow": "Programming contest platform",
+    "heroTitle": "Code. Compete. Climb the standings.",
+    "heroSub": "ICPC-style contests and optimization challenges, interactive algorithm lessons, and a league that runs all year. All in one place.",
+    "previewLive": "Live",
+    "previewTeam": "Team",
+    "previewPen": "Pen.",
+    "featContestsTitle": "Contests with real judging",
+    "featContestsBody": "Submit your code and it is compiled and run against hidden tests: AC/WA/TLE verdicts, penalties and a scoreboard freeze, just like a real ICPC final.",
+    "featLearnTitle": "Learn with living lessons",
+    "featLearnBody": "Bilingual chapters with math, interactive visualizations and graded inline exercises, from Big-O to advanced data structures.",
+    "featLeagueTitle": "One season, one ranking",
+    "featLeagueBody": "Every competition earns points based on your rank. The yearly standings reward consistency, not a single lucky night."
   },
   "teams": {
     "title": "Teams",
@@ -772,7 +788,11 @@
     "confirmDeleteAnn": "Delete this announcement?",
     "notFoundHeading": "Contest not found",
     "notFoundBody": "It may have been removed, or you may not have access.",
-    "backToDashboard": "Back to dashboard"
+    "backToDashboard": "Back to dashboard",
+    "tabStatement": "Statement",
+    "tabSubmit": "Submit",
+    "tabMySubmissions": "My submissions",
+    "tabParticipants": "Participants"
   },
   "scoreboard": {
     "title": "Scoreboard",

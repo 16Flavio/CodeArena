@@ -3,11 +3,12 @@ import { useAuth } from '../AuthContext';
 import { Navigate } from 'react-router-dom';
 import { getUsers, getContests, getContest } from '../api';
 import {
-  Users, Trophy, Shield, Package,
+  Users, Trophy, Package,
   ScrollText, Inbox, Cpu, Building2, Medal,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import PageHeader from '../components/PageHeader';
 import PackagesPanel from '../components/PackagesPanel';
 import ScoringPanel from '../components/ScoringPanel';
 import AffiliationsPanel from '../components/AffiliationsPanel';
@@ -62,13 +63,11 @@ export default function Admin() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-zinc-900 flex items-center gap-3 dark:text-white">
-          <Shield className="w-8 h-8 text-amber-500 dark:text-amber-400" />
-          {t('admin.title')}
-        </h1>
-        <p className="text-zinc-500 mt-1 dark:text-zinc-400">{t('admin.subtitle')}</p>
-      </div>
+      <PageHeader
+        eyebrow={t('nav.admin')}
+        title={t('admin.title')}
+        description={t('admin.subtitle')}
+      />
 
       <div className="flex gap-1 bg-white/50 p-1 rounded-lg w-fit border border-zinc-200 dark:bg-zinc-900/50 dark:border-zinc-800/50">
         {[
