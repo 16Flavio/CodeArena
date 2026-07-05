@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 
 # Closed sets enforced at the schema layer so an invalid string can't
@@ -304,6 +304,8 @@ class ContestCreate(BaseModel):
     dedup_block: bool = False
     min_seconds_between_submits: int = 0
     max_submissions_per_instance: Optional[int] = None
+    # None = no per-contest cap (the global team-size cap still applies).
+    max_team_size: Optional[int] = Field(default=None, ge=1)
     output_validator_script: Optional[str] = None
     scoring_script: str = "score = 0"
 
@@ -340,6 +342,7 @@ class ContestUpdate(BaseModel):
     dedup_block: Optional[bool] = None
     min_seconds_between_submits: Optional[int] = None
     max_submissions_per_instance: Optional[int] = None
+    max_team_size: Optional[int] = Field(default=None, ge=1)
     output_validator_script: Optional[str] = None
     scoring_script: Optional[str] = None
 
@@ -397,6 +400,7 @@ class ContestOut(BaseModel):
     dedup_block: bool = False
     min_seconds_between_submits: int = 0
     max_submissions_per_instance: Optional[int] = None
+    max_team_size: Optional[int] = None
     output_validator_script: Optional[str] = None
     # Derived flags for the current caller (admins bypass gates).
     is_open_for_submissions: bool = False

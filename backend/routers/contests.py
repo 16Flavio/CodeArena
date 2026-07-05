@@ -41,6 +41,11 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+# Notification feed horizon: items older than this many days are never
+# served, even if the user has not marked them seen.
+ACTIVITY_WINDOW_DAYS = 7
+
+
 _TRUTHY = {"1", "true", "yes", "on"}
 
 
@@ -379,6 +384,7 @@ def _serialize_contest(
         dedup_block=bool(contest.dedup_block),
         min_seconds_between_submits=int(contest.min_seconds_between_submits or 0),
         max_submissions_per_instance=contest.max_submissions_per_instance,
+        max_team_size=contest.max_team_size,
         output_validator_script=(contest.output_validator_script if can_manage else None),
         is_open_for_submissions=_is_contest_open(contest, now, is_admin=is_admin),
         is_scoreboard_frozen=_is_scoreboard_frozen(contest, now, is_admin=is_admin),
@@ -1878,25 +1884,37 @@ def my_activity(
     db: Session = Depends(get_db),
 ):
     """Recent announcements on contests the user can see, plus teammate
-    submissions on teams the user belongs to. Used for the in-app notification
-    feed."""
+    submissions on teams the user belongs to, the caller's own judged
+    submissions and league publications. Used for the in-app notification
+    feed.
+
+    Items are windowed: nothing older than ACTIVITY_WINDOW_DAYS, and nothing
+    at or before the user's ``notifications_seen_at`` high-water mark (set by
+    POST /activity/seen when the bell panel is closed)."""
     limit = max(1, min(limit, 100))
-    since = None
+    now = _utcnow()
+
+    def _aware(dt):
+        # SQLite hands naive datetimes back; treat them as UTC.
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+    since = now - timedelta(days=ACTIVITY_WINDOW_DAYS)
     if since_iso:
         try:
-            since = datetime.fromisoformat(since_iso.replace("Z", "+00:00"))
+            parsed = datetime.fromisoformat(since_iso.replace("Z", "+00:00"))
+            since = max(since, _aware(parsed))
         except ValueError:
-            since = None
-    now = _utcnow()
+            pass
+    if user.notifications_seen_at is not None:
+        since = max(since, _aware(user.notifications_seen_at))
 
     # Announcements from contests visible to the user.
     ann_q = (
         db.query(models.Announcement)
         .options(joinedload(models.Announcement.contest))
         .order_by(models.Announcement.created_at.desc())
+        .filter(models.Announcement.created_at > since)
     )
-    if since is not None:
-        ann_q = ann_q.filter(models.Announcement.created_at > since)
     announcements = []
     for a in ann_q.limit(limit * 3).all():
         c = a.contest
@@ -1931,11 +1949,10 @@ def my_activity(
             .filter(
                 models.Submission.team_id.in_(team_ids),
                 models.Submission.submitted_by != user.id,
+                models.Submission.submitted_at > since,
             )
             .order_by(models.Submission.submitted_at.desc())
         )
-        if since is not None:
-            sub_q = sub_q.filter(models.Submission.submitted_at > since)
         for s in sub_q.limit(limit).all():
             c = s.contest
             who = s.submitted_by_user.username if s.submitted_by_user else "?"
@@ -1958,11 +1975,10 @@ def my_activity(
         .filter(
             models.Submission.submitted_by == user.id,
             models.Submission.status.in_(("scored", "error")),
+            models.Submission.submitted_at > since,
         )
         .order_by(models.Submission.submitted_at.desc())
     )
-    if since is not None:
-        my_q = my_q.filter(models.Submission.submitted_at > since)
     my_rows = my_q.limit(limit).all()
     my_verdicts: dict[int, str] = {}
     icpc_row_ids = [s.id for s in my_rows if s.problem_id is not None]
@@ -2009,11 +2025,10 @@ def my_activity(
         .filter(
             models.League.is_published.is_(True),
             models.LeagueEvent.result_computed_at.isnot(None),
+            models.LeagueEvent.result_computed_at > since,
         )
         .order_by(models.LeagueEvent.result_computed_at.desc())
     )
-    if since is not None:
-        lev_q = lev_q.filter(models.LeagueEvent.result_computed_at > since)
     for ev in lev_q.limit(limit).all():
         c = ev.contest
         league_items.append(schemas.ActivityItem(
@@ -2030,6 +2045,19 @@ def my_activity(
         key=lambda x: x.at, reverse=True,
     )[:limit]
     return merged
+
+
+@router.post("/activity/seen")
+def mark_activity_seen(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Move the caller's seen high-water mark to now. Everything currently
+    in the feed disappears from subsequent /activity/mine reads."""
+    row = db.query(models.User).filter(models.User.id == user.id).first()
+    row.notifications_seen_at = _utcnow()
+    db.commit()
+    return {"seen_at": row.notifications_seen_at}
 
 
 @router.get("/{contest_id}/submissions", response_model=schemas.PaginatedSubmissions)

@@ -351,6 +351,18 @@ def register_self(
                     message="A member of this team is banned from this contest",
                     params={"reason": ban.reason or ""},
                 )
+        # Per-contest team-size cap. Checked at registration time; the
+        # teams router blocks later joins that would break it while the
+        # contest is still running.
+        cap = contest.max_team_size
+        if cap is not None and not user.is_admin and len(member_ids) > cap:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Ce concours limite les équipes à {cap} membre(s) ; "
+                    f"votre équipe en compte {len(member_ids)}."
+                ),
+            )
         if member_ids:
             clash = (
                 db.query(models.ContestRegistration, models.User)
