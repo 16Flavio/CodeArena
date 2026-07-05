@@ -52,6 +52,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
           dedup_block: !!initialContest.dedup_block,
           min_seconds_between_submits: initialContest.min_seconds_between_submits || 0,
           max_submissions_per_instance: initialContest.max_submissions_per_instance ?? '',
+          max_team_size: initialContest.max_team_size ?? '',
           output_validator_script: initialContest.output_validator_script || '',
           scoring_script: initialContest.scoring_script || '',
         }
@@ -65,6 +66,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
           dedup_block: false,
           min_seconds_between_submits: 0,
           max_submissions_per_instance: '',
+          max_team_size: '',
           output_validator_script: '',
           scoring_script: DEFAULT_SCRIPT,
         }
@@ -148,6 +150,11 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
         practice_mode: contestForm.practice_mode,
         dedup_block: contestForm.dedup_block,
         min_seconds_between_submits: parseInt(contestForm.min_seconds_between_submits || 0, 10) || 0,
+        max_team_size:
+          contestForm.participation_mode === 'solo'
+            || contestForm.max_team_size === '' || contestForm.max_team_size == null
+            ? null
+            : parseInt(contestForm.max_team_size, 10),
       };
       const payload = isIcpc
         ? commonPayload
@@ -609,6 +616,24 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                 <p className="text-[11px] text-zinc-400 mt-1 dark:text-zinc-600">
                   {t('admin.form.participationModeHint')}
                 </p>
+                {contestForm.participation_mode !== 'solo' && (
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">
+                      {t('admin.form.maxTeamSizeLabel')}
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      className="input-field text-sm py-2"
+                      placeholder={t('admin.form.maxTeamSizePlaceholder')}
+                      value={contestForm.max_team_size}
+                      onChange={(e) => setContestForm({ ...contestForm, max_team_size: e.target.value })}
+                    />
+                    <p className="text-[11px] text-zinc-400 mt-1 dark:text-zinc-600">
+                      {t('admin.form.maxTeamSizeHint')}
+                    </p>
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-700 mb-2 dark:text-zinc-300">

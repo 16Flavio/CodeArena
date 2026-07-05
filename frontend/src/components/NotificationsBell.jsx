@@ -2,11 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Bell, CheckCircle2, Megaphone, Send, Trophy } from 'lucide-react';
-import { getMyActivity } from '../api';
+import { getMyActivity, markActivitySeen } from '../api';
 import { formatDateTime } from '../utils/datetime';
 
 const POLL_MS = 60000;
-const SEEN_KEY = 'notif-last-seen-at';
 
 const KIND_ICONS = {
   announcement: [Megaphone, 'text-sky-600 dark:text-sky-400'],
@@ -19,7 +18,6 @@ export default function NotificationsBell() {
   const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
-  const [lastSeen, setLastSeen] = useState(() => Number(localStorage.getItem(SEEN_KEY) || 0));
   const rootRef = useRef(null);
 
   useEffect(() => {
@@ -43,16 +41,28 @@ export default function NotificationsBell() {
     };
   }, []);
 
+  // Closing the panel marks everything currently shown as seen - the
+  // server moves the per-user high-water mark, so the items disappear
+  // from every device on the next fetch. Clear locally right away.
+  const closePanel = () => {
+    setOpen(false);
+    setItems([]);
+    markActivitySeen().catch(() => {
+      /* transient failure: items simply reappear on the next poll */
+    });
+  };
+
   useEffect(() => {
     if (!open) return undefined;
     const onDocClick = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+      if (rootRef.current && !rootRef.current.contains(e.target)) closePanel();
     };
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [open]);
 
-  const unread = items.filter((it) => new Date(it.at).getTime() > lastSeen).length;
+  // The server only serves unseen items, so everything fetched is unread.
+  const unread = items.length;
 
   const linkFor = (it) => {
     if (it.kind === 'league_published') return '/league';
@@ -66,13 +76,8 @@ export default function NotificationsBell() {
   };
 
   const handleOpen = () => {
-    const next = !open;
-    setOpen(next);
-    if (next) {
-      const now = Date.now();
-      setLastSeen(now);
-      localStorage.setItem(SEEN_KEY, String(now));
-    }
+    if (open) closePanel();
+    else setOpen(true);
   };
 
   return (
@@ -106,7 +111,7 @@ export default function NotificationsBell() {
                   <li key={`${it.kind}-${it.contest_id}-${it.at}-${i}`}>
                     <Link
                       to={linkFor(it)}
-                      onClick={() => setOpen(false)}
+                      onClick={closePanel}
                       className="flex items-start gap-2 p-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
                     >
                       <Icon className={`w-4 h-4 mt-0.5 ${iconColor} flex-shrink-0`} />

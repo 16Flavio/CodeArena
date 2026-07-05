@@ -47,6 +47,9 @@ class User(Base):
     # For contests in solo mode, the user's affiliation is taken from this
     # column instead of their team's.
     solo_affiliation_id = Column(Integer, ForeignKey("affiliations.id", ondelete="SET NULL"), nullable=True)
+    # High-water mark for the notification feed: items at or before this
+    # moment have been seen (bell panel closed) and are no longer served.
+    notifications_seen_at = Column(DateTime, nullable=True)
 
     # TOTP-based 2FA. ``totp_secret`` is base32 (RFC 6238); never sent
     # to the client after enrollment except embedded in the otpauth URL
@@ -181,6 +184,10 @@ class Contest(Base):
     dedup_block = Column(Boolean, default=False, nullable=False)
     min_seconds_between_submits = Column(Integer, default=0, nullable=False)
     max_submissions_per_instance = Column(Integer, nullable=True)
+    # Per-contest cap on team size, enforced at team registration and when
+    # someone joins a team already registered to a running/upcoming contest.
+    # NULL = no per-contest cap (the global team-size cap still applies).
+    max_team_size = Column(Integer, nullable=True)
     output_validator_script = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utcnow)
 

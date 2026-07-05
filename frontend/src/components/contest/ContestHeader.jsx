@@ -1,4 +1,4 @@
-import { Clock, Link2 } from 'lucide-react';
+import { Clock, Link2, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { copyText } from '../../utils/clipboard';
@@ -46,6 +46,12 @@ export default function ContestHeader({ contest, now }) {
               })}
             </span>
           )}
+        </span>
+      )}
+      {contest.max_team_size != null && contest.participation_mode !== 'solo' && (
+        <span className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
+          <Users className="w-3.5 h-3.5" />
+          {t('contest.maxTeamSize', { count: contest.max_team_size })}
         </span>
       )}
       <button
