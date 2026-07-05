@@ -32,6 +32,7 @@ without duplicating data."""
 from __future__ import annotations
 
 import io
+import json
 import os
 import re
 import zipfile
@@ -212,6 +213,53 @@ def _load_interactor(zf: zipfile.ZipFile, proot: str) -> tuple[Optional[str], st
         except Exception:  # noqa: BLE001
             continue
     return None, "py3"
+
+
+_SRC_LANG_BY_EXT = {
+    ".py": "py3",
+    ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp",
+    ".c": "c",
+    ".java": "java",
+}
+_SRC_MAIN_ORDER = [".py", ".cpp", ".cc", ".cxx", ".c", ".java"]
+_AUX_EXTS = {".h", ".hpp", ".hh", ".hxx", ".py", ".cpp", ".cc", ".cxx", ".c", ".java"}
+
+
+def _load_validator(zf: zipfile.ZipFile, proot: str) -> tuple[Optional[str], str, dict[str, str]]:
+    """Load a custom output validator from ``output_validators/``.
+
+    Returns ``(main_source, language_id, aux_files)``. The main file is the
+    first source by our preference order (.py first - no compile step);
+    every other source/header in the directory rides along as an aux file
+    so C++ validators can ``#include "validation.h"``. Kattis ``build`` /
+    ``run`` shell scripts are ignored (we drive the validator directly
+    with the standard interface)."""
+    base = f"{proot}/output_validators/" if proot else "output_validators/"
+    members = [n for n in zf.namelist() if n.startswith(base) and not n.endswith("/")]
+    mains = [n for n in members if os.path.splitext(n)[1].lower() in _SRC_LANG_BY_EXT]
+    if not mains:
+        return None, "py3", {}
+    mains.sort(key=lambda n: (_SRC_MAIN_ORDER.index(os.path.splitext(n)[1].lower()), n))
+    main = mains[0]
+    lang = _SRC_LANG_BY_EXT[os.path.splitext(main)[1].lower()]
+    try:
+        source = zf.read(main).decode("utf-8", errors="replace")
+    except Exception:  # noqa: BLE001
+        return None, "py3", {}
+    aux: dict[str, str] = {}
+    for n in members:
+        if n == main:
+            continue
+        if os.path.splitext(n)[1].lower() not in _AUX_EXTS:
+            continue
+        base_name = os.path.basename(n)
+        if not base_name or base_name in aux:
+            continue
+        try:
+            aux[base_name] = zf.read(n).decode("utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            continue
+    return source, lang, aux
 
 
 _FLOAT_TOKEN_RE = re.compile(r"^[+-]?(?:\d+\.\d*|\.\d+|\d+[eE][+-]?\d+|\d+\.\d*[eE][+-]?\d+)$")
@@ -625,13 +673,24 @@ def import_domjudge_package(
         time_limit_ms = _parse_time_limit(meta)
         memory_limit_mb = _parse_memory_limit(meta)
         checker_kind, epsilon = _parse_validation(meta)
+        validator_src: Optional[str] = None
+        validator_lang = "py3"
+        validator_aux: dict[str, str] = {}
         if checker_kind == "custom":
-            # v1: silently downgrade to tokens so the problem still judges,
-            # but surface the skip so admins know they'll miss special checks.
-            report.skipped.append(
-                f"{external_id}: custom validator not yet supported, using tokens"
-            )
-            checker_kind = "tokens"
+            validator_src, validator_lang, validator_aux = _load_validator(pzf, proot)
+            if validator_src:
+                report.skipped.append(
+                    f"{external_id}: custom output validator imported "
+                    f"({validator_lang}) - verify it with a dry run"
+                )
+            else:
+                # No usable source under output_validators/ - fall back to
+                # tokens so the problem still judges, and say so.
+                report.skipped.append(
+                    f"{external_id}: validation is 'custom' but no validator "
+                    "source found, using tokens"
+                )
+                checker_kind = "tokens"
 
         # Auto-upgrade: if problem.yaml didn't ask for float but the
         # expected outputs contain float literals (e.g. "3.14", "1e-3"),
@@ -669,6 +728,16 @@ def import_domjudge_package(
         problem.memory_limit_mb = memory_limit_mb
         problem.checker_kind = checker_kind
         problem.checker_epsilon = epsilon
+        if checker_kind == "custom" and validator_src:
+            problem.checker_script = validator_src
+            problem.checker_language = validator_lang
+            problem.checker_aux_files = (
+                json.dumps(validator_aux) if validator_aux else None
+            )
+        elif checker_kind != "custom":
+            # Re-import that switched away from custom: drop the stale script.
+            problem.checker_script = None
+            problem.checker_aux_files = None
         problem.order_idx = cm["ordinal"] if cm else idx
         # Kattis scoring problems (``type: scoring``) award per-group
         # partial credit - map them onto our subtask mode.

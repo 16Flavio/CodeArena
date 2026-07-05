@@ -9,6 +9,7 @@ Dispatches on ``Contest.kind``:
                  + JudgingRun rows with AC/WA/TLE/... verdicts."""
 from __future__ import annotations
 
+import json
 import logging
 import math
 import os
@@ -290,6 +291,40 @@ def _judge_icpc_inner(db, sub: models.Submission, contest: models.Contest) -> No
         inter_compile_cmd = ilang.compile_cmd or ""
         inter_run_cmd = ilang.run_cmd or ""
 
+    # Same deal for compiled-language custom output validators.
+    clang_id = (problem.checker_language or "py3").lower()
+    chk_compile_cmd = ""
+    chk_run_cmd = ""
+    has_custom_checker = (
+        (problem.checker_kind or "").lower() == "custom"
+        and bool(problem.checker_script)
+    )
+    if has_custom_checker and clang_id != "py3":
+        clang = (
+            db.query(models.Language)
+            .filter(models.Language.id == clang_id)
+            .first()
+        )
+        if not clang:
+            judging.verdict = "IE"
+            judging.compile_output = f"Unknown checker language: {clang_id}"
+            judging.judged_at = datetime.now(timezone.utc)
+            sub.status = "error"
+            sub.error_message = "IE"
+            sub.score = 0.0
+            db.commit()
+            update_icpc_entry(db, sub, problem, "IE", contest)
+            db.commit()
+            return
+        chk_compile_cmd = clang.compile_cmd or ""
+        chk_run_cmd = clang.run_cmd or ""
+    chk_aux = None
+    if has_custom_checker and problem.checker_aux_files:
+        try:
+            chk_aux = json.loads(problem.checker_aux_files)
+        except ValueError:
+            chk_aux = None
+
     verdict, compile_output, runs = icpc_judge(
         language_id=language.id,
         compile_cmd=language.compile_cmd or "",
@@ -305,6 +340,11 @@ def _judge_icpc_inner(db, sub: models.Submission, contest: models.Contest) -> No
         interactor_language=ilang_id,
         interactor_compile_cmd=inter_compile_cmd,
         interactor_run_cmd=inter_run_cmd,
+        checker_script=problem.checker_script,
+        checker_language=clang_id,
+        checker_compile_cmd=chk_compile_cmd,
+        checker_run_cmd=chk_run_cmd,
+        checker_aux_files=chk_aux,
         num_passes=int(problem.num_passes or 1),
         scoring_mode=problem.scoring_mode or "icpc",
     )

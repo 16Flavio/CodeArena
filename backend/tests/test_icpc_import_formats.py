@@ -227,6 +227,112 @@ def test_no_pdf_reported(client):
     assert any("no statement PDF" in s for s in body["skipped"])
 
 
+def test_custom_validator_imported(client):
+    """validation: custom + sources under output_validators/ keeps the
+    custom checker and stores the script (main + aux header)."""
+    from backend import database, models
+
+    admin = auth_header(client, "root")
+    cid = _make_icpc_contest(client, admin)
+
+    def build(zf):
+        zf.writestr("problem.yaml", "name: Custom\nvalidation: custom\n")
+        zf.writestr("output_validators/output_validator/output_validator.cpp",
+                    '#include "validation.h"\nint main(){return 42;}\n')
+        zf.writestr("output_validators/output_validator/validation.h",
+                    "// header\n")
+        zf.writestr("data/secret/1.in", "1\n")
+        zf.writestr("data/secret/1.ans", "1\n")
+
+    body = _upload(client, admin, cid, build)
+    assert any("custom output validator imported (cpp)" in s for s in body["skipped"])
+    p = _problems(client, admin, cid)[0]
+    assert p["checker_kind"] == "custom"
+    assert p["has_checker_script"] is True
+    assert p["checker_language"] == "cpp"
+
+    sess = database.SessionLocal()
+    try:
+        prob = sess.query(models.Problem).filter(
+            models.Problem.contest_id == cid,
+        ).one()
+        assert '#include "validation.h"' in prob.checker_script
+        import json as _json
+        aux = _json.loads(prob.checker_aux_files)
+        assert "validation.h" in aux
+    finally:
+        sess.close()
+
+
+def test_custom_validator_missing_source_falls_back(client):
+    admin = auth_header(client, "root")
+    cid = _make_icpc_contest(client, admin)
+
+    def build(zf):
+        zf.writestr("problem.yaml", "name: NoVal\nvalidation: custom\n")
+        zf.writestr("data/secret/1.in", "1\n")
+        zf.writestr("data/secret/1.ans", "1\n")
+
+    body = _upload(client, admin, cid, build)
+    assert any("no validator source found" in s for s in body["skipped"])
+    assert _problems(client, admin, cid)[0]["checker_kind"] == "tokens"
+
+
+# A Kattis-interface validator (in ans feedback_dir on argv, team output on
+# stdin, exit 42/43): accepts any output whose SUM matches the answer file,
+# regardless of formatting - exactly what tokens matching cannot express.
+_SUM_VALIDATOR = """import sys
+with open(sys.argv[2]) as f:
+    want = sum(int(x) for x in f.read().split())
+try:
+    got = sum(int(x) for x in sys.stdin.read().split())
+except ValueError:
+    sys.exit(43)
+sys.exit(42 if got == want else 43)
+"""
+
+
+def test_custom_validator_judges_end_to_end(client):
+    """The validator accepts 2+2 where the .ans says 4 - tokens would WA
+    it; the custom checker must AC it, and still WA a wrong sum."""
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    cid = _make_icpc_contest(client, admin)
+
+    def build(zf):
+        zf.writestr("problem.yaml", "name: Sum\nvalidation: custom\n")
+        zf.writestr("output_validators/validator.py", _SUM_VALIDATOR)
+        zf.writestr("data/secret/1.in", "4\n")
+        zf.writestr("data/secret/1.ans", "4\n")
+
+    _upload(client, admin, cid, build)
+    pid = _problems(client, admin, cid)[0]["id"]
+    client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
+
+    def submit(source):
+        r = client.post(
+            f"/api/contests/{cid}/problems/{pid}/submit",
+            headers=alice,
+            data={"language": "py3", "source": source},
+        )
+        assert r.status_code == 200, r.text
+        return r.json()["id"]
+
+    def verdict(sub_id, attempts=50):
+        import time
+        for _ in range(attempts):
+            r = client.get(f"/api/contests/submissions/{sub_id}/judging", headers=alice)
+            if r.status_code == 200 and r.json()["verdict"] not in ("", "pending"):
+                return r.json()["verdict"]
+            time.sleep(0.1)
+        raise AssertionError("judging did not finish")
+
+    # "2 2" sums to 4: tokens would reject (ans is "4"), validator accepts.
+    assert verdict(submit('print("2 2")')) == "AC"
+    # Wrong sum stays WA.
+    assert verdict(submit('print("5")')) == "WA"
+
+
 def test_empty_package_is_a_clear_error(client):
     admin = auth_header(client, "root")
     cid = _make_icpc_contest(client, admin)

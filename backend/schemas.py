@@ -605,6 +605,8 @@ class ProblemOut(BaseModel):
     num_passes: int = 1
     has_interactor: bool = False
     interactor_language: str = "py3"
+    has_checker_script: bool = False
+    checker_language: str = "py3"
     order_idx: int = 0
     has_statement_pdf: bool = False
     # File mtime (int seconds). Used by the frontend as a cache-buster
