@@ -79,3 +79,16 @@ def test_delete_team_with_join_requests(client):
 
     # No orphans.
     assert client.get(f"/api/teams/{t['id']}", headers=ha).status_code == 404
+
+
+def test_no_global_team_size_cap(client):
+    # Team size is only ever bounded per contest (max_team_size); building
+    # a team above the old global cap of 4 must work.
+    ha = auth_header(client, "alice")
+    t = client.post("/api/teams", json={"name": "Big"}, headers=ha).json()
+    for name in ("bob", "carol", "dave", "erin"):
+        h = auth_header(client, name)
+        r = client.post("/api/teams/join", json={"join_code": t["join_code"]}, headers=h)
+        assert r.status_code == 200, r.text
+    mine = client.get("/api/teams/my", headers=ha).json()
+    assert len(mine[0]["members"]) == 5

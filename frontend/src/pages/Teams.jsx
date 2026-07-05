@@ -17,8 +17,6 @@ import { useConfirm } from '../components/Confirm';
 import PageHeader from '../components/PageHeader';
 import { extractErrorMessage } from '../utils/apiError';
 
-const MAX_TEAM_SIZE = 4;
-
 export default function Teams() {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -523,7 +521,7 @@ export default function Teams() {
                     <div>
                       <h3 className="text-xl font-bold text-zinc-900 dark:text-white">{team.name}</h3>
                       <p className="text-zinc-500 text-sm mt-1 dark:text-zinc-500">
-                        <span className="font-mono tabular-nums">{team.members.length}/{MAX_TEAM_SIZE}</span>{' '}
+                        <span className="font-mono tabular-nums">{team.members.length}</span>{' '}
                         {t('teams.memberCountSuffix')}
                       </p>
                     </div>
@@ -727,7 +725,7 @@ export default function Teams() {
                       <h3 className="font-semibold text-zinc-900 truncate dark:text-white">{bt.name}</h3>
                       <p className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1.5 dark:text-zinc-500">
                         <Users className="w-3 h-3" />
-                        <span className="font-mono tabular-nums">{bt.member_count}/{MAX_TEAM_SIZE}</span>{' '}
+                        <span className="font-mono tabular-nums">{bt.member_count}</span>{' '}
                         {t('teams.memberCountSuffix')}
                       </p>
                     </div>
