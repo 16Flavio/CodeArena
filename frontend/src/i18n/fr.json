@@ -1073,6 +1073,20 @@
       "rejudgeAllFailed": "Échec du rejugement",
       "rejudgeAllLeagueHint": "Les instantanés de ligue ne sont pas rafraîchis automatiquement : recalculez l'événement de ligue une fois le rejugement terminé."
     },
+    "organizers": {
+      "title": "Co-organisateurs",
+      "hint": "Les co-organisateurs peuvent gérer ce concours. Seuls les utilisateurs ayant le rôle organisateur (ou les admins) peuvent être ajoutés.",
+      "empty": "Aucun co-organisateur pour le moment.",
+      "pickUser": "Sélectionner un utilisateur…",
+      "addButton": "Ajouter",
+      "ownerBadge": "Propriétaire",
+      "removeTitle": "Retirer ce co-organisateur",
+      "confirmRemove": "Retirer {{username}} des co-organisateurs de ce concours ?",
+      "toastAdded": "Co-organisateur ajouté",
+      "toastRemoved": "Co-organisateur retiré",
+      "toastFailed": "Échec de l'opération",
+      "toastLoadFailed": "Échec du chargement des co-organisateurs"
+    },
     "form": {
       "practiceMode": "Mode entraînement",
       "practiceModeHint": "Les soumissions restent possibles après la fin, hors classement officiel.",

@@ -1073,6 +1073,20 @@
       "rejudgeAllFailed": "Rejudge failed",
       "rejudgeAllLeagueHint": "League snapshots are not refreshed automatically: recompute the league event after the rejudge finishes."
     },
+    "organizers": {
+      "title": "Co-organizers",
+      "hint": "Co-organizers can manage this contest. Only users with the organizer role (or admins) can be added.",
+      "empty": "No co-organizers yet.",
+      "pickUser": "Select a user…",
+      "addButton": "Add",
+      "ownerBadge": "Owner",
+      "removeTitle": "Remove this co-organizer",
+      "confirmRemove": "Remove {{username}} from the co-organizers of this contest?",
+      "toastAdded": "Co-organizer added",
+      "toastRemoved": "Co-organizer removed",
+      "toastFailed": "Operation failed",
+      "toastLoadFailed": "Failed to load co-organizers"
+    },
     "form": {
       "practiceMode": "Practice mode",
       "practiceModeHint": "Submissions stay open after end_time, excluded from the official scoreboard.",

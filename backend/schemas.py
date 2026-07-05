@@ -1269,3 +1269,14 @@ class LeagueStandingsOut(BaseModel):
 class ScoreOverrideIn(BaseModel):
     score: float
     reason: str
+
+
+class ContestOrganizerOut(BaseModel):
+    user_id: int
+    username: str
+    # True for the contest's creator (created_by) - not removable here.
+    is_owner: bool = False
+
+
+class ContestOrganizerIn(BaseModel):
+    user_id: int

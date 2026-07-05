@@ -128,19 +128,25 @@ def can_manage_contest(user: models.User, contest: "models.Contest") -> bool:
     """Return True iff ``user`` is allowed to mutate ``contest`` -
     create instances, DQ participants, override verdicts, rescore.
 
-    Admins always pass. Organizers pass only when they CREATED the
-    contest. The ownership comes from ``Contest.created_by`` (FK to
-    users, populated at create time). A contest with NULL
-    ``created_by`` (legacy data, pre-organizer-role) is treated as
-    admin-only.
+    Admins always pass. Organizers pass when they CREATED the contest
+    (``Contest.created_by``) OR hold a co-organizer grant
+    (``ContestOrganizer`` row, read through the lazy ``organizers``
+    relationship so this keeps its db-free signature). A contest with
+    neither (legacy data) is admin-only.
     """
     if user.is_admin:
         return True
     if not user.is_organizer:
         return False
-    if contest is None or contest.created_by is None:
+    if contest is None:
         return False
-    return contest.created_by == user.id
+    if contest.created_by is not None and contest.created_by == user.id:
+        return True
+    try:
+        grants = contest.organizers or []
+    except Exception:  # detached instance - fail closed
+        return False
+    return any(g.user_id == user.id for g in grants)
 
 
 def require_contest_owner(

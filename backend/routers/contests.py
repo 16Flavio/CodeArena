@@ -2399,3 +2399,107 @@ def override_score(
     from ..scoreboard_response_cache import invalidate_contest
     invalidate_contest(contest.id)
     return {"detail": "Score corrigé."}
+
+
+# --- Co-organizers -----------------------------------------------------------
+
+@router.get("/{contest_id}/organizers", response_model=list[schemas.ContestOrganizerOut])
+def list_contest_organizers(
+    contest_id: int,
+    user: models.User = Depends(require_contest_owner),
+    db: Session = Depends(get_db),
+):
+    """Creator + co-organizer grants for a contest. Visible to whoever
+    can manage it (admins and its organizers)."""
+    contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
+    out: list[schemas.ContestOrganizerOut] = []
+    if contest.created_by is not None:
+        creator = db.query(models.User).filter(models.User.id == contest.created_by).first()
+        if creator:
+            out.append(schemas.ContestOrganizerOut(
+                user_id=creator.id, username=creator.username, is_owner=True,
+            ))
+    rows = (
+        db.query(models.ContestOrganizer)
+        .options(joinedload(models.ContestOrganizer.user))
+        .filter(models.ContestOrganizer.contest_id == contest_id)
+        .order_by(models.ContestOrganizer.id.asc())
+        .all()
+    )
+    for g in rows:
+        if contest.created_by is not None and g.user_id == contest.created_by:
+            continue  # creator listed once, as owner
+        out.append(schemas.ContestOrganizerOut(
+            user_id=g.user_id,
+            username=g.user.username if g.user else f"user#{g.user_id}",
+            is_owner=False,
+        ))
+    return out
+
+
+@router.post("/{contest_id}/organizers", response_model=list[schemas.ContestOrganizerOut])
+def add_contest_organizer(
+    contest_id: int,
+    payload: schemas.ContestOrganizerIn,
+    user: models.User = Depends(require_contest_owner),
+    db: Session = Depends(get_db),
+):
+    """Grant co-organizer rights on this contest. The target must
+    already carry the global ``is_organizer`` role (admins mint that in
+    the Users tab) - the grant only scopes WHICH contests they manage."""
+    target = db.query(models.User).filter(models.User.id == payload.user_id).first()
+    if target is None:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+    if not (target.is_organizer or target.is_admin):
+        raise HTTPException(
+            status_code=400,
+            detail="Cet utilisateur n'a pas le rôle organisateur - promouvez-le d'abord dans l'onglet Utilisateurs",
+        )
+    contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
+    if contest.created_by == target.id:
+        raise HTTPException(status_code=400, detail="Cet utilisateur est déjà le créateur du concours")
+    exists = (
+        db.query(models.ContestOrganizer)
+        .filter(
+            models.ContestOrganizer.contest_id == contest_id,
+            models.ContestOrganizer.user_id == target.id,
+        )
+        .first()
+    )
+    if exists:
+        raise HTTPException(status_code=400, detail="Cet utilisateur est déjà co-organisateur")
+    db.add(models.ContestOrganizer(contest_id=contest_id, user_id=target.id))
+    audit(
+        db, action="add_contest_organizer", actor=user,
+        target_type="contest", target_id=contest_id,
+        detail=f"user={target.username} (id={target.id})",
+    )
+    db.commit()
+    return list_contest_organizers(contest_id=contest_id, user=user, db=db)
+
+
+@router.delete("/{contest_id}/organizers/{user_id}", response_model=list[schemas.ContestOrganizerOut])
+def remove_contest_organizer(
+    contest_id: int,
+    user_id: int,
+    user: models.User = Depends(require_contest_owner),
+    db: Session = Depends(get_db),
+):
+    row = (
+        db.query(models.ContestOrganizer)
+        .filter(
+            models.ContestOrganizer.contest_id == contest_id,
+            models.ContestOrganizer.user_id == user_id,
+        )
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Co-organisateur introuvable")
+    db.delete(row)
+    audit(
+        db, action="remove_contest_organizer", actor=user,
+        target_type="contest", target_id=contest_id,
+        detail=f"user_id={user_id}",
+    )
+    db.commit()
+    return list_contest_organizers(contest_id=contest_id, user=user, db=db)
