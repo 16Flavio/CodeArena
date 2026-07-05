@@ -107,6 +107,42 @@ def test_accept_request_respects_cap(client):
     assert "Cap-1" in r.json()["detail"]
 
 
+def test_lowering_cap_below_registered_team_refused(client):
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    bob = auth_header(client, "bob")
+    _make_team(client, alice, "Duo", [bob])
+
+    cid = _make_team_contest(client, admin, "NoCap")  # no cap at creation
+    r = client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
+    assert r.status_code == 200, r.text
+
+    # A registered team of 2 blocks lowering the cap to 1...
+    r = client.put(f"/api/contests/{cid}", json={"max_team_size": 1}, headers=admin)
+    assert r.status_code == 400
+    assert "Duo" in r.json()["detail"]
+
+    # ...but an exact fit is fine.
+    r = client.put(f"/api/contests/{cid}", json={"max_team_size": 2}, headers=admin)
+    assert r.status_code == 200, r.text
+
+
+def test_admin_cannot_register_oversized_team(client):
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    bob = auth_header(client, "bob")
+    team = _make_team(client, alice, "Duo", [bob])
+
+    cid = _make_team_contest(client, admin, "Cap-1", max_team_size=1)
+    # No admin bypass: the registered-teams-fit-the-cap invariant is absolute.
+    r = client.post(
+        f"/api/contests/{cid}/register",
+        json={"team_id": team["id"]},
+        headers=admin,
+    )
+    assert r.status_code == 400
+
+
 def test_max_team_size_must_be_positive(client):
     admin = auth_header(client, "root")
     now = datetime.now(timezone.utc)

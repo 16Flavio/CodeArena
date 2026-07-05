@@ -567,6 +567,38 @@ def update_contest(
 
     changed = data.model_dump(exclude_unset=True)
     changed_keys = list(changed.keys())
+
+    # Lowering max_team_size must not strand already-registered teams above
+    # the cap - the invariant is that every (non-DQ) registered team always
+    # fits. Refuse and let the organizer unregister/DQ them first.
+    if changed.get("max_team_size") is not None:
+        cap = changed["max_team_size"]
+        oversized = (
+            db.query(models.Team.name, func.count(models.TeamMember.id))
+            .join(
+                models.ContestRegistration,
+                models.ContestRegistration.team_id == models.Team.id,
+            )
+            .join(models.TeamMember, models.TeamMember.team_id == models.Team.id)
+            .filter(
+                models.ContestRegistration.contest_id == contest.id,
+                models.ContestRegistration.disqualified.is_(False),
+            )
+            .group_by(models.Team.id, models.Team.name)
+            .having(func.count(models.TeamMember.id) > cap)
+            .all()
+        )
+        if oversized:
+            listing = ", ".join(f"{name} ({count})" for name, count in oversized)
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Impossible de limiter les équipes à {cap} membre(s) : "
+                    f"des équipes inscrites dépassent déjà cette taille - {listing}. "
+                    "Désinscrivez-les ou disqualifiez-les d'abord."
+                ),
+            )
+
     old_mode = (contest.participation_mode or "team").lower()
     for key, value in changed.items():
         setattr(contest, key, value)

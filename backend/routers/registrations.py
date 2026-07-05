@@ -353,9 +353,11 @@ def register_self(
                 )
         # Per-contest team-size cap. Checked at registration time; the
         # teams router blocks later joins that would break it while the
-        # contest is still running.
+        # contest is still running, and update_contest refuses to lower
+        # the cap below an already-registered team. No admin bypass: the
+        # invariant is that a registered team always fits the cap.
         cap = contest.max_team_size
-        if cap is not None and not user.is_admin and len(member_ids) > cap:
+        if cap is not None and len(member_ids) > cap:
             raise HTTPException(
                 status_code=400,
                 detail=(
