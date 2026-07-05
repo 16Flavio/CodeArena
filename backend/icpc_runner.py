@@ -103,9 +103,9 @@ def _check_float(team_out: str, expected: str, epsilon: float) -> bool:
 def check_output(team_out: str, expected: str, kind: str, epsilon: Optional[float]) -> bool:
     """Dispatch a built-in checker. Returns True on match.
 
-    ``custom`` is reserved for future compiled output_validators and falls
-    back to tokens for v1 - the admin UI warns if a custom script is set
-    but not yet executed."""
+    ``custom`` with an actual validator script is handled inside
+    ``judge()`` (it needs process execution, not string comparison);
+    a custom problem WITHOUT a script falls back to tokens here."""
     kind = (kind or "tokens").lower()
     if kind == "diff":
         return _check_diff(team_out, expected)
@@ -368,6 +368,46 @@ def run_against_testcase(
             return RunResult(verdict=MLE, runtime_ms=elapsed_ms, stderr=err[:1000])
         return RunResult(verdict=RE, runtime_ms=elapsed_ms, stderr=err[:1000])
     return RunResult(verdict=AC, runtime_ms=elapsed_ms, stdout=out, stderr=err[:1000])
+
+
+# ── Custom output validators (Kattis interface) ─────────────────────────────
+
+def _run_custom_checker(
+    run_cmd_str: str,
+    *,
+    chk_workdir: str,
+    testcase_input: str,
+    expected_output: str,
+    team_output: str,
+) -> tuple[bool, Optional[str]]:
+    """Run a prepared output validator against one testcase.
+
+    Kattis interface: ``validator input_file answer_file feedback_dir``
+    with the team's output on stdin. Exit 42 (or 0, DOMjudge native) =
+    accepted; 43 (or 1) = rejected; anything else = judge error.
+    Returns ``(passed, judge_error_message)`` - the second element is
+    None unless the validator itself misbehaved."""
+    in_path = os.path.join(chk_workdir, "in.txt")
+    ans_path = os.path.join(chk_workdir, "ans.txt")
+    feedback_dir = os.path.join(chk_workdir, "feedback")
+    os.makedirs(feedback_dir, exist_ok=True)
+    with open(in_path, "w", encoding="utf-8") as f:
+        f.write(testcase_input or "")
+    with open(ans_path, "w", encoding="utf-8") as f:
+        f.write(expected_output or "")
+    cmd = f'{run_cmd_str} "{in_path}" "{ans_path}" "{feedback_dir}"'
+    rc, _out, err, _ms = _run_shell(
+        cmd, cwd=chk_workdir, stdin=team_output or "",
+        timeout_s=60, memory_mb=1024,
+    )
+    if rc in (42, 0):
+        return True, None
+    if rc in (43, 1):
+        return False, None
+    return False, (
+        f"output validator exited with unexpected code {rc}: "
+        + (err or "")[:500]
+    )
 
 
 # ── Interactive judging ───────────────────────────────────────────────────────
@@ -714,6 +754,11 @@ def judge(
     interactor_language: str = "py3",
     interactor_compile_cmd: str = "",
     interactor_run_cmd: str = "",
+    checker_script: Optional[str] = None,
+    checker_language: str = "py3",
+    checker_compile_cmd: str = "",
+    checker_run_cmd: str = "",
+    checker_aux_files: Optional[dict] = None,
     num_passes: int = 1,
     scoring_mode: str = "icpc",
     run_all_testcases: bool = False,
@@ -779,6 +824,44 @@ def judge(
                 src=inter_src, exe=inter_exe, workdir=inter_workdir,
             )
 
+        # Prepare the custom output validator once per judge() call:
+        # write its aux files (headers it #includes), compile it if the
+        # language needs it, and build the run command. A validator that
+        # fails to prepare is a judge error, never a contestant verdict.
+        chk_run_cmd_str: Optional[str] = None
+        chk_workdir: Optional[str] = None
+        use_custom_checker = (
+            (checker_kind or "").lower() == "custom" and bool(checker_script)
+        )
+        if use_custom_checker:
+            clang = (checker_language or "py3").lower()
+            chk_workdir = os.path.join(workdir, "checker")
+            os.makedirs(chk_workdir, exist_ok=True)
+            for aux_name, aux_content in (checker_aux_files or {}).items():
+                safe = os.path.basename(str(aux_name))
+                if not safe:
+                    continue
+                with open(os.path.join(chk_workdir, safe), "w", encoding="utf-8") as f:
+                    f.write(str(aux_content))
+            chk_compile = compile_source(
+                clang, checker_compile_cmd or "",
+                checker_script or "", workdir=chk_workdir,
+            )
+            if chk_compile.verdict == CE:
+                return IE, (
+                    f"Output validator ({clang}) failed to compile:\n"
+                    + (chk_compile.compile_output or "")
+                ), []
+            chk_src = os.path.join(chk_workdir, _guess_language_filename(clang))
+            chk_exe = os.path.join(chk_workdir, "bin")
+            if clang == "py3" and not (checker_run_cmd or "").strip():
+                chk_run_cmd_str = f'{_python_bin()} -I "{chk_src}"'
+            else:
+                chk_run_cmd_str = _expand(
+                    checker_run_cmd or "",
+                    src=chk_src, exe=chk_exe, workdir=chk_workdir,
+                )
+
         for tc_id, stdin, expected in testcases:
             if is_interactive:
                 res = _run_interactive(
@@ -811,12 +894,28 @@ def judge(
                     current_stdin = (current_stdin or "") + (res.stdout or "")
                 passed = False
                 if res.verdict == AC:
-                    passed = check_output(res.stdout, expected, checker_kind, checker_epsilon)
-                    if not passed:
-                        res = RunResult(
-                            verdict=WA, runtime_ms=res.runtime_ms,
-                            stdout=res.stdout, stderr=res.stderr,
+                    if use_custom_checker and chk_run_cmd_str:
+                        passed, judge_err = _run_custom_checker(
+                            chk_run_cmd_str,
+                            chk_workdir=chk_workdir,
+                            testcase_input=stdin,
+                            expected_output=expected,
+                            team_output=res.stdout or "",
                         )
+                        if judge_err is not None:
+                            return IE, judge_err, runs
+                        if not passed:
+                            res = RunResult(
+                                verdict=WA, runtime_ms=res.runtime_ms,
+                                stdout=res.stdout, stderr=res.stderr,
+                            )
+                    else:
+                        passed = check_output(res.stdout, expected, checker_kind, checker_epsilon)
+                        if not passed:
+                            res = RunResult(
+                                verdict=WA, runtime_ms=res.runtime_ms,
+                                stdout=res.stdout, stderr=res.stderr,
+                            )
             runs.append((tc_id, res, passed))
             if res.verdict != AC:
                 # For plain ICPC scoring we short-circuit on first non-AC -

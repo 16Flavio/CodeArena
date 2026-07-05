@@ -589,6 +589,14 @@ class Problem(Base):
     # Compiled languages read the testcase via INTERACTOR_INPUT_FILE /
     # INTERACTOR_EXPECTED_FILE env vars and speak plain stdin/stdout.
     interactor_language = Column(String(32), nullable=False, default="py3")
+    # Custom output validator (checker_kind="custom"), Kattis interface:
+    # ``validator input_file answer_file feedback_dir < team_output``,
+    # exit 42 = accepted, 43 = rejected. ``checker_script`` is the main
+    # source; ``checker_aux_files`` is a JSON map {filename: content} for
+    # headers the validator #includes (e.g. validation.h).
+    checker_script = Column(Text, nullable=True)
+    checker_language = Column(String(32), nullable=False, default="py3", server_default="py3")
+    checker_aux_files = Column(Text, nullable=True)
     # Number of times the user's program is invoked per testcase. 1 =
     # classic batch, >1 = "multi-pass" style (each run gets the original
     # input concatenated with all prior runs' outputs). Only the final
