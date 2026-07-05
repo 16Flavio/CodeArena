@@ -14,7 +14,8 @@
     "downloadFailed": "Échec du téléchargement",
     "loadFailed": "Impossible de charger vos soumissions",
     "compare": "Comparer ({{count}}/2)",
-    "selectForCompare": "Sélectionner pour comparer"
+    "selectForCompare": "Sélectionner pour comparer",
+    "viewDetail": "Voir le détail du jugement"
   },
   "diff": {
     "title": "Comparaison de deux soumissions",
@@ -87,6 +88,18 @@
     "toastClarUpdated": "Clarification mise à jour",
     "toastClarDeleted": "Clarification supprimée",
     "confirmDeleteClar": "Supprimer cette clarification ?"
+  },
+  "judging": {
+    "title": "Détail du jugement",
+    "loadFailed": "Impossible de charger le détail du jugement",
+    "colTest": "Test",
+    "colKind": "Type",
+    "colVerdict": "Verdict",
+    "colTime": "Temps",
+    "colOutput": "Sortie",
+    "noRuns": "Aucun test n'a encore été exécuté.",
+    "showOutput": "Afficher la sortie",
+    "hideOutput": "Masquer la sortie"
   },
   "icpcScoreboard": {
     "openStatement": "Ouvrir l'énoncé (PDF)",
@@ -796,7 +809,11 @@
     "tabStatement": "Énoncé",
     "tabSubmit": "Soumettre",
     "tabMySubmissions": "Mes soumissions",
-    "tabParticipants": "Participants"
+    "tabParticipants": "Participants",
+    "historyTitle": "Historique des soumissions",
+    "historyEmpty": "Aucune soumission pour ce concours.",
+    "historyDetail": "Détail",
+    "historyNotJudged": "Pas encore jugé"
   },
   "scoreboard": {
     "title": "Classement",
@@ -954,7 +971,25 @@
       "judgingMeta": "Jugé le {{when}} · max {{ms}} ms",
       "noRuns": "Aucun test n'a été exécuté (compilation échouée ?)",
       "toastLoadFailed": "Impossible de charger les soumissions",
-      "toastLoadContentFailed": "Impossible de charger le contenu"
+      "toastLoadContentFailed": "Impossible de charger le contenu",
+      "overrideScore": "Forcer le score",
+      "overrideScorePromptScore": "Nouveau score (actuel : {{current}}) :",
+      "overrideScorePromptReason": "Raison (obligatoire, enregistrée dans le journal) :",
+      "overrideScoreInvalid": "Entrez un nombre valide",
+      "overrideScoreReasonRequired": "Une raison est obligatoire",
+      "overrideScoreToastOk": "Score modifié"
+    },
+    "icpc": {
+      "dryRunAction": "Tester une solution de référence",
+      "dryRunTitle": "Test à blanc : {{label}} · {{name}}",
+      "dryRunHint": "Jugé avec le vrai pipeline. Rien n'est enregistré.",
+      "dryRunLanguage": "Langage",
+      "dryRunSource": "Code source",
+      "dryRunSourcePlaceholder": "Collez la solution de référence ici…",
+      "dryRunRun": "Exécuter",
+      "dryRunRunning": "Jugement…",
+      "dryRunNeedSource": "Collez d'abord du code source",
+      "dryRunFailed": "Échec du test à blanc"
     },
     "users": {
       "colUser": "Utilisateur",
@@ -1028,7 +1063,15 @@
       "toastLoadFailed": "Impossible de charger les données admin",
       "toastFailed": "Échec",
       "confirmDelete": "Supprimer le concours « {{title}} » ? Toutes les soumissions seront perdues.",
-      "confirmDeleteInstance": "Supprimer cette instance ?"
+      "confirmDeleteInstance": "Supprimer cette instance ?",
+      "rejudgeAllHeading": "Rejuger toutes les soumissions",
+      "rejudgeAll": "Tout rejuger",
+      "rejudgeAllRunning": "Mise en file…",
+      "rejudgeAllTooltip": "Remet toutes les soumissions du concours dans le pipeline de jugement",
+      "rejudgeAllConfirm": "Rejuger toutes les soumissions de « {{title}} » ? Les verdicts actuels seront écrasés au fur et à mesure.",
+      "rejudgeAllDone": "Rejugement mis en file pour {{count}} soumission(s). Pensez à recalculer manuellement les instantanés de ligue.",
+      "rejudgeAllFailed": "Échec du rejugement",
+      "rejudgeAllLeagueHint": "Les instantanés de ligue ne sont pas rafraîchis automatiquement : recalculez l'événement de ligue une fois le rejugement terminé."
     },
     "form": {
       "practiceMode": "Mode entraînement",

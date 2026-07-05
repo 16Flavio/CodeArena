@@ -7,6 +7,7 @@ import {
 import {
   adminListSubmissions, adminGetSubmissionContent, overrideJudging,
   adminDeleteSubmission, adminSubmissionsStats, rejudgeSubmission, getJudging,
+  overrideSubmissionScore,
 } from '../../api';
 import { formatDateTime } from '../../utils/datetime';
 import { useConfirm, usePrompt } from '../Confirm';
@@ -97,6 +98,38 @@ export default function SubmissionsTab({ contests }) {
     try {
       await overrideJudging(s.latest_judging_id, { verdict: verdict.toUpperCase(), reason });
       toast.success(t('admin.submissions.overrideToastOk'));
+      setTimeout(() => load(list.offset), 300);
+    } catch (err) {
+      toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
+    }
+  };
+
+  // Output-contest counterpart of handleOverride: force a submission's
+  // score. Reason is mandatory (backend rejects blank reasons - audited).
+  const handleOverrideScore = async (s) => {
+    const raw = await prompt({
+      message: t('admin.submissions.overrideScorePromptScore', {
+        current: s.score != null ? s.score.toFixed(2) : '?',
+      }),
+      defaultValue: '',
+    });
+    if (raw == null || raw === '') return;
+    const score = Number(raw);
+    if (!Number.isFinite(score)) {
+      toast.error(t('admin.submissions.overrideScoreInvalid'));
+      return;
+    }
+    const reason = (await prompt({
+      message: t('admin.submissions.overrideScorePromptReason'),
+      defaultValue: '',
+    }) || '').trim();
+    if (!reason) {
+      toast.error(t('admin.submissions.overrideScoreReasonRequired'));
+      return;
+    }
+    try {
+      await overrideSubmissionScore(s.id, { score, reason });
+      toast.success(t('admin.submissions.overrideScoreToastOk'));
       setTimeout(() => load(list.offset), 300);
     } catch (err) {
       toast.error(extractErrorMessage(err, t('admin.users.toastFailed')));
@@ -313,6 +346,15 @@ export default function SubmissionsTab({ contests }) {
                             onClick={() => handleOverride(s)}
                             className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-emerald-500 dark:hover:bg-zinc-700/50 dark:hover:text-emerald-400"
                             title={t('admin.submissions.override')}
+                          >
+                            <Shield className="w-4 h-4" />
+                          </button>
+                        )}
+                        {!s.problem_id && (
+                          <button
+                            onClick={() => handleOverrideScore(s)}
+                            className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-emerald-500 dark:hover:bg-zinc-700/50 dark:hover:text-emerald-400"
+                            title={t('admin.submissions.overrideScore')}
                           >
                             <Shield className="w-4 h-4" />
                           </button>

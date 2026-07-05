@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { Download, CheckCircle, XCircle, FileText, GitCompare } from 'lucide-react';
+import { Download, CheckCircle, XCircle, FileText, GitCompare, Eye } from 'lucide-react';
 import { getMySubmissions, downloadMySubmission } from '../api';
 import { formatScore, formatScoreFull } from '../utils/format';
 import { formatDateTime } from '../utils/datetime';
 import DiffModal from '../components/DiffModal';
+import JudgingDetailModal from '../components/JudgingDetailModal';
 import PageHeader from '../components/PageHeader';
 
 export default function MySubmissions() {
@@ -19,6 +20,8 @@ export default function MySubmissions() {
   const [kind, setKind] = useState('output');
   const [selected, setSelected] = useState([]);
   const [diffPair, setDiffPair] = useState(null);
+  // ICPC row whose judging detail modal is open, or null.
+  const [judgingRow, setJudgingRow] = useState(null);
 
   const toggleSelected = (id) => {
     setSelected((prev) => {
@@ -241,6 +244,22 @@ export default function MySubmissions() {
                     </td>
                     <td className="py-3 text-right">
                       <div className="inline-flex items-center gap-1">
+                        {kind === 'icpc' && (
+                          <button
+                            type="button"
+                            onClick={() => setJudgingRow(s)}
+                            // The my-submissions payload doesn't carry
+                            // latest_judging_id; a non-empty latest_verdict
+                            // means an active judging exists to show. The
+                            // modal itself fetches by submission id.
+                            disabled={!s.latest_verdict}
+                            className="p-1.5 rounded hover:bg-zinc-100 text-accent-600 hover:text-accent-700 disabled:opacity-40 disabled:cursor-not-allowed dark:text-accent-400 dark:hover:text-accent-300 dark:hover:bg-zinc-800 transition-colors"
+                            title={s.latest_verdict ? t('mySubmissions.viewDetail') : t('contest.historyNotJudged')}
+                            aria-label={t('mySubmissions.viewDetail')}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleDownload(s)}
@@ -262,6 +281,14 @@ export default function MySubmissions() {
       </div>
       {diffPair && (
         <DiffModal leftId={diffPair[0]} rightId={diffPair[1]} onClose={() => setDiffPair(null)} />
+      )}
+      {judgingRow && (
+        <JudgingDetailModal
+          key={judgingRow.id}
+          submissionId={judgingRow.id}
+          problemLabel={judgingRow.problem_label}
+          onClose={() => setJudgingRow(null)}
+        />
       )}
     </div>
   );

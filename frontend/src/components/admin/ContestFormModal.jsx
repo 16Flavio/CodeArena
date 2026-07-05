@@ -8,7 +8,7 @@ import {
 import {
   createContest, updateContest,
   uploadProblemStatement, deleteProblemStatement,
-  rescoreContest, importDomjudgePackage,
+  rescoreContest, importDomjudgePackage, rejudgeAllIcpc,
 } from '../../api';
 import AdminHints from '../AdminHints';
 import IcpcProblemsPanel from '../IcpcProblemsPanel';
@@ -75,6 +75,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
   // is created (so the admin doesn't need a second edit-save round trip).
   const [createIcpcPackage, setCreateIcpcPackage] = useState(null);
   const [rescoring, setRescoring] = useState(false);
+  const [rejudging, setRejudging] = useState(false);
   // "score" | "validate" | null - opens the test-scoring modal.
   const [testScoringMode, setTestScoringMode] = useState(null);
 
@@ -248,6 +249,26 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
       toast.error(extractErrorMessage(err, t('admin.form.toastRescoreFailed')));
     } finally {
       setRescoring(false);
+    }
+  };
+
+  // ICPC counterpart of handleRescore: re-queue every submission of the
+  // contest through the judging pipeline.
+  const handleRejudgeAll = async () => {
+    if (!contest) return;
+    const ok = await confirm({
+      message: t('admin.contests.rejudgeAllConfirm', { title: contest.title }),
+    });
+    if (!ok) return;
+    setRejudging(true);
+    try {
+      const { data } = await rejudgeAllIcpc(contest.id);
+      toast.success(t('admin.contests.rejudgeAllDone', { count: data.count }));
+      onChange();
+    } catch (err) {
+      toast.error(extractErrorMessage(err, t('admin.contests.rejudgeAllFailed')));
+    } finally {
+      setRejudging(false);
     }
   };
 
@@ -782,6 +803,26 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
               // the inner state briefly shows the previous
               // contest's problems under the new id.
               <>
+                <div className="flex items-center justify-between gap-3 flex-wrap bg-zinc-50 border border-zinc-200 rounded-lg p-3 dark:bg-zinc-800/30 dark:border-zinc-700/40">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                      {t('admin.contests.rejudgeAllHeading')}
+                    </p>
+                    <p className="text-[11px] text-zinc-400 mt-0.5 dark:text-zinc-500">
+                      {t('admin.contests.rejudgeAllLeagueHint')}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRejudgeAll}
+                    disabled={rejudging}
+                    className="text-xs font-medium px-3 py-1.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-amber-500/15 dark:hover:bg-amber-500/25 dark:text-amber-300"
+                    title={t('admin.contests.rejudgeAllTooltip')}
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${rejudging ? 'animate-spin' : ''}`} />
+                    {rejudging ? t('admin.contests.rejudgeAllRunning') : t('admin.contests.rejudgeAll')}
+                  </button>
+                </div>
                 <IcpcProblemsPanel key={contest.id} contestId={contest.id} />
                 <IcpcStatsPanel key={`stats-${contest.id}`} contestId={contest.id} />
               </>
