@@ -20,7 +20,7 @@ function useNow(intervalMs = 1000) {
   return now;
 }
 
-function countdown(targetMs, now) {
+function countdown(targetMs, now, dayUnit) {
   const diff = Math.max(0, targetMs - now);
   const s = Math.floor(diff / 1000);
   const days = Math.floor(s / 86400);
@@ -28,7 +28,7 @@ function countdown(targetMs, now) {
   const m = Math.floor((s % 3600) / 60);
   const sec = s % 60;
   const pad = (n) => String(n).padStart(2, '0');
-  if (days > 0) return `${days} j ${pad(h)}:${pad(m)}`;
+  if (days > 0) return `${days} ${dayUnit} ${pad(h)}:${pad(m)}`;
   return `${pad(h)}:${pad(m)}:${pad(sec)}`;
 }
 
@@ -47,16 +47,32 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const now = useNow();
 
+  const load = () => Promise.all([getContests(), getMyTeams(), getMyRankings().catch(() => ({ data: [] }))])
+    .then(([c, tm, r]) => {
+      setContests(c.data);
+      setTeams(tm.data);
+      setRankings(r.data);
+    });
+
   useEffect(() => {
-    Promise.all([getContests(), getMyTeams(), getMyRankings().catch(() => ({ data: [] }))])
-      .then(([c, tm, r]) => {
-        setContests(c.data);
-        setTeams(tm.data);
-        setRankings(r.data);
-      })
+    load()
       .catch(() => toast.error(t('dashboard.toastLoadFailed')))
       .finally(() => setLoading(false));
   }, []);
+
+  // When a contest start/end boundary passes while the page is open,
+  // the "active" bucket depends on a server flag we only have as a
+  // snapshot - refetch once so the hero card flips instead of the
+  // contest silently vanishing at 00:00:00.
+  useEffect(() => {
+    const crossed = contests.some((c) => {
+      const start = backendIsoMs(c.start_time);
+      const end = backendIsoMs(c.end_time);
+      return (start && start <= now && start > now - 1500)
+        || (end && end <= now && end > now - 1500);
+    });
+    if (crossed) load().catch(() => { /* next tick retries nothing - snapshot stays */ });
+  }, [now]);
 
   // Mutually exclusive buckets: a contest in "past" never shows up in
   // "active" or "upcoming", even if practice mode keeps submissions open
@@ -128,7 +144,7 @@ export default function Dashboard() {
                 </p>
                 {featured.end_time && (
                   <span className="ml-auto font-mono tabular-nums text-lg font-semibold text-zinc-900 dark:text-white" title={formatDateTime(featured.end_time)}>
-                    {countdown(backendIsoMs(featured.end_time), now)}
+                    {countdown(backendIsoMs(featured.end_time), now, t('dashboard.dayUnit'))}
                   </span>
                 )}
               </div>
@@ -174,7 +190,7 @@ export default function Dashboard() {
                 </p>
                 {nextUp.start_time && (
                   <span className="ml-auto font-mono tabular-nums text-lg font-semibold text-zinc-900 dark:text-white" title={formatDateTime(nextUp.start_time)}>
-                    {countdown(backendIsoMs(nextUp.start_time), now)}
+                    {countdown(backendIsoMs(nextUp.start_time), now, t('dashboard.dayUnit'))}
                   </span>
                 )}
               </div>

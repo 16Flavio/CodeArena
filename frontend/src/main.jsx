@@ -18,21 +18,21 @@ function ThemedToaster() {
       position="bottom-right"
       toastOptions={{
         style: {
-          background: isLight ? '#ffffff' : '#1e293b',
-          color: isLight ? '#0f172a' : '#e2e8f0',
-          border: `1px solid ${isLight ? '#e2e8f0' : '#334155'}`,
+          background: isLight ? '#ffffff' : '#18181b',
+          color: isLight ? '#18181b' : '#e4e4e7',
+          border: `1px solid ${isLight ? '#e4e4e7' : '#334155'}`,
           borderRadius: '12px',
         },
         success: {
           iconTheme: {
             primary: '#22c55e',
-            secondary: isLight ? '#ffffff' : '#1e293b',
+            secondary: isLight ? '#ffffff' : '#18181b',
           },
         },
         error: {
           iconTheme: {
             primary: '#ef4444',
-            secondary: isLight ? '#ffffff' : '#1e293b',
+            secondary: isLight ? '#ffffff' : '#18181b',
           },
         },
       }}

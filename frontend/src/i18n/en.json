@@ -408,7 +408,8 @@
     "toastVerificationSent": "Email sent",
     "collapseSidebar": "Collapse menu",
     "expandSidebar": "Expand menu",
-    "account": "My account"
+    "account": "My account",
+    "primary": "Main navigation"
   },
   "accountModal": {
     "passwordTitle": "Change password",
@@ -568,7 +569,8 @@
     "happeningNow": "Happening now",
     "nextUp": "Next up",
     "leagueTeaser": "Your season points and the class's yearly standings.",
-    "leagueCta": "View the league standings"
+    "leagueCta": "View the league standings",
+    "dayUnit": "d"
   },
   "landing": {
     "welcome": "Welcome to CodeArena",

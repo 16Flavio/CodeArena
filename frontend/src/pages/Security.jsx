@@ -47,7 +47,7 @@ export default function Security() {
       setCode('');
       setStage('setup');
     } catch (err) {
-      toast.error(extractErrorMessage(err, t('common.somethingWentWrong')));
+      toast.error(extractErrorMessage(err, t('auth.somethingWentWrong')));
     } finally {
       setBusy(false);
     }
@@ -63,7 +63,7 @@ export default function Security() {
       toast.success(t('auth.totp.settings.toastEnabled'));
       await refreshMe();
     } catch (err) {
-      toast.error(extractErrorMessage(err, t('common.somethingWentWrong')));
+      toast.error(extractErrorMessage(err, t('auth.somethingWentWrong')));
     } finally {
       setBusy(false);
     }
@@ -79,7 +79,7 @@ export default function Security() {
       setStage('idle');
       await refreshMe();
     } catch (err) {
-      toast.error(extractErrorMessage(err, t('common.somethingWentWrong')));
+      toast.error(extractErrorMessage(err, t('auth.somethingWentWrong')));
     } finally {
       setBusy(false);
     }

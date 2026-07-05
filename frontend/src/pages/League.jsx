@@ -33,6 +33,7 @@ export default function League() {
   const [selectedId, setSelectedId] = useState(null);
   const [detail, setDetail] = useState(null); // { league, rows }
   const [loading, setLoading] = useState(true);
+  const [listLoaded, setListLoaded] = useState(false);
   const [error, setError] = useState(false);
   const [reloadTick, setReloadTick] = useState(0); // bumped by the retry button
 
@@ -51,7 +52,8 @@ export default function League() {
           setLoading(false);
           toast.error(t('league.toastLoadFailed'));
         }
-      });
+      })
+      .finally(() => { if (!cancelled) setListLoaded(true); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -81,16 +83,23 @@ export default function League() {
 
   const league = detail?.league;
   const rows = detail?.rows || [];
+  // Summary from the list, so the header keeps a title while the
+  // detail of a freshly selected league is still loading.
+  const selectedSummary = leagues.find((l) => l.id === selectedId) || null;
 
-  // Only counted events get a standings column. A finished event that is
-  // not counted yet ("pending reveal") stays out: its points are frozen
-  // until publication, so a column would just read as absences.
+  // Only counted events get a standings column. The backend includes
+  // every snapshotted event in the totals regardless of the live
+  // `finished` flag (an admin can move end_time after the snapshot), so
+  // the column filter must match `counted` alone - otherwise a column's
+  // points would vanish while still adding to the total.
   const countedEvents = useMemo(
-    () => (league?.events || []).filter((e) => e.finished && e.counted !== false),
+    () => (league?.events || []).filter((e) => e.counted === true),
     [league],
   );
 
-  if (loading && !detail) {
+  // Full-page spinner only before the league LIST is known; switching
+  // between leagues keeps the header and picker in place.
+  if (!listLoaded) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
@@ -118,8 +127,10 @@ export default function League() {
   return (
     <div className="animate-fade-in">
       <PageHeader
-        eyebrow={league?.season ? `${t('nav.league')} · ${league.season}` : t('nav.league')}
-        title={league ? league.name : t('league.title')}
+        eyebrow={(league || selectedSummary)?.season
+          ? `${t('nav.league')} · ${(league || selectedSummary).season}`
+          : t('nav.league')}
+        title={(league || selectedSummary)?.name || t('league.title')}
         description={t('league.subtitle')}
         actions={leagues.length > 1 && (
           /* League picker - only shown when there is a choice to make. */
@@ -143,6 +154,11 @@ export default function League() {
       />
 
       <div className="space-y-6">
+      {loading && (
+        <div className="card p-12 flex items-center justify-center">
+          <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
       {league?.description && (
         <p className="text-sm text-zinc-500 dark:text-zinc-400">{league.description}</p>
       )}

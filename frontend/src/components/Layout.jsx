@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
 import {
@@ -67,7 +67,7 @@ export default function Layout() {
     };
   }, []);
 
-  // Close the account menu on any outside click.
+  // Close the account menu on any outside click or Escape.
   useEffect(() => {
     if (!accountOpen) return undefined;
     const onClick = (e) => {
@@ -75,9 +75,35 @@ export default function Layout() {
         setAccountOpen(false);
       }
     };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setAccountOpen(false);
+    };
     document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [accountOpen]);
+
+  // Any navigation closes the mobile sheet and the account menu - the
+  // sheet's own links do it onClick, but the brand link and the
+  // notification items navigate too.
+  const { pathname } = useLocation();
+  useEffect(() => {
+    setMenuOpen(false);
+    setAccountOpen(false);
+  }, [pathname]);
+
+  // Escape closes the mobile sheet as well.
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
 
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
@@ -96,7 +122,7 @@ export default function Layout() {
   // Top-bar links: quiet text, active state = ink text + a 2px accent
   // rule sitting on the header's bottom border.
   const topLinkClass = ({ isActive }) =>
-    `relative flex items-center gap-1.5 px-1 h-16 text-sm font-medium transition-colors ${
+    `relative flex items-center gap-1.5 px-1 h-16 text-sm font-medium whitespace-nowrap transition-colors ${
       isActive
         ? 'text-zinc-900 dark:text-white after:absolute after:left-0 after:right-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-accent-600 dark:after:bg-accent-400'
         : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
@@ -129,7 +155,7 @@ export default function Layout() {
           </Link>
 
           {/* Primary navigation (desktop) */}
-          <nav className="hidden lg:flex items-center gap-5 h-16" aria-label={t('nav.dashboard')}>
+          <nav className="hidden xl:flex items-center gap-5 h-16" aria-label={t('nav.primary')}>
             {navItems.map((item) => (
               <NavLink key={item.to} to={item.to} className={topLinkClass}>
                 <span>{item.label}</span>
@@ -165,7 +191,7 @@ export default function Layout() {
             </button>
 
             {/* Account menu (desktop) */}
-            <div className="relative hidden lg:block" ref={accountRef}>
+            <div className="relative hidden xl:block" ref={accountRef}>
               <button
                 onClick={() => setAccountOpen((o) => !o)}
                 className="flex items-center gap-2 pl-1.5 pr-2 py-1.5 ml-1 rounded-full hover:bg-zinc-100 transition-colors dark:hover:bg-zinc-800"
@@ -214,7 +240,7 @@ export default function Layout() {
             {/* Mobile menu trigger */}
             <button
               onClick={() => setMenuOpen((o) => !o)}
-              className={`${iconBtn} lg:hidden`}
+              className={`${iconBtn} xl:hidden`}
               aria-label={t('nav.openMenu')}
               aria-expanded={menuOpen}
             >
@@ -225,7 +251,7 @@ export default function Layout() {
 
         {/* Mobile sheet */}
         {menuOpen && (
-          <nav className="lg:hidden border-t border-zinc-200 bg-white px-3 py-3 space-y-0.5 dark:bg-zinc-950 dark:border-zinc-800">
+          <nav className="xl:hidden border-t border-zinc-200 bg-white px-3 py-3 space-y-0.5 dark:bg-zinc-950 dark:border-zinc-800">
             {[...navItems, ...adminItems].map((item) => (
               <NavLink key={item.to} to={item.to} className={sheetLinkClass} onClick={() => setMenuOpen(false)}>
                 <item.icon className="w-4 h-4 shrink-0" />
