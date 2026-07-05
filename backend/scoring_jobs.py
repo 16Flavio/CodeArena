@@ -343,7 +343,11 @@ def _judge_icpc_inner(db, sub: models.Submission, contest: models.Contest) -> No
             key = tc.group_name or f"__singleton_{tc.id}"
             groups.setdefault(key, []).append(tc)
         for _gname, group in groups.items():
-            group_points = max((tc.points or 1) for tc in group)
+            # points=0 is meaningful (the sample group scores nothing);
+            # only a NULL points column falls back to 1.
+            group_points = max(
+                (tc.points if tc.points is not None else 1) for tc in group
+            )
             max_points += group_points
             if all(passed_by_tc.get(tc.id, False) for tc in group):
                 points += group_points
