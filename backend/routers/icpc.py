@@ -9,7 +9,7 @@ from __future__ import annotations
 import csv
 import io
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
@@ -28,6 +28,7 @@ from .contests import (
     _is_scoreboard_frozen,
     _utcnow, _aware,
     _team_registration, _user_registration, _user_is_participant,
+    _client_ip, _flag_duplicate_content,
     UPLOAD_DIR,
 )
 
@@ -636,6 +637,7 @@ def delete_testcase(
 
 @router.post("/{contest_id}/problems/{problem_id}/submit", response_model=schemas.IcpcSubmissionOut)
 async def submit_icpc(
+    request: Request,
     contest_id: int,
     problem_id: int,
     language: str = Form(...),
@@ -653,6 +655,31 @@ async def submit_icpc(
     now = _utcnow()
     if not _is_contest_open(contest, now, is_admin=user.is_admin):
         raise HTTPException(status_code=400, detail="Le concours n'est pas ouvert aux soumissions")
+
+    # Manual per-user rate limit. ``@limiter.limit`` doesn't compose
+    # with this module (see the NOTE on the package-import endpoint),
+    # which silently cost this endpoint its limit - and every ICPC
+    # submission buys a compile+run on the judge workers. 10/minute
+    # mirrors the output submit-code limit, but per USER instead of
+    # per IP (stricter behind a shared campus NAT, fairer too).
+    if not user.is_admin:
+        window_start = now - timedelta(seconds=60)
+        recent = (
+            db.query(models.Submission)
+            .join(models.Contest, models.Contest.id == models.Submission.contest_id)
+            .filter(
+                models.Submission.submitted_by == user.id,
+                models.Contest.kind == "icpc",
+                models.Submission.submitted_at >= window_start,
+            )
+            .count()
+        )
+        if recent >= 10:
+            raise HTTPException(
+                status_code=429,
+                detail="Trop de soumissions - patientez une minute",
+                headers={"Retry-After": "60"},
+            )
 
     problem = db.query(models.Problem).filter(
         models.Problem.id == problem_id,
@@ -814,6 +841,10 @@ async def submit_icpc(
         content_hash=content_hash,
         status="pending",
         submitted_by=user.id,
+        # Recorded for IP-correlation anti-cheat, like both output
+        # paths - it was missing exactly where source code (the kind
+        # where account-sharing matters most) is submitted.
+        submitter_ip=((_client_ip(request) or "")[:64] or None),
         source_language=lang.id,
         is_practice=(_aware(contest.end_time) is not None and now >= _aware(contest.end_time) and bool(contest.practice_mode)),
     )
@@ -837,6 +868,10 @@ async def submit_icpc(
                 status=409,
                 message="Identical submission already on file",
             )
+
+    # Cross-team plagiarism flag - the output file submit had it, the
+    # path where SOURCE CODE is submitted didn't.
+    _flag_duplicate_content(db, sub, user)
 
     db.commit()
     db.refresh(sub)
@@ -1473,6 +1508,12 @@ def create_clarification(
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
     if not contest:
         raise HTTPException(status_code=404, detail="Concours introuvable")
+    # Clarifications are only surfaced in the ICPC UI (jury inbox lives
+    # in IcpcContestView) - on an output contest a question posted via
+    # the raw API would never be seen or answered. Guard until output
+    # contests get a real Q&A surface.
+    if (contest.kind or "output") != "icpc":
+        raise HTTPException(status_code=400, detail="Les clarifications ne s'appliquent qu'aux concours ICPC")
     # Only participants may open a clarification - otherwise any verified
     # user could post into any visible contest.
     if not _user_is_participant(db, contest, user):
