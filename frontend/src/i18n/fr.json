@@ -24,7 +24,9 @@
   "notifications": {
     "openLabel": "Ouvrir les notifications",
     "title": "Activité récente",
-    "empty": "Rien de nouveau pour l'instant."
+    "empty": "Rien de nouveau pour l'instant.",
+    "myResult": "Résultat : {{result}}",
+    "leaguePublished": "Résultats publiés : {{contest}}"
   },
   "hints": {
     "title": "Indices",

@@ -392,6 +392,7 @@ export default function ContestDetail() {
                         <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 pr-4 dark:text-zinc-400">{t('admin.submissions.colProblem')}</th>
                         <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 pr-4 dark:text-zinc-400">{t('admin.submissions.colVerdict')}</th>
                         <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colLanguage')}</th>
+                        <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 pr-4 dark:text-zinc-400">{t('contest.tableBy')}</th>
                         <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colWhen')}</th>
                         <th className="text-right text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 dark:text-zinc-400">{t('mySubmissions.colActions')}</th>
                       </tr>
@@ -420,6 +421,9 @@ export default function ContestDetail() {
                             </td>
                             <td className="py-3 pr-4 text-xs font-mono text-zinc-500 dark:text-zinc-400">
                               {s.source_language || '-'}
+                            </td>
+                            <td className="py-3 pr-4 text-zinc-500 dark:text-zinc-400">
+                              {s.submitted_by_username || '-'}
                             </td>
                             <td className="py-3 pr-4 text-zinc-400 text-xs font-mono tabular-nums dark:text-zinc-500">
                               {formatDateTime(s.submitted_at)}
