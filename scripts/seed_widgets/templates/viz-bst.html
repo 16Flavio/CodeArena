@@ -1,7 +1,7 @@
 <style>
   .bst-svg { width: 100%; display: block; height: 280px; }
-  .bst-edge { stroke: #8ba39d; stroke-width: 1.6; fill: none; }
-  .bst-node circle { fill: #2f9a8d; stroke: #10574f; stroke-width: 1; transition: fill 0.25s; }
+  .bst-edge { stroke: #a1a1aa; stroke-width: 1.6; fill: none; }
+  .bst-node circle { fill: #4b7ca8; stroke: #325575; stroke-width: 1; transition: fill 0.25s; }
   .bst-node.fresh circle { fill: #f97316; stroke: #c2410c; }
   .bst-node text { fill: white; font-family: system-ui; font-size: 13px; font-weight: 600; }
 </style>
@@ -62,7 +62,7 @@
     var svg = document.getElementById('svg');
     if (!root) {
       svg.setAttribute('viewBox', '0 0 600 280');
-      svg.innerHTML = '<text x="300" y="140" text-anchor="middle" fill="#8ba39d" font-size="14" font-style="italic">arbre vide</text>';
+      svg.innerHTML = '<text x="300" y="140" text-anchor="middle" fill="#a1a1aa" font-size="14" font-style="italic">arbre vide</text>';
       return;
     }
     var d = depth(root);

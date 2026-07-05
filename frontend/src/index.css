@@ -28,12 +28,12 @@
   }
 }
 
-/* Design language: "Jour de concours" (contest-hall calm). One
-   teal-tinted neutral scale (shadows Tailwind's zinc, see
-   tailwind.config), one deep-teal accent, flat bordered surfaces with
-   soft 10-12px radii, pill buttons and chips, digits and verdicts in
-   mono (tabular-nums). Problem letters render as round colored dots -
-   the ICPC balloon heritage. No gradients, no blur, no scale effects. */
+/* Design language: classic grounds, contest-hall details. Stock zinc
+   neutrals, one steel-blue accent (tailwind.config), flat bordered
+   surfaces with soft 10-12px radii, pill buttons and chips, digits and
+   verdicts in mono (tabular-nums). Problem letters render as round
+   colored dots - the ICPC balloon heritage. No gradients, no blur, no
+   scale effects. */
 @layer components {
   .card {
     @apply bg-white border border-zinc-200 rounded-xl

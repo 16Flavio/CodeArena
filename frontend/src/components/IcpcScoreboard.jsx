@@ -154,7 +154,7 @@ export default function IcpcScoreboard({ contestId }) {
                       type="button"
                       onClick={() => openStatementPdf(contestId, p.id, p.statement_pdf_version)}
                       className="inline-block w-6 h-6 rounded-full text-xs font-bold leading-6 cursor-pointer transition-opacity hover:opacity-75 focus:outline-none focus:ring-2 focus:ring-accent-500"
-                      style={{ background: p.color || '#8ba39d', color: textOn(p.color || '#8ba39d') }}
+                      style={{ background: p.color || '#a1a1aa', color: textOn(p.color || '#a1a1aa') }}
                       title={`${p.label}${p.name ? ` - ${p.name}` : ''} · ${t('icpcScoreboard.openStatement')}`}
                     >
                       {p.label}
@@ -162,7 +162,7 @@ export default function IcpcScoreboard({ contestId }) {
                   ) : (
                     <div
                       className="inline-block w-6 h-6 rounded-full text-xs font-bold leading-6"
-                      style={{ background: p.color || '#8ba39d', color: textOn(p.color || '#8ba39d') }}
+                      style={{ background: p.color || '#a1a1aa', color: textOn(p.color || '#a1a1aa') }}
                       title={p.name || p.label}
                     >
                       {p.label}

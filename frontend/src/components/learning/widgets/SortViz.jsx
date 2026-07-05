@@ -156,8 +156,8 @@ export default function SortViz({ algo = 'bubble', data = '[5,2,8,1,9,3]' }) {
           const fill = isSwap
             ? '#f97316'
             : isCompare
-              ? '#2f9a8d'
-              : '#8ba39d';
+              ? '#4b7ca8'
+              : '#a1a1aa';
           const h = (value / max) * 160;
           return (
             <g key={idx} style={{ transition: 'transform 300ms ease' }}>

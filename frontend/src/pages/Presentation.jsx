@@ -326,7 +326,7 @@ function StatsScene({ data, onContinue }) {
               <div key={p.id} className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg"
-                  style={{ background: p.color || '#8ba39d', color: textOn(p.color || '#8ba39d') }}
+                  style={{ background: p.color || '#a1a1aa', color: textOn(p.color || '#a1a1aa') }}
                 >
                   {p.label}
                 </div>
@@ -389,7 +389,7 @@ function LanguageChart({ languages }) {
   const buckets = useMemo(() => {
     const out = LANG_BUCKETS.map((b) => ({ ...b, submissions: 0, accepted: 0, ids: [] }));
     const others = { key: 'other', label: t('presentation.stats.langOther'),
-                     color: '#8ba39d',
+                     color: '#a1a1aa',
                      accent: 'bg-zinc-500/30 ring-zinc-400/40',
                      submissions: 0, accepted: 0, ids: [] };
     for (const l of languages) {
@@ -634,7 +634,7 @@ function RevealBoard({ rows, problems, flipKey }) {
             <div key={p.id} className="flex justify-center">
               <span
                 className="w-7 h-7 rounded-full text-xs font-bold leading-7 text-center"
-                style={{ background: p.color || '#8ba39d', color: textOn(p.color || '#8ba39d') }}
+                style={{ background: p.color || '#a1a1aa', color: textOn(p.color || '#a1a1aa') }}
               >
                 {p.label}
               </span>

@@ -1,13 +1,13 @@
 <style>
   .hp-svg { width: 100%; display: block; height: 240px; }
-  .hp-edge { stroke: #8ba39d; stroke-width: 1.6; fill: none; }
-  .hp-node circle { fill: #2f9a8d; stroke: #10574f; stroke-width: 1; transition: fill 0.25s; }
+  .hp-edge { stroke: #a1a1aa; stroke-width: 1.6; fill: none; }
+  .hp-node circle { fill: #4b7ca8; stroke: #325575; stroke-width: 1; transition: fill 0.25s; }
   .hp-node.fresh circle { fill: #f97316; stroke: #c2410c; }
   .hp-node text { fill: white; font-family: system-ui; font-size: 13px; font-weight: 600; }
   .hp-array { font-family: ui-monospace, "SF Mono", Menlo, monospace; padding: 6px 10px;
-              background: #e4ebe8; border-radius: 6px; margin-top: 8px; font-size: 13px;
-              text-align: center; word-break: break-all; color: #3b504c; }
-  @media (prefers-color-scheme: dark) { .hp-array { background: #243735; color: #e4ebe8; } }
+              background: #e4e4e7; border-radius: 6px; margin-top: 8px; font-size: 13px;
+              text-align: center; word-break: break-all; color: #3f3f46; }
+  @media (prefers-color-scheme: dark) { .hp-array { background: #27272a; color: #e4e4e7; } }
 </style>
 <div class="stage">
   <svg class="hp-svg" id="svg" viewBox="0 0 600 240" preserveAspectRatio="xMidYMid meet"></svg>
@@ -87,7 +87,7 @@
     arrEl.textContent = '[' + heap.join(', ') + ']';
     if (heap.length === 0) {
       svg.setAttribute('viewBox', '0 0 600 240');
-      svg.innerHTML = '<text x="300" y="120" text-anchor="middle" fill="#8ba39d" font-size="14" font-style="italic">tas vide</text>';
+      svg.innerHTML = '<text x="300" y="120" text-anchor="middle" fill="#a1a1aa" font-size="14" font-style="italic">tas vide</text>';
       return;
     }
     var lvls = Math.floor(Math.log2(heap.length)) + 1;
