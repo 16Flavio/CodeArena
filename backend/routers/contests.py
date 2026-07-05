@@ -197,6 +197,62 @@ def _user_registration(db, contest_id: int, user_id: int):
     )
 
 
+def _assert_not_banned(db, contest_id: int, user: models.User, team_id: int | None) -> None:
+    """403 when the submitter - or any member of the submitting team -
+    carries a ContestBan row. Mirrors the ICPC submit path: ban rows
+    survive scope-switching evasion (a DQ'd solo user slipping in via a
+    clean team) and outlive deleted registrations."""
+    member_ids = [user.id]
+    if team_id is not None:
+        member_ids = [
+            tm.user_id for tm in db.query(models.TeamMember)
+            .filter(models.TeamMember.team_id == team_id).all()
+        ] or [user.id]
+    if db.query(models.ContestBan).filter(
+        models.ContestBan.contest_id == contest_id,
+        models.ContestBan.user_id.in_(member_ids),
+    ).first() is not None:
+        raise HTTPException(status_code=403, detail="Vous êtes banni de ce concours")
+
+
+def _flag_duplicate_content(db, submission: models.Submission, user: models.User) -> None:
+    """Audit-log when another team/user filed byte-identical content on
+    the same instance/problem - the plagiarism signal admins review.
+    Solo submissions compare against everyone but the submitter."""
+    q = db.query(models.Submission).filter(
+        models.Submission.content_hash == submission.content_hash,
+        models.Submission.id != submission.id,
+    )
+    if submission.instance_id is not None:
+        q = q.filter(models.Submission.instance_id == submission.instance_id)
+    else:
+        q = q.filter(models.Submission.problem_id == submission.problem_id)
+    if submission.team_id is not None:
+        q = q.filter(
+            (models.Submission.team_id.is_(None))
+            | (models.Submission.team_id != submission.team_id)
+        )
+    else:
+        q = q.filter(
+            (models.Submission.team_id.isnot(None))
+            | (models.Submission.submitted_by != submission.submitted_by)
+        )
+    duplicate = q.first()
+    if duplicate:
+        scope = (
+            f"instance={submission.instance_id}" if submission.instance_id is not None
+            else f"problem={submission.problem_id}"
+        )
+        audit(
+            db, action="duplicate_submission", actor=user,
+            target_type="submission", target_id=submission.id,
+            detail=(
+                f"hash={(submission.content_hash or '')[:12]} matches submission "
+                f"#{duplicate.id} (team={duplicate.team_id}, {scope})"
+            ),
+        )
+
+
 def _team_registration(db, contest_id: int, team_id: int):
     return (
         db.query(models.ContestRegistration)
@@ -1067,6 +1123,11 @@ async def submit_solution(
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
     if not contest:
         raise HTTPException(status_code=404, detail="Concours introuvable")
+    # Kind guard - the ICPC submit path has one, this one was missing:
+    # instances can technically exist on any contest, so without it an
+    # output-style submission could be filed against an ICPC contest.
+    if (contest.kind or "output") != "output":
+        raise HTTPException(status_code=400, detail="Ce concours n'accepte pas de soumissions de fichiers")
     now = _utcnow()
     if not _is_contest_open(contest, now, is_admin=user.is_admin):
         # Give a clearer reason than "pas actif".
@@ -1148,6 +1209,7 @@ async def submit_solution(
                     status_code=403,
                     detail=reg.disqualified_reason or "Vous avez été disqualifié",
                 )
+        _assert_not_banned(db, contest.id, user, team_id)
 
     # ── Hardening gates (admins bypass) ──────────────────────────────────────
     if not user.is_admin:
@@ -1402,6 +1464,7 @@ async def submit_solution_code(
             reg = _user_registration(db, contest.id, user.id)
             if reg is None or reg.disqualified:
                 raise HTTPException(status_code=403, detail="Non inscrit / disqualifié")
+        _assert_not_banned(db, contest.id, user, team_id)
 
     # Reuse the same quota/cooldown logic as the file-based path.
     if not user.is_admin:
@@ -1438,9 +1501,14 @@ async def submit_solution_code(
                     )
 
     if source_file is not None:
-        content = await source_file.read()
+        # Same 1 MB source cap as the ICPC path - an uncapped read here
+        # was a memory-exhaustion hole.
+        from ..upload_utils import read_upload_capped, safe_filename, MAX_ICPC_SOURCE_BYTES
+        content = await read_upload_capped(source_file, MAX_ICPC_SOURCE_BYTES)
         source_text = content.decode("utf-8", errors="replace")
-        file_name = source_file.filename or f"main.{lang.extensions.split(',')[0]}"
+        file_name = safe_filename(
+            source_file.filename, fallback=f"main.{lang.extensions.split(',')[0]}",
+        )
     else:
         source_text = source or ""
         file_name = f"main.{lang.extensions.split(',')[0]}"
@@ -1448,6 +1516,30 @@ async def submit_solution_code(
         raise HTTPException(status_code=400, detail="Source vide")
 
     client_ip = _client_ip(request)
+    content_hash = _content_hash(source_text)
+
+    # dedup_block: the hash was stored but never checked on this path -
+    # same two-phase check (pre-check + post-flush) as the file submit.
+    def _scope_dedup_query(q):
+        q = q.filter(
+            models.Submission.content_hash == content_hash,
+            models.Submission.instance_id == instance_id,
+        )
+        if team_id is not None:
+            return q.filter(models.Submission.team_id == team_id)
+        return q.filter(
+            models.Submission.team_id.is_(None),
+            models.Submission.submitted_by == user.id,
+        )
+
+    if not user.is_admin and contest.dedup_block:
+        if _scope_dedup_query(db.query(models.Submission)).first() is not None:
+            from ..errors import ErrorCode, raise_error
+            raise_error(
+                code=ErrorCode.SUBMISSION_DUPLICATE,
+                status=409,
+                message="Identical submission already on file",
+            )
 
     submission = models.Submission(
         team_id=team_id,
@@ -1458,7 +1550,7 @@ async def submit_solution_code(
         # re-scoring; the worker populates ``generated_output`` with the
         # program's stdout.
         submission_data=source_text,
-        content_hash=_content_hash(source_text),
+        content_hash=content_hash,
         source_language=lang.id,
         status="pending",
         submitted_by=user.id,
@@ -1466,6 +1558,26 @@ async def submit_solution_code(
         is_practice=_is_practice_submission(contest, now),
     )
     db.add(submission)
+    db.flush()
+
+    if not user.is_admin and contest.dedup_block:
+        earlier = (
+            _scope_dedup_query(db.query(models.Submission))
+            .filter(models.Submission.id < submission.id)
+            .first()
+        )
+        if earlier is not None:
+            db.rollback()
+            from ..errors import ErrorCode, raise_error
+            raise_error(
+                code=ErrorCode.SUBMISSION_DUPLICATE,
+                status=409,
+                message="Identical submission already on file",
+            )
+
+    # Cross-team plagiarism flag - previously file-submit only.
+    _flag_duplicate_content(db, submission, user)
+
     db.commit()
     db.refresh(submission)
 
@@ -1672,6 +1784,11 @@ def create_hint(
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
     if not contest:
         raise HTTPException(status_code=404, detail="Concours introuvable")
+    # Hints (and their score penalty) only exist in the output scoring
+    # pipeline - the ICPC scoreboard ignores cost_fraction entirely, so
+    # a hint on an ICPC contest would be free information.
+    if (contest.kind or "output") != "output":
+        raise HTTPException(status_code=400, detail="Les indices ne s'appliquent qu'aux concours de score")
     h = models.Hint(
         contest_id=contest_id,
         label=payload.label,
@@ -1736,6 +1853,10 @@ def unlock_hint(
     contest = db.query(models.Contest).filter(models.Contest.id == h.contest_id).first()
     if not contest or not _is_contest_visible(contest, _utcnow(), is_admin=bool(user.is_admin)):
         raise HTTPException(status_code=404, detail="Concours introuvable")
+    # Legacy guard: hints created on an ICPC contest before the kind
+    # check existed would be free (no penalty pipeline) - refuse.
+    if (contest.kind or "output") != "output":
+        raise HTTPException(status_code=400, detail="Les indices ne s'appliquent qu'aux concours de score")
     existing = db.query(models.HintUnlock).filter(
         models.HintUnlock.hint_id == hint_id,
         models.HintUnlock.user_id == user.id,
@@ -1990,6 +2111,14 @@ def rescore_contest(
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
     if not contest:
         raise HTTPException(status_code=404, detail="Concours introuvable")
+    # Guard: this endpoint feeds submissions to the OUTPUT scoring
+    # script. Run against an ICPC contest it would overwrite every
+    # submission's verdict-mirroring status/score - silent corruption.
+    if (contest.kind or "output") != "output":
+        raise HTTPException(
+            status_code=400,
+            detail="Le rescore ne s'applique qu'aux concours de score - utilisez le rejugement par soumission pour l'ICPC",
+        )
 
     subs = (
         db.query(models.Submission)
