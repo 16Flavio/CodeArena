@@ -1948,7 +1948,87 @@ def my_activity(
                 at=s.submitted_at,
             ))
 
-    merged = sorted(announcements + team_items, key=lambda x: x.at, reverse=True)[:limit]
+    # The user's OWN submissions that finished judging - the "your
+    # result is in" notification. ``judged_kind`` lets the client show
+    # a verdict badge (icpc) or a score (output).
+    my_items = []
+    my_q = (
+        db.query(models.Submission)
+        .options(joinedload(models.Submission.contest))
+        .filter(
+            models.Submission.submitted_by == user.id,
+            models.Submission.status.in_(("scored", "error")),
+        )
+        .order_by(models.Submission.submitted_at.desc())
+    )
+    if since is not None:
+        my_q = my_q.filter(models.Submission.submitted_at > since)
+    my_rows = my_q.limit(limit).all()
+    my_verdicts: dict[int, str] = {}
+    icpc_row_ids = [s.id for s in my_rows if s.problem_id is not None]
+    if icpc_row_ids:
+        for j in (
+            db.query(models.Judging)
+            .filter(
+                models.Judging.submission_id.in_(icpc_row_ids),
+                models.Judging.is_active.is_(True),
+            )
+            .all()
+        ):
+            my_verdicts[j.submission_id] = j.verdict or ""
+    for s in my_rows:
+        c = s.contest
+        if c is None:
+            continue
+        if s.problem_id is not None:
+            result = my_verdicts.get(s.id, "")
+            if not result:
+                continue  # judging still settling - skip, next poll catches it
+        elif s.status == "scored":
+            result = f"{s.score:g} pts" if s.score is not None else "?"
+        else:
+            result = "error"
+        my_items.append(schemas.ActivityItem(
+            kind="my_result",
+            title=c.title,
+            body=result,
+            contest_id=s.contest_id,
+            contest_title=c.title,
+            at=s.submitted_at,
+        ))
+
+    # League events whose results just got published (snapshot taken).
+    league_items = []
+    lev_q = (
+        db.query(models.LeagueEvent)
+        .join(models.League, models.League.id == models.LeagueEvent.league_id)
+        .options(
+            joinedload(models.LeagueEvent.contest),
+            joinedload(models.LeagueEvent.league),
+        )
+        .filter(
+            models.League.is_published.is_(True),
+            models.LeagueEvent.result_computed_at.isnot(None),
+        )
+        .order_by(models.LeagueEvent.result_computed_at.desc())
+    )
+    if since is not None:
+        lev_q = lev_q.filter(models.LeagueEvent.result_computed_at > since)
+    for ev in lev_q.limit(limit).all():
+        c = ev.contest
+        league_items.append(schemas.ActivityItem(
+            kind="league_published",
+            title=ev.league.name if ev.league else "",
+            body=c.title if c else "",
+            contest_id=None,  # the client routes league items to /league
+            contest_title=c.title if c else "",
+            at=ev.result_computed_at,
+        ))
+
+    merged = sorted(
+        announcements + team_items + my_items + league_items,
+        key=lambda x: x.at, reverse=True,
+    )[:limit]
     return merged
 
 

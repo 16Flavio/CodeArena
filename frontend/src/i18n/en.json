@@ -24,7 +24,9 @@
   "notifications": {
     "openLabel": "Open notifications",
     "title": "Recent activity",
-    "empty": "Nothing new right now."
+    "empty": "Nothing new right now.",
+    "myResult": "Result: {{result}}",
+    "leaguePublished": "Results published: {{contest}}"
   },
   "hints": {
     "title": "Hints",
