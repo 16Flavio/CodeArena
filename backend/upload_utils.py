@@ -20,7 +20,9 @@ from fastapi import HTTPException, UploadFile
 MAX_SUBMISSION_OUTPUT_BYTES = 5 * 1024 * 1024
 MAX_ICPC_SOURCE_BYTES = 1 * 1024 * 1024
 MAX_INSTANCE_INPUT_BYTES = 50 * 1024 * 1024
-MAX_DOMJUDGE_PACKAGE_BYTES = 100 * 1024 * 1024
+# Whole-contest exports easily pass 100 MB (BAPC 2024 prelims: 133 MB
+# compressed); Caddy and the frontend nginx both allow 500 MB bodies.
+MAX_DOMJUDGE_PACKAGE_BYTES = 256 * 1024 * 1024
 MAX_TEAMS_CSV_BYTES = 1 * 1024 * 1024
 
 
