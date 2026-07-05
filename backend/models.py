@@ -155,6 +155,13 @@ class Contest(Base):
     # it on a numeric score) or "icpc" (source code submitted, judged against
     # testcases with AC/WA/TLE/... verdicts).
     kind = Column(String(16), default="output", nullable=False)
+    # Ownership for the organizer role: can_manage_contest grants
+    # organizers management rights on contests they created. NULL
+    # (legacy rows) means admin-only. NOTE: create_contest assigned
+    # this since the organizer feature shipped, but the COLUMN was
+    # never added - the assignment silently vanished and every
+    # organizer ownership check raised. Fixed with 2026_07_05_a1.
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     # Practice mode: users can still submit after end_time, but practice
     # submissions are excluded from the official scoreboard.
     practice_mode = Column(Boolean, default=False, nullable=False)

@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, R
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session, joinedload
 
-from ..auth import get_current_user, get_current_user_from_query, require_admin, require_admin_or_organizer, require_verified
+from ..auth import get_current_user, get_current_user_from_query, require_admin, require_admin_or_organizer, require_contest_owner, require_verified, can_manage_contest
 from ..audit import record as audit
 from ..database import get_db
 from ..rate_limit import limiter
@@ -34,6 +34,19 @@ from .contests import (
 
 router = APIRouter(prefix="/api/contests", tags=["icpc"])
 
+def _assert_manages(db: Session, user: models.User, contest_id: int) -> None:
+    """403 unless ``user`` is admin or the owning organizer of the
+    contest. Per-contest ICPC management endpoints use this so
+    organizers can run their own ICPC contests end-to-end (they always
+    could for output contests)."""
+    contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
+    if contest is None:
+        raise HTTPException(status_code=404, detail="Concours introuvable")
+    if not can_manage_contest(user, contest):
+        raise HTTPException(status_code=403, detail="Vous ne gérez pas ce concours")
+
+
+
 # Separate router for top-level / global ICPC endpoints - keeps them out
 # of the /{contest_id}/* path matcher in the contests router, which would
 # otherwise 422 on non-int path segments.
@@ -49,7 +62,7 @@ def list_languages(db: Session = Depends(get_db)):
 async def import_domjudge_package(
     contest_id: int,
     file: UploadFile = File(...),
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_contest_owner),
     db: Session = Depends(get_db),
 ):
     # NOTE: ``@limiter.limit`` doesn't compose with ``from __future__ import
@@ -236,7 +249,7 @@ def get_problem_statement(
 async def upload_problem_statement_pdf(
     problem_id: int,
     file: UploadFile = File(...),
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     """Admin uploads a statement PDF for a single ICPC problem.
@@ -247,6 +260,7 @@ async def upload_problem_statement_pdf(
     p = db.query(models.Problem).filter(models.Problem.id == problem_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Problème introuvable")
+    _assert_manages(db, admin, p.contest_id)
 
     from ..upload_utils import read_upload_capped
     PDF_MAX_BYTES = 10 * 1024 * 1024  # 10 MB - same ceiling as the contest-level statement.
@@ -299,12 +313,13 @@ async def upload_problem_statement_pdf(
 @global_router.delete("/problems/{problem_id}/statement", response_model=schemas.ProblemOut)
 def delete_problem_statement_pdf(
     problem_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     p = db.query(models.Problem).filter(models.Problem.id == problem_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Problème introuvable")
+    _assert_manages(db, admin, p.contest_id)
     if p.statement_pdf_path and os.path.exists(p.statement_pdf_path):
         try:
             os.remove(p.statement_pdf_path)
@@ -330,7 +345,7 @@ def delete_problem_statement_pdf(
 def create_problem(
     contest_id: int,
     payload: schemas.ProblemAdminIn,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_contest_owner),
     db: Session = Depends(get_db),
 ):
     contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
@@ -374,7 +389,7 @@ def create_problem(
 def update_problem(
     problem_id: int,
     payload: schemas.ProblemAdminIn,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     """Admin edit for an ICPC problem - rename label, change colour,
@@ -386,6 +401,7 @@ def update_problem(
     p = db.query(models.Problem).filter(models.Problem.id == problem_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Problème introuvable")
+    _assert_manages(db, admin, p.contest_id)
 
     new_label = str(payload.label or p.label)[:8]
     if new_label != p.label:
@@ -446,7 +462,7 @@ def update_problem(
 def dry_run_problem(
     problem_id: int,
     payload: schemas.IcpcDryRunIn,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     """Judge a reference solution against this problem's testcases
@@ -463,6 +479,7 @@ def dry_run_problem(
     )
     if not p:
         raise HTTPException(status_code=404, detail="Problème introuvable")
+    _assert_manages(db, admin, p.contest_id)
     lang = db.query(models.Language).filter(
         models.Language.id == payload.language, models.Language.enabled.is_(True),
     ).first()
@@ -531,12 +548,13 @@ def dry_run_problem(
 @global_router.delete("/problems/{problem_id}")
 def delete_problem(
     problem_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     p = db.query(models.Problem).filter(models.Problem.id == problem_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Problème introuvable")
+    _assert_manages(db, admin, p.contest_id)
     db.delete(p)
     db.commit()
     return {"detail": "ok"}
@@ -546,12 +564,13 @@ def delete_problem(
 def add_testcase(
     problem_id: int,
     payload: schemas.TestcaseAdminIn,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     p = db.query(models.Problem).filter(models.Problem.id == problem_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Problème introuvable")
+    _assert_manages(db, admin, p.contest_id)
     tc = models.Testcase(
         problem_id=problem_id,
         rank=payload.rank,
@@ -574,10 +593,14 @@ def add_testcase(
 @global_router.get("/problems/{problem_id}/testcases", response_model=list[schemas.TestcaseOut])
 def list_testcases(
     problem_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     """Full testcase list for the admin editor - includes secret content."""
+    p = db.query(models.Problem).filter(models.Problem.id == problem_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Problème introuvable")
+    _assert_manages(db, admin, p.contest_id)
     rows = (
         db.query(models.Testcase)
         .filter(models.Testcase.problem_id == problem_id)
@@ -598,12 +621,14 @@ def list_testcases(
 def update_testcase(
     testcase_id: int,
     payload: schemas.TestcaseAdminIn,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     tc = db.query(models.Testcase).filter(models.Testcase.id == testcase_id).first()
     if not tc:
         raise HTTPException(status_code=404, detail="Test introuvable")
+    _tc_problem = db.query(models.Problem).filter(models.Problem.id == tc.problem_id).first()
+    _assert_manages(db, admin, _tc_problem.contest_id if _tc_problem else -1)
     tc.rank = payload.rank
     tc.is_sample = bool(payload.is_sample)
     tc.input_data = payload.input_data or ""
@@ -622,12 +647,14 @@ def update_testcase(
 @global_router.delete("/testcases/{testcase_id}")
 def delete_testcase(
     testcase_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     tc = db.query(models.Testcase).filter(models.Testcase.id == testcase_id).first()
     if not tc:
         raise HTTPException(status_code=404, detail="Test introuvable")
+    _tc_problem = db.query(models.Problem).filter(models.Problem.id == tc.problem_id).first()
+    _assert_manages(db, admin, _tc_problem.contest_id if _tc_problem else -1)
     db.delete(tc)
     db.commit()
     return {"detail": "ok"}
@@ -1054,7 +1081,7 @@ def _build_icpc_scoreboard(
 def export_icpc_scoreboard_csv(
     request: Request,
     contest_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_contest_owner),
     db: Session = Depends(get_db),
 ):
     """Admin-only CSV export of the ICPC scoreboard. Reuses
@@ -1114,7 +1141,7 @@ def export_icpc_scoreboard_csv(
 def icpc_presentation(
     request: Request,
     contest_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_contest_owner),
     db: Session = Depends(get_db),
 ):
     """Admin-only bundle for the post-contest reveal ceremony. Returns
@@ -1543,12 +1570,13 @@ def create_clarification(
 def answer_clarification(
     clar_id: int,
     payload: schemas.ClarificationAnswer,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     c = db.query(models.Clarification).filter(models.Clarification.id == clar_id).first()
     if not c:
         raise HTTPException(status_code=404, detail="Clarification introuvable")
+    _assert_manages(db, admin, c.contest_id)
     c.answer = payload.answer.strip()[:4000]
     c.answered_by = admin.id
     c.answered_at = datetime.now(timezone.utc)
@@ -1565,7 +1593,7 @@ def answer_clarification(
 def update_clarification(
     clar_id: int,
     payload: schemas.ClarificationAnswer,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     """Admin edit for an existing clarification - change the answer text,
@@ -1574,6 +1602,7 @@ def update_clarification(
     c = db.query(models.Clarification).filter(models.Clarification.id == clar_id).first()
     if not c:
         raise HTTPException(status_code=404, detail="Clarification introuvable")
+    _assert_manages(db, admin, c.contest_id)
     if payload.answer is not None and payload.answer.strip() != "":
         c.answer = payload.answer.strip()[:4000]
         c.answered_by = admin.id
@@ -1591,12 +1620,13 @@ def update_clarification(
 @global_router.delete("/clarifications/{clar_id}")
 def delete_clarification(
     clar_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     c = db.query(models.Clarification).filter(models.Clarification.id == clar_id).first()
     if not c:
         raise HTTPException(status_code=404, detail="Clarification introuvable")
+    _assert_manages(db, admin, c.contest_id)
     audit(db, action="clarification_deleted", actor=admin,
           target_type="clarification", target_id=c.id,
           detail=f"contest={c.contest_id}")
@@ -1734,7 +1764,7 @@ def set_team_affiliation(
 @global_router.get("/problems/{problem_id}/export")
 def export_problem_zip(
     problem_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
     """Bundle a problem into a DOMjudge/Kattis-shaped ZIP:
@@ -1760,6 +1790,7 @@ def export_problem_zip(
     )
     if not p:
         raise HTTPException(status_code=404, detail="Problème introuvable")
+    _assert_manages(db, admin, p.contest_id)
 
     shortname = p.external_id or f"problem-{p.id}"
     buf = _io.BytesIO()
@@ -1941,7 +1972,7 @@ def override_judging(
 @router.get("/{contest_id}/icpc-stats", response_model=schemas.IcpcStatsOut)
 def icpc_contest_stats(
     contest_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_contest_owner),
     db: Session = Depends(get_db),
 ):
     """Admin-only dashboard numbers: per-problem AC rate, per-language
@@ -2059,7 +2090,7 @@ def icpc_contest_stats(
 @router.get("/{contest_id}/event-feed")
 def icpc_event_feed(
     contest_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_contest_owner),
     db: Session = Depends(get_db),
 ):
     from fastapi.responses import StreamingResponse
@@ -2221,3 +2252,45 @@ def icpc_event_feed(
                 })
 
     return StreamingResponse(_stream(), media_type="application/x-ndjson")
+
+
+@router.post("/{contest_id}/rejudge-all")
+def rejudge_all(
+    contest_id: int,
+    problem_id: Optional[int] = None,
+    user: models.User = Depends(require_contest_owner),
+    db: Session = Depends(get_db),
+):
+    """Queue every submission of an ICPC contest (optionally scoped to
+    one problem) for rejudging - the bulk counterpart of the
+    per-submission rejudge, for after a testcase or limit fix. Mirrors
+    the output-side contest-wide rescore. League snapshots do NOT
+    auto-invalidate: recompute the event from the Leagues admin tab
+    afterwards."""
+    contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
+    if not contest:
+        raise HTTPException(status_code=404, detail="Concours introuvable")
+    if (contest.kind or "output") != "icpc":
+        raise HTTPException(
+            status_code=400,
+            detail="Le rejugement en masse ne s'applique qu'aux concours ICPC - utilisez le rescore pour les concours de score",
+        )
+    q = db.query(models.Submission).filter(models.Submission.contest_id == contest_id)
+    if problem_id is not None:
+        q = q.filter(models.Submission.problem_id == problem_id)
+    subs = q.all()
+    for s in subs:
+        s.status = "pending"
+        s.error_message = ""
+    db.commit()
+    for s in subs:
+        enqueue_scoring(s.id)
+    audit(
+        db, action="rejudge_contest", actor=user,
+        target_type="contest", target_id=contest_id,
+        detail=f"queued={len(subs)} problem_id={problem_id}",
+    )
+    db.commit()
+    from ..scoreboard_response_cache import invalidate_contest
+    invalidate_contest(contest_id)
+    return {"detail": "queued", "count": len(subs)}

@@ -9,7 +9,7 @@ from fastapi.responses import Response, FileResponse
 from sqlalchemy.orm import Session, joinedload
 from ..database import get_db
 from .. import models, schemas
-from ..auth import require_admin
+from ..auth import require_admin, require_admin_or_organizer, can_manage_contest
 from ..audit import record as audit
 from ..digest import send_daily_digest
 from ..scoring_queue import enqueue_scoring
@@ -529,13 +529,18 @@ def scoring_stats(
 @router.post("/submissions/{submission_id}/rejudge")
 def rejudge_submission(
     submission_id: int,
-    admin: models.User = Depends(require_admin),
+    admin: models.User = Depends(require_admin_or_organizer),
     db: Session = Depends(get_db),
 ):
-    """Kick a submission back through the scoring/judging pipeline."""
+    """Kick a submission back through the scoring/judging pipeline.
+    Organizers may rejudge submissions of contests they own (they could
+    already bulk-rescore their output contests)."""
     s = db.query(models.Submission).filter(models.Submission.id == submission_id).first()
     if not s:
         raise HTTPException(status_code=404, detail="Soumission introuvable")
+    contest = db.query(models.Contest).filter(models.Contest.id == s.contest_id).first()
+    if contest is None or not can_manage_contest(admin, contest):
+        raise HTTPException(status_code=403, detail="Vous ne gérez pas ce concours")
     s.status = "pending"
     s.error_message = ""
     db.commit()
