@@ -14,7 +14,8 @@
     "downloadFailed": "Download failed",
     "loadFailed": "Couldn't load your submissions",
     "compare": "Compare ({{count}}/2)",
-    "selectForCompare": "Select for comparison"
+    "selectForCompare": "Select for comparison",
+    "viewDetail": "View judging detail"
   },
   "diff": {
     "title": "Compare two submissions",
@@ -87,6 +88,18 @@
     "toastClarUpdated": "Clarification updated",
     "toastClarDeleted": "Clarification deleted",
     "confirmDeleteClar": "Delete this clarification?"
+  },
+  "judging": {
+    "title": "Judging detail",
+    "loadFailed": "Couldn't load the judging detail",
+    "colTest": "Test",
+    "colKind": "Type",
+    "colVerdict": "Verdict",
+    "colTime": "Time",
+    "colOutput": "Output",
+    "noRuns": "No testcase has been run yet.",
+    "showOutput": "Show output",
+    "hideOutput": "Hide output"
   },
   "icpcScoreboard": {
     "openStatement": "Open the statement (PDF)",
@@ -796,7 +809,11 @@
     "tabStatement": "Statement",
     "tabSubmit": "Submit",
     "tabMySubmissions": "My submissions",
-    "tabParticipants": "Participants"
+    "tabParticipants": "Participants",
+    "historyTitle": "Submission history",
+    "historyEmpty": "No submissions yet for this contest.",
+    "historyDetail": "Detail",
+    "historyNotJudged": "Not judged yet"
   },
   "scoreboard": {
     "title": "Scoreboard",
@@ -954,7 +971,25 @@
       "judgingMeta": "Judged at {{when}} · max {{ms}} ms",
       "noRuns": "No testcases ran (compile failed?)",
       "toastLoadFailed": "Failed to load submissions",
-      "toastLoadContentFailed": "Failed to load content"
+      "toastLoadContentFailed": "Failed to load content",
+      "overrideScore": "Override score",
+      "overrideScorePromptScore": "New score (current: {{current}}):",
+      "overrideScorePromptReason": "Reason for override (required, saved to audit log):",
+      "overrideScoreInvalid": "Enter a valid number",
+      "overrideScoreReasonRequired": "A reason is required",
+      "overrideScoreToastOk": "Score overridden"
+    },
+    "icpc": {
+      "dryRunAction": "Test a reference solution",
+      "dryRunTitle": "Dry-run: {{label}} · {{name}}",
+      "dryRunHint": "Judged with the real pipeline. Nothing is saved.",
+      "dryRunLanguage": "Language",
+      "dryRunSource": "Source code",
+      "dryRunSourcePlaceholder": "Paste the reference solution here…",
+      "dryRunRun": "Run",
+      "dryRunRunning": "Judging…",
+      "dryRunNeedSource": "Paste some source code first",
+      "dryRunFailed": "Dry-run failed"
     },
     "users": {
       "colUser": "User",
@@ -1028,7 +1063,15 @@
       "toastLoadFailed": "Failed to load admin data",
       "toastFailed": "Failed",
       "confirmDelete": "Delete contest \"{{title}}\"? All submissions will be lost.",
-      "confirmDeleteInstance": "Delete this instance?"
+      "confirmDeleteInstance": "Delete this instance?",
+      "rejudgeAllHeading": "Rejudge all submissions",
+      "rejudgeAll": "Rejudge all",
+      "rejudgeAllRunning": "Queuing…",
+      "rejudgeAllTooltip": "Re-queue every submission of this contest through the judging pipeline",
+      "rejudgeAllConfirm": "Rejudge every submission in \"{{title}}\"? Current verdicts will be overwritten as judgings complete.",
+      "rejudgeAllDone": "Rejudge queued for {{count}} submission(s). Remember to recompute league event snapshots manually.",
+      "rejudgeAllFailed": "Rejudge failed",
+      "rejudgeAllLeagueHint": "League snapshots are not refreshed automatically: recompute the league event after the rejudge finishes."
     },
     "form": {
       "practiceMode": "Practice mode",

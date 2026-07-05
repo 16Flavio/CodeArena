@@ -375,3 +375,184 @@ def test_scoreboard_stream_serves_icpc_contests(client):
     # ICPC payload shape, not the output one.
     assert body["contest_id"] == cid
     assert "rows" in body and "problems" in body
+
+
+def _make_organizer(client, admin, username):
+    hdr = auth_header(client, username)
+    from backend import database, models
+    sess = database.SessionLocal()
+    try:
+        u = sess.query(models.User).filter(models.User.username == username).first()
+        u.is_organizer = True
+        sess.commit()
+    finally:
+        sess.close()
+    return hdr
+
+
+def test_organizer_can_manage_own_icpc_contest_only(client):
+    """Organizers could run output contests end-to-end but nearly every
+    ICPC management endpoint was require_admin. They now manage their
+    OWN ICPC contests (problems, testcases, dry-run, stats) and still
+    get 403 on someone else's."""
+    admin = auth_header(client, "root")
+    org = _make_organizer(client, admin, "orga")
+
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    r = client.post("/api/contests", json={
+        "title": "Org ICPC", "is_active": True, "is_public": True,
+        "participation_mode": "solo", "kind": "icpc",
+        "start_time": _iso(now - timedelta(minutes=5)),
+        "end_time": _iso(now + timedelta(hours=1)),
+        "scoring_script": "score = 0",
+    }, headers=org)
+    assert r.status_code == 200, r.text
+    cid = r.json()["id"]
+
+    # Own contest: create problem + testcase + list + stats + dry-run.
+    r = client.post(f"/api/contests/{cid}/problems", json={
+        "external_id": "p1", "label": "A", "name": "P1",
+        "color": "#123456", "time_limit_ms": 2000,
+        "memory_limit_mb": 256, "checker_kind": "tokens",
+    }, headers=org)
+    assert r.status_code == 200, r.text
+    pid = r.json()["id"]
+    assert client.post(f"/api/icpc/problems/{pid}/testcases", json={
+        "rank": 0, "is_sample": False, "input_data": "x\n", "expected_output": "x\n",
+    }, headers=org).status_code == 200
+    assert client.get(f"/api/icpc/problems/{pid}/testcases", headers=org).status_code == 200
+    assert client.get(f"/api/contests/{cid}/icpc-stats", headers=org).status_code == 200
+    r = client.post(f"/api/icpc/problems/{pid}/dry-run", headers=org, json={
+        "language": "py3", "source": "import sys\nsys.stdout.write(sys.stdin.read())\n",
+    })
+    assert r.status_code == 200, r.text
+
+    # Someone else's ICPC contest: 403 everywhere.
+    other_cid, other_pid = _make_icpc_contest(client, admin)
+    assert client.post(f"/api/contests/{other_cid}/problems", json={
+        "external_id": "x", "label": "B", "name": "X",
+        "color": "#000000", "time_limit_ms": 1000,
+        "memory_limit_mb": 256, "checker_kind": "tokens",
+    }, headers=org).status_code == 403
+    assert client.get(f"/api/icpc/problems/{other_pid}/testcases", headers=org).status_code == 403
+    assert client.get(f"/api/contests/{other_cid}/icpc-stats", headers=org).status_code == 403
+
+
+def test_rejudge_all_queues_contest_submissions(client):
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    cid, pid = _make_icpc_contest(client, admin)
+    client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
+    src = "import sys\nsys.stdout.write(sys.stdin.read())\n"
+    r = client.post(
+        f"/api/contests/{cid}/problems/{pid}/submit",
+        headers=alice, data={"language": "py3", "source": src},
+    )
+    sid = r.json()["id"]
+    _wait_scored(client, alice, sid)
+
+    r = client.post(f"/api/contests/{cid}/rejudge-all", headers=admin)
+    assert r.status_code == 200, r.text
+    assert r.json()["count"] == 1
+    # The submission goes back through the pipeline and lands scored again.
+    final = _wait_scored(client, alice, sid)
+    assert final["status"] == "scored"
+
+    # Refused on output contests (rescore covers those).
+    ocid = _make_output_contest(client, admin)
+    assert client.post(f"/api/contests/{ocid}/rejudge-all", headers=admin).status_code == 400
+
+
+def test_override_score_output_only_with_reason(client):
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    cid = _make_output_contest(client, admin)
+    iid = _make_instance(client, admin, cid)
+    client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
+    r = client.post(
+        f"/api/contests/{cid}/instances/{iid}/submit",
+        headers=alice, files={"file": ("s.txt", io.BytesIO(b"aaa"), "text/plain")},
+    )
+    sid = r.json()["id"]
+    _wait_scored(client, alice, sid)
+
+    # Reason required.
+    assert client.post(f"/api/contests/submissions/{sid}/override-score", json={
+        "score": 10.0, "reason": "  ",
+    }, headers=admin).status_code == 400
+
+    r = client.post(f"/api/contests/submissions/{sid}/override-score", json={
+        "score": 10.0, "reason": "jury decision after appeal",
+    }, headers=admin)
+    assert r.status_code == 200, r.text
+
+    from backend import scoreboard_response_cache
+    scoreboard_response_cache.clear()
+    board = client.get(f"/api/contests/{cid}/scoreboard", headers=admin).json()
+    assert board["teams"][0]["total_score"] == 10.0
+
+    from backend import database, models
+    sess = database.SessionLocal()
+    try:
+        assert sess.query(models.AuditLogEntry).filter(
+            models.AuditLogEntry.action == "override_score",
+            models.AuditLogEntry.target_id == sid,
+        ).first() is not None
+    finally:
+        sess.close()
+
+    # Refused on ICPC submissions (verdict override covers those).
+    icid, ipid = _make_icpc_contest(client, admin)
+    client.post(f"/api/contests/{icid}/register", json={}, headers=alice)
+    r = client.post(
+        f"/api/contests/{icid}/problems/{ipid}/submit",
+        headers=alice, data={"language": "py3", "source": "print('x')"},
+    )
+    isid = r.json()["id"]
+    assert client.post(f"/api/contests/submissions/{isid}/override-score", json={
+        "score": 1.0, "reason": "nope",
+    }, headers=admin).status_code == 400
+
+
+def test_duplicate_contest_copies_icpc_shape(client):
+    admin = auth_header(client, "root")
+    cid, pid = _make_icpc_contest(client, admin)
+    r = client.post(f"/api/contests/{cid}/duplicate", headers=admin)
+    assert r.status_code == 200, r.text
+    copy_id = r.json()["id"]
+
+    from backend import database, models
+    sess = database.SessionLocal()
+    try:
+        copy = sess.query(models.Contest).filter(models.Contest.id == copy_id).first()
+        assert copy.kind == "icpc"
+        assert copy.is_active is False
+        probs = sess.query(models.Problem).filter(models.Problem.contest_id == copy_id).all()
+        assert len(probs) == 1
+        assert probs[0].label == "A"
+        tcs = sess.query(models.Testcase).filter(models.Testcase.problem_id == probs[0].id).all()
+        assert len(tcs) == 1
+        assert tcs[0].expected_output == "x\n"
+    finally:
+        sess.close()
+
+
+def test_contest_submission_list_enriches_icpc_rows(client):
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    cid, pid = _make_icpc_contest(client, admin)
+    client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
+    r = client.post(
+        f"/api/contests/{cid}/problems/{pid}/submit",
+        headers=alice,
+        data={"language": "py3", "source": "import sys\nsys.stdout.write(sys.stdin.read())\n"},
+    )
+    _wait_scored(client, alice, r.json()["id"])
+
+    rows = client.get(f"/api/contests/{cid}/submissions", headers=alice).json()["items"]
+    assert rows, "own solo submissions must be listed"
+    row = rows[0]
+    assert row["problem_id"] == pid
+    assert row["problem_label"].startswith("A")
+    assert row["latest_verdict"] == "AC"
+    assert row["latest_judging_id"] is not None

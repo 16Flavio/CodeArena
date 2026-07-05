@@ -228,6 +228,19 @@ export const updateIcpcTestcase = (testcaseId, data) =>
   api.patch(`/icpc/testcases/${testcaseId}`, data);
 export const deleteIcpcTestcase = (testcaseId) =>
   api.delete(`/icpc/testcases/${testcaseId}`);
+// Judge a reference solution against a problem's testcases WITHOUT
+// persisting a Submission/Judging row - admin sanity check before a
+// contest opens. Synchronous on the server (compile + all runs), so
+// give it a generous timeout.
+export const dryRunIcpcProblem = (problemId, data) =>
+  api.post(`/icpc/problems/${problemId}/dry-run`, data, { timeout: 180000 });
+// Re-queue every submission of an ICPC contest (optionally one problem)
+// through the judging pipeline.
+export const rejudgeAllIcpc = (contestId, problemId = null) =>
+  api.post(`/contests/${contestId}/rejudge-all`, {}, {
+    params: problemId ? { problem_id: problemId } : {},
+    timeout: 300000,
+  });
 export const submitIcpc = (contestId, problemId, formData) =>
   api.post(`/contests/${contestId}/problems/${problemId}/submit`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
@@ -437,6 +450,11 @@ export const adminLearnDeleteWidget = (id) =>
 // Jury verdict override
 export const overrideJudging = (judgingId, payload) =>
   api.post(`/icpc/judgings/${judgingId}/override`, payload);
+
+// Jury score override for output-scoring submissions (reason mandatory,
+// lands in the audit log).
+export const overrideSubmissionScore = (submissionId, data) =>
+  api.post(`/contests/submissions/${submissionId}/override-score`, data);
 
 // ICPC contest stats
 export const getIcpcStats = (contestId) =>

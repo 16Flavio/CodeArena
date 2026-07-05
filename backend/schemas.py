@@ -1264,3 +1264,8 @@ class LeagueOut(BaseModel):
 class LeagueStandingsOut(BaseModel):
     league: LeagueOut
     rows: list[LeagueStandingRowOut]
+
+
+class ScoreOverrideIn(BaseModel):
+    score: float
+    reason: str

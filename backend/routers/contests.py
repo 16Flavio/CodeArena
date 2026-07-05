@@ -482,6 +482,7 @@ def list_my_submissions(
     # out of the ICPC bucket.
     icpc_ids = [s.id for s in rows if s.problem_id is not None]
     verdicts: dict[int, str] = {}
+    my_judging_ids: dict[int, int] = {}
     if icpc_ids:
         for j in (
             db.query(models.Judging)
@@ -492,6 +493,7 @@ def list_my_submissions(
             .all()
         ):
             verdicts[j.submission_id] = j.verdict
+            my_judging_ids[j.submission_id] = j.id
     prob_ids = {s.problem_id for s in rows if s.problem_id is not None}
     labels: dict[int, str] = {}
     if prob_ids:
@@ -511,6 +513,7 @@ def list_my_submissions(
             problem_label=labels.get(s.problem_id, "") if s.problem_id else "",
             source_language=s.source_language,
             latest_verdict=verdicts.get(s.id, ""),
+            latest_judging_id=my_judging_ids.get(s.id),
             file_name=s.file_name,
             score=s.score,
             status=s.status,
@@ -1996,6 +1999,30 @@ def list_submissions(
         .limit(limit)
         .all()
     )
+
+    # ICPC enrichment (same preloads as /contests/my-submissions):
+    # problem label + active judging verdict, so the in-contest history
+    # renders meaningfully for ICPC rows instead of empty columns.
+    icpc_ids = [s.id for s in submissions if s.problem_id is not None]
+    verdicts: dict[int, str] = {}
+    judging_ids: dict[int, int] = {}
+    if icpc_ids:
+        for j in (
+            db.query(models.Judging)
+            .filter(
+                models.Judging.submission_id.in_(icpc_ids),
+                models.Judging.is_active.is_(True),
+            )
+            .all()
+        ):
+            verdicts[j.submission_id] = j.verdict or ""
+            judging_ids[j.submission_id] = j.id
+    prob_ids = {s.problem_id for s in submissions if s.problem_id is not None}
+    labels: dict[int, str] = {}
+    if prob_ids:
+        for p in db.query(models.Problem).filter(models.Problem.id.in_(prob_ids)).all():
+            labels[p.id] = f"{p.label} - {p.name}"
+
     items = [
         schemas.SubmissionOut(
             id=s.id,
@@ -2004,6 +2031,11 @@ def list_submissions(
             contest_id=s.contest_id,
             instance_id=s.instance_id,
             instance_name=s.instance.name if s.instance else "",
+            problem_id=s.problem_id,
+            problem_label=labels.get(s.problem_id, "") if s.problem_id else "",
+            source_language=s.source_language,
+            latest_verdict=verdicts.get(s.id, ""),
+            latest_judging_id=judging_ids.get(s.id),
             file_name=s.file_name,
             score=s.score,
             status=s.status,
@@ -2217,6 +2249,18 @@ def duplicate_contest(
         description=src.description or "",
         problem_statement=src.problem_statement or "",
         scoring_script=src.scoring_script or "score = 0",
+        # Previously only the output-side basics were copied: an ICPC
+        # duplicate came out as an empty output contest, and validator/
+        # protections/modes were silently dropped.
+        kind=src.kind or "output",
+        output_validator_script=src.output_validator_script,
+        participation_mode=src.participation_mode or "team",
+        is_public=bool(src.is_public),
+        practice_mode=bool(src.practice_mode),
+        dedup_block=bool(src.dedup_block),
+        min_seconds_between_submits=src.min_seconds_between_submits,
+        max_submissions_per_instance=src.max_submissions_per_instance,
+        created_by=admin.id,
         # Reset the schedule: admin sets new dates for the copy.
         is_active=False,
         visible_at=None,
@@ -2227,6 +2271,44 @@ def duplicate_contest(
     )
     db.add(copy)
     db.flush()
+
+    # ICPC: deep-copy problems, testcases and per-problem statement
+    # PDFs. Column-generic so future problem fields ride along.
+    if (src.kind or "output") == "icpc":
+        import shutil as _shutil
+        problems = (
+            db.query(models.Problem)
+            .filter(models.Problem.contest_id == src.id)
+            .order_by(models.Problem.id.asc())
+            .all()
+        )
+        pdf_dir = os.path.join(UPLOAD_DIR, "icpc-statements", f"contest-{copy.id}")
+        for p in problems:
+            data = {
+                c.name: getattr(p, c.name)
+                for c in models.Problem.__table__.columns
+                if c.name not in ("id", "contest_id", "statement_pdf_path")
+            }
+            new_p = models.Problem(contest_id=copy.id, statement_pdf_path=None, **data)
+            db.add(new_p)
+            db.flush()
+            if p.statement_pdf_path and os.path.exists(p.statement_pdf_path):
+                os.makedirs(pdf_dir, exist_ok=True)
+                dst = os.path.join(pdf_dir, f"problem-{new_p.id}.pdf")
+                _shutil.copyfile(p.statement_pdf_path, dst)
+                new_p.statement_pdf_path = dst
+            for tc in (
+                db.query(models.Testcase)
+                .filter(models.Testcase.problem_id == p.id)
+                .order_by(models.Testcase.rank.asc())
+                .all()
+            ):
+                tc_data = {
+                    c.name: getattr(tc, c.name)
+                    for c in models.Testcase.__table__.columns
+                    if c.name not in ("id", "problem_id")
+                }
+                db.add(models.Testcase(problem_id=new_p.id, **tc_data))
 
     # Copy PDF statement if present.
     if src.problem_statement_pdf_path and os.path.exists(src.problem_statement_pdf_path):
@@ -2272,3 +2354,48 @@ def duplicate_contest(
         .first()
     )
     return _serialize_contest(copy, admin)
+
+
+@router.post("/submissions/{submission_id}/override-score", response_model=schemas.SimpleMessage)
+def override_score(
+    submission_id: int,
+    payload: schemas.ScoreOverrideIn,
+    user: models.User = Depends(require_admin_or_organizer),
+    db: Session = Depends(get_db),
+):
+    """Manually correct one output submission's score, with a mandatory
+    reason - the output-side counterpart of the ICPC jury verdict
+    override. Recomputes the materialized scoreboard entry and bumps
+    the response cache; league snapshots do NOT auto-invalidate
+    (recompute the event afterwards if the contest feeds one)."""
+    sub = db.query(models.Submission).filter(models.Submission.id == submission_id).first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Soumission introuvable")
+    contest = db.query(models.Contest).filter(models.Contest.id == sub.contest_id).first()
+    if not contest or (contest.kind or "output") != "output":
+        raise HTTPException(
+            status_code=400,
+            detail="L'override de score ne s'applique qu'aux concours de score - utilisez l'override de verdict pour l'ICPC",
+        )
+    if not can_manage_contest(user, contest):
+        raise HTTPException(status_code=403, detail="Vous ne gérez pas ce concours")
+    reason = (payload.reason or "").strip()
+    if not reason:
+        raise HTTPException(status_code=400, detail="Une raison est requise")
+
+    old_score = sub.score
+    sub.score = float(payload.score)
+    sub.status = "scored"
+    sub.error_message = ""
+    db.flush()
+    from ..scoreboard_cache import update_entry_for_submission
+    update_entry_for_submission(db, sub)
+    audit(
+        db, action="override_score", actor=user,
+        target_type="submission", target_id=sub.id,
+        detail=f"{old_score} -> {sub.score}; reason={reason[:300]}",
+    )
+    db.commit()
+    from ..scoreboard_response_cache import invalidate_contest
+    invalidate_contest(contest.id)
+    return {"detail": "Score corrigé."}

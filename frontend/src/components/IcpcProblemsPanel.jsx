@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   Code, Trash2, RefreshCw, Clock, Cpu, Edit, Save, X, Plus, ChevronDown, ChevronUp,
-  MessageCircle, FileDown, FileText, Upload, FileX,
+  MessageCircle, FileDown, FileText, Upload, FileX, FlaskConical, Play,
 } from 'lucide-react';
 import {
   listIcpcProblems, deleteIcpcProblem, updateIcpcProblem, createIcpcProblem,
@@ -11,10 +11,12 @@ import {
   exportIcpcProblem,
   uploadIcpcProblemStatement, deleteIcpcProblemStatement,
   openStatementPdf,
+  listIcpcLanguages, dryRunIcpcProblem,
 } from '../api';
 import { textOn } from '../utils/contrast';
 import { useConfirm } from './Confirm';
 import { extractErrorMessage } from '../utils/apiError';
+import { VerdictBadge } from './JudgingDetailModal';
 
 const CHECKER_KINDS = [
   { value: 'tokens', labelKey: 'icpcProblems.checkerTokens' },
@@ -54,6 +56,7 @@ export default function IcpcProblemsPanel({ contestId }) {
   const [editingId, setEditingId] = useState(null); // problem id or 'new'
   const [draft, setDraft] = useState(null);
   const [tcExpanded, setTcExpanded] = useState(null); // problem id whose testcases are shown
+  const [dryRunProblem, setDryRunProblem] = useState(null); // problem whose dry-run modal is open
 
   const refresh = () => {
     setLoading(true);
@@ -72,6 +75,7 @@ export default function IcpcProblemsPanel({ contestId }) {
     setEditingId(null);
     setDraft(null);
     setTcExpanded(null);
+    setDryRunProblem(null);
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contestId]);
@@ -246,6 +250,15 @@ export default function IcpcProblemsPanel({ contestId }) {
                     >
                       <Edit className="w-3.5 h-3.5" />
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setDryRunProblem(p)}
+                      className="p-1.5 rounded hover:bg-zinc-100 text-zinc-400 hover:text-accent-500 dark:hover:bg-zinc-700/50 dark:hover:text-accent-400 flex-shrink-0"
+                      title={t('admin.icpc.dryRunAction')}
+                      aria-label={t('admin.icpc.dryRunAction')}
+                    >
+                      <FlaskConical className="w-3.5 h-3.5" />
+                    </button>
                     <StatementPdfControls
                       problem={p}
                       contestId={contestId}
@@ -293,6 +306,190 @@ export default function IcpcProblemsPanel({ contestId }) {
           ))}
         </ul>
       )}
+
+      {dryRunProblem && (
+        <DryRunModal
+          key={dryRunProblem.id}
+          problem={dryRunProblem}
+          onClose={() => setDryRunProblem(null)}
+          t={t}
+        />
+      )}
+    </div>
+  );
+}
+
+
+// Admin dry-run: judge a reference solution against the problem's
+// testcases without persisting anything. Shares the verdict/run
+// vocabulary with JudgingDetailModal so results read the same way as a
+// real judging.
+function DryRunModal({ problem, onClose, t }) {
+  const [languages, setLanguages] = useState([]);
+  const [language, setLanguage] = useState('py3');
+  const [source, setSource] = useState('');
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    listIcpcLanguages()
+      .then((r) => {
+        const langs = r.data || [];
+        setLanguages(langs);
+        if (langs.length > 0 && !langs.some((l) => l.id === 'py3')) {
+          setLanguage(langs[0].id);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const run = async () => {
+    if (!source.trim()) {
+      toast.error(t('admin.icpc.dryRunNeedSource'));
+      return;
+    }
+    setRunning(true);
+    setResult(null);
+    try {
+      const { data } = await dryRunIcpcProblem(problem.id, { language, source });
+      setResult(data);
+    } catch (err) {
+      toast.error(extractErrorMessage(err, t('admin.icpc.dryRunFailed')));
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div
+        className="card p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto animate-fade-in"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2 dark:text-white">
+              <FlaskConical className="w-5 h-5 text-accent-500 dark:text-accent-400" />
+              {t('admin.icpc.dryRunTitle', { label: problem.label, name: problem.name })}
+            </h2>
+            <p className="text-xs text-zinc-500 mt-0.5 dark:text-zinc-400">
+              {t('admin.icpc.dryRunHint')}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-colors dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-white"
+            aria-label={t('common.close')}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-[10px] uppercase text-zinc-400 dark:text-zinc-500">
+              {t('admin.icpc.dryRunLanguage')}
+            </label>
+            <select
+              className="input-field text-sm py-1 px-2"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+            >
+              {languages.map((l) => (
+                <option key={l.id} value={l.id}>{l.display_name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] uppercase text-zinc-400 dark:text-zinc-500">
+              {t('admin.icpc.dryRunSource')}
+            </label>
+            <textarea
+              className="input-field text-xs font-mono min-h-[160px]"
+              placeholder={t('admin.icpc.dryRunSourcePlaceholder')}
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              spellCheck={false}
+            />
+          </div>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={run}
+              disabled={running}
+              className="btn-primary text-xs py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {running ? (
+                <RefreshCw className="w-3.5 h-3.5 mr-1 inline animate-spin" />
+              ) : (
+                <Play className="w-3.5 h-3.5 mr-1 inline" />
+              )}
+              {running ? t('admin.icpc.dryRunRunning') : t('admin.icpc.dryRunRun')}
+            </button>
+          </div>
+
+          {result && (
+            <div className="space-y-3 border-t border-zinc-200 pt-3 dark:border-zinc-700/40">
+              <div className="flex items-center gap-2 flex-wrap">
+                <VerdictBadge verdict={result.verdict} pendingLabel={t('icpc.verdictPending')} />
+              </div>
+
+              {result.compile_output && (
+                <details className="text-xs" open={result.verdict === 'CE'}>
+                  <summary className="cursor-pointer text-zinc-500 dark:text-zinc-400">
+                    {t('icpc.compileOutput')}
+                  </summary>
+                  <pre className="mt-2 p-2 bg-zinc-50 border border-zinc-200 rounded font-mono whitespace-pre-wrap break-all max-h-60 overflow-y-auto dark:bg-zinc-800/40 dark:border-zinc-700/40">
+                    {result.compile_output}
+                  </pre>
+                </details>
+              )}
+
+              {(result.runs || []).length === 0 ? (
+                <p className="text-sm text-zinc-400 italic dark:text-zinc-600">
+                  {t('judging.noRuns')}
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-zinc-200 dark:border-zinc-700/50">
+                        <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-2 pr-4 dark:text-zinc-400">{t('judging.colTest')}</th>
+                        <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-2 pr-4 dark:text-zinc-400">{t('judging.colKind')}</th>
+                        <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-2 pr-4 dark:text-zinc-400">{t('judging.colVerdict')}</th>
+                        <th className="text-right text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-2 dark:text-zinc-400">{t('judging.colTime')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.runs.map((r, idx) => (
+                        <tr key={idx} className="border-b border-zinc-100 dark:border-zinc-800/30">
+                          <td className="py-2 pr-4 font-mono tabular-nums text-zinc-700 dark:text-zinc-300">#{r.rank}</td>
+                          <td className="py-2 pr-4 text-xs">
+                            <span className={r.is_sample
+                              ? 'text-accent-700 dark:text-accent-300'
+                              : 'text-zinc-500 dark:text-zinc-400'}
+                            >
+                              {r.is_sample ? t('icpc.sampleKind') : t('icpc.secretKind')}
+                            </span>
+                          </td>
+                          <td className="py-2 pr-4">
+                            <VerdictBadge verdict={r.verdict} pendingLabel={t('icpc.verdictPending')} />
+                          </td>
+                          <td className="py-2 text-right font-mono tabular-nums text-xs text-zinc-500 dark:text-zinc-400">
+                            {r.runtime_ms != null ? `${r.runtime_ms} ms` : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -7,11 +7,12 @@ import {
 } from '../api';
 import { useAuth } from '../AuthContext';
 import {
-  AlertCircle, Clock, ArrowRight, Trophy, Lock, Inbox,
+  AlertCircle, Clock, ArrowRight, Trophy, Lock, Inbox, Eye, RotateCw,
 } from 'lucide-react';
 import { useConfirm } from '../components/Confirm';
 import HintsPanel from '../components/HintsPanel';
 import IcpcContestView from '../components/IcpcContestView';
+import JudgingDetailModal, { VerdictBadge } from '../components/JudgingDetailModal';
 import PageHeader from '../components/PageHeader';
 import ContestHeader from '../components/contest/ContestHeader';
 import AnnouncementsPanel from '../components/contest/AnnouncementsPanel';
@@ -23,7 +24,7 @@ import SubmitSolutionForm from '../components/contest/SubmitSolutionForm';
 import SubmissionsTable from '../components/contest/SubmissionsTable';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import { formatCountdown, backendIsoMs } from '../utils/datetime';
+import { formatCountdown, backendIsoMs, formatDateTime } from '../utils/datetime';
 import { extractErrorMessage } from '../utils/apiError';
 
 const SUBMISSION_PAGE_SIZE = 25;
@@ -55,6 +56,8 @@ export default function ContestDetail() {
   const [registration, setRegistration] = useState(null);
   const [registering, setRegistering] = useState(false);
   const [participants, setParticipants] = useState([]);
+  // ICPC history: submission whose judging detail modal is open, or null.
+  const [detailSubmission, setDetailSubmission] = useState(null);
 
   // Tick once a second so "unlocks in X" / "ends in X" stay live without
   // re-fetching the whole contest.
@@ -161,16 +164,41 @@ export default function ContestDetail() {
     }
   };
 
+  // Team scope for the submissions fetch. ICPC solo/"both" contests submit
+  // WITHOUT a team_id even when the user happens to belong to teams, so the
+  // history must mirror the selectedTeamId expression handed to
+  // IcpcContestView or a solo participant's rows never show up.
+  const submissionsTeamScope = contest?.kind === 'icpc'
+    ? (contest.participation_mode === 'solo'
+        ? null
+        : contest.participation_mode === 'both'
+          ? (submitKind === 'solo' ? null : (selectedTeam || null))
+          : (selectedTeam || null))
+    : (selectedTeam || null);
+
   useEffect(() => {
     if (contest) {
-      getSubmissions(contest.id, selectedTeam || null, SUBMISSION_PAGE_SIZE, submissionPage * SUBMISSION_PAGE_SIZE)
+      getSubmissions(contest.id, submissionsTeamScope, SUBMISSION_PAGE_SIZE, submissionPage * SUBMISSION_PAGE_SIZE)
         .then((r) => {
           setSubmissions(r.data.items || []);
           setSubmissionsTotal(r.data.total || 0);
         })
         .catch(() => {});
     }
-  }, [selectedTeam, contest, submissionPage]);
+  }, [submissionsTeamScope, contest, submissionPage]);
+
+  // Manual refresh for the ICPC history card - IcpcContestView owns the
+  // submit flow, so the parent list has no post-submit hook to piggyback on.
+  const refreshSubmissions = async () => {
+    if (!contest) return;
+    try {
+      const r = await getSubmissions(contest.id, submissionsTeamScope, SUBMISSION_PAGE_SIZE, submissionPage * SUBMISSION_PAGE_SIZE);
+      setSubmissions(r.data.items || []);
+      setSubmissionsTotal(r.data.total || 0);
+    } catch {
+      /* keep the current list */
+    }
+  };
 
   // Called by the submit form after a submission settles - jump back to
   // the first page and re-fetch the list (mirrors the pre-refactor tail
@@ -305,6 +333,118 @@ export default function ContestDetail() {
                   : (selectedTeam || null)
             }
           />
+
+          {/* Persistent submission history: per-testcase judging detail
+              stays reachable after the post-submit panel is gone. */}
+          {canParticipate && (
+            <div className="card p-6">
+              <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+                <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
+                  {t('contest.historyTitle')}
+                  <span className="ml-2 text-sm font-normal font-mono tabular-nums text-zinc-500 dark:text-zinc-500">
+                    ({submissionsTotal})
+                  </span>
+                </h2>
+                <div className="flex items-center gap-2 text-sm">
+                  {submissionsTotal > SUBMISSION_PAGE_SIZE && (
+                    <>
+                      <button
+                        className="btn-secondary text-xs py-1 px-2"
+                        disabled={submissionPage === 0}
+                        onClick={() => setSubmissionPage((p) => Math.max(0, p - 1))}
+                      >
+                        {t('common.previous')}
+                      </button>
+                      <span className="text-zinc-500 font-mono tabular-nums dark:text-zinc-500">
+                        {submissionPage * SUBMISSION_PAGE_SIZE + 1}
+                        -
+                        {Math.min(submissionsTotal, (submissionPage + 1) * SUBMISSION_PAGE_SIZE)}
+                        {' '}/ {submissionsTotal}
+                      </span>
+                      <button
+                        className="btn-secondary text-xs py-1 px-2"
+                        disabled={(submissionPage + 1) * SUBMISSION_PAGE_SIZE >= submissionsTotal}
+                        onClick={() => setSubmissionPage((p) => p + 1)}
+                      >
+                        {t('common.next')}
+                      </button>
+                    </>
+                  )}
+                  <button
+                    className="btn-secondary text-xs py-1 px-2"
+                    onClick={refreshSubmissions}
+                    title={t('common.refresh')}
+                    aria-label={t('common.refresh')}
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              {submissions.length === 0 ? (
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  {t('contest.historyEmpty')}
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-zinc-200 dark:border-zinc-700/50">
+                        <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 pr-4 dark:text-zinc-400">{t('admin.submissions.colProblem')}</th>
+                        <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 pr-4 dark:text-zinc-400">{t('admin.submissions.colVerdict')}</th>
+                        <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colLanguage')}</th>
+                        <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 pr-4 dark:text-zinc-400">{t('mySubmissions.colWhen')}</th>
+                        <th className="text-right text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-3 dark:text-zinc-400">{t('mySubmissions.colActions')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {submissions.map((s) => {
+                        // problem_label is "A - Name"; the chip shows only
+                        // the letter (balloon motif, neutral accent since
+                        // the listing payload has no per-problem color).
+                        const [letter, ...nameParts] = (s.problem_label || '?').split(' - ');
+                        const problemName = nameParts.join(' - ');
+                        return (
+                          <tr key={s.id} className="border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-800/20">
+                            <td className="py-3 pr-4">
+                              <span className="inline-flex items-center gap-2 min-w-0">
+                                <span className="w-6 h-6 shrink-0 rounded-full bg-accent-600/15 text-accent-700 font-mono font-bold text-xs flex items-center justify-center dark:bg-accent-600/20 dark:text-accent-300">
+                                  {letter}
+                                </span>
+                                <span className="text-zinc-800 max-w-[220px] truncate dark:text-zinc-200" title={s.problem_label}>
+                                  {problemName}
+                                </span>
+                              </span>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <VerdictBadge verdict={s.latest_verdict} pendingLabel={t('icpc.verdictPending')} />
+                            </td>
+                            <td className="py-3 pr-4 text-xs font-mono text-zinc-500 dark:text-zinc-400">
+                              {s.source_language || '-'}
+                            </td>
+                            <td className="py-3 pr-4 text-zinc-400 text-xs font-mono tabular-nums dark:text-zinc-500">
+                              {formatDateTime(s.submitted_at)}
+                            </td>
+                            <td className="py-3 text-right">
+                              <button
+                                type="button"
+                                className="btn-secondary text-xs py-1 px-2 disabled:opacity-50"
+                                disabled={!s.latest_judging_id}
+                                onClick={() => setDetailSubmission(s)}
+                                title={s.latest_judging_id ? t('contest.historyDetail') : t('contest.historyNotJudged')}
+                              >
+                                <Eye className="w-3.5 h-3.5 mr-1 inline" />
+                                {t('contest.historyDetail')}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Mounted (invisible) so its PDF fetch/403 toast keeps the
               same timing as when it lived at the page's top level. */}
@@ -456,6 +596,15 @@ export default function ContestDetail() {
             />
           </div>
         </>
+      )}
+
+      {detailSubmission && (
+        <JudgingDetailModal
+          key={detailSubmission.id}
+          submissionId={detailSubmission.id}
+          problemLabel={detailSubmission.problem_label}
+          onClose={() => setDetailSubmission(null)}
+        />
       )}
     </div>
   );
