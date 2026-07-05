@@ -1,12 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Bell, Megaphone, Send } from 'lucide-react';
+import { Bell, CheckCircle2, Megaphone, Send, Trophy } from 'lucide-react';
 import { getMyActivity } from '../api';
 import { formatDateTime } from '../utils/datetime';
 
 const POLL_MS = 60000;
 const SEEN_KEY = 'notif-last-seen-at';
+
+const KIND_ICONS = {
+  announcement: [Megaphone, 'text-sky-600 dark:text-sky-400'],
+  team_submission: [Send, 'text-accent-500 dark:text-accent-400'],
+  my_result: [CheckCircle2, 'text-emerald-600 dark:text-emerald-400'],
+  league_published: [Trophy, 'text-amber-600 dark:text-amber-400'],
+};
 
 export default function NotificationsBell() {
   const { t } = useTranslation();
@@ -47,6 +54,17 @@ export default function NotificationsBell() {
 
   const unread = items.filter((it) => new Date(it.at).getTime() > lastSeen).length;
 
+  const linkFor = (it) => {
+    if (it.kind === 'league_published') return '/league';
+    return it.contest_id ? `/contests/${it.contest_id}` : '#';
+  };
+
+  const bodyFor = (it) => {
+    if (it.kind === 'my_result') return t('notifications.myResult', { result: it.body });
+    if (it.kind === 'league_published') return t('notifications.leaguePublished', { contest: it.body });
+    return it.body;
+  };
+
   const handleOpen = () => {
     const next = !open;
     setOpen(next);
@@ -81,28 +99,28 @@ export default function NotificationsBell() {
             </p>
           ) : (
             <ul className="space-y-1">
-              {items.map((it, i) => (
-                <li key={`${it.kind}-${it.contest_id}-${it.at}-${i}`}>
-                  <Link
-                    to={it.contest_id ? `/contests/${it.contest_id}` : '#'}
-                    onClick={() => setOpen(false)}
-                    className="flex items-start gap-2 p-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
-                  >
-                    {it.kind === 'announcement' ? (
-                      <Megaphone className="w-4 h-4 mt-0.5 text-sky-600 dark:text-sky-400 flex-shrink-0" />
-                    ) : (
-                      <Send className="w-4 h-4 mt-0.5 text-accent-500 dark:text-accent-400 flex-shrink-0" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-zinc-800 truncate dark:text-zinc-200">{it.title}</p>
-                      {it.body && (
-                        <p className="text-xs text-zinc-500 truncate dark:text-zinc-400">{it.body}</p>
-                      )}
-                      <p className="text-[10px] text-zinc-400 mt-0.5 dark:text-zinc-500">{formatDateTime(it.at)}</p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
+              {items.map((it, i) => {
+                const [Icon, iconColor] = KIND_ICONS[it.kind] || KIND_ICONS.team_submission;
+                const body = bodyFor(it);
+                return (
+                  <li key={`${it.kind}-${it.contest_id}-${it.at}-${i}`}>
+                    <Link
+                      to={linkFor(it)}
+                      onClick={() => setOpen(false)}
+                      className="flex items-start gap-2 p-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+                    >
+                      <Icon className={`w-4 h-4 mt-0.5 ${iconColor} flex-shrink-0`} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-zinc-800 truncate dark:text-zinc-200">{it.title}</p>
+                        {body && (
+                          <p className="text-xs text-zinc-500 truncate dark:text-zinc-400">{body}</p>
+                        )}
+                        <p className="text-[10px] text-zinc-400 mt-0.5 dark:text-zinc-500">{formatDateTime(it.at)}</p>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

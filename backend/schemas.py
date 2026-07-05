@@ -530,7 +530,7 @@ class MySubmissionOut(SubmissionOut):
 
 
 class ActivityItem(BaseModel):
-    kind: str  # "announcement" | "team_submission"
+    kind: str  # "announcement" | "team_submission" | "my_result" | "league_published"
     title: str
     body: str = ""
     contest_id: Optional[int] = None
