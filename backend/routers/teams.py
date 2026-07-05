@@ -119,84 +119,96 @@ def my_rankings(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Return the user's team's rank in each contest they've submitted to."""
-    mem = (
-        db.query(models.TeamMember)
-        .filter(models.TeamMember.user_id == user.id)
-        .first()
-    )
-    if not mem:
-        return []
-    team_id = mem.team_id
-    team = db.query(models.Team).filter(models.Team.id == team_id).first()
-    if not team:
-        return []
+    """The user's rank in every contest they took part in - via any of
+    their teams OR solo. Computed from the same builders (and the same
+    TTL response cache) as the scoreboard pages, so it is kind-aware
+    (ICPC ranks by solved/penalty, not summed scores), freeze-
+    respecting, DQ-stripped and practice-free - the previous ad-hoc
+    per-instance sum produced nonsense for ICPC contests."""
+    from ..scoreboard_response_cache import get_or_compute as _cache_get_or_compute
+    from .contests import _is_contest_visible, _utcnow
+    from .icpc import _build_icpc_scoreboard
+    from .scoreboard import _build_scoreboard
 
-    # Contests the team has submitted to.
+    team_ids = {
+        m.team_id
+        for m in db.query(models.TeamMember)
+        .filter(models.TeamMember.user_id == user.id)
+        .all()
+    }
+
+    # Contests where the user (or one of their teams) has a real,
+    # non-practice submission.
+    scope = (
+        models.Submission.team_id.in_(team_ids)
+        if team_ids
+        else (models.Submission.team_id.is_(None))
+    )
+    if team_ids:
+        scope = scope | (
+            (models.Submission.team_id.is_(None))
+            & (models.Submission.submitted_by == user.id)
+        )
+    else:
+        scope = scope & (models.Submission.submitted_by == user.id)
     contest_ids = [
         cid
         for (cid,) in db.query(models.Submission.contest_id)
-        .filter(models.Submission.team_id == team_id)
+        .filter(scope, models.Submission.is_practice.is_(False))
         .distinct()
         .all()
     ]
+
+    now = _utcnow()
+    is_admin = bool(user.is_admin)
+    audience = "admin" if is_admin else "public"
     results: list[schemas.TeamContestRanking] = []
     for cid in contest_ids:
         contest = db.query(models.Contest).filter(models.Contest.id == cid).first()
-        if not contest:
+        if not contest or not _is_contest_visible(contest, now, is_admin=is_admin):
             continue
 
-        # All teams that have submitted to this contest, with their total scores.
-        # Keep the same best-per-instance rule as get_scoreboard.
-        all_team_ids = [
-            t for (t,) in db.query(models.Submission.team_id)
-            .filter(models.Submission.contest_id == cid)
-            .distinct()
-            .all()
-        ]
-        totals: list[tuple[int, float]] = []
-        for tid in all_team_ids:
-            total = db.query(
-                func.coalesce(
-                    func.sum(models.Submission.score), 0.0
-                )
-            ).filter(
-                models.Submission.team_id == tid,
-                models.Submission.contest_id == cid,
-                models.Submission.status == "scored",
-            ).scalar() or 0.0
-            # The above sums every submission; we want max per instance.
-            # Replace with a per-instance subquery:
-            per_inst = (
-                db.query(
-                    models.Submission.instance_id,
-                    func.max(models.Submission.score).label("best"),
-                )
-                .filter(
-                    models.Submission.team_id == tid,
-                    models.Submission.contest_id == cid,
-                    models.Submission.status == "scored",
-                )
-                .group_by(models.Submission.instance_id)
-                .all()
+        kind = (contest.kind or "output")
+        if kind == "icpc":
+            board = _cache_get_or_compute(
+                ("scoreboard.icpc", cid, audience),
+                lambda cid=cid: _build_icpc_scoreboard(cid, is_admin=is_admin, db=db),
             )
-            total = sum((row.best or 0.0) for row in per_inst)
-            totals.append((tid, total))
+            rows = board.rows
+        else:
+            board = _cache_get_or_compute(
+                ("scoreboard.output", cid, audience),
+                lambda cid=cid: _build_scoreboard(cid, is_admin=is_admin, db=db),
+            )
+            rows = board.teams
 
-        totals.sort(key=lambda x: x[1], reverse=True)
-        rank = next((i + 1 for i, (t, _) in enumerate(totals) if t == team_id), None)
-        our_score = next((s for (t, s) in totals if t == team_id), 0.0)
-        if rank is None:
+        def is_mine(row):
+            if row.team_id is not None:
+                return row.team_id in team_ids
+            return row.team_name == user.username
+
+        mine = next(
+            ((idx, row) for idx, row in enumerate(rows, start=1) if is_mine(row)),
+            None,
+        )
+        if mine is None:
+            # DQ'd, practice-only, or no ranked row - nothing to show.
             continue
+        rank, row = mine
         results.append(
             schemas.TeamContestRanking(
-                team_id=team_id,
-                team_name=team.name,
+                team_id=row.team_id,
+                team_name=row.team_name,
                 contest_id=contest.id,
                 contest_title=contest.title,
+                kind=kind,
                 rank=rank,
-                total_teams=len(totals),
-                total_score=our_score,
+                total_teams=len(rows),
+                total_score=(
+                    float(row.solved_count) if kind == "icpc" else row.total_score
+                ),
+                solved=row.solved_count if kind == "icpc" else None,
+                penalty=row.total_penalty if kind == "icpc" else None,
             )
         )
     results.sort(key=lambda r: r.rank)

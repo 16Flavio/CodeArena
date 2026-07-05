@@ -236,3 +236,142 @@ def test_clarifications_refused_on_output_contests(client):
     r = client.post(f"/api/contests/{cid}/clarifications", json={        "body": "Is this allowed?",
     }, headers=alice)
     assert r.status_code == 400, r.text
+
+
+def _wait_scored(client, headers, sid):
+    import time as _t
+    for _ in range(100):
+        _t.sleep(0.05)
+        p = client.get(f"/api/contests/submissions/{sid}", headers=headers).json()
+        if p["status"] != "pending":
+            return p
+    raise AssertionError("submission never left pending")
+
+
+def test_my_rankings_is_kind_aware_and_covers_solo(client):
+    """The dashboard rankings widget used output-style score sums for
+    every contest - nonsense for ICPC - and only covered the user's
+    first team. It now mirrors the scoreboards: ICPC ranks by
+    solved/penalty and solo participation counts."""
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    bob = auth_header(client, "bob")
+
+    # Output solo contest: alice 3 points, bob 2.
+    ocid = _make_output_contest(client, admin)
+    oiid = _make_instance(client, admin, ocid)
+    for h in (alice, bob):
+        client.post(f"/api/contests/{ocid}/register", json={}, headers=h)
+    r = client.post(
+        f"/api/contests/{ocid}/instances/{oiid}/submit",
+        headers=alice, files={"file": ("s.txt", io.BytesIO(b"aaa"), "text/plain")},
+    )
+    _wait_scored(client, alice, r.json()["id"])
+    r = client.post(
+        f"/api/contests/{ocid}/instances/{oiid}/submit",
+        headers=bob, files={"file": ("s.txt", io.BytesIO(b"bb"), "text/plain")},
+    )
+    _wait_scored(client, bob, r.json()["id"])
+
+    # ICPC solo contest: alice ACs, bob WAs.
+    icid, ipid = _make_icpc_contest(client, admin)
+    for h in (alice, bob):
+        client.post(f"/api/contests/{icid}/register", json={}, headers=h)
+    r = client.post(
+        f"/api/contests/{icid}/problems/{ipid}/submit",
+        headers=alice,
+        data={"language": "py3", "source": "import sys\nsys.stdout.write(sys.stdin.read())\n"},
+    )
+    _wait_scored(client, alice, r.json()["id"])
+    r = client.post(
+        f"/api/contests/{icid}/problems/{ipid}/submit",
+        headers=bob, data={"language": "py3", "source": "print('wrong')"},
+    )
+    _wait_scored(client, bob, r.json()["id"])
+
+    ra = client.get("/api/teams/my/rankings", headers=alice)
+    assert ra.status_code == 200, ra.text
+    by_contest = {row["contest_id"]: row for row in ra.json()}
+    assert by_contest[ocid]["kind"] == "output"
+    assert by_contest[ocid]["rank"] == 1
+    assert by_contest[ocid]["total_score"] == 3.0
+    assert by_contest[icid]["kind"] == "icpc"
+    assert by_contest[icid]["rank"] == 1
+    assert by_contest[icid]["solved"] == 1
+
+    rb = client.get("/api/teams/my/rankings", headers=bob)
+    by_contest_b = {row["contest_id"]: row for row in rb.json()}
+    assert by_contest_b[icid]["rank"] == 2
+    assert by_contest_b[icid]["solved"] == 0
+
+
+def test_my_rankings_excludes_dq(client):
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    cid = _make_output_contest(client, admin)
+    iid = _make_instance(client, admin, cid)
+    client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
+    r = client.post(
+        f"/api/contests/{cid}/instances/{iid}/submit",
+        headers=alice, files={"file": ("s.txt", io.BytesIO(b"aaa"), "text/plain")},
+    )
+    _wait_scored(client, alice, r.json()["id"])
+    assert any(row["contest_id"] == cid for row in client.get("/api/teams/my/rankings", headers=alice).json())
+
+    from backend import database, models
+    sess = database.SessionLocal()
+    try:
+        reg = (
+            sess.query(models.ContestRegistration)
+            .filter(models.ContestRegistration.contest_id == cid)
+            .first()
+        )
+        reg.disqualified = True
+        sess.commit()
+    finally:
+        sess.close()
+    # DQ'd rows are stripped from the (public) board - and the cache is
+    # per-audience with a short TTL, so clear it for determinism.
+    from backend import scoreboard_response_cache
+    scoreboard_response_cache.clear()
+    assert not any(row["contest_id"] == cid for row in client.get("/api/teams/my/rankings", headers=alice).json())
+
+
+def test_scoreboard_stream_serves_icpc_contests(client):
+    """The SSE endpoint used to be output-only; it now dispatches on the
+    contest kind so ICPC boards get live updates too. The response's
+    async generator is driven directly (and closed) - streaming through
+    TestClient never lets an infinite SSE generator terminate."""
+    import asyncio
+
+    admin = auth_header(client, "root")
+    cid, _pid = _make_icpc_contest(client, admin)
+
+    from backend import database, models
+    from backend.routers.scoreboard import stream_scoreboard
+
+    sess = database.SessionLocal()
+    try:
+        root = sess.query(models.User).filter(models.User.username == "root").first()
+        resp = asyncio.run(stream_scoreboard(contest_id=cid, user=root, db=sess))
+    finally:
+        sess.close()
+    assert resp.media_type == "text/event-stream"
+
+    async def first_data_event(gen):
+        try:
+            async for chunk in gen:
+                text = chunk.decode() if isinstance(chunk, bytes) else chunk
+                if text.startswith("data: "):
+                    return text[len("data: "):]
+        finally:
+            await gen.aclose()
+        return None
+
+    payload = asyncio.run(first_data_event(resp.body_iterator))
+    assert payload is not None
+    import json as _json
+    body = _json.loads(payload)
+    # ICPC payload shape, not the output one.
+    assert body["contest_id"] == cid
+    assert "rows" in body and "problems" in body
