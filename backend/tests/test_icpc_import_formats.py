@@ -333,6 +333,77 @@ def test_custom_validator_judges_end_to_end(client):
     assert verdict(submit('print("5")')) == "WA"
 
 
+def test_export_import_round_trip_is_lossless(client):
+    """Export a problem carrying every tricky feature (color with '#',
+    name with ':', custom validator + aux header, subtask groups with
+    points) and re-import it into a second contest: nothing may be lost.
+    Pins the YAML-quoting bug where a bare `color: #FF0000` parsed as a
+    comment and the color vanished on every round trip."""
+    from backend import database, models
+
+    admin = auth_header(client, "root")
+    cid_a = _make_icpc_contest(client, admin, title="Origin")
+    cid_b = _make_icpc_contest(client, admin, title="Copy")
+
+    def build(zf):
+        zf.writestr("problem.yaml",
+                    'name: "Tricky: The Return"\n'
+                    "type: scoring\n"
+                    "validation: custom\n")
+        zf.writestr("domjudge-problem.ini", "probid='tricky'\ncolor='#FF8800'\n")
+        zf.writestr(".timelimit", "3\n")
+        zf.writestr("output_validators/output_validator/output_validator.cpp",
+                    '#include "validation.h"\nint main(){return 42;}\n')
+        zf.writestr("output_validators/output_validator/validation.h", "// hdr\n")
+        zf.writestr("data/sample/1.in", "s\n")
+        zf.writestr("data/sample/1.ans", "s\n")
+        zf.writestr("data/secret/g1/testdata.yaml", "accept_score: 40\n")
+        zf.writestr("data/secret/g1/1.in", "a\n")
+        zf.writestr("data/secret/g1/1.ans", "a\n")
+        zf.writestr("data/secret/g2/testdata.yaml", "accept_score: 60\n")
+        zf.writestr("data/secret/g2/1.in", "b\n")
+        zf.writestr("data/secret/g2/1.ans", "b\n")
+
+    _upload(client, admin, cid_a, build)
+    pid = _problems(client, admin, cid_a)[0]["id"]
+
+    r = client.get(f"/api/icpc/problems/{pid}/export", headers=admin)
+    assert r.status_code == 200, r.text
+
+    r = client.post(
+        f"/api/contests/{cid_b}/import-domjudge-package",
+        headers=admin,
+        files={"file": ("tricky.zip", io.BytesIO(r.content), "application/zip")},
+    )
+    assert r.status_code == 200, r.text
+
+    copy = _problems(client, admin, cid_b)[0]
+    assert copy["external_id"] == "tricky"
+    assert copy["name"] == "Tricky: The Return"
+    assert copy["color"] == "#FF8800"
+    assert copy["time_limit_ms"] == 3000
+    assert copy["checker_kind"] == "custom"
+    assert copy["has_checker_script"] is True
+    assert copy["checker_language"] == "cpp"
+    assert copy["scoring_mode"] == "subtasks"
+
+    sess = database.SessionLocal()
+    try:
+        prob = sess.query(models.Problem).filter(
+            models.Problem.contest_id == cid_b,
+        ).one()
+        import json as _json
+        assert "validation.h" in _json.loads(prob.checker_aux_files)
+        by_group = {}
+        for tc in sess.query(models.Testcase).filter(
+            models.Testcase.problem_id == prob.id,
+        ).all():
+            by_group[tc.group_name] = tc.points
+        assert by_group == {"sample": 0, "g1": 40, "g2": 60}
+    finally:
+        sess.close()
+
+
 def test_empty_package_is_a_clear_error(client):
     admin = auth_header(client, "root")
     cid = _make_icpc_contest(client, admin)

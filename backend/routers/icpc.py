@@ -1826,25 +1826,39 @@ def export_problem_zip(
 
     shortname = p.external_id or f"problem-{p.id}"
     buf = _io.BytesIO()
+
+    # JSON string literals are valid YAML scalars - this is how every
+    # value gets quoted. Bare interpolation broke on ``#`` (a bare
+    # ``color: #FF0000`` parses as an empty value plus a comment, so the
+    # color was silently lost on every round trip) and on names
+    # containing ``:``.
+    def _q(v) -> str:
+        return json.dumps(str(v))
+
+    _EXT_BY_LANG = {"py3": "py", "cpp": "cpp", "c": "c", "java": "java"}
     with _zipfile.ZipFile(buf, "w", _zipfile.ZIP_DEFLATED) as zf:
         # problem.yaml - minimal valid DOMjudge/Kattis shape.
         yaml_lines = [
-            f"name: {p.name}",
-            f"label: {p.label}",
-            f"shortname: {shortname}",
-            f"probid: {shortname}",
-            f"color: {p.color or ''}",
+            f"name: {_q(p.name)}",
+            f"label: {_q(p.label)}",
+            f"shortname: {_q(shortname)}",
+            f"probid: {_q(shortname)}",
+            f"color: {_q(p.color or '')}",
             "limits:",
             f"  time: {(p.time_limit_ms or 1000) / 1000.0}",
             f"  memory: {p.memory_limit_mb or 2048}",
         ]
+        is_subtasks = (p.scoring_mode or "icpc").lower() == "subtasks"
+        if is_subtasks:
+            yaml_lines.append("type: scoring")
         checker = (p.checker_kind or "tokens").lower()
         if checker == "interactive":
             yaml_lines.append("validation: custom interactive")
         elif checker == "float":
+            # Spec spelling: the default validator with a tolerance flag.
             eps = p.checker_epsilon or 1e-6
-            yaml_lines.append("validation: float")
-            yaml_lines.append(f"validator_flags: [--float_tolerance, {eps}]")
+            yaml_lines.append("validation: default")
+            yaml_lines.append(f"validator_flags: float_tolerance {eps:g}")
         elif checker == "custom":
             yaml_lines.append("validation: custom")
         else:
@@ -1859,21 +1873,54 @@ def export_problem_zip(
         # Testcases. Sample go under data/sample, secret under data/secret.
         # Kattis names them with a stable stem; we use the rank + id so
         # re-imports don't collide even if two tests had the same original
-        # filename.
+        # filename. Subtask problems keep their group structure: each named
+        # secret group becomes a subdirectory with a testdata.yaml carrying
+        # its points, so partial credit survives the round trip.
+        group_points: dict[str, int] = {}
         for tc in sorted(p.testcases or [], key=lambda t: (t.rank, t.id)):
-            bucket = "sample" if tc.is_sample else "secret"
             stem = f"{tc.rank:03d}-{tc.id}"
-            zf.writestr(f"{shortname}/data/{bucket}/{stem}.in", tc.input_data or "")
-            zf.writestr(f"{shortname}/data/{bucket}/{stem}.ans", tc.expected_output or "")
+            if tc.is_sample:
+                path = f"{shortname}/data/sample/{stem}"
+            elif is_subtasks and tc.group_name and tc.group_name != "sample":
+                group = tc.group_name
+                group_points[group] = max(group_points.get(group, 0), int(tc.points or 0))
+                path = f"{shortname}/data/secret/{group}/{stem}"
+            else:
+                path = f"{shortname}/data/secret/{stem}"
+            zf.writestr(f"{path}.in", tc.input_data or "")
+            zf.writestr(f"{path}.ans", tc.expected_output or "")
+        for group, pts in group_points.items():
+            zf.writestr(
+                f"{shortname}/data/secret/{group}/testdata.yaml",
+                f"accept_score: {pts}\n",
+            )
 
         # Interactive problems ship their interactor under output_validators/.
         if checker == "interactive" and (p.interactor_script or "").strip():
             ilang = (p.interactor_language or "py3").lower()
-            ext = {"py3": "py", "cpp": "cpp", "c": "c", "java": "java"}.get(ilang, "txt")
+            ext = _EXT_BY_LANG.get(ilang, "txt")
             zf.writestr(
                 f"{shortname}/output_validators/interactor/interactor.{ext}",
                 p.interactor_script,
             )
+
+        # Custom output validators too - without them a re-import would
+        # silently downgrade the problem to token comparison.
+        if checker == "custom" and (p.checker_script or "").strip():
+            clang = (p.checker_language or "py3").lower()
+            ext = _EXT_BY_LANG.get(clang, "txt")
+            vdir = f"{shortname}/output_validators/output_validator"
+            zf.writestr(f"{vdir}/output_validator.{ext}", p.checker_script)
+            aux: dict = {}
+            if p.checker_aux_files:
+                try:
+                    aux = json.loads(p.checker_aux_files)
+                except ValueError:
+                    aux = {}
+            for aux_name, aux_content in aux.items():
+                safe = os.path.basename(str(aux_name))
+                if safe:
+                    zf.writestr(f"{vdir}/{safe}", str(aux_content))
 
     buf.seek(0)
     audit(db, action="export_problem", actor=admin,
