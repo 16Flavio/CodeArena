@@ -82,6 +82,11 @@ export default function ContestDetail() {
   };
 
   useEffect(() => {
+    // Navigating from one contest to another keeps this component
+    // mounted - reset the per-contest UI state so contest B doesn't
+    // inherit A's active tab or pagination.
+    setActiveTab(null);
+    setSubmissionPage(0);
     Promise.all([
       getContest(id),
       getMyTeams(),
@@ -273,11 +278,18 @@ export default function ContestDetail() {
         <ContestHeader contest={contest} now={now} />
       </div>
 
+      {/* Jury announcements stay visible on every tab - burying an
+          erratum inside a non-default tab during a live contest is
+          exactly the failure mode to avoid. The panel renders nothing
+          when there are no announcements and the user isn't admin. */}
+      <div className="mb-6">
+        <AnnouncementsPanel contestId={contest.id} isAdmin={user?.is_admin} />
+      </div>
+
       {isIcpc ? (
         // ICPC contests keep the dedicated stacked view - the whole
         // problem/submit/clarification flow lives in IcpcContestView.
         <div className="space-y-8">
-          <AnnouncementsPanel contestId={contest.id} isAdmin={user?.is_admin} />
 
           <IcpcContestView
             contest={contest}
@@ -442,7 +454,6 @@ export default function ContestDetail() {
               setParticipants={setParticipants}
               isAdmin={user?.is_admin}
             />
-            <AnnouncementsPanel contestId={contest.id} isAdmin={user?.is_admin} />
           </div>
         </>
       )}

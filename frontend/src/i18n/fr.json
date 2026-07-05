@@ -408,7 +408,8 @@
     "toastVerificationSent": "Email envoyé",
     "collapseSidebar": "Replier le menu",
     "expandSidebar": "Déplier le menu",
-    "account": "Mon compte"
+    "account": "Mon compte",
+    "primary": "Navigation principale"
   },
   "accountModal": {
     "passwordTitle": "Changer de mot de passe",
@@ -568,7 +569,8 @@
     "happeningNow": "En ce moment",
     "nextUp": "Prochain rendez-vous",
     "leagueTeaser": "Vos points de saison et le classement annuel de la classe.",
-    "leagueCta": "Voir le classement de la ligue"
+    "leagueCta": "Voir le classement de la ligue",
+    "dayUnit": "j"
   },
   "landing": {
     "welcome": "Bienvenue sur CodeArena",

@@ -139,8 +139,8 @@ export default function IcpcScoreboard({ contestId }) {
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-20">
             <tr className="bg-zinc-50 dark:bg-zinc-900">
-              <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 font-semibold py-3 px-3 border-b border-zinc-200 dark:border-zinc-800 sticky left-0 bg-zinc-50 dark:bg-zinc-900 z-10">#</th>
-              <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 font-semibold py-3 px-3 border-b border-zinc-200 dark:border-zinc-800 sticky left-10 bg-zinc-50 dark:bg-zinc-900 z-10 max-w-[140px] sm:max-w-none">{t('icpcScoreboard.team')}</th>
+              <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 font-semibold py-3 px-3 border-b border-zinc-200 dark:border-zinc-800 sticky left-0 bg-zinc-50 dark:bg-zinc-900 z-10 w-12 min-w-[48px]">#</th>
+              <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 font-semibold py-3 px-3 border-b border-zinc-200 dark:border-zinc-800 sticky left-12 bg-zinc-50 dark:bg-zinc-900 z-10 max-w-[140px] sm:max-w-none">{t('icpcScoreboard.team')}</th>
               <th className="text-right text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 font-semibold py-3 px-3 border-b border-zinc-200 dark:border-zinc-800">{t('icpcScoreboard.solved')}</th>
               <th className="text-right text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 font-semibold py-3 px-3 border-b border-zinc-200 dark:border-zinc-800">{t('icpcScoreboard.penalty')}</th>
               {data.problems.map((p) => (
@@ -178,12 +178,12 @@ export default function IcpcScoreboard({ contestId }) {
                 key={`${row.team_id || row.team_name}-${idx}`}
                 className="group border-t border-zinc-100 dark:border-zinc-800/30 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
               >
-                <td className="py-2 px-3 font-mono tabular-nums sticky left-0 bg-white/95 dark:bg-zinc-900/95 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800 transition-colors">
+                <td className="py-2 px-3 font-mono tabular-nums sticky left-0 bg-white dark:bg-zinc-900 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800 transition-colors w-12 min-w-[48px]">
                   <span className={idx < 3 ? MEDALS[idx] : 'text-zinc-500 dark:text-zinc-500'}>
                     {idx + 1}
                   </span>
                 </td>
-                <td className="py-2 px-3 font-medium text-zinc-900 dark:text-white sticky left-10 bg-white/95 dark:bg-zinc-900/95 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800 transition-colors max-w-[140px] sm:max-w-none truncate">
+                <td className="py-2 px-3 font-medium text-zinc-900 dark:text-white sticky left-12 bg-white dark:bg-zinc-900 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800 transition-colors max-w-[140px] sm:max-w-none truncate">
                   {row.team_name}
                   {row.affiliation_name && (
                     <span
@@ -224,14 +224,16 @@ export default function IcpcScoreboard({ contestId }) {
                         title={isFirst ? t('icpcScoreboard.firstToSolve') : undefined}
                       >
                         <div className="inline-flex flex-col items-center text-emerald-600 dark:text-emerald-400 relative">
+                          {/* First-to-solve marker: a balloon dot in the
+                              problem's color (design signature; the old
+                              emoji violated the no-emoji rule and painted
+                              over the sticky team column when scrolled). */}
                           {isFirst && (
                             <span
-                              className="absolute -top-1 -right-2 text-[10px]"
+                              className="absolute -top-0.5 -right-2 w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-zinc-900"
                               aria-label={t('icpcScoreboard.firstToSolve')}
-                              style={{ color: p.color || '#f59e0b' }}
-                            >
-                              🎈
-                            </span>
+                              style={{ background: p.color || '#f59e0b' }}
+                            />
                           )}
                           <CheckCircle className="w-4 h-4" />
                           <span className="text-[10px] font-mono tabular-nums">
