@@ -131,6 +131,14 @@ export const addContestParticipantTeam = (contestId, teamId) =>
 export const removeContestParticipant = (contestId, entryId) =>
   api.delete(`/contests/${contestId}/participants/${entryId}`);
 
+// Contest co-organizers (per-contest management delegation)
+export const listContestOrganizers = (contestId) =>
+  api.get(`/contests/${contestId}/organizers`);
+export const addContestOrganizer = (contestId, userId) =>
+  api.post(`/contests/${contestId}/organizers`, { user_id: userId });
+export const removeContestOrganizer = (contestId, userId) =>
+  api.delete(`/contests/${contestId}/organizers/${userId}`);
+
 // Contest self-registration
 export const getMyContestRegistration = (contestId) =>
   api.get(`/contests/${contestId}/my-registration`);

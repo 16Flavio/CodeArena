@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   X, Upload, FileText, FileDown, Code, FileType, FlaskConical,
-  RefreshCw, Lock, Globe, Save, Trash2,
+  RefreshCw, Lock, Globe, Save, Trash2, UserCog, UserPlus,
 } from 'lucide-react';
 import {
   createContest, updateContest,
   uploadProblemStatement, deleteProblemStatement,
   rescoreContest, importDomjudgePackage, rejudgeAllIcpc,
+  listContestOrganizers, addContestOrganizer, removeContestOrganizer,
 } from '../../api';
 import AdminHints from '../AdminHints';
 import IcpcProblemsPanel from '../IcpcProblemsPanel';
@@ -78,6 +79,53 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
   const [rejudging, setRejudging] = useState(false);
   // "score" | "validate" | null - opens the test-scoring modal.
   const [testScoringMode, setTestScoringMode] = useState(null);
+  // Co-organizers (edit mode only). Every mutation endpoint returns the
+  // updated list, so local state is refreshed from the response.
+  const [organizers, setOrganizers] = useState([]);
+  const [organizerUserId, setOrganizerUserId] = useState('');
+
+  useEffect(() => {
+    if (!initialContest) return undefined;
+    let cancelled = false;
+    listContestOrganizers(initialContest.id)
+      .then(({ data }) => {
+        if (!cancelled) setOrganizers(data);
+      })
+      .catch((err) => {
+        if (!cancelled) toast.error(extractErrorMessage(err, t('admin.organizers.toastLoadFailed')));
+      });
+    return () => { cancelled = true; };
+    // Modal is remounted per open; fetch once for the contest being edited.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialContest?.id]);
+
+  const handleAddOrganizer = async () => {
+    if (!contest || !organizerUserId) return;
+    try {
+      const { data } = await addContestOrganizer(contest.id, parseInt(organizerUserId, 10));
+      setOrganizers(data);
+      setOrganizerUserId('');
+      toast.success(t('admin.organizers.toastAdded'));
+    } catch (err) {
+      toast.error(extractErrorMessage(err, t('admin.organizers.toastFailed')));
+    }
+  };
+
+  const handleRemoveOrganizer = async (org) => {
+    if (!contest) return;
+    const ok = await confirm({
+      message: t('admin.organizers.confirmRemove', { username: org.username }),
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      const { data } = await removeContestOrganizer(contest.id, org.user_id);
+      setOrganizers(data);
+      toast.success(t('admin.organizers.toastRemoved'));
+    } catch (err) {
+      toast.error(extractErrorMessage(err, t('admin.organizers.toastFailed')));
+    }
+  };
 
   const handleContestSubmit = async (e) => {
     e.preventDefault();
@@ -826,6 +874,74 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                 <IcpcProblemsPanel key={contest.id} contestId={contest.id} />
                 <IcpcStatsPanel key={`stats-${contest.id}`} contestId={contest.id} />
               </>
+            )}
+
+            {contest && (
+              <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 space-y-3 dark:bg-zinc-800/30 dark:border-zinc-700/40">
+                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 flex items-center gap-2 dark:text-zinc-400">
+                  <UserCog className="w-4 h-4 text-accent-500 dark:text-accent-400" />
+                  {t('admin.organizers.title')}
+                </p>
+
+                {organizers.length === 0 ? (
+                  <p className="text-xs text-zinc-400 italic dark:text-zinc-600">
+                    {t('admin.organizers.empty')}
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {organizers.map((o) => (
+                      <span
+                        key={o.user_id}
+                        className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1 rounded-full bg-white border border-zinc-200 text-sm text-zinc-700 dark:bg-zinc-700/20 dark:border-zinc-700 dark:text-zinc-200"
+                      >
+                        <span className="font-medium">{o.username}</span>
+                        {o.is_owner ? (
+                          <span className="badge-admin">{t('admin.organizers.ownerBadge')}</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveOrganizer(o)}
+                            className="p-0.5 rounded-full hover:bg-red-500/10 text-zinc-400 hover:text-red-500 transition-colors dark:text-zinc-500 dark:hover:text-red-400"
+                            title={t('admin.organizers.removeTitle')}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <select
+                    className="input-field text-sm py-2 flex-1"
+                    value={organizerUserId}
+                    onChange={(e) => setOrganizerUserId(e.target.value)}
+                  >
+                    <option value="">{t('admin.organizers.pickUser')}</option>
+                    {(users || [])
+                      .filter((u) => (u.is_organizer || u.is_admin)
+                        && !organizers.some((o) => o.user_id === u.id))
+                      .map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.username} ({u.email})
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleAddOrganizer}
+                    disabled={!organizerUserId}
+                    className="btn-primary text-sm py-2 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <UserPlus className="w-4 h-4 mr-1 inline" />
+                    {t('admin.organizers.addButton')}
+                  </button>
+                </div>
+                <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                  {t('admin.organizers.hint')}
+                </p>
+              </div>
             )}
 
             {contest && !contestForm.is_public && (

@@ -162,6 +162,13 @@ class Contest(Base):
     # never added - the assignment silently vanished and every
     # organizer ownership check raised. Fixed with 2026_07_05_a1.
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # Co-organizers: extra users granted management rights on THIS
+    # contest (see ContestOrganizer). Lazy relationship on purpose -
+    # can_manage_contest reads it without a signature change, at the
+    # cost of one query per ownership check on a session-bound contest.
+    organizers = relationship(
+        "ContestOrganizer", cascade="all, delete-orphan",
+    )
     # Practice mode: users can still submit after end_time, but practice
     # submissions are excluded from the official scoreboard.
     practice_mode = Column(Boolean, default=False, nullable=False)
@@ -355,6 +362,25 @@ class ContestRegistration(Base):
         UniqueConstraint("contest_id", "user_id", name="uq_contest_registration_user"),
         UniqueConstraint("contest_id", "team_id", name="uq_contest_registration_team"),
     )
+
+
+class ContestOrganizer(Base):
+    """Co-organizer grant: (contest, user) pairs consulted by
+    ``can_manage_contest`` in addition to ``Contest.created_by``. The
+    user must also carry the global ``is_organizer`` flag - the grant
+    scopes WHICH contests an organizer manages, the flag says they may
+    manage any at all."""
+    __tablename__ = "contest_organizers"
+    __table_args__ = (
+        UniqueConstraint("contest_id", "user_id", name="uq_contest_organizer"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    contest_id = Column(Integer, ForeignKey("contests.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+    user = relationship("User")
 
 
 class ContestBan(Base):
