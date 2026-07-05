@@ -190,3 +190,49 @@ def test_league_published_gating(client):
     assert it["body"] == "Ev-1"
     # No contest_id: the client routes league items to /league.
     assert it["contest_id"] is None
+
+
+def test_activity_seen_hides_items(client):
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    cid, iid = _make_output_contest(client, admin)
+    client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
+
+    fd = {"file": ("s.txt", io.BytesIO(b"one"), "text/plain")}
+    r = client.post(f"/api/contests/{cid}/instances/{iid}/submit", headers=alice, files=fd)
+    assert r.status_code == 200, r.text
+    assert [it for it in _activity(client, alice) if it["kind"] == "my_result"]
+
+    # Mark seen: everything currently in the feed disappears.
+    r = client.post("/api/contests/activity/seen", headers=alice)
+    assert r.status_code == 200, r.text
+    assert not [it for it in _activity(client, alice) if it["kind"] == "my_result"]
+
+    # A new result after the mark shows up again.
+    fd = {"file": ("s.txt", io.BytesIO(b"two-longer"), "text/plain")}
+    r = client.post(f"/api/contests/{cid}/instances/{iid}/submit", headers=alice, files=fd)
+    assert r.status_code == 200, r.text
+    fresh = [it for it in _activity(client, alice) if it["kind"] == "my_result"]
+    assert len(fresh) == 1
+
+
+def test_activity_window_excludes_old_items(client):
+    from backend import database, models
+
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    cid, _ = _make_output_contest(client, admin)
+    uid = _user_id("alice")
+
+    # A result from 10 days ago sits outside the 7-day feed window.
+    sess = database.SessionLocal()
+    try:
+        sess.add(models.Submission(
+            contest_id=cid, submitted_by=uid, status="scored", score=3.0,
+            submitted_at=datetime.now(timezone.utc) - timedelta(days=10),
+        ))
+        sess.commit()
+    finally:
+        sess.close()
+
+    assert not [it for it in _activity(client, alice) if it["kind"] == "my_result"]

@@ -188,6 +188,7 @@ export const getSubmissionContent = (submissionId) =>
   api.get(`/contests/submissions/${submissionId}/content`);
 export const getMyActivity = (limit = 30) =>
   api.get('/contests/activity/mine', { params: { limit } });
+export const markActivitySeen = () => api.post('/contests/activity/seen');
 
 // Hints
 export const listHints = (contestId) => api.get(`/contests/${contestId}/hints`);

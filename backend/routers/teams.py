@@ -12,11 +12,14 @@ from ..email_utils import send_join_request_email
 
 router = APIRouter(prefix="/api/teams", tags=["teams"])
 
-MAX_TEAM_SIZE = 4
-
 
 def _utcnow():
     return datetime.now(timezone.utc)
+
+
+def _as_aware_utc(dt):
+    """SQLite hands naive datetimes back; treat them as UTC."""
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
 def _join_request_to_out(req: models.JoinRequest) -> schemas.JoinRequestOut:
@@ -56,6 +59,45 @@ def _user_team_membership(db: Session, user_id: int):
 
 
 ONE_TEAM_MSG = "Vous êtes déjà dans une équipe. Quittez-la avant d'en rejoindre une autre."
+
+
+def _binding_contest_cap(db: Session, team_id: int):
+    """The contest with the smallest ``max_team_size`` among those this team
+    is registered to and that are not finished yet, or None. Joining a team
+    must not push it past any such cap mid-contest; once a contest is over
+    its cap no longer binds."""
+    now = _utcnow()
+    rows = (
+        db.query(models.Contest)
+        .join(
+            models.ContestRegistration,
+            models.ContestRegistration.contest_id == models.Contest.id,
+        )
+        .filter(
+            models.ContestRegistration.team_id == team_id,
+            models.Contest.max_team_size.isnot(None),
+        )
+        .all()
+    )
+    binding = None
+    for c in rows:
+        if c.end_time is not None and _as_aware_utc(c.end_time) < now:
+            continue
+        if binding is None or c.max_team_size < binding.max_team_size:
+            binding = c
+    return binding
+
+
+def _check_contest_caps_for_join(db: Session, team_id: int, current_size: int):
+    binding = _binding_contest_cap(db, team_id)
+    if binding is not None and current_size >= binding.max_team_size:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Équipe complète pour « {binding.title} » "
+                f"(max {binding.max_team_size} membre(s) pour ce concours)"
+            ),
+        )
 
 
 def cleanup_team_after_membership_change(team_id: int, db: Session) -> str:
@@ -289,8 +331,7 @@ def join_team(
         .filter(models.TeamMember.team_id == team.id)
         .count()
     )
-    if member_count >= MAX_TEAM_SIZE:
-        raise HTTPException(status_code=400, detail=f"Équipe complète (max {MAX_TEAM_SIZE} membres)")
+    _check_contest_caps_for_join(db, team.id, member_count)
 
     membership = models.TeamMember(team_id=team.id, user_id=user.id, role="member")
     db.add(membership)
@@ -336,13 +377,37 @@ def browse_teams(
         .all()
     }
 
+    # There is no global size cap: a team is "full" only while it sits at
+    # the smallest max_team_size among its registrations to contests that
+    # have not ended. Computed in bulk to avoid a per-team query.
+    now = _utcnow()
+    caps: dict[int, int] = {}
+    cap_rows = (
+        db.query(
+            models.ContestRegistration.team_id,
+            models.Contest.max_team_size,
+            models.Contest.end_time,
+        )
+        .join(models.Contest, models.Contest.id == models.ContestRegistration.contest_id)
+        .filter(
+            models.ContestRegistration.team_id.isnot(None),
+            models.Contest.max_team_size.isnot(None),
+        )
+        .all()
+    )
+    for tid, cap, end in cap_rows:
+        if end is not None and _as_aware_utc(end) < now:
+            continue
+        if tid not in caps or cap < caps[tid]:
+            caps[tid] = cap
+
     teams = db.query(models.Team).order_by(models.Team.name.asc()).all()
     return [
         schemas.TeamBrowseOut(
             id=t.id,
             name=t.name,
             member_count=counts.get(t.id, 0),
-            is_full=counts.get(t.id, 0) >= MAX_TEAM_SIZE,
+            is_full=t.id in caps and counts.get(t.id, 0) >= caps[t.id],
             is_member=t.id in my_team_ids,
             has_pending_request=t.id in pending_team_ids,
             created_at=t.created_at,
@@ -452,8 +517,7 @@ def request_to_join(
             raise HTTPException(status_code=400, detail="Vous êtes déjà membre de cette équipe")
         raise HTTPException(status_code=400, detail=ONE_TEAM_MSG)
 
-    if len(team.members) >= MAX_TEAM_SIZE:
-        raise HTTPException(status_code=400, detail=f"Équipe complète (max {MAX_TEAM_SIZE} membres)")
+    _check_contest_caps_for_join(db, team_id, len(team.members))
 
     existing = (
         db.query(models.JoinRequest)
@@ -529,8 +593,7 @@ def accept_request(
         .filter(models.TeamMember.team_id == req.team_id)
         .count()
     )
-    if current_size >= MAX_TEAM_SIZE:
-        raise HTTPException(status_code=400, detail=f"Équipe complète (max {MAX_TEAM_SIZE} membres)")
+    _check_contest_caps_for_join(db, req.team_id, current_size)
 
     db.add(models.TeamMember(team_id=req.team_id, user_id=req.user_id, role="member"))
     req.status = "accepted"
