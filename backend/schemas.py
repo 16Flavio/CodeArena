@@ -248,13 +248,20 @@ class TestScoringResult(BaseModel):
 # ── Rankings ──────────────────────────────────────────────────────────────────
 
 class TeamContestRanking(BaseModel):
-    team_id: int
+    # None for solo participation.
+    team_id: Optional[int] = None
     team_name: str
     contest_id: int
     contest_title: str
+    # "output" or "icpc" - the frontend formats the score accordingly
+    # (points vs problems solved).
+    kind: str = "output"
     rank: int
     total_teams: int
     total_score: float
+    # ICPC only: problems solved / penalty minutes behind the rank.
+    solved: Optional[int] = None
+    penalty: Optional[int] = None
 
 
 # ── Audit log ─────────────────────────────────────────────────────────────────

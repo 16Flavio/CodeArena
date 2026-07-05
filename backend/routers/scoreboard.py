@@ -300,19 +300,19 @@ def _build_scoreboard(
 # ── SSE stream ────────────────────────────────────────────────────────────────
 
 async def _scoreboard_sse(
-    contest_id: int,
-    user: models.User,
+    fetch,
     db_factory,
     poll_seconds: float = 5.0,
 ):
     """Generator that yields the scoreboard JSON on change, keeping the
-    connection alive with periodic comments."""
+    connection alive with periodic comments. ``fetch(db)`` returns the
+    kind-appropriate scoreboard payload."""
     last_payload = None
     last_ping = time.monotonic()
     while True:
         db = db_factory()
         try:
-            payload = get_scoreboard(contest_id=contest_id, user=user, db=db)  # type: ignore
+            payload = fetch(db)
             body = payload.model_dump_json()
         except HTTPException as e:
             yield f"event: error\ndata: {json.dumps({'detail': e.detail})}\n\n"
@@ -343,8 +343,19 @@ async def stream_scoreboard(
 
     from ..database import SessionLocal
 
+    # One stream URL for both kinds - the payload shape follows the
+    # contest's kind, exactly like the polling endpoints.
+    if (contest.kind or "output") == "icpc":
+        from .icpc import icpc_scoreboard
+
+        def fetch(db_):
+            return icpc_scoreboard(contest_id=contest_id, user=user, db=db_)  # type: ignore
+    else:
+        def fetch(db_):
+            return get_scoreboard(contest_id=contest_id, user=user, db=db_)  # type: ignore
+
     return StreamingResponse(
-        _scoreboard_sse(contest_id, user, SessionLocal),
+        _scoreboard_sse(fetch, SessionLocal),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

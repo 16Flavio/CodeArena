@@ -570,7 +570,9 @@
     "nextUp": "Next up",
     "leagueTeaser": "Your season points and the class's yearly standings.",
     "leagueCta": "View the league standings",
-    "dayUnit": "d"
+    "dayUnit": "d",
+    "icpcSolved": "{{n}} AC",
+    "icpcPenaltyTitle": "Penalty: {{n}} minutes"
   },
   "landing": {
     "welcome": "Welcome to CodeArena",
