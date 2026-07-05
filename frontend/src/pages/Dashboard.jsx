@@ -385,9 +385,18 @@ export default function Dashboard() {
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400">
                         {t('dashboard.rankOf', { rank: r.rank, total: r.total_teams })}{' '}
-                        <span className="font-mono tabular-nums font-semibold text-zinc-700 dark:text-zinc-300" title={formatScoreFull(r.total_score)}>
-                          {formatScore(r.total_score)}
-                        </span>
+                        {r.kind === 'icpc' ? (
+                          <span
+                            className="font-mono tabular-nums font-semibold text-zinc-700 dark:text-zinc-300"
+                            title={t('dashboard.icpcPenaltyTitle', { n: r.penalty ?? 0 })}
+                          >
+                            {t('dashboard.icpcSolved', { n: r.solved ?? 0 })}
+                          </span>
+                        ) : (
+                          <span className="font-mono tabular-nums font-semibold text-zinc-700 dark:text-zinc-300" title={formatScoreFull(r.total_score)}>
+                            {formatScore(r.total_score)}
+                          </span>
+                        )}
                       </p>
                     </div>
                   </Link>

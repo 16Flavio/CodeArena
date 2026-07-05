@@ -570,7 +570,9 @@
     "nextUp": "Prochain rendez-vous",
     "leagueTeaser": "Vos points de saison et le classement annuel de la classe.",
     "leagueCta": "Voir le classement de la ligue",
-    "dayUnit": "j"
+    "dayUnit": "j",
+    "icpcSolved": "{{n}} AC",
+    "icpcPenaltyTitle": "Pénalité : {{n}} minutes"
   },
   "landing": {
     "welcome": "Bienvenue sur CodeArena",

@@ -1,12 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { RefreshCw, CheckCircle, Snowflake, FileSpreadsheet, Sparkles } from 'lucide-react';
+import {
+  RefreshCw, CheckCircle, Snowflake, FileSpreadsheet, Sparkles, Trophy, AlertCircle,
+} from 'lucide-react';
 import { textOn } from '../utils/contrast';
-import { getIcpcScoreboard, icpcScoreboardCsvUrl, openStatementPdf } from '../api';
+import {
+  getIcpcScoreboard, icpcScoreboardCsvUrl, openStatementPdf,
+  getContests, getContest, getMyTeams, getStreamTicket, scoreboardStreamUrl,
+} from '../api';
 import { useAuth } from '../AuthContext';
 import { getToken } from '../utils/tokenStore';
+import { formatDateTime, backendIsoMs } from '../utils/datetime';
 import PageHeader from './PageHeader';
 
 const MEDALS = [
@@ -14,20 +20,48 @@ const MEDALS = [
   'text-zinc-400 dark:text-zinc-300',
   'text-amber-600',
 ];
+const MEDAL_BG = [
+  'bg-yellow-400/10 border-yellow-400/30',
+  'bg-zinc-300/10 border-zinc-400/30',
+  'bg-amber-600/10 border-amber-600/30',
+];
 
 export default function IcpcScoreboard({ contestId }) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
+  const [contests, setContests] = useState([]);
+  const [contest, setContest] = useState(null);
+  const [myTeamIds, setMyTeamIds] = useState(() => new Set());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const hasLoadedOnce = useRef(false);
+  // ``now`` ticks every 30s so the admin freeze banner stays in sync
+  // with the wall clock without calling Date.now() from render
+  // (impurity warning under react-hooks/purity).
+  const [now, setNow] = useState(() => Date.now());
 
-  const refresh = (showToast = false) => {
+  useEffect(() => {
+    const tickId = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(tickId);
+  }, []);
+
+  const fetchData = (showToast = false) => {
     getIcpcScoreboard(contestId)
       .then((r) => {
+        hasLoadedOnce.current = true;
         setData(r.data);
+        setError(false);
+        setLastUpdate(new Date());
         if (showToast) toast.success(t('scoreboard.refreshed'));
       })
-      .catch(() => toast.error(t('scoreboard.refreshFailed')))
+      .catch(() => {
+        if (!hasLoadedOnce.current) setError(true);
+        toast.error(t('scoreboard.refreshFailed'));
+      })
       .finally(() => setLoading(false));
   };
 
@@ -53,15 +87,85 @@ export default function IcpcScoreboard({ contestId }) {
   };
 
   useEffect(() => {
-    refresh();
-    const id = setInterval(refresh, 15000);
-    return () => clearInterval(id);
+    hasLoadedOnce.current = false;
+    // Resetting state when the contest changes IS the intended behaviour -
+    // we want the spinner + cleared data while the new contest's
+    // scoreboard loads. The cascading-render warning is a generic
+    // recommendation, not applicable here.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setLoading(true);
+    setError(false);
+    setData(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
+    getContests().then((r) => setContests(r.data)).catch(() => {});
+    // The scoreboard payload has no freeze/end timestamps - fetch the
+    // contest once for the freeze banners.
+    getContest(contestId).then((r) => setContest(r.data)).catch(() => {});
+    getMyTeams()
+      .then((r) => setMyTeamIds(new Set(r.data.map((tm) => tm.id))))
+      .catch(() => {});
+    fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contestId]);
 
+  // Prefer Server-Sent Events: the backend pushes updates on change (no
+  // client-side polling). Fall back to fetchData if the EventSource errors,
+  // or if autoRefresh is off (then no background refresh at all).
+  useEffect(() => {
+    if (!autoRefresh) return undefined;
+
+    let source;
+    let pollInterval;
+    let cancelled = false;
+
+    const onMessage = (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        hasLoadedOnce.current = true;
+        setData(payload);
+        setError(false);
+        setLastUpdate(new Date());
+      } catch {
+        /* malformed event; ignore */
+      }
+    };
+
+    // Fetch a short-lived stream ticket (sent with the normal Bearer header)
+    // and open the EventSource with that instead of the long-lived session
+    // token - EventSource can't set headers, so the ticket is the only thing
+    // that lands in the URL, and it expires in ~60s.
+    getStreamTicket()
+      .then((r) => {
+        if (cancelled) return;
+        const ticket = r.data.ticket;
+        const url = `${scoreboardStreamUrl(contestId)}?token=${encodeURIComponent(ticket)}`;
+        source = new EventSource(url, { withCredentials: false });
+        source.onmessage = onMessage;
+        source.onerror = () => {
+          // Server closed the stream or the ticket expired. Fall back to one
+          // refresh via the normal GET so the UI doesn't stall.
+          source.close();
+          if (!cancelled) fetchData();
+        };
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // No EventSource / couldn't get a ticket - degrade to polling.
+        fetchData();
+        pollInterval = setInterval(() => fetchData(), 10000);
+      });
+
+    return () => {
+      cancelled = true;
+      if (source) source.close();
+      if (pollInterval) clearInterval(pollInterval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRefresh, contestId]);
+
   // For each problem, find the team that solved it first (lowest
   // first_solve_minutes; ties broken by row order = scoreboard rank).
-  // Memo so a 15s refresh doesn't reshuffle on equal data.
+  // Memo so a refresh doesn't reshuffle on equal data.
   const firstSolvers = useMemo(() => {
     if (!data) return {};
     const out = {};  // problem label -> row key (team_name + kind)
@@ -81,13 +185,34 @@ export default function IcpcScoreboard({ contestId }) {
     return out;
   }, [data]);
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
+
+  if (error || !data) {
+    return (
+      <div className="card p-12 text-center">
+        <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4 dark:text-amber-400" />
+        <h3 className="text-xl font-bold text-zinc-900 mb-2 dark:text-white">
+          {error ? t('scoreboard.loadFailedHeading') : t('contest.notFoundHeading')}
+        </h3>
+        {error && (
+          <button onClick={() => fetchData(true)} className="btn-primary text-sm mt-2">
+            {t('common.retry')}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  const isUserRow = (row) => (
+    (row.team_id != null && myTeamIds.has(row.team_id))
+    || (row.kind === 'solo' && row.team_name === user?.username)
+  );
 
   return (
     <div className="animate-fade-in">
@@ -97,19 +222,60 @@ export default function IcpcScoreboard({ contestId }) {
       <PageHeader
         eyebrow={t('scoreboard.title')}
         title={data.contest_title}
-        description={t('icpcScoreboard.subtitle')}
+        description={lastUpdate
+          ? t('scoreboard.lastUpdate', { time: lastUpdate.toLocaleTimeString() })
+          : t('icpcScoreboard.subtitle')}
         actions={(
           <div className="flex items-center gap-2 flex-wrap justify-end">
-            <Link to={`/contests/${contestId}`} className="btn-secondary text-sm">
+            <div className="relative">
+              <select
+                className="input-field pr-10 text-sm py-2"
+                value={contestId}
+                onChange={(e) => navigate(`/scoreboard/${e.target.value}`)}
+                aria-label={t('scoreboard.changeContest')}
+              >
+                {contests.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Link to={`/contests/${contestId}`} className="btn-secondary text-sm py-2 px-3">
               {t('icpcScoreboard.backToContest')}
             </Link>
-            <button onClick={() => refresh(true)} className="btn-secondary text-sm" title={t('common.refresh')}>
+
+            <button
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                autoRefresh
+                  ? 'bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400'
+                  : 'bg-zinc-100 text-zinc-500 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'
+              }`}
+              title={autoRefresh ? t('scoreboard.liveOn') : t('scoreboard.liveOff')}
+              aria-pressed={autoRefresh}
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`}
+                style={autoRefresh ? { animationDuration: '3s' } : {}}
+              />
+              {t('scoreboard.live')}
+            </button>
+
+            <button
+              onClick={() => fetchData(true)}
+              className="btn-secondary text-sm py-2 px-3"
+              title={t('scoreboard.refresh')}
+              aria-label={t('scoreboard.refresh')}
+            >
               <RefreshCw className="w-4 h-4" />
             </button>
+
             {user?.is_admin && (
               <button
                 onClick={downloadCsv}
-                className="btn-secondary text-sm"
+                className="btn-secondary text-sm py-2 px-3"
                 title={t('scoreboard.exportCsv')}
                 aria-label={t('scoreboard.exportCsv')}
               >
@@ -119,7 +285,7 @@ export default function IcpcScoreboard({ contestId }) {
             {user?.is_admin && (
               <Link
                 to={`/scoreboard/${contestId}/presentation`}
-                className="btn-secondary text-sm bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                className="btn-secondary text-sm py-2 px-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 border-amber-500/30 dark:text-amber-300"
                 title={t('presentation.entryTooltip')}
                 aria-label={t('presentation.entryTooltip')}
               >
@@ -130,6 +296,56 @@ export default function IcpcScoreboard({ contestId }) {
         )}
       />
 
+      <div className="space-y-6">
+      {data.frozen && (
+        <div className="card p-4 border border-sky-500/30 flex items-start gap-3 bg-sky-500/5">
+          <Snowflake className="w-5 h-5 text-sky-600 flex-shrink-0 mt-0.5 dark:text-sky-400" />
+          <div className="text-sm">
+            <p className="font-semibold text-zinc-900 dark:text-white">
+              {t('scoreboard.frozenTitle', {
+                since: contest?.freeze_scoreboard_at
+                  ? t('scoreboard.frozenSince', { time: formatDateTime(contest.freeze_scoreboard_at) })
+                  : '',
+              })}
+            </p>
+            <p className="text-zinc-600 dark:text-zinc-400 mt-0.5">
+              {t('scoreboard.frozenBody', {
+                endPart: contest?.end_time ? ` (${formatDateTime(contest.end_time)})` : '',
+              })}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Admins see the live scoreboard even when the freeze would otherwise apply. */}
+      {!data.frozen && contest?.freeze_scoreboard_at && user?.is_admin && (() => {
+        const freezeMs = backendIsoMs(contest.freeze_scoreboard_at);
+        const endMs = backendIsoMs(contest.end_time);
+        const active = freezeMs <= now && (!endMs || now < endMs);
+        if (!active) return null;
+        return (
+          <div className="card p-4 border border-amber-500/30 flex items-start gap-3 bg-amber-500/5">
+            <Snowflake className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5 dark:text-amber-400" />
+            <div className="text-sm">
+              <p className="font-semibold text-zinc-900 dark:text-white">{t('scoreboard.adminView')}</p>
+              <p className="text-zinc-600 dark:text-zinc-400 mt-0.5">
+                {t('scoreboard.adminViewBody', { time: formatDateTime(contest.freeze_scoreboard_at) })}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
+
+      {data.rows.length === 0 ? (
+        <div className="card p-12 text-center">
+          <Trophy className="w-14 h-14 text-zinc-300 mx-auto mb-4 dark:text-zinc-600" />
+          <h3 className="text-xl font-bold text-zinc-900 mb-2 dark:text-white">{t('scoreboard.noSubmissions')}</h3>
+          <p className="text-zinc-500 dark:text-zinc-400">{t('scoreboard.noSubmissionsBody')}</p>
+          <Link to={`/contests/${contestId}`} className="btn-primary text-sm mt-4 inline-block">
+            {t('scoreboard.goToContest')}
+          </Link>
+        </div>
+      ) : (
       <div className="card overflow-hidden">
         {/* The thead is sticky within the card's own scroll container
             (the horizontal-overflow wrapper the wide ICPC table needs
@@ -173,18 +389,37 @@ export default function IcpcScoreboard({ contestId }) {
             </tr>
           </thead>
           <tbody>
-            {data.rows.map((row, idx) => (
+            {data.rows.map((row, idx) => {
+              const mine = isUserRow(row);
+              // The rank/team cells are row-sticky, so they need an opaque
+              // background - the translucent accent wash used on the rest
+              // of the row would let scrolled cells bleed through.
+              const stickyBg = mine
+                ? 'bg-accent-50 dark:bg-accent-950 group-hover:bg-accent-100 dark:group-hover:bg-accent-900'
+                : 'bg-white dark:bg-zinc-900 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800';
+              return (
               <tr
                 key={`${row.team_id || row.team_name}-${idx}`}
-                className="group border-t border-zinc-100 dark:border-zinc-800/30 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
+                className={`group border-t border-zinc-100 dark:border-zinc-800/30 transition-colors ${
+                  mine ? 'bg-accent-500/5 hover:bg-accent-500/10' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/40'
+                }`}
               >
-                <td className="py-2 px-3 font-mono tabular-nums sticky left-0 bg-white dark:bg-zinc-900 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800 transition-colors w-12 min-w-[48px]">
-                  <span className={idx < 3 ? MEDALS[idx] : 'text-zinc-500 dark:text-zinc-500'}>
-                    {idx + 1}
-                  </span>
+                <td className={`py-2 px-3 font-mono tabular-nums sticky left-0 ${stickyBg} transition-colors w-12 min-w-[48px]`}>
+                  {idx < 3 ? (
+                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center border ${MEDAL_BG[idx]}`}>
+                      <span className={`font-bold text-xs ${MEDALS[idx]}`}>{idx + 1}</span>
+                    </div>
+                  ) : (
+                    <span className="text-zinc-500 dark:text-zinc-500">{idx + 1}</span>
+                  )}
                 </td>
-                <td className="py-2 px-3 font-medium text-zinc-900 dark:text-white sticky left-12 bg-white dark:bg-zinc-900 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800 transition-colors max-w-[140px] sm:max-w-none truncate">
+                <td className={`py-2 px-3 font-medium sticky left-12 ${stickyBg} transition-colors max-w-[140px] sm:max-w-none truncate ${
+                  mine ? 'text-accent-700 dark:text-accent-300' : 'text-zinc-900 dark:text-white'
+                }`}>
                   {row.team_name}
+                  {mine && (
+                    <span className="ml-2 text-xs text-accent-500 font-normal dark:text-accent-400">{t('scoreboard.youTag')}</span>
+                  )}
                   {row.affiliation_name && (
                     <span
                       className="ml-2 inline-block text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
@@ -290,17 +525,13 @@ export default function IcpcScoreboard({ contestId }) {
                   );
                 })}
               </tr>
-            ))}
-            {data.rows.length === 0 && (
-              <tr>
-                <td colSpan={4 + data.problems.length} className="py-10 text-center text-zinc-400 italic dark:text-zinc-600">
-                  {t('icpcScoreboard.empty')}
-                </td>
-              </tr>
-            )}
+              );
+            })}
           </tbody>
         </table>
         </div>
+      </div>
+      )}
       </div>
     </div>
   );
