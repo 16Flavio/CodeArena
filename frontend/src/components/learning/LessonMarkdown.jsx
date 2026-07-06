@@ -34,7 +34,7 @@ const REHYPE_PLUGINS = [rehypeKatex];
 //   :::viz-sort{algo="bubble" data="[5,2,8,1]"}
 //   :::
 
-function buildPlugin(knownDirectives) {
+function buildPlugin(knownDirectives, widgetsReady) {
   return function remarkLearningWidgets() {
     return (tree) => {
       visit(tree, (node) => {
@@ -44,8 +44,18 @@ function buildPlugin(knownDirectives) {
           node.type === 'textDirective'
         ) {
           if (!knownDirectives.has(node.name)) {
-            // Unknown directive - render as plain text so authors see
-            // their typo rather than silently dropping content.
+            // The common authoring shape is an EMPTY container
+            // (":::viz-x{...}" + ":::"), which has no children, so an
+            // unmatched name would render nothing at all. Once the DB
+            // widget list is loaded, surface the raw directive name so
+            // authors see their typo. While the list is still loading,
+            // stay silent to avoid flashing ":::viz-x" on cold render.
+            if (widgetsReady) {
+              const data = node.data ?? (node.data = {});
+              data.hName = 'code';
+              data.hProperties = { className: 'learning-unknown-directive' };
+              node.children = [{ type: 'text', value: `:::${node.name}` }];
+            }
             return;
           }
           const data = node.data ?? (node.data = {});
@@ -72,11 +82,15 @@ export default function LessonMarkdown({ children }) {
   // Hydrate the DB widget list once at mount and subscribe to changes
   // so an admin save updates open lesson previews live.
   const [dbWidgets, setDbWidgets] = useState(() => getCachedSync() || []);
+  const [widgetsReady, setWidgetsReady] = useState(() => !!getCachedSync());
 
   useEffect(() => {
     let cancelled = false;
     loadWidgets().then((list) => {
-      if (!cancelled) setDbWidgets(list);
+      if (!cancelled) {
+        setDbWidgets(list);
+        setWidgetsReady(true);
+      }
     });
     const unsubscribe = subscribe((list) => {
       if (!cancelled) setDbWidgets(list);
@@ -125,8 +139,8 @@ export default function LessonMarkdown({ children }) {
   }, [dbWidgets]);
 
   const remarkPlugins = useMemo(
-    () => [remarkGfm, remarkMath, remarkDirective, buildPlugin(knownDirectives)],
-    [knownDirectives],
+    () => [remarkGfm, remarkMath, remarkDirective, buildPlugin(knownDirectives, widgetsReady)],
+    [knownDirectives, widgetsReady],
   );
 
   return (

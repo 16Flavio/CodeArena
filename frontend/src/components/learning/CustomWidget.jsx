@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../ThemeContext';
 
 /**
  * Renders an admin-authored widget (stored in DB as ``html_template``)
@@ -12,12 +13,24 @@ import { useTranslation } from 'react-i18next';
  *     It cannot read the parent's localStorage / cookies, so even
  *     wildly malicious widget code cannot lift the JWT.
  *   - We serve the iframe via a ``data:text/html`` URL rather than
- *     ``srcdoc``. Why: ``srcdoc`` inherits the parent's CSP, and our
- *     parent forbids inline scripts (``script-src 'self'``), which
- *     would block every ``<script>`` inside the widget. ``data:``
- *     URLs load with their own (empty) policy - the parent CSP does
- *     not transfer - so widget scripts can run. The sandbox attribute
- *     keeps the iframe in an opaque origin regardless.
+ *     ``srcdoc``. Why: ``srcdoc`` inherits the parent's CSP, so widget
+ *     scripts would only run as long as the deployment CSP happens to
+ *     allow inline scripts. ``data:`` URLs load with their own (empty)
+ *     policy - the parent CSP does not transfer - so widget scripts
+ *     run regardless of how strict the edge CSP is. The sandbox
+ *     attribute keeps the iframe in an opaque origin either way.
+ *
+ * Theming: the app's dark mode is class-based (``darkMode: 'class'``
+ * in tailwind.config.js, user-toggleable) and does NOT follow the OS
+ * preference, so ``prefers-color-scheme`` inside the iframe is wrong.
+ * We stamp the current app theme as a class on the iframe's <html>
+ * and scope all dark styles to ``html.dark``; the data URI includes
+ * the theme so toggling rebuilds the iframe.
+ *
+ * Sizing: widget content height varies (controls wrap on narrow
+ * viewports), so a fixed height clips. The injected resize helper
+ * posts the document height to the parent (postMessage works from an
+ * opaque origin) and we track it, clamped to sane bounds.
  *
  * Params injection: the directive's attributes (``algo="bubble"`` …)
  * land here as React props. We serialize them to JSON and surface
@@ -26,6 +39,25 @@ import { useTranslation } from 'react-i18next';
  */
 export default function CustomWidget({ template = '', height = '400', __title = '', ...params }) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const iframeRef = useRef(null);
+  const [autoHeight, setAutoHeight] = useState(null);
+
+  // Listen for the resize helper's height reports. Filter by source so
+  // several widgets on one page don't cross-talk.
+  useEffect(() => {
+    const onMessage = (e) => {
+      if (e.source !== iframeRef.current?.contentWindow) return;
+      const d = e.data;
+      if (!d || d.type !== 'learning-widget-height') return;
+      const h = Number(d.height);
+      if (Number.isFinite(h) && h > 0) {
+        setAutoHeight(Math.max(120, Math.min(800, Math.ceil(h))));
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
 
   // JSON-serialise the directive attrs. Strings / numbers / arrays
   // are fine; nested objects are unusual in directive attrs but
@@ -54,7 +86,7 @@ export default function CustomWidget({ template = '', height = '400', __title = 
   // returns the inline SVG markup for the standard Lucide icons used
   // throughout (play, pause, step, reset, plus, minus).
   const COMMON_STYLE = `
-    html, body { margin: 0; padding: 0; height: 100%; box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; box-sizing: border-box; }
     *, *::before, *::after { box-sizing: inherit; }
     body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
            color: #18181b; background: transparent; padding: 14px 16px; font-size: 13px; }
@@ -99,18 +131,16 @@ export default function CustomWidget({ template = '', height = '400', __title = 
                  font-size: 12px; color: #325575; min-height: 16px;
                  text-align: center; margin-top: 10px; }
 
-    @media (prefers-color-scheme: dark) {
-      body { color: #e4e4e7; }
-      .btn-icon-secondary { background: #3f3f46; color: #e4e4e7; }
-      .btn-icon-secondary:hover:not(:disabled) { background: #52525b; }
-      .form-input, input[type="number"], input[type="text"] {
-        background: #27272a; border-color: #52525b; color: #e4e4e7;
-      }
-      label.field { color: #a1a1aa; }
-      .meta-row { color: #a1a1aa; }
-      .meta-row b { color: #e4e4e7; }
-      .info-line { color: #9cbbd6; }
+    html.dark body { color: #e4e4e7; }
+    html.dark .btn-icon-secondary { background: #3f3f46; color: #e4e4e7; }
+    html.dark .btn-icon-secondary:hover:not(:disabled) { background: #52525b; }
+    html.dark .form-input, html.dark input[type="number"], html.dark input[type="text"] {
+      background: #27272a; border-color: #52525b; color: #e4e4e7;
     }
+    html.dark label.field { color: #a1a1aa; }
+    html.dark .meta-row { color: #a1a1aa; }
+    html.dark .meta-row b { color: #e4e4e7; }
+    html.dark .info-line { color: #9cbbd6; }
   `;
 
   // Inline Lucide-style icons. We expose them via ``window.__svg(name)``
@@ -133,24 +163,49 @@ export default function CustomWidget({ template = '', height = '400', __title = 
     };
   `;
 
+  // Reports the document height to the parent so the iframe can size
+  // itself to its content (appended after the template so it observes
+  // the final DOM).
+  const RESIZE_HELPER = `
+    (function () {
+      function post() {
+        var h = Math.max(
+          document.documentElement.scrollHeight,
+          document.body ? document.body.scrollHeight : 0
+        );
+        parent.postMessage({ type: 'learning-widget-height', height: h }, '*');
+      }
+      if (window.ResizeObserver) {
+        new ResizeObserver(post).observe(document.documentElement);
+        if (document.body) new ResizeObserver(post).observe(document.body);
+      }
+      window.addEventListener('load', post);
+      setTimeout(post, 50);
+    })();
+  `;
+
   // Build the iframe URL. We assemble the full HTML, then encode it as
   // a ``data:`` URI. ``encodeURIComponent`` handles non-ASCII (math
   // glyphs, accents) correctly without depending on ``btoa`` quirks.
   const dataUri = useMemo(() => {
+    // JSON.stringify does not escape "<", so a param containing
+    // "</script>" would terminate the injection script tag early.
+    const safeParamsJson = paramsJson.replace(/</g, '\\u003c');
     const html = [
       '<!DOCTYPE html>',
-      '<html lang="fr"><head>',
+      `<html lang="fr" class="${theme === 'dark' ? 'dark' : 'light'}"><head>`,
       '<meta charset="utf-8" />',
       `<style>${COMMON_STYLE}</style>`,
       `<script>${ICON_HELPER}</script>`,
       '</head><body>',
       // Inject params before the template so the user's <script> can read them.
-      `<script>window.__params = ${paramsJson};</script>`,
+      `<script>window.__params = ${safeParamsJson};</script>`,
       template,
+      `<script>${RESIZE_HELPER}</script>`,
       '</body></html>',
     ].join('\n');
     return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
-  }, [template, paramsJson, COMMON_STYLE, ICON_HELPER]);
+  }, [template, paramsJson, theme, COMMON_STYLE, ICON_HELPER, RESIZE_HELPER]);
 
   if (!template) {
     return (
@@ -160,8 +215,10 @@ export default function CustomWidget({ template = '', height = '400', __title = 
     );
   }
 
-  const safeHeight = /^\d+(px|%)?$/.test(String(height)) ? height : '400';
-  const heightCss = String(safeHeight).match(/(px|%)$/) ? safeHeight : `${safeHeight}px`;
+  // Initial height until the resize helper reports the real content
+  // height ("%" is rejected: it collapses inside the auto-height wrapper).
+  const safeHeight = /^\d+(px)?$/.test(String(height)) ? String(height).replace(/px$/, '') : '400';
+  const heightCss = autoHeight != null ? `${autoHeight}px` : `${safeHeight}px`;
 
   // Same outer chrome as the built-in ``SortViz`` (rounded-lg border,
   // header with accent uppercase title) so the learning zone reads
@@ -177,6 +234,7 @@ export default function CustomWidget({ template = '', height = '400', __title = 
         </div>
       )}
       <iframe
+        ref={iframeRef}
         title={__title || t('learn.widget.customIframeTitle')}
         src={dataUri}
         sandbox="allow-scripts"

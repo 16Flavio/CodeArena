@@ -16,10 +16,8 @@
   .qs-bar.sorted   { background: #15803d; }
   .qs-bar.pivot > span, .qs-bar.placed > span, .qs-bar.sorted > span,
   .qs-bar.le-pivot > span, .qs-bar.gt-pivot > span { color: white; bottom: 4px; top: auto; }
-  @media (prefers-color-scheme: dark) {
-    .qs-bar { background: #52525b; }
-    .qs-bar > span { color: #e4e4e7; }
-  }
+  html.dark .qs-bar { background: #52525b; }
+  html.dark .qs-bar > span { color: #e4e4e7; }
 </style>
 <div class="stage">
   <div class="qs-bars" id="bars"></div>
@@ -136,13 +134,15 @@
     if (timer) return;
     document.getElementById('run').disabled = true;
     document.getElementById('pause').disabled = false;
-    var speed = +document.getElementById('speed').value;
+    // Read the slider on every tick so dragging it mid-playback takes
+    // effect immediately.
+    var speed = function () { return +document.getElementById('speed').value; };
     var tick = function () {
       step();
       if (idx >= steps.length - 1) { pause(); return; }
-      timer = setTimeout(tick, speed);
+      timer = setTimeout(tick, speed());
     };
-    timer = setTimeout(tick, speed);
+    timer = setTimeout(tick, speed());
   }
 
   function pause() {

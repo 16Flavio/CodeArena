@@ -5,10 +5,8 @@
   .legend span { display: inline-flex; align-items: center; gap: 4px; }
   .swatch { display: inline-block; width: 14px; height: 3px; border-radius: 2px; }
   .nval { font-weight: 700; color: #3a6690; min-width: 36px; display: inline-block; text-align: right; }
-  @media (prefers-color-scheme: dark) {
-    .legend { color: #a1a1aa; }
-    .nval { color: #9cbbd6; }
-  }
+  html.dark .legend { color: #a1a1aa; }
+  html.dark .nval { color: #9cbbd6; }
 </style>
 <div class="stage">
   <canvas id="cv" width="600" height="280"></canvas>
@@ -40,7 +38,9 @@
   }).join('');
 
   function isDark() {
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // The app theme is stamped as a class on the iframe's <html>
+    // (the OS preference is irrelevant: the app theme is user-toggled).
+    return document.documentElement.classList.contains('dark');
   }
 
   function draw() {

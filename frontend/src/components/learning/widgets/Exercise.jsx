@@ -45,7 +45,11 @@ export default function Exercise({ id }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [id, t]);
+    // ``t`` is deliberately NOT a dependency: react-i18next hands out a
+    // new identity on language change, and re-running this effect would
+    // refetch and wipe the student's in-progress code with the starter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const handleRun = async () => {
     if (!exercise) return;
@@ -192,7 +196,13 @@ export default function Exercise({ id }) {
               <pre className="mt-1 bg-zinc-50 dark:bg-zinc-900 rounded p-2 overflow-x-auto text-zinc-700 dark:text-zinc-300">{result.compile_output}</pre>
             </details>
           )}
-          {result.results.map((r, i) => (
+          {result.results.map((r, i) => {
+            // Number samples and hidden tests independently: with 2
+            // samples + 3 hidden, the hidden ones read #1..#3, not #3..#5.
+            const n = result.results
+              .slice(0, i + 1)
+              .filter((x) => x.is_sample === r.is_sample).length;
+            return (
             <div key={i} className={`flex items-start gap-2 text-sm rounded p-2 ${
               r.passed
                 ? 'bg-emerald-50 dark:bg-emerald-950/20'
@@ -204,8 +214,8 @@ export default function Exercise({ id }) {
               <div className="flex-1 min-w-0 space-y-1">
                 <div className="font-medium text-zinc-700 dark:text-zinc-200">
                   {r.is_sample
-                    ? t('learn.widget.exercise.sampleN', { n: i + 1 })
-                    : t('learn.widget.exercise.hiddenN', { n: i + 1 })}
+                    ? t('learn.widget.exercise.sampleN', { n })
+                    : t('learn.widget.exercise.hiddenN', { n })}
                   {r.runtime_ms ? ` · ${r.runtime_ms} ms` : ''}
                 </div>
                 {r.is_sample && !r.passed && r.actual !== undefined && (
@@ -229,7 +239,8 @@ export default function Exercise({ id }) {
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

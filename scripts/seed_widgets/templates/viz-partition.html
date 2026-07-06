@@ -4,7 +4,7 @@
   .pt-cell { min-width: 36px; height: 40px; display: flex; align-items: center; justify-content: center;
              border-radius: 6px; background: #d4d4d8; color: #3f3f46;
              font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 700;
-             transition: all 0.25s; }
+             transition: background 0.25s, color 0.25s, outline-color 0.25s; }
   .pt-cell.le { background: #4b7ca8; color: white; }
   .pt-cell.gt { background: #a1a1aa; color: white; }
   .pt-cell.pivot { background: #f97316; color: white; outline: 2px solid #c2410c; outline-offset: 2px; }
@@ -12,10 +12,8 @@
   .pt-pointers { display: flex; gap: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace;
                  font-size: 11px; height: 16px; color: #3a6690; }
   .pt-ptr { min-width: 36px; text-align: center; font-weight: 700; }
-  @media (prefers-color-scheme: dark) {
-    .pt-cell { background: #52525b; color: #e4e4e7; }
-    .pt-pointers { color: #9cbbd6; }
-  }
+  html.dark .pt-cell { background: #52525b; color: #e4e4e7; }
+  html.dark .pt-pointers { color: #9cbbd6; }
 </style>
 <div class="stage pt-stage">
   <div class="pt-pointers" id="ptrs"></div>
@@ -85,9 +83,22 @@
     }
   }
 
+  var timer = null;
+
   function run() {
-    var safety = 1000;
-    while (!done && safety-- > 0) step();
+    // Animated playback (a synchronous loop would only paint the
+    // final state).
+    if (timer || done) return;
+    var tick = function () {
+      step();
+      if (done) { timer = null; return; }
+      timer = setTimeout(tick, 350);
+    };
+    timer = setTimeout(tick, 350);
+  }
+
+  function stopRun() {
+    if (timer) { clearTimeout(timer); timer = null; }
   }
 
   function render() {
@@ -113,8 +124,8 @@
     ptrs.innerHTML = ptrCells;
   }
 
-  document.getElementById('reset').addEventListener('click', load);
-  document.getElementById('step').addEventListener('click', step);
+  document.getElementById('reset').addEventListener('click', function () { stopRun(); load(); });
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
   document.getElementById('run').addEventListener('click', run);
 
   load();
