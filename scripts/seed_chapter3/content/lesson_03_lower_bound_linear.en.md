@@ -177,7 +177,7 @@ Worst case: $\Theta(n^2)$ if all elements land in the same bucket.
 | Comparison (general) | none | $\Omega(n \log n)$ by lower bound | depends |
 | Counting sort | keys $\in [0, k]$, $k = O(n)$ | $\Theta(n + k)$ | yes (stable variant) |
 | Radix sort | $d$-digit keys, base $b$ | $\Theta(d(n + b))$ | yes |
-| Bucket sort | u.d. keys in $[0,1]$ | $\Theta(n)$ expected | yes |
+| Bucket sort | u.d. keys in $[0,1]$ | $\Theta(n^2)$ ($\Theta(n)$ expected) | yes |
 
 ---
 

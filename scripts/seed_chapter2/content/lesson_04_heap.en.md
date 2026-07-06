@@ -40,8 +40,8 @@ up/down** until the property is restored.
 
 ### `sift_up(i)`: move up
 
-After insertion at the array tail or a key decrease (min-heap:
-key increase), a node may violate order vs its parent.
+After insertion at the array tail or a key increase (min-heap:
+key decrease), a node may violate order vs its parent.
 
 ```python
 def sift_up(A, i):
@@ -159,8 +159,8 @@ def heapsort(A):
 ### Correctness
 
 After iteration `end = k`: `A[k..n[` holds the $n - k$ largest
-elements sorted; `A[0..k]` is a valid max-heap on the remaining
-$k+1$ elements.
+elements sorted; `A[0..k[` is a valid max-heap on the remaining
+$k$ elements.
 
 - Before the loop: `A[0..n[` is a max-heap (`build_heap`).
 - Each iteration moves the current max to `A[end]`, then restores

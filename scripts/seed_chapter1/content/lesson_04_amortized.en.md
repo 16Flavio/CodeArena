@@ -21,15 +21,20 @@ aggregate, accounting, potential.
 Compute the total cost of $n$ operations, divide by $n$.
 
 **Dynamic array.** Initial capacity $1$. On insertion $k$, if the array
-is full, allocate $2k$, copy $k$ elements, insert.
+is full (size $=$ capacity), double the capacity, copy the existing
+elements, insert.
 
-- Doubling happens when $k$ is a power of $2$: $k = 1, 2, 4, 8, \dots$
+- Insertion $1$ copies nothing (size $0 <$ capacity $1$). A copy of
+  $2^j$ elements happens at insertion $k = 2^j + 1$: $k = 2, 3, 5, 9, \dots$
 - Insertion without doubling: $1$ (the write).
-- Insertion with doubling at $k = 2^j$: $2^j$ (copies) $+ 1$.
+- Insertion $k = 2^j + 1$ with doubling: $2^j$ (copies) $+ 1$.
 
-Total cost over $n$ insertions:
+Total cost over $n$ insertions (copies happen for the $2^j < n$):
 
-$$\text{Total} = n + \sum_{j=0}^{\lfloor \log_2 n \rfloor} 2^j \le n + 2n = 3n.$$
+$$\text{Total} = n + \sum_{j \,:\, 2^j < n} 2^j \le n + 2n = 3n.$$
+
+For instance $n = 8$: copies at insertions $2, 3, 5$, that is
+$1 + 2 + 4 = 7$ copies in total.
 
 Amortized cost: $3n / n = O(1)$. $\square$
 
@@ -58,7 +63,8 @@ stays at $3 = O(1)$ per insertion. $\square$
 ## 4.4 - Potential method
 
 Define a function $\Phi$ from the structure's state into
-$\mathbb{R}_{\ge 0}$ with $\Phi(\text{initial}) = 0$. The amortized cost
+$\mathbb{R}$ such that $\Phi(D_i) \ge \Phi(D_0)$ for all $i$ (one
+usually normalises $\Phi(D_0) = 0$). The amortized cost
 of an operation is:
 
 $$\hat c_i = c_i + \Phi(D_i) - \Phi(D_{i-1}).$$
@@ -71,7 +77,10 @@ So $\sum c_i \le \sum \hat c_i$: bounding amortized costs is enough.
 
 **Dynamic array.** Set $\Phi = 2 \cdot \text{size} - \text{capacity}$
 (always $\ge 0$ after an insertion that doesn't trigger a realloc,
-and $= 0$ right after a doubling).
+and $= 0$ right after a doubling). Here
+$\Phi(D_0) = 2 \cdot 0 - 1 = -1$, and $\Phi$ never drops below that
+value: $\Phi(D_i) \ge \Phi(D_0)$ for all $i$, so the telescoping
+bound remains valid.
 
 - Insertion without doubling: size goes from $s$ to $s+1$, capacity
   unchanged. $\Delta\Phi = 2$. Amortized $= 1 + 2 = 3$.

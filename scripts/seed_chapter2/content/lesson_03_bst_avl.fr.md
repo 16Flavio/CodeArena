@@ -107,10 +107,13 @@ hauteur $h$. Un tel arbre minimal a une racine, un sous-arbre de
 hauteur $h-1$ et un de hauteur $h-2$ (l'autre ne peut être plus
 petit). Donc :
 
-$$N(h) = 1 + N(h-1) + N(h-2),\quad N(0) = 1,\ N(1) = 2.$$
+$$N(h) = 1 + N(h-1) + N(h-2),\quad N(1) = 1,\ N(2) = 2.$$
 
-C'est la suite de Fibonacci décalée : $N(h) = F(h+2) - 1$ où $F$
-est Fibonacci. Comme $F(k) = \Theta(\varphi^k)$ avec $\varphi =
+(La hauteur compte les nœuds, comme dans le code ci-dessus : un
+nœud seul a hauteur $1$.) C'est la suite de Fibonacci décalée :
+$N(h) = F(h+2) - 1$ où $F$ est Fibonacci avec $F(1) = F(2) = 1$ -
+vérification : $F(3) - 1 = 1$, $F(4) - 1 = 2$, $F(5) - 1 = 4$,
+$F(6) - 1 = 7$. Comme $F(k) = \Theta(\varphi^k)$ avec $\varphi =
 (1+\sqrt 5)/2$, on a $h \le \log_\varphi (n + 1) - O(1) =
 \frac{\log_2(n+1)}{\log_2 \varphi} + O(1) \approx 1{,}44 \log_2 n$.
 $\square$

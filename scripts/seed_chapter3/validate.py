@@ -48,9 +48,9 @@ def main():
     idx = 1
     for _ in range(k):
         size = int(data[idx]); idx += 1
-        if size == 0:
-            arrs.append([]); continue
-        arrs.append(list(map(int, data[idx].split()))); idx += 1
+        vals = data[idx].split() if idx < len(data) else []
+        idx += 1
+        arrs.append(list(map(int, vals)))
     h = []
     for li, arr in enumerate(arrs):
         if arr: heapq.heappush(h, (arr[0], li, 0))

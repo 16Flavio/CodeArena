@@ -35,8 +35,8 @@ term dominates**. This intuition is crucial when analysing recursion.
 
 $$H_n = \sum_{i=1}^{n} \frac{1}{i} = \ln n + \gamma + O(1/n)\quad \text{with } \gamma \approx 0.5772.$$
 
-So $H_n = \Theta(\log n)$. This is the average cost of operations like
-"insert into a binary heap" or the average depth of a random BST.
+So $H_n = \Theta(\log n)$. This is the worst-case cost of operations
+like "insert into a binary heap", or the average depth of a random BST.
 
 **Proof (sketch).** Squeeze the sum between two integrals:
 

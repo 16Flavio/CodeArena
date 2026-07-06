@@ -79,8 +79,9 @@ Operations: `push_front`, `push_back`, `pop_front`, `pop_back`. All
 $\Theta(1)$ with a doubly linked list or a doubling circular array.
 
 > **The deque is the secret weapon of sliding-window algorithms** -
-> we use it in the lesson below (sliding maximum) to maintain a sorted
-> window with amortized $\Theta(1)$ per element.
+> we use it in the lesson below (sliding maximum) to maintain a
+> decreasing sequence of candidates for the window maximum (not the
+> window itself) with amortized $\Theta(1)$ per element.
 
 ---
 

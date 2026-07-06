@@ -9,11 +9,9 @@
   .ht-key { padding: 2px 6px; background: #4b7ca8; color: white; border-radius: 4px;
             font-size: 12px; text-align: center; animation: ht-fadein 0.3s ease-out; }
   .ht-key.collide { background: #f97316; }
-  @keyframes ht-fadein { from { opacity: 0; transform: scale(0.6);} to { opacity: 1; transform: scale(1);} }
-  @media (prefers-color-scheme: dark) {
-    .ht-bucket-head { background: #3f3f46; color: #e4e4e7; }
-    .ht-bucket-list { background: #27272a; }
-  }
+  @keyframes ht-fadein { from { opacity: 0; } to { opacity: 1; } }
+  html.dark .ht-bucket-head { background: #3f3f46; color: #e4e4e7; }
+  html.dark .ht-bucket-list { background: #27272a; }
 </style>
 <div class="stage">
   <div class="ht-table" id="tbl"></div>
@@ -34,6 +32,9 @@
   var rawKeys = (params.keys || '').toString();
   var initial = rawKeys.split(/[^\-0-9]+/).filter(function (s) { return s.length; }).map(Number);
   var mEl = document.getElementById('m');
+  // Honour the directive's m="..." attribute (falls back to the input default).
+  var paramM = parseInt(params.m, 10);
+  if (paramM >= 2 && paramM <= 24) mEl.value = paramM;
   var kEl = document.getElementById('k');
   var statusEl = document.getElementById('status');
   var tblEl = document.getElementById('tbl');

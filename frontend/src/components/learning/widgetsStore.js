@@ -7,12 +7,17 @@ import { learnListWidgets } from '../../api';
 
 let cache = null;
 let inflight = null;
+// Bumped by ``invalidate()`` so a fetch that was already inflight when
+// the admin saved cannot repopulate the cache with pre-save data.
+let generation = 0;
 const subscribers = new Set();
 
 export async function loadWidgets() {
   if (cache) return cache;
   if (!inflight) {
+    const gen = generation;
     inflight = learnListWidgets().then((r) => {
+      if (gen !== generation) return cache || [];
       cache = r.data || [];
       inflight = null;
       subscribers.forEach((cb) => {
@@ -20,19 +25,21 @@ export async function loadWidgets() {
       });
       return cache;
     }).catch((err) => {
-      inflight = null;
-      // Fail open - return an empty list rather than crashing the
-      // lesson reader if the widgets endpoint is down.
+      if (gen === generation) inflight = null;
+      // Fail open for THIS caller, but leave the cache empty so the
+      // next render retries instead of freezing every custom widget
+      // on a transient network error for the rest of the session.
       console.warn('learn widgets fetch failed:', err);
-      cache = [];
-      return cache;
+      return [];
     });
   }
   return inflight;
 }
 
 export function invalidate() {
+  generation += 1;
   cache = null;
+  inflight = null;
   // Re-fetch immediately so the admin's "save" is visible without
   // waiting for the next lesson navigation.
   loadWidgets();

@@ -108,9 +108,10 @@ def insert(T, k, v, h, m):
 
 $$\mathbb{E}[\text{nombre de sondes par lookup}] = \Theta\left(\frac{1}{(1 - \alpha)^2}\right).$$
 
-Avec $\alpha = 0{,}5$, environ 4 sondes en moyenne ; avec $\alpha
-= 0{,}9$, $\approx 100$ sondes - d'où la consigne de redimensionner
-tôt.
+L'estimation de Knuth pour une recherche infructueuse est
+$\frac{1}{2}\left(1 + \frac{1}{(1-\alpha)^2}\right)$ : environ
+$2{,}5$ sondes avec $\alpha = 0{,}5$, environ $50{,}5$ avec $\alpha
+= 0{,}9$ - d'où la consigne de redimensionner tôt.
 
 ### Tableau comparatif
 
@@ -142,7 +143,7 @@ def lookup(T, k):
 
 Soient $n$ clés stockées et $m$ buckets, hachage universel.
 Cherchons une clé $k$ (présente ou absente). Pour chaque autre clé
-$k' \neq k$ stockée, posons $X_{k'} = \mathbb{1}[h(k') = h(k)]$.
+$k' \neq k$ stockée, posons $X_{k'} = \mathbf{1}[h(k') = h(k)]$.
 
 Le nombre de comparaisons est $1 + \sum_{k' \neq k} X_{k'}$ (la
 clé elle-même ou la sentinelle de fin, plus chaque collision).

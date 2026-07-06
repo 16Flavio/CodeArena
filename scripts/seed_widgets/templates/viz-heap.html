@@ -7,7 +7,7 @@
   .hp-array { font-family: ui-monospace, "SF Mono", Menlo, monospace; padding: 6px 10px;
               background: #e4e4e7; border-radius: 6px; margin-top: 8px; font-size: 13px;
               text-align: center; word-break: break-all; color: #3f3f46; }
-  @media (prefers-color-scheme: dark) { .hp-array { background: #27272a; color: #e4e4e7; } }
+  html.dark .hp-array { background: #27272a; color: #e4e4e7; }
 </style>
 <div class="stage">
   <svg class="hp-svg" id="svg" viewBox="0 0 600 240" preserveAspectRatio="xMidYMid meet"></svg>
@@ -40,6 +40,7 @@
         i = p;
       } else break;
     }
+    return i;
   }
 
   function siftDown(i) {
@@ -56,8 +57,9 @@
 
   function insert(x) {
     heap.push(x);
-    siftUp(heap.length - 1);
-    fresh = heap.indexOf(x);
+    // Track the node's final position directly: indexOf(x) would
+    // highlight the first duplicate, not the inserted node.
+    fresh = siftUp(heap.length - 1);
     document.getElementById('info').textContent = 'insert(' + x + ') - taille = ' + heap.length;
     render();
   }

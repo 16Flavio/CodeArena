@@ -96,7 +96,7 @@ $\square$
 |----------|-------|-----|------|
 | First / last element | $n^2$ (sorted input) | $n \log n$ | free |
 | Random element | $n^2$ (prob $\to 0$) | $n \log n$ | RNG |
-| Median of 3 (first, middle, last) | $n^2$ rare | $n \log n$ | 2 cmp |
+| Median of 3 (first, middle, last) | $n^2$ rare | $n \log n$ | 3 cmp (worst) |
 | Median of medians | $n \log n$ deterministic (lesson 4) | $n \log n$ | high constant |
 
 ---

@@ -23,15 +23,20 @@ L'analyse amortie formalise ce raisonnement avec **trois méthodes
 On calcule le coût total de $n$ opérations, puis on divise par $n$.
 
 **Tableau dynamique.** Capacité initiale $1$. À l'insertion $k$, si le
-tableau est plein, on alloue $2k$, on copie $k$ éléments, on insère.
+tableau est plein (taille $=$ capacité), on double la capacité, on
+copie les éléments existants, on insère.
 
-- Le doublement a lieu lorsque $k$ est une puissance de $2$ : $k = 1, 2, 4, 8, \dots$
+- L'insertion $1$ ne copie rien (taille $0 <$ capacité $1$). Une copie
+  de $2^j$ éléments a lieu à l'insertion $k = 2^j + 1$ : $k = 2, 3, 5, 9, \dots$
 - Coût d'une insertion sans doublement : $1$ (l'écriture).
-- Coût d'une insertion avec doublement à $k = 2^j$ : $2^j$ (copies) $+ 1$.
+- Coût de l'insertion $k = 2^j + 1$ avec doublement : $2^j$ (copies) $+ 1$.
 
-Coût total des $n$ insertions :
+Coût total des $n$ insertions (les copies portent sur les $2^j < n$) :
 
-$$\text{Total} = n + \sum_{j=0}^{\lfloor \log_2 n \rfloor} 2^j \le n + 2n = 3n.$$
+$$\text{Total} = n + \sum_{j \,:\, 2^j < n} 2^j \le n + 2n = 3n.$$
+
+Par exemple $n = 8$ : copies aux insertions $2, 3, 5$, soit
+$1 + 2 + 4 = 7$ copies au total.
 
 Coût amorti : $3n / n = O(1)$. $\square$
 
@@ -60,7 +65,8 @@ coût amorti reste $3 = O(1)$ par insertion. $\square$
 ## 4.4 - Méthode du potentiel
 
 On définit une fonction $\Phi$ de l'état de la structure vers
-$\mathbb{R}_{\ge 0}$ avec $\Phi(\text{état initial}) = 0$. Le coût
+$\mathbb{R}$ telle que $\Phi(D_i) \ge \Phi(D_0)$ pour tout $i$ (on
+normalise souvent $\Phi(D_0) = 0$). Le coût
 amorti d'une opération est :
 
 $$\hat c_i = c_i + \Phi(D_i) - \Phi(D_{i-1}).$$
@@ -73,7 +79,10 @@ Donc $\sum c_i \le \sum \hat c_i$ : majorer le coût amorti suffit.
 
 **Tableau dynamique.** Posons $\Phi = 2 \cdot \text{taille} - \text{capacité}$
 (toujours $\ge 0$ après une insertion qui ne déclenche pas de
-réallocation, et $= 0$ juste après un doublement).
+réallocation, et $= 0$ juste après un doublement). Ici
+$\Phi(D_0) = 2 \cdot 0 - 1 = -1$, et $\Phi$ ne redescend jamais sous
+cette valeur : $\Phi(D_i) \ge \Phi(D_0)$ pour tout $i$, la borne
+télescopique reste donc valide.
 
 - Insertion sans doublement : taille passe de $s$ à $s+1$, capacité
   inchangée. $\Delta\Phi = 2$. Coût amorti $= 1 + 2 = 3$.

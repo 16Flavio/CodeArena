@@ -185,7 +185,7 @@ paquet.
 | Comparaison (general) | aucune | $\Omega(n \log n)$ par bornes | dépend |
 | Counting sort | clés $\in [0, k]$, $k = O(n)$ | $\Theta(n + k)$ | oui (version stable) |
 | Radix sort | clés $d$-chiffres en base $b$ | $\Theta(d(n + b))$ | oui |
-| Bucket sort | clés u.d. dans $[0,1]$ | $\Theta(n)$ espérance | oui |
+| Bucket sort | clés u.d. dans $[0,1]$ | $\Theta(n^2)$ ($\Theta(n)$ en espérance) | oui |
 
 ---
 

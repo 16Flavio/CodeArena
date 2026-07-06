@@ -64,14 +64,19 @@ def quickselect(A, k):
 Let $T(n)$ be the expected number of comparisons on a size-$n$
 array. With a uniform pivot, the recursive sub-array has size
 uniform in $\{0, 1, \dots, n-1\}$. For the worst $k$ we recurse
-into the larger half:
+into the larger half, and each size $i \in [n/2, n-1]$ arises from
+two pivot ranks:
 
-$$T(n) \le n + \frac{1}{n} \sum_{i=n/2}^{n-1} T(i).$$
+$$T(n) \le n + \frac{2}{n} \sum_{i=n/2}^{n-1} T(i).$$
 
-By induction, $T(n) \le 4n$. **Trick**: bound $\sum_{i=n/2}^{n-1} i
-\le \frac{3n^2}{4}$:
+By induction, $T(n) \le 4n$. **Trick**: with $T(i) \le 4i$,
 
-$$T(n) \le n + \frac{4}{n} \cdot \frac{3n^2}{4} = n + 3n = 4n. \square$$
+$$T(n) \le n + \frac{2}{n} \sum_{i=n/2}^{n-1} 4i = n + \frac{8}{n} \sum_{i=n/2}^{n-1} i,$$
+
+and $\sum_{i=n/2}^{n-1} i \le \frac{3n^2}{8}$ ($n/2$ terms, each
+$< n$, average about $3n/4$), so
+
+$$T(n) \le n + \frac{8}{n} \cdot \frac{3n^2}{8} = n + 3n = 4n. \square$$
 
 ### Worst case: $\Theta(n^2)$
 
@@ -144,9 +149,10 @@ Bazzi with $p = 1$ and the integral dominated by $n$). $\square$
 
 ### Why groups of 5?
 
-The smallest odd group size that makes $1/k + (k-1)/k \cdot 3/4 < 1$:
-groups of 3 → coefficients $1/3 + 2/3 = 1$, no contraction; groups
-of 5 → it works. (And 5 is smaller than 7, so smaller constants.)
+The smallest odd group size that makes $\frac{1}{k} +
+\frac{3k-1}{4k} < 1$: groups of 3 → coefficients $1/3 + 2/3 = 1$,
+no contraction; groups of 5 → $1/5 + 14/20 = 9/10$, it works.
+(And 5 is smaller than 7, so smaller constants.)
 
 > **In practice**, MoM is rarely used: high constants and random
 > quickselect is *more than* enough. But theoretically, it kills the
@@ -160,8 +166,8 @@ of 5 → it works. (And 5 is smaller than 7, so smaller constants.)
 |------|-------|---------|--------|---------|
 | Sort then index | $n \log n$ | $n \log n$ | $O(1)$ or $O(n)$ | no |
 | Heap (extract $k$ mins) | $n + k \log n$ | idem | $O(1)$ | no |
-| Quickselect (random pivot) | $n^2$ | $\Theta(n)$ | $O(\log n)$ | yes |
-| Median of medians | $\Theta(n)$ | $\Theta(n)$ | $O(\log n)$ | no |
+| Quickselect (random pivot) | $n^2$ | $\Theta(n)$ | $O(1)$ | yes |
+| Median of medians | $\Theta(n)$ | $\Theta(n)$ | $O(n)$ | no |
 
 ---
 

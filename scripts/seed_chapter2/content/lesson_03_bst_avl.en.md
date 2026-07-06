@@ -102,9 +102,12 @@ AVL keeps $\text{bf}(v) \in \{-1, 0, +1\}$.
 height $h$. Such a minimal tree has a root, one subtree of height
 $h-1$, and one of height $h-2$. So:
 
-$$N(h) = 1 + N(h-1) + N(h-2),\quad N(0) = 1,\ N(1) = 2.$$
+$$N(h) = 1 + N(h-1) + N(h-2),\quad N(1) = 1,\ N(2) = 2.$$
 
-This is the shifted Fibonacci sequence: $N(h) = F(h+2) - 1$. Since
+(Heights count nodes, as in the code above: a single node has
+height $1$.) This is the shifted Fibonacci sequence: $N(h) = F(h+2)
+- 1$ with $F(1) = F(2) = 1$ - check: $F(3) - 1 = 1$, $F(4) - 1 = 2$,
+$F(5) - 1 = 4$, $F(6) - 1 = 7$. Since
 $F(k) = \Theta(\varphi^k)$ with $\varphi = (1+\sqrt 5)/2$, we get
 $h \le \log_\varphi (n + 1) - O(1) = \frac{\log_2(n+1)}{\log_2
 \varphi} + O(1) \approx 1.44 \log_2 n$. $\square$

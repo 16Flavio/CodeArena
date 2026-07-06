@@ -42,8 +42,8 @@ fauteur de troubles jusqu'à restaurer la propriété.
 
 ### `sift_up(i)` : remonter
 
-Après une insertion en queue de tableau ou la diminution de la clé
-d'un nœud (pour un min-heap : décroître), le nœud peut violer
+Après une insertion en queue de tableau ou l'augmentation de la clé
+d'un nœud (pour un min-heap : une diminution), le nœud peut violer
 l'ordre vis-à-vis de son parent.
 
 ```python
@@ -134,7 +134,7 @@ La série $\sum_{h \ge 0} h / 2^h$ converge vers $2$ (somme classique
 $\sum h x^h = x/(1-x)^2$ évaluée en $x = 1/2$). Donc $T(n) = O(n)$.
 $\square$
 
-> **À retenir.** Le hash mental « insertion par insertion = $n \log
+> **À retenir.** Le raccourci mental « insertion par insertion = $n \log
 > n$, bottom-up = $n$ » est la différence entre un build *naïf* et
 > un build *intelligent*. Pour heapsort, ça ne change pas la
 > complexité globale ($n \log n$), mais c'est élégant.
@@ -164,8 +164,8 @@ def heapsort(A):
 ### Correction
 
 Invariant après l'itération `end = k` : `A[k..n[` contient les $n -
-k$ plus grands éléments triés ; `A[0..k]` est un max-heap valide
-sur les $k+1$ éléments restants.
+k$ plus grands éléments triés ; `A[0..k[` est un max-heap valide
+sur les $k$ éléments restants.
 
 - Avant la boucle : `A[0..n[` est un max-heap (par `build_heap`).
 - À chaque itération, on met le max courant en `A[end]` puis on
