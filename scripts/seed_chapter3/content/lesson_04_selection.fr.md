@@ -64,18 +64,20 @@ def quickselect(A, k):
 Soit $T(n)$ le nombre attendu de comparaisons sur un tableau de
 taille $n$. Avec un pivot uniforme, le sous-tableau récursé a une
 taille uniformément distribuée dans $\{0, 1, \dots, n-1\}$. Pour
-le pire choix de $k$ on récurse dans la moitié la plus grande :
+le pire choix de $k$ on récurse dans la moitié la plus grande, et
+chaque taille $i \in [n/2, n-1]$ provient de deux rangs de pivot :
 
-$$T(n) \le n + \frac{1}{n} \sum_{i=n/2}^{n-1} T(i).$$
+$$T(n) \le n + \frac{2}{n} \sum_{i=n/2}^{n-1} T(i).$$
 
-On montre par induction que $T(n) \le 4n$. **Astuce de la
-borne récursive** :
+On montre par induction que $T(n) \le 4n$. **Astuce** : avec
+$T(i) \le 4i$,
 
-$$T(n) \le n + \frac{1}{n} \sum_{i=n/2}^{n-1} 4i \le n + \frac{4}{n} \cdot \frac{n}{2} \cdot \frac{3n/2 + n/2}{2}/... $$
+$$T(n) \le n + \frac{2}{n} \sum_{i=n/2}^{n-1} 4i = n + \frac{8}{n} \sum_{i=n/2}^{n-1} i,$$
 
-Plus simple - bornons $\sum_{i=n/2}^{n-1} i \le \frac{3n^2}{4}$ :
+et $\sum_{i=n/2}^{n-1} i \le \frac{3n^2}{8}$ ($n/2$ termes, chacun
+$< n$, de moyenne environ $3n/4$), donc
 
-$$T(n) \le n + \frac{4}{n} \cdot \frac{3n^2}{4} = n + 3n = 4n. \square$$
+$$T(n) \le n + \frac{8}{n} \cdot \frac{3n^2}{8} = n + 3n = 4n. \square$$
 
 ### Pire cas : $\Theta(n^2)$
 
@@ -151,10 +153,10 @@ Bazzi avec $p = 1$ et l'intégrale dominée par $n$). $\square$
 
 ### Pourquoi des groupes de 5 ?
 
-C'est la plus petite taille impaire qui rend $1/k + (k-1)/k \cdot
-3/4 < 1$ : groupes de 3 → coefficients $1/3 + 2/3 = 1$, pas de
-contraction ; groupes de 5 → ça passe. (Et 5 est plus petit que 7,
-donc constantes minimales.)
+C'est la plus petite taille impaire qui rend $\frac{1}{k} +
+\frac{3k-1}{4k} < 1$ : groupes de 3 → coefficients $1/3 + 2/3 = 1$,
+pas de contraction ; groupes de 5 → $1/5 + 14/20 = 9/10$, ça passe.
+(Et 5 est plus petit que 7, donc constantes minimales.)
 
 > **En pratique.** MoM est rarement utilisé : ses constantes sont
 > élevées et quickselect aléatoire est *amplement* suffisant. Mais
@@ -169,8 +171,8 @@ donc constantes minimales.)
 |------|----------|---------|---------|-------------|
 | Tri puis index | $n \log n$ | $n \log n$ | $O(1)$ ou $O(n)$ | non |
 | Heap (extraire $k$ min) | $n + k \log n$ | idem | $O(1)$ | non |
-| Quickselect (pivot rand) | $n^2$ | $\Theta(n)$ | $O(\log n)$ | oui |
-| Médiane des médianes | $\Theta(n)$ | $\Theta(n)$ | $O(\log n)$ | non |
+| Quickselect (pivot rand) | $n^2$ | $\Theta(n)$ | $O(1)$ | oui |
+| Médiane des médianes | $\Theta(n)$ | $\Theta(n)$ | $O(n)$ | non |
 
 ---
 

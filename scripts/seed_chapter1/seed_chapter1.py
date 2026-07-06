@@ -129,10 +129,12 @@ LESSONS: list[dict] = [
                     "**Entrée** : une ligne contenant $a$, $b$, $c$, $k$ séparés "
                     "par des espaces.  \n"
                     "**Sortie** : un entier sur une ligne.\n\n"
-                    "**Indice** : la fonction $g(n) - f(n) = (k-a)n^2 - bn - c$ "
-                    "est une parabole convexe ; au-delà de son minimum, elle est "
-                    "croissante. Itérer $n$ jusqu'à ce que $g(n) - f(n) \\ge 0$ "
-                    "**et** que la dérivée $2(k-a)n - b > 0$."
+                    "**Indice** : la fonction $h(n) = g(n) - f(n) = (k-a)n^2 - bn - c$ "
+                    "est une parabole convexe : toutes les violations $h(n) < 0$ "
+                    "se trouvent dans un préfixe borné. Parcourir $n$ sur une "
+                    "plage suffisante (jusqu'au sommet plus une marge), retenir "
+                    "le **dernier** $n$ tel que $h(n) < 0$, et répondre ce $n$ "
+                    "plus un (ou $1$ si $h$ n'est jamais négative)."
                 ),
                 "prompt_en": (
                     "Let $f(n) = a\\,n^2 + b\\,n + c$ and $g(n) = k\\,n^2$. "
@@ -144,10 +146,11 @@ LESSONS: list[dict] = [
                     "**Input**: one line with $a$, $b$, $c$, $k$ separated by "
                     "spaces.  \n"
                     "**Output**: one integer on its own line.\n\n"
-                    "**Hint**: $g(n) - f(n) = (k-a)n^2 - bn - c$ is a convex "
-                    "parabola; past its minimum it is increasing. Iterate $n$ "
-                    "until $g(n) - f(n) \\ge 0$ **and** the derivative "
-                    "$2(k-a)n - b > 0$."
+                    "**Hint**: $h(n) = g(n) - f(n) = (k-a)n^2 - bn - c$ is a "
+                    "convex parabola: all violations $h(n) < 0$ lie in a bounded "
+                    "prefix. Scan $n$ over a sufficient range (up to the vertex "
+                    "plus a margin), track the **last** $n$ with $h(n) < 0$, and "
+                    "answer that $n$ plus one (or $1$ if $h$ is never negative)."
                 ),
                 "starter_code": (
                     "import sys\n\n"
@@ -305,7 +308,8 @@ LESSONS: list[dict] = [
                 "title_fr": "Somme géométrique modulaire",
                 "title_en": "Modular geometric sum",
                 "prompt_fr": (
-                    "Étant donné $r$ et $n$ ($1 \\le r, n \\le 10^9$), calculer\n"
+                    "Étant donné $r$ et $n$ ($1 \\le n \\le 10^9$ et "
+                    "$1 \\le r < 10^9 + 7$), calculer\n"
                     "$$1 + r + r^2 + \\dots + r^{n-1} \\pmod{10^9 + 7}.$$\n"
                     "Le calcul naïf en $O(n)$ est trop lent - il faut une "
                     "exponentiation rapide ($O(\\log n)$) et l'inverse modulaire "
@@ -315,7 +319,8 @@ LESSONS: list[dict] = [
                     "**Sortie** : la somme modulo $10^9 + 7$, sur une ligne."
                 ),
                 "prompt_en": (
-                    "Given $r$ and $n$ ($1 \\le r, n \\le 10^9$), compute\n"
+                    "Given $r$ and $n$ ($1 \\le n \\le 10^9$ and "
+                    "$1 \\le r < 10^9 + 7$), compute\n"
                     "$$1 + r + r^2 + \\dots + r^{n-1} \\pmod{10^9 + 7}.$$\n"
                     "The naive $O(n)$ computation is too slow - you need fast "
                     "exponentiation ($O(\\log n)$) and the modular inverse "
@@ -518,7 +523,7 @@ LESSONS: list[dict] = [
                     "$n$ insertions ($1 \\le n \\le 10^{18}$).\n\n"
                     "**Entrée** : un entier $n$.  \n"
                     "**Sortie** : le total de copies, sur une ligne.\n\n"
-                    "**Hint** : forme fermée. Penser à la somme géométrique "
+                    "**Indice** : forme fermée. Penser à la somme géométrique "
                     "$1 + 2 + 4 + \\dots$"
                 ),
                 "prompt_en": (
@@ -635,7 +640,7 @@ LESSONS: list[dict] = [
                     "**Entrée** : un entier $k$.  \n"
                     "**Sortie** : le total de bit-flips sur une ligne.\n\n"
                     "**Indice** : le bit $i$ bascule $\\lfloor k / 2^{i+1} \\rfloor "
-                    "\\cdot 2 + [k \\bmod 2^{i+1} > 2^i]$ fois… ou plus simplement, "
+                    "\\cdot 2 + [k \\bmod 2^{i+1} \\ge 2^i]$ fois… ou plus simplement, "
                     "le total est $2k - \\text{popcount}(k)$. À démontrer !"
                 ),
                 "prompt_en": (
@@ -647,7 +652,7 @@ LESSONS: list[dict] = [
                     "**Input**: one integer $k$.  \n"
                     "**Output**: total bit-flips on one line.\n\n"
                     "**Hint**: bit $i$ flips $\\lfloor k / 2^{i+1} \\rfloor "
-                    "\\cdot 2 + [k \\bmod 2^{i+1} > 2^i]$ times… or more "
+                    "\\cdot 2 + [k \\bmod 2^{i+1} \\ge 2^i]$ times… or more "
                     "simply, the total is $2k - \\text{popcount}(k)$. Prove it!"
                 ),
                 "starter_code": (

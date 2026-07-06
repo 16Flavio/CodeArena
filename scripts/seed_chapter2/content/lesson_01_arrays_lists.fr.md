@@ -81,7 +81,9 @@ circulaire à doublement.
 
 > **Le deque est l'arme secrète des algos de fenêtre glissante** -
 > on l'utilise dans la leçon ci-dessous (max coulissant) pour
-> maintenir une fenêtre triée à coût amorti $\Theta(1)$ par élément.
+> maintenir une suite décroissante de candidats au maximum de la
+> fenêtre (pas la fenêtre elle-même) à coût amorti $\Theta(1)$ par
+> élément.
 
 ---
 

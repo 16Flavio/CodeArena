@@ -101,7 +101,7 @@ $\square$
 |-----------|----------|---------|------|
 | Premier / dernier élément | $n^2$ (tri déjà trié) | $n \log n$ | gratuit |
 | Élément aléatoire | $n^2$ (proba $\to 0$) | $n \log n$ | RNG |
-| Médiane de 3 (premier, milieu, dernier) | $n^2$ rare | $n \log n$ | 2 comparaisons |
+| Médiane de 3 (premier, milieu, dernier) | $n^2$ rare | $n \log n$ | 3 comparaisons (pire cas) |
 | Médiane des médianes | $n \log n$ déterministe (cf. leçon 4) | $n \log n$ | constante élevée |
 
 ---

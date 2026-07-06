@@ -102,8 +102,9 @@ def insert(T, k, v, h, m):
 
 $$\mathbb{E}[\text{probes per lookup}] = \Theta\left(\frac{1}{(1 - \alpha)^2}\right).$$
 
-At $\alpha = 0.5$, ~4 probes on average; at $\alpha = 0.9$, $\approx
-100$ probes - hence the early-resize rule.
+Knuth's estimate for an unsuccessful search is $\frac{1}{2}\left(1
++ \frac{1}{(1-\alpha)^2}\right)$: about $2.5$ probes at $\alpha =
+0.5$, about $50.5$ at $\alpha = 0.9$ - hence the early-resize rule.
 
 ### Comparison
 
@@ -135,7 +136,7 @@ def lookup(T, k):
 
 Let $n$ keys be stored across $m$ buckets, universal hashing. Search
 for key $k$ (present or absent). For each other stored key $k' \neq
-k$, set $X_{k'} = \mathbb{1}[h(k') = h(k)]$.
+k$, set $X_{k'} = \mathbf{1}[h(k') = h(k)]$.
 
 Comparisons $= 1 + \sum_{k' \neq k} X_{k'}$ (the key itself or the
 end sentinel, plus each collision).

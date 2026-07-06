@@ -35,8 +35,8 @@ terme domine**. Cette intuition est cruciale en analyse de récursion.
 
 $$H_n = \sum_{i=1}^{n} \frac{1}{i} = \ln n + \gamma + O(1/n)\quad \text{où } \gamma \approx 0.5772.$$
 
-En particulier $H_n = \Theta(\log n)$. C'est la complexité moyenne
-d'opérations comme « insertion dans un tas binaire » ou la profondeur
+En particulier $H_n = \Theta(\log n)$. C'est la complexité au pire cas
+d'opérations comme « insertion dans un tas binaire », ou la profondeur
 moyenne d'un arbre BST aléatoire.
 
 **Preuve (esquisse).** On encadre la somme par deux intégrales :

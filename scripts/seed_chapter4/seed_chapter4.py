@@ -391,8 +391,10 @@ LESSONS: list[dict] = [
                     "100 fois (largement assez : $\\log_2(10^{12} \\cdot "
                     "10^6) \\approx 60$). Comparaison flottante : "
                     "`hi - lo > 1e-9` ou nombre fixe d'iterations.\n\n"
-                    "**Tolerance accordee** : verificateur a $\\pm 10^{-4}$ "
-                    "sur la sortie a 6 decimales."
+                    "**Attention** : la comparaison est exacte sur la "
+                    "chaine formatee a 6 decimales. Une bissection avec "
+                    "100 iterations (precision bien au-dela de $10^{-6}$) "
+                    "produit exactement la bonne chaine."
                 ),
                 "prompt_en": (
                     "Compute $\\sqrt{x}$ to **absolute precision** "
@@ -406,8 +408,10 @@ LESSONS: list[dict] = [
                     "100 iterations (more than enough: $\\log_2(10^{12} "
                     "\\cdot 10^6) \\approx 60$). Floating compare: "
                     "`hi - lo > 1e-9` or fixed iteration count.\n\n"
-                    "**Tolerance**: checker accepts $\\pm 10^{-4}$ on the "
-                    "6-decimal output."
+                    "**Warning**: comparison is exact on the string "
+                    "formatted to 6 decimals. A bisection with 100 "
+                    "iterations (precision well beyond $10^{-6}$) "
+                    "produces exactly the right string."
                 ),
                 "starter_code": (
                     "import sys\n\n"
@@ -450,7 +454,7 @@ LESSONS: list[dict] = [
                     "une cible $T$, trouver une paire d'indices "
                     "**0-indexes** $i < j$ tels que $A[i] + A[j] = T$. "
                     "S'il y en a plusieurs, retourner celle avec le **plus "
-                    "petit $i$** ; en cas d'egalite, le **plus petit $j$**.\n\n"
+                    "petit $i$** ; en cas d'egalite, le **plus grand $j$**.\n\n"
                     "**Entree** :\n\n"
                     "- ligne 1 : $n$ et $T$ ($2 \\le n \\le 10^6$, "
                     "$|T| \\le 4 \\cdot 10^9$)\n"
@@ -464,7 +468,7 @@ LESSONS: list[dict] = [
                     "Given a **sorted** array $A$ of size $n$ and target "
                     "$T$, find **0-indexed** $i < j$ with $A[i] + A[j] = "
                     "T$. If multiple, return the one with **smallest $i$**; "
-                    "ties broken by **smallest $j$**.\n\n"
+                    "ties broken by **largest $j$**.\n\n"
                     "**Input**:\n\n"
                     "- line 1: $n$ and $T$ ($2 \\le n \\le 10^6$, "
                     "$|T| \\le 4 \\cdot 10^9$)\n"
@@ -495,6 +499,8 @@ LESSONS: list[dict] = [
                     {"input": "6 0\n-3 -1 0 0 1 3\n",
                      "expected": "0 5\n", "is_sample": False},
                     {"input": "3 0\n-1 0 1\n",
+                     "expected": "0 2\n", "is_sample": False},
+                    {"input": "3 4\n1 3 3\n",
                      "expected": "0 2\n", "is_sample": False},
                 ],
             },
@@ -1006,21 +1012,6 @@ def _normalise(out: str) -> str:
     return "\n".join(lines)
 
 
-def _floats_close(actual: str, expected: str, tol: float) -> bool:
-    """Loose comparator for the real-sqrt exercise. Compares each token
-    pairwise; numeric tokens within ``tol`` count as equal."""
-    a, b = actual.split(), expected.split()
-    if len(a) != len(b):
-        return False
-    for x, y in zip(a, b):
-        try:
-            if abs(float(x) - float(y)) <= tol: continue
-            return False
-        except ValueError:
-            if x != y: return False
-    return True
-
-
 def validate_reference_solutions() -> int:
     """Run every REFERENCE_SOLUTIONS entry against its DB-bound test
     cases. Exits non-zero on the first mismatch - this catches
@@ -1049,9 +1040,6 @@ def validate_reference_solutions() -> int:
             actual = _normalise(proc.stdout or "")
             expected = _normalise(tc["expected"] or "")
             ok = (actual == expected)
-            # Float tolerance only for the real-sqrt exercise.
-            if not ok and key == "EX_SE_SQRT_REAL":
-                ok = _floats_close(actual, expected, tol=1e-4)
             if not ok:
                 failures.append(
                     f"{key}#{idx}: stdin={tc['input']!r}\n"
