@@ -67,16 +67,22 @@ uniform in $\{0, 1, \dots, n-1\}$. For the worst $k$ we recurse
 into the larger half, and each size $i \in [n/2, n-1]$ arises from
 two pivot ranks:
 
-$$T(n) \le n + \frac{2}{n} \sum_{i=n/2}^{n-1} T(i).$$
+$$
+T(n) \le n + \frac{2}{n} \sum_{i=n/2}^{n-1} T(i).
+$$
 
 By induction, $T(n) \le 4n$. **Trick**: with $T(i) \le 4i$,
 
-$$T(n) \le n + \frac{2}{n} \sum_{i=n/2}^{n-1} 4i = n + \frac{8}{n} \sum_{i=n/2}^{n-1} i,$$
+$$
+T(n) \le n + \frac{2}{n} \sum_{i=n/2}^{n-1} 4i = n + \frac{8}{n} \sum_{i=n/2}^{n-1} i,
+$$
 
 and $\sum_{i=n/2}^{n-1} i \le \frac{3n^2}{8}$ ($n/2$ terms, each
 $< n$, average about $3n/4$), so
 
-$$T(n) \le n + \frac{8}{n} \cdot \frac{3n^2}{8} = n + 3n = 4n. \square$$
+$$
+T(n) \le n + \frac{8}{n} \cdot \frac{3n^2}{8} = n + 3n = 4n. \square
+$$
 
 ### Worst case: $\Theta(n^2)$
 
@@ -127,7 +133,9 @@ medians is greater than half the medians, i.e. $\lceil n/10 \rceil$
 medians. Each of those medians is itself greater than the 2
 smallest elements of its group. Total:
 
-$$3 \cdot \left\lceil \frac{n}{10} \right\rceil \ge \frac{3n}{10}$$
+$$
+3 \cdot \left\lceil \frac{n}{10} \right\rceil \ge \frac{3n}{10}
+$$
 
 elements $\le$ pivot. Symmetric for $\ge$. $\square$
 
@@ -141,7 +149,9 @@ Let $T(n)$ be the cost.
 - Step 3 (partition + recursion on the large half): large half has
   at most $\frac{7n}{10}$ elements (by the lemma), so $T(7n/10)$.
 
-$$T(n) \le T(n/5) + T(7n/10) + cn.$$
+$$
+T(n) \le T(n/5) + T(7n/10) + cn.
+$$
 
 Since $\frac{1}{5} + \frac{7}{10} = \frac{9}{10} < 1$, the
 recurrence resolves to $T(n) = \Theta(n)$ by induction (or Akra-

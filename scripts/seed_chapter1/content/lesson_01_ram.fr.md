@@ -49,27 +49,37 @@ Soient $f, g : \mathbb{N} \to \mathbb{R}_{\ge 0}$.
 
 ### Borne supérieure : $O$
 
-$$f(n) = O(g(n)) \iff \exists\, c > 0,\ \exists\, n_0 \in \mathbb{N},\ \forall n \ge n_0,\ f(n) \le c \cdot g(n).$$
+$$
+f(n) = O(g(n)) \iff \exists\, c > 0,\ \exists\, n_0 \in \mathbb{N},\ \forall n \ge n_0,\ f(n) \le c \cdot g(n).
+$$
 
 Lecture : *« $f$ ne grandit pas plus vite que $g$, à un facteur constant près, à partir d'un certain rang. »*
 
 ### Borne inférieure : $\Omega$
 
-$$f(n) = \Omega(g(n)) \iff \exists\, c > 0,\ \exists\, n_0 \in \mathbb{N},\ \forall n \ge n_0,\ f(n) \ge c \cdot g(n).$$
+$$
+f(n) = \Omega(g(n)) \iff \exists\, c > 0,\ \exists\, n_0 \in \mathbb{N},\ \forall n \ge n_0,\ f(n) \ge c \cdot g(n).
+$$
 
 ### Borne serrée : $\Theta$
 
-$$f(n) = \Theta(g(n)) \iff f(n) = O(g(n))\ \text{et}\ f(n) = \Omega(g(n)).$$
+$$
+f(n) = \Theta(g(n)) \iff f(n) = O(g(n))\ \text{et}\ f(n) = \Omega(g(n)).
+$$
 
 ### Domination stricte : $o$ (petit-o)
 
-$$f(n) = o(g(n)) \iff \forall\, c > 0,\ \exists\, n_0,\ \forall n \ge n_0,\ f(n) < c \cdot g(n).$$
+$$
+f(n) = o(g(n)) \iff \forall\, c > 0,\ \exists\, n_0,\ \forall n \ge n_0,\ f(n) < c \cdot g(n).
+$$
 
 De manière équivalente, lorsque $g(n) > 0$ : $\displaystyle \lim_{n \to \infty} \frac{f(n)}{g(n)} = 0$.
 
 ### Domination stricte (autre côté) : $\omega$
 
-$$f(n) = \omega(g(n)) \iff \forall\, c > 0,\ \exists\, n_0,\ \forall n \ge n_0,\ f(n) > c \cdot g(n).$$
+$$
+f(n) = \omega(g(n)) \iff \forall\, c > 0,\ \exists\, n_0,\ \forall n \ge n_0,\ f(n) > c \cdot g(n).
+$$
 
 ### Tableau récapitulatif
 

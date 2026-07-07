@@ -65,7 +65,9 @@ L'intervalle $[lo, hi)$ a au plus $n$ éléments à l'entrée et perd
 $\text{mid} - lo \le k/2$ et $hi - (\text{mid}+1) \le k/2$. Après
 $T$ tours, taille $\le n / 2^T$, donc $T \le \log_2 n$.
 
-$$\boxed{\;T(n) = \Theta(\log n)\;}$$
+$$
+\boxed{\;T(n) = \Theta(\log n)\;}
+$$
 
 ---
 

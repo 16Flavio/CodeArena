@@ -41,11 +41,15 @@ Comme on a au moins $n!$ feuilles : $2^h \ge n!$, soit $h \ge
 On veut une borne explicite sur $\log_2(n!)$. Approximation de
 Stirling :
 
-$$n! \ge \left(\frac{n}{e}\right)^n,$$
+$$
+n! \ge \left(\frac{n}{e}\right)^n,
+$$
 
 donc
 
-$$\log_2(n!) \ge n \log_2(n/e) = n \log_2 n - n \log_2 e = \Omega(n \log n).$$
+$$
+\log_2(n!) \ge n \log_2(n/e) = n \log_2 n - n \log_2 e = \Omega(n \log n).
+$$
 
 → **Tout algorithme de tri par comparaison effectue $\Omega(n \log n)$
 comparaisons dans le pire cas.** Mergesort et heapsort sont

@@ -67,17 +67,23 @@ taille uniformément distribuée dans $\{0, 1, \dots, n-1\}$. Pour
 le pire choix de $k$ on récurse dans la moitié la plus grande, et
 chaque taille $i \in [n/2, n-1]$ provient de deux rangs de pivot :
 
-$$T(n) \le n + \frac{2}{n} \sum_{i=n/2}^{n-1} T(i).$$
+$$
+T(n) \le n + \frac{2}{n} \sum_{i=n/2}^{n-1} T(i).
+$$
 
 On montre par induction que $T(n) \le 4n$. **Astuce** : avec
 $T(i) \le 4i$,
 
-$$T(n) \le n + \frac{2}{n} \sum_{i=n/2}^{n-1} 4i = n + \frac{8}{n} \sum_{i=n/2}^{n-1} i,$$
+$$
+T(n) \le n + \frac{2}{n} \sum_{i=n/2}^{n-1} 4i = n + \frac{8}{n} \sum_{i=n/2}^{n-1} i,
+$$
 
 et $\sum_{i=n/2}^{n-1} i \le \frac{3n^2}{8}$ ($n/2$ termes, chacun
 $< n$, de moyenne environ $3n/4$), donc
 
-$$T(n) \le n + \frac{8}{n} \cdot \frac{3n^2}{8} = n + 3n = 4n. \square$$
+$$
+T(n) \le n + \frac{8}{n} \cdot \frac{3n^2}{8} = n + 3n = 4n. \square
+$$
 
 ### Pire cas : $\Theta(n^2)$
 
@@ -130,7 +136,9 @@ n/10 \rceil$ médianes. Chacune de ces médianes est elle-même plus
 grande que les 2 plus petits éléments de son groupe (dont elle est
 médiane). Total :
 
-$$3 \cdot \left\lceil \frac{n}{10} \right\rceil \ge \frac{3n}{10}$$
+$$
+3 \cdot \left\lceil \frac{n}{10} \right\rceil \ge \frac{3n}{10}
+$$
 
 éléments $\le$ pivot. Symétriquement pour $\ge$. $\square$
 
@@ -145,7 +153,9 @@ Soit $T(n)$ le coût.
   grande moitié a au plus $\frac{7n}{10}$ éléments (par le lemme),
   donc $T(7n/10)$.
 
-$$T(n) \le T(n/5) + T(7n/10) + cn.$$
+$$
+T(n) \le T(n/5) + T(7n/10) + cn.
+$$
 
 Comme $\frac{1}{5} + \frac{7}{10} = \frac{9}{10} < 1$, la
 récurrence se résout en $T(n) = \Theta(n)$ par induction (ou Akra-

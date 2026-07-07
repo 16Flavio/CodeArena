@@ -63,7 +63,9 @@ loses **at least half** per round: if it has size $k$,
 $\text{mid} - lo \le k/2$ and $hi - (\text{mid}+1) \le k/2$. After
 $T$ rounds size $\le n / 2^T$, so $T \le \log_2 n$.
 
-$$\boxed{\;T(n) = \Theta(\log n)\;}$$
+$$
+\boxed{\;T(n) = \Theta(\log n)\;}
+$$
 
 ---
 

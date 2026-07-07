@@ -5,7 +5,9 @@
 Un **BST** est un arbre binaire dans lequel, pour chaque nœud $v$ de
 clé $v.k$ :
 
-$$\forall u \in \text{sous-arbre gauche}(v),\ u.k < v.k \quad\text{et}\quad \forall u \in \text{sous-arbre droit}(v),\ u.k > v.k.$$
+$$
+\forall u \in \text{sous-arbre gauche}(v),\ u.k < v.k \quad\text{et}\quad \forall u \in \text{sous-arbre droit}(v),\ u.k > v.k.
+$$
 
 Cette propriété donne immédiatement :
 
@@ -92,7 +94,9 @@ $\Theta(1)$ sont la brique de base de tous les arbres équilibrés.
 Inventés en 1962 par Adelson-Velsky et Landis. **Invariant** : pour
 chaque nœud $v$,
 
-$$|h(v.l) - h(v.r)| \le 1.$$
+$$
+|h(v.l) - h(v.r)| \le 1.
+$$
 
 On note $\text{bf}(v) = h(v.l) - h(v.r)$ le **facteur d'équilibre**.
 Un AVL maintient $\text{bf}(v) \in \{-1, 0, +1\}$.
@@ -107,7 +111,9 @@ hauteur $h$. Un tel arbre minimal a une racine, un sous-arbre de
 hauteur $h-1$ et un de hauteur $h-2$ (l'autre ne peut être plus
 petit). Donc :
 
-$$N(h) = 1 + N(h-1) + N(h-2),\quad N(1) = 1,\ N(2) = 2.$$
+$$
+N(h) = 1 + N(h-1) + N(h-2),\quad N(1) = 1,\ N(2) = 2.
+$$
 
 (La hauteur compte les nœuds, comme dans le code ci-dessus : un
 nœud seul a hauteur $1$.) C'est la suite de Fibonacci décalée :

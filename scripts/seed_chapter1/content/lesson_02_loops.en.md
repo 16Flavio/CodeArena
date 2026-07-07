@@ -10,37 +10,47 @@ sum and simplify. Three sums show up everywhere.
 
 ### Arithmetic sum
 
-$$\sum_{i=1}^{n} i = \frac{n(n+1)}{2} = \Theta(n^2).$$
+$$
+\sum_{i=1}^{n} i = \frac{n(n+1)}{2} = \Theta(n^2).
+$$
 
 **Elegant proof (Gauss).** Write the sum twice, in opposite directions,
 and add column by column:
 
-$$\begin{aligned}
+$$
+\begin{aligned}
 S &= 1 + 2 + \dots + (n-1) + n \\
 S &= n + (n-1) + \dots + 2 + 1 \\
 \hline
 2S &= \underbrace{(n+1) + (n+1) + \dots + (n+1)}_{n \text{ terms}} = n(n+1).
-\end{aligned}$$
+\end{aligned}
+$$
 
 Hence $S = n(n+1)/2$. $\square$
 
 ### Geometric sum
 
-$$\sum_{i=0}^{n-1} r^i = \begin{cases} \dfrac{r^n - 1}{r - 1} & \text{if } r \ne 1 \\ n & \text{if } r = 1. \end{cases}$$
+$$
+\sum_{i=0}^{n-1} r^i = \begin{cases} \dfrac{r^n - 1}{r - 1} & \text{if } r \ne 1 \\ n & \text{if } r = 1. \end{cases}
+$$
 
 For $r > 1$ we have $\sum_{i=0}^{n-1} r^i = \Theta(r^n)$: the **last
 term dominates**. This intuition is crucial when analysing recursion.
 
 ### Harmonic sum
 
-$$H_n = \sum_{i=1}^{n} \frac{1}{i} = \ln n + \gamma + O(1/n)\quad \text{with } \gamma \approx 0.5772.$$
+$$
+H_n = \sum_{i=1}^{n} \frac{1}{i} = \ln n + \gamma + O(1/n)\quad \text{with } \gamma \approx 0.5772.
+$$
 
 So $H_n = \Theta(\log n)$. This is the worst-case cost of operations
 like "insert into a binary heap", or the average depth of a random BST.
 
 **Proof (sketch).** Squeeze the sum between two integrals:
 
-$$\int_1^{n+1} \frac{dx}{x} \le \sum_{i=1}^{n} \frac{1}{i} \le 1 + \int_1^{n} \frac{dx}{x},$$
+$$
+\int_1^{n+1} \frac{dx}{x} \le \sum_{i=1}^{n} \frac{1}{i} \le 1 + \int_1^{n} \frac{dx}{x},
+$$
 
 i.e. $\ln(n+1) \le H_n \le 1 + \ln n$. $\square$
 
@@ -59,7 +69,9 @@ for i in range(n):           # n iterations
 
 Total cost:
 
-$$T(n) = \sum_{i=0}^{n-1} i = \frac{n(n-1)}{2} = \Theta(n^2).$$
+$$
+T(n) = \sum_{i=0}^{n-1} i = \frac{n(n-1)}{2} = \Theta(n^2).
+$$
 
 **Visual example**: selection sort has exactly this triangular nested
 structure, hence its quadratic complexity.

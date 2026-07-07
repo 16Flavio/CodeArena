@@ -50,7 +50,9 @@ Si à chaque récursion le pivot est l'élément le plus petit (ou le
 plus grand) - par exemple sur un tableau **déjà trié** avec pivot =
 dernier - on obtient une partition de taille $n-1, 0$. La récurrence
 
-$$T(n) = T(n-1) + \Theta(n)$$
+$$
+T(n) = T(n-1) + \Theta(n)
+$$
 
 donne $T(n) = \Theta(n^2)$.
 
@@ -73,7 +75,9 @@ l'algorithme.
 Le coût total (en nombre de comparaisons) est
 $X = \sum_{i<j} X_{ij}$, donc
 
-$$\mathbb{E}[X] = \sum_{i<j} \Pr[z_i \text{ et } z_j \text{ sont comparés}].$$
+$$
+\mathbb{E}[X] = \sum_{i<j} \Pr[z_i \text{ et } z_j \text{ sont comparés}].
+$$
 
 **Lemme.** $z_i$ et $z_j$ sont comparés ssi le **premier pivot
 choisi dans** $\{z_i, z_{i+1}, \dots, z_j\}$ est $z_i$ ou $z_j$. (Si
@@ -84,7 +88,9 @@ Comme les $j - i + 1$ éléments ont la même probabilité d'être tirés
 en premier, la probabilité que ce soit $z_i$ ou $z_j$ vaut
 $\frac{2}{j - i + 1}$.
 
-$$\mathbb{E}[X] = \sum_{i<j} \frac{2}{j - i + 1} = 2 \sum_{i=1}^{n-1} \sum_{k=2}^{n - i + 1} \frac{1}{k} \le 2 n \sum_{k=2}^{n} \frac{1}{k} = 2n\,(H_n - 1).$$
+$$
+\mathbb{E}[X] = \sum_{i<j} \frac{2}{j - i + 1} = 2 \sum_{i=1}^{n-1} \sum_{k=2}^{n - i + 1} \frac{1}{k} \le 2 n \sum_{k=2}^{n} \frac{1}{k} = 2n\,(H_n - 1).
+$$
 
 Comme $H_n = \Theta(\log n)$ (cf. ch. 1), $\mathbb{E}[X] = \Theta(n \log n)$.
 

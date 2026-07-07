@@ -31,7 +31,9 @@ elements, insert.
 
 Total cost over $n$ insertions (copies happen for the $2^j < n$):
 
-$$\text{Total} = n + \sum_{j \,:\, 2^j < n} 2^j \le n + 2n = 3n.$$
+$$
+\text{Total} = n + \sum_{j \,:\, 2^j < n} 2^j \le n + 2n = 3n.
+$$
 
 For instance $n = 8$: copies at insertions $2, 3, 5$, that is
 $1 + 2 + 4 = 7$ copies in total.
@@ -67,11 +69,15 @@ $\mathbb{R}$ such that $\Phi(D_i) \ge \Phi(D_0)$ for all $i$ (one
 usually normalises $\Phi(D_0) = 0$). The amortized cost
 of an operation is:
 
-$$\hat c_i = c_i + \Phi(D_i) - \Phi(D_{i-1}).$$
+$$
+\hat c_i = c_i + \Phi(D_i) - \Phi(D_{i-1}).
+$$
 
 Over $n$ operations:
 
-$$\sum \hat c_i = \sum c_i + \Phi(D_n) - \Phi(D_0) \ge \sum c_i.$$
+$$
+\sum \hat c_i = \sum c_i + \Phi(D_n) - \Phi(D_0) \ge \sum c_i.
+$$
 
 So $\sum c_i \le \sum \hat c_i$: bounding amortized costs is enough.
 

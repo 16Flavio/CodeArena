@@ -23,7 +23,9 @@ $h$ scatters keys well, access is near-instant.
 A family $\mathcal{H}$ of functions $h : \mathcal{U} \to [m]$ is
 **universal** iff for any two distinct keys $x \neq y$:
 
-$$\Pr_{h \sim \mathcal{H}}[h(x) = h(y)] \le \frac{1}{m}.$$
+$$
+\Pr_{h \sim \mathcal{H}}[h(x) = h(y)] \le \frac{1}{m}.
+$$
 
 The randomness is over the choice of $h$, **not** the keys. Once
 $h$ is drawn, it is fixed for the lifetime of the table.
@@ -33,7 +35,9 @@ $h$ is drawn, it is fixed for the lifetime of the table.
 Let $p$ be prime $> |\mathcal{U}|$. For $a \in \{1, \dots, p-1\}$
 and $b \in \{0, \dots, p-1\}$:
 
-$$h_{a,b}(k) = ((a\,k + b) \bmod p) \bmod m.$$
+$$
+h_{a,b}(k) = ((a\,k + b) \bmod p) \bmod m.
+$$
 
 **Theorem.** $\mathcal{H} = \{h_{a,b}\}$ is universal.
 
@@ -66,7 +70,9 @@ def lookup(T, k, h):
 **Expected cost** (universal $\mathcal{H}$, $n$ keys, $m$ buckets,
 **load factor** $\alpha = n/m$):
 
-$$\mathbb{E}[\text{bucket size of target}] \le 1 + \alpha.$$
+$$
+\mathbb{E}[\text{bucket size of target}] \le 1 + \alpha.
+$$
 
 When $\alpha = O(1)$, `lookup` is $\Theta(1)$ in expectation. To
 keep $\alpha$ bounded, **resize** the table (cf. dynamic array,
@@ -100,7 +106,9 @@ def insert(T, k, v, h, m):
 
 **Expected cost** (linear probing, universal hashing):
 
-$$\mathbb{E}[\text{probes per lookup}] = \Theta\left(\frac{1}{(1 - \alpha)^2}\right).$$
+$$
+\mathbb{E}[\text{probes per lookup}] = \Theta\left(\frac{1}{(1 - \alpha)^2}\right).
+$$
 
 Knuth's estimate for an unsuccessful search is $\frac{1}{2}\left(1
 + \frac{1}{(1-\alpha)^2}\right)$: about $2.5$ probes at $\alpha =
@@ -143,7 +151,9 @@ end sentinel, plus each collision).
 
 By universality: $\mathbb{E}[X_{k'}] \le 1/m$.
 
-$$\mathbb{E}[\text{comparisons}] \le 1 + \sum_{k' \neq k} \frac{1}{m} \le 1 + \frac{n}{m} = 1 + \alpha.$$
+$$
+\mathbb{E}[\text{comparisons}] \le 1 + \sum_{k' \neq k} \frac{1}{m} \le 1 + \frac{n}{m} = 1 + \alpha.
+$$
 
 Maintaining $\alpha = O(1)$ via resizing yields lookup in
 $\Theta(1)$ expected. $\square$

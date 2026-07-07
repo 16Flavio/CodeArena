@@ -41,7 +41,9 @@ C'est le cas le plus puissant. On veut la plus longue (ou plus
 petite) fenêtre satisfaisant un prédicat $P$ "monotone par
 contraction" :
 
-$$P(i, j) = \text{vrai} \implies P(i+1, j) = \text{vrai}.$$
+$$
+P(i, j) = \text{vrai} \implies P(i+1, j) = \text{vrai}.
+$$
 
 Autrement dit, **rétrécir** une fenêtre valide la garde valide.
 Symétriquement pour les variantes "min" : élargir une fenêtre

@@ -37,11 +37,15 @@ we need at least $n!$: $2^h \ge n!$, so $h \ge \log_2(n!)$. $\square$
 
 We want an explicit bound on $\log_2(n!)$. Stirling:
 
-$$n! \ge \left(\frac{n}{e}\right)^n,$$
+$$
+n! \ge \left(\frac{n}{e}\right)^n,
+$$
 
 so
 
-$$\log_2(n!) \ge n \log_2(n/e) = n \log_2 n - n \log_2 e = \Omega(n \log n).$$
+$$
+\log_2(n!) \ge n \log_2(n/e) = n \log_2 n - n \log_2 e = \Omega(n \log n).
+$$
 
 → **Every comparison-based sorting algorithm performs $\Omega(n
 \log n)$ comparisons in the worst case.** Mergesort and heapsort are
