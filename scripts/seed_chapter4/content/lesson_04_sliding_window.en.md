@@ -41,7 +41,9 @@ This is the most powerful case. We want the longest (or
 shortest) window satisfying a predicate $P$ "monotone under
 contraction":
 
-$$P(i, j) = \text{true} \implies P(i+1, j) = \text{true}.$$
+$$
+P(i, j) = \text{true} \implies P(i+1, j) = \text{true}.
+$$
 
 That is, **shrinking** a valid window keeps it valid.
 Symmetrically for "min" variants: growing an invalid window keeps

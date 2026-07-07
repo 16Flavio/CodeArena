@@ -124,7 +124,9 @@ subtree rooted at $i$, not by total depth.
 In an almost-complete tree with $n$ nodes, the number of nodes at
 height $h$ is $\le \lceil n / 2^{h+1} \rceil$. So:
 
-$$T(n) \le \sum_{h=0}^{\lfloor \log_2 n \rfloor} \left\lceil \frac{n}{2^{h+1}} \right\rceil \cdot O(h) = O\!\left( n \sum_{h=0}^{\infty} \frac{h}{2^h} \right).$$
+$$
+T(n) \le \sum_{h=0}^{\lfloor \log_2 n \rfloor} \left\lceil \frac{n}{2^{h+1}} \right\rceil \cdot O(h) = O\!\left( n \sum_{h=0}^{\infty} \frac{h}{2^h} \right).
+$$
 
 The series $\sum_{h \ge 0} h / 2^h$ converges to $2$ (classic
 $\sum h x^h = x/(1-x)^2$ at $x = 1/2$). So $T(n) = O(n)$. $\square$

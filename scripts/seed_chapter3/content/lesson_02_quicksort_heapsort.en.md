@@ -48,7 +48,9 @@ If every recursive pivot is the smallest (or largest) element - for
 instance an **already sorted** array with pivot = last - we get a
 $n-1, 0$ split. The recurrence
 
-$$T(n) = T(n-1) + \Theta(n)$$
+$$
+T(n) = T(n-1) + \Theta(n)
+$$
 
 gives $T(n) = \Theta(n^2)$.
 
@@ -70,7 +72,9 @@ run.
 
 Total cost (in comparisons) is $X = \sum_{i<j} X_{ij}$, so
 
-$$\mathbb{E}[X] = \sum_{i<j} \Pr[z_i \text{ and } z_j \text{ compared}].$$
+$$
+\mathbb{E}[X] = \sum_{i<j} \Pr[z_i \text{ and } z_j \text{ compared}].
+$$
 
 **Lemma.** $z_i$ and $z_j$ are compared iff the **first pivot
 chosen from** $\{z_i, z_{i+1}, \dots, z_j\}$ is $z_i$ or $z_j$. (If
@@ -80,7 +84,9 @@ and never meet again.)
 Since the $j - i + 1$ elements are equally likely to be the first
 pivot, the probability is $\frac{2}{j - i + 1}$.
 
-$$\mathbb{E}[X] = \sum_{i<j} \frac{2}{j - i + 1} = 2 \sum_{i=1}^{n-1} \sum_{k=2}^{n - i + 1} \frac{1}{k} \le 2 n \sum_{k=2}^{n} \frac{1}{k} = 2n\,(H_n - 1).$$
+$$
+\mathbb{E}[X] = \sum_{i<j} \frac{2}{j - i + 1} = 2 \sum_{i=1}^{n-1} \sum_{k=2}^{n - i + 1} \frac{1}{k} \le 2 n \sum_{k=2}^{n} \frac{1}{k} = 2n\,(H_n - 1).
+$$
 
 Since $H_n = \Theta(\log n)$ (cf. ch. 1), $\mathbb{E}[X] = \Theta(n \log n)$.
 

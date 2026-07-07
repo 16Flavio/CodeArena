@@ -27,12 +27,14 @@ $n$ large enough.
 
 *Inductive step.* Assume $T(n/2) \le c (n/2) \log_2(n/2)$. Then
 
-$$\begin{aligned}
+$$
+\begin{aligned}
 T(n) &= 2T(n/2) + n \\
 &\le 2 \cdot c (n/2) \log_2(n/2) + n \\
 &= c\,n \log_2 n - c\,n + n \\
 &\le c\,n \log_2 n
-\end{aligned}$$
+\end{aligned}
+$$
 
 as long as $c \ge 1$. *Base case*: pick $c$ large enough to cover it.
 $\square$
@@ -54,7 +56,9 @@ For $T(n) = aT(n/b) + f(n)$ we draw the call tree:
 
 Total cost:
 
-$$T(n) = \underbrace{n^{\log_b a}}_{\text{leaves}} + \sum_{k=0}^{\log_b n - 1} a^k\, f(n/b^k).$$
+$$
+T(n) = \underbrace{n^{\log_b a}}_{\text{leaves}} + \sum_{k=0}^{\log_b n - 1} a^k\, f(n/b^k).
+$$
 
 Depending on whether the sum is dominated by leaves, by the root, or
 spread evenly across levels, we land in one of the **three cases** of
@@ -115,7 +119,9 @@ $T(n) = \sum_{i=1}^{k} a_i\,T(n/b_i) + f(n)$
 with $a_i > 0$, $b_i > 1$. Let $p$ be the unique real such that
 $\sum_{i=1}^{k} a_i / b_i^{\,p} = 1$. Then
 
-$$T(n) = \Theta\!\left( n^p \left(1 + \int_1^n \frac{f(u)}{u^{p+1}}\,du \right)\right).$$
+$$
+T(n) = \Theta\!\left( n^p \left(1 + \int_1^n \frac{f(u)}{u^{p+1}}\,du \right)\right).
+$$
 
 Akra-Bazzi handles:
 - recurrences with **multiple branches of different sizes** (e.g. $T(n) = T(n/3) + T(2n/3) + n$),

@@ -33,7 +33,9 @@ copie les éléments existants, on insère.
 
 Coût total des $n$ insertions (les copies portent sur les $2^j < n$) :
 
-$$\text{Total} = n + \sum_{j \,:\, 2^j < n} 2^j \le n + 2n = 3n.$$
+$$
+\text{Total} = n + \sum_{j \,:\, 2^j < n} 2^j \le n + 2n = 3n.
+$$
 
 Par exemple $n = 8$ : copies aux insertions $2, 3, 5$, soit
 $1 + 2 + 4 = 7$ copies au total.
@@ -69,11 +71,15 @@ $\mathbb{R}$ telle que $\Phi(D_i) \ge \Phi(D_0)$ pour tout $i$ (on
 normalise souvent $\Phi(D_0) = 0$). Le coût
 amorti d'une opération est :
 
-$$\hat c_i = c_i + \Phi(D_i) - \Phi(D_{i-1}).$$
+$$
+\hat c_i = c_i + \Phi(D_i) - \Phi(D_{i-1}).
+$$
 
 Pour $n$ opérations :
 
-$$\sum \hat c_i = \sum c_i + \Phi(D_n) - \Phi(D_0) \ge \sum c_i.$$
+$$
+\sum \hat c_i = \sum c_i + \Phi(D_n) - \Phi(D_0) \ge \sum c_i.
+$$
 
 Donc $\sum c_i \le \sum \hat c_i$ : majorer le coût amorti suffit.
 

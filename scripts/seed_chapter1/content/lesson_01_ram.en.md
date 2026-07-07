@@ -47,27 +47,37 @@ Let $f, g : \mathbb{N} \to \mathbb{R}_{\ge 0}$.
 
 ### Upper bound: $O$
 
-$$f(n) = O(g(n)) \iff \exists\, c > 0,\ \exists\, n_0 \in \mathbb{N},\ \forall n \ge n_0,\ f(n) \le c \cdot g(n).$$
+$$
+f(n) = O(g(n)) \iff \exists\, c > 0,\ \exists\, n_0 \in \mathbb{N},\ \forall n \ge n_0,\ f(n) \le c \cdot g(n).
+$$
 
 Reads as: *"$f$ grows no faster than $g$, up to a constant factor, from some point on."*
 
 ### Lower bound: $\Omega$
 
-$$f(n) = \Omega(g(n)) \iff \exists\, c > 0,\ \exists\, n_0 \in \mathbb{N},\ \forall n \ge n_0,\ f(n) \ge c \cdot g(n).$$
+$$
+f(n) = \Omega(g(n)) \iff \exists\, c > 0,\ \exists\, n_0 \in \mathbb{N},\ \forall n \ge n_0,\ f(n) \ge c \cdot g(n).
+$$
 
 ### Tight bound: $\Theta$
 
-$$f(n) = \Theta(g(n)) \iff f(n) = O(g(n))\ \text{and}\ f(n) = \Omega(g(n)).$$
+$$
+f(n) = \Theta(g(n)) \iff f(n) = O(g(n))\ \text{and}\ f(n) = \Omega(g(n)).
+$$
 
 ### Strict domination: $o$ (little-o)
 
-$$f(n) = o(g(n)) \iff \forall\, c > 0,\ \exists\, n_0,\ \forall n \ge n_0,\ f(n) < c \cdot g(n).$$
+$$
+f(n) = o(g(n)) \iff \forall\, c > 0,\ \exists\, n_0,\ \forall n \ge n_0,\ f(n) < c \cdot g(n).
+$$
 
 Equivalently, when $g(n) > 0$: $\displaystyle \lim_{n \to \infty} \frac{f(n)}{g(n)} = 0$.
 
 ### Strict domination (other side): $\omega$
 
-$$f(n) = \omega(g(n)) \iff \forall\, c > 0,\ \exists\, n_0,\ \forall n \ge n_0,\ f(n) > c \cdot g(n).$$
+$$
+f(n) = \omega(g(n)) \iff \forall\, c > 0,\ \exists\, n_0,\ \forall n \ge n_0,\ f(n) > c \cdot g(n).
+$$
 
 ### Summary table
 

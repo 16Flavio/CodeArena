@@ -128,7 +128,9 @@ enraciné en $i$, pas par la profondeur totale.
 Dans un arbre presque complet à $n$ nœuds, le nombre de nœuds à
 hauteur $h$ est $\le \lceil n / 2^{h+1} \rceil$. Donc :
 
-$$T(n) \le \sum_{h=0}^{\lfloor \log_2 n \rfloor} \left\lceil \frac{n}{2^{h+1}} \right\rceil \cdot O(h) = O\!\left( n \sum_{h=0}^{\infty} \frac{h}{2^h} \right).$$
+$$
+T(n) \le \sum_{h=0}^{\lfloor \log_2 n \rfloor} \left\lceil \frac{n}{2^{h+1}} \right\rceil \cdot O(h) = O\!\left( n \sum_{h=0}^{\infty} \frac{h}{2^h} \right).
+$$
 
 La série $\sum_{h \ge 0} h / 2^h$ converge vers $2$ (somme classique
 $\sum h x^h = x/(1-x)^2$ évaluée en $x = 1/2$). Donc $T(n) = O(n)$.

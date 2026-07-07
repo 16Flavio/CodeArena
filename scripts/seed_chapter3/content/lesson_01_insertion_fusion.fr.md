@@ -94,7 +94,9 @@ des deux fronts est donc le min global non encore émis. $\square$
 
 La récurrence est
 
-$$T(n) = 2\,T(n/2) + cn,\qquad T(1) = c'.$$
+$$
+T(n) = 2\,T(n/2) + cn,\qquad T(1) = c'.
+$$
 
 **Approche 1 - Master Theorem.** $a = 2$, $b = 2$, $\alpha = \log_b a = 1$,
 $f(n) = cn = \Theta(n^\alpha)$ : on est dans le **cas 2** du Master
@@ -107,7 +109,9 @@ Theorem (cf. ch. 1) et $T(n) = \Theta(n \log n)$.
 - Coût d'un niveau : $2^k \cdot (cn/2^k) = cn$ - **constant** par niveau.
 - Profondeur : $\log_2 n$ niveaux jusqu'aux feuilles.
 
-$$T(n) = \sum_{k=0}^{\log_2 n} cn = cn\,(\log_2 n + 1) = \Theta(n \log n).$$
+$$
+T(n) = \sum_{k=0}^{\log_2 n} cn = cn\,(\log_2 n + 1) = \Theta(n \log n).
+$$
 
 $\square$
 

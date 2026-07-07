@@ -28,12 +28,14 @@ bien choisi et $n$ assez grand.
 
 *Hérédité.* Supposons $T(n/2) \le c \cdot (n/2) \log_2(n/2)$. Alors
 
-$$\begin{aligned}
+$$
+\begin{aligned}
 T(n) &= 2T(n/2) + n \\
 &\le 2 \cdot c (n/2) \log_2(n/2) + n \\
 &= c\,n \log_2 n - c\,n + n \\
 &\le c\,n \log_2 n
-\end{aligned}$$
+\end{aligned}
+$$
 
 dès que $c \ge 1$. *Initialisation* : on choisit $c$ assez grand pour
 couvrir le cas de base. $\square$
@@ -56,7 +58,9 @@ Pour $T(n) = aT(n/b) + f(n)$ on dessine l'arbre des appels :
 
 Coût total :
 
-$$T(n) = \underbrace{n^{\log_b a}}_{\text{coût des feuilles}} + \sum_{k=0}^{\log_b n - 1} a^k\, f(n/b^k).$$
+$$
+T(n) = \underbrace{n^{\log_b a}}_{\text{coût des feuilles}} + \sum_{k=0}^{\log_b n - 1} a^k\, f(n/b^k).
+$$
 
 Selon que la somme est dominée par les feuilles, par la racine, ou par
 tous les niveaux à parts égales, on obtient les **trois cas** du Master
@@ -117,7 +121,9 @@ $T(n) = \sum_{i=1}^{k} a_i\,T(n/b_i) + f(n)$
 avec $a_i > 0$, $b_i > 1$. Soit $p$ l'unique réel vérifiant
 $\sum_{i=1}^{k} a_i / b_i^{\,p} = 1$. Alors
 
-$$T(n) = \Theta\!\left( n^p \left(1 + \int_1^n \frac{f(u)}{u^{p+1}}\,du \right)\right).$$
+$$
+T(n) = \Theta\!\left( n^p \left(1 + \int_1^n \frac{f(u)}{u^{p+1}}\,du \right)\right).
+$$
 
 Akra-Bazzi gère :
 - des récurrences à **plusieurs branches de tailles différentes** (ex. $T(n) = T(n/3) + T(2n/3) + n$),

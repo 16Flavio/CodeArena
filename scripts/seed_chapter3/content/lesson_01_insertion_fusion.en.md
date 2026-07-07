@@ -91,7 +91,9 @@ two fronts is the global min not yet emitted. $\square$
 
 Recurrence:
 
-$$T(n) = 2\,T(n/2) + cn,\qquad T(1) = c'.$$
+$$
+T(n) = 2\,T(n/2) + cn,\qquad T(1) = c'.
+$$
 
 **Approach 1 - Master Theorem.** $a = 2$, $b = 2$, $\alpha = \log_b a = 1$,
 $f(n) = cn = \Theta(n^\alpha)$: this is **case 2** of the Master
@@ -104,7 +106,9 @@ Theorem (cf. ch. 1), so $T(n) = \Theta(n \log n)$.
 - Cost per level: $2^k \cdot (cn/2^k) = cn$ - **constant** per level.
 - Depth: $\log_2 n$ levels down to leaves.
 
-$$T(n) = \sum_{k=0}^{\log_2 n} cn = cn\,(\log_2 n + 1) = \Theta(n \log n).$$
+$$
+T(n) = \sum_{k=0}^{\log_2 n} cn = cn\,(\log_2 n + 1) = \Theta(n \log n).
+$$
 
 $\square$
 

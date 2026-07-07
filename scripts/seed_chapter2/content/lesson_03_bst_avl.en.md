@@ -5,7 +5,9 @@
 A **BST** is a binary tree such that, for every node $v$ with key
 $v.k$:
 
-$$\forall u \in \text{left subtree}(v),\ u.k < v.k \quad\text{and}\quad \forall u \in \text{right subtree}(v),\ u.k > v.k.$$
+$$
+\forall u \in \text{left subtree}(v),\ u.k < v.k \quad\text{and}\quad \forall u \in \text{right subtree}(v),\ u.k > v.k.
+$$
 
 This property gives us:
 
@@ -88,7 +90,9 @@ the building block of every balanced tree.
 Invented in 1962 by Adelson-Velsky and Landis. **Invariant**: for
 every node $v$,
 
-$$|h(v.l) - h(v.r)| \le 1.$$
+$$
+|h(v.l) - h(v.r)| \le 1.
+$$
 
 Let $\text{bf}(v) = h(v.l) - h(v.r)$ be the **balance factor**. An
 AVL keeps $\text{bf}(v) \in \{-1, 0, +1\}$.
@@ -102,7 +106,9 @@ AVL keeps $\text{bf}(v) \in \{-1, 0, +1\}$.
 height $h$. Such a minimal tree has a root, one subtree of height
 $h-1$, and one of height $h-2$. So:
 
-$$N(h) = 1 + N(h-1) + N(h-2),\quad N(1) = 1,\ N(2) = 2.$$
+$$
+N(h) = 1 + N(h-1) + N(h-2),\quad N(1) = 1,\ N(2) = 2.
+$$
 
 (Heights count nodes, as in the code above: a single node has
 height $1$.) This is the shifted Fibonacci sequence: $N(h) = F(h+2)

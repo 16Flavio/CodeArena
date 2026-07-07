@@ -24,7 +24,9 @@ instantanément.
 Une famille $\mathcal{H}$ de fonctions $h : \mathcal{U} \to [m]$ est
 **universelle** si pour toutes clés distinctes $x \neq y$ :
 
-$$\Pr_{h \sim \mathcal{H}}[h(x) = h(y)] \le \frac{1}{m}.$$
+$$
+\Pr_{h \sim \mathcal{H}}[h(x) = h(y)] \le \frac{1}{m}.
+$$
 
 L'aléa est sur le choix de $h$ dans la famille - pas sur les clés.
 Une fois $h$ tirée, elle reste fixée pour toute la durée de vie de
@@ -35,7 +37,9 @@ la table.
 Soit $p$ un premier $> |\mathcal{U}|$. Pour $a \in \{1, \dots, p-1\}$
 et $b \in \{0, \dots, p-1\}$, posons :
 
-$$h_{a,b}(k) = ((a\,k + b) \bmod p) \bmod m.$$
+$$
+h_{a,b}(k) = ((a\,k + b) \bmod p) \bmod m.
+$$
 
 **Théorème.** $\mathcal{H} = \{h_{a,b}\}$ est universelle.
 
@@ -69,7 +73,9 @@ def lookup(T, k, h):
 **Coût en espérance** (avec $\mathcal{H}$ universelle, $n$ clés
 insérées, $m$ buckets, **facteur de charge** $\alpha = n/m$) :
 
-$$\mathbb{E}[\text{taille du bucket de la clé recherchée}] \le 1 + \alpha.$$
+$$
+\mathbb{E}[\text{taille du bucket de la clé recherchée}] \le 1 + \alpha.
+$$
 
 Quand $\alpha = O(1)$, on a `lookup` en $\Theta(1)$ en espérance.
 Pour maintenir $\alpha$ borné, on **redimensionne** la table (cf.
@@ -106,7 +112,9 @@ def insert(T, k, v, h, m):
 
 **Coût en espérance** (sondage linéaire, hachage universel) :
 
-$$\mathbb{E}[\text{nombre de sondes par lookup}] = \Theta\left(\frac{1}{(1 - \alpha)^2}\right).$$
+$$
+\mathbb{E}[\text{nombre de sondes par lookup}] = \Theta\left(\frac{1}{(1 - \alpha)^2}\right).
+$$
 
 L'estimation de Knuth pour une recherche infructueuse est
 $\frac{1}{2}\left(1 + \frac{1}{(1-\alpha)^2}\right)$ : environ
@@ -150,7 +158,9 @@ clé elle-même ou la sentinelle de fin, plus chaque collision).
 
 Par universalité : $\mathbb{E}[X_{k'}] \le 1/m$.
 
-$$\mathbb{E}[\text{nb comparaisons}] \le 1 + \sum_{k' \neq k} \frac{1}{m} \le 1 + \frac{n}{m} = 1 + \alpha.$$
+$$
+\mathbb{E}[\text{nb comparaisons}] \le 1 + \sum_{k' \neq k} \frac{1}{m} \le 1 + \frac{n}{m} = 1 + \alpha.
+$$
 
 Quand on maintient $\alpha = O(1)$ par redimensionnement, lookup
 coûte $\Theta(1)$ en espérance. $\square$

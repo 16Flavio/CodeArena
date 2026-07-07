@@ -10,30 +10,38 @@ en somme et on simplifie. Trois sommes reviennent partout.
 
 ### Somme arithmétique
 
-$$\sum_{i=1}^{n} i = \frac{n(n+1)}{2} = \Theta(n^2).$$
+$$
+\sum_{i=1}^{n} i = \frac{n(n+1)}{2} = \Theta(n^2).
+$$
 
 **Preuve élégante (Gauss).** Écrire la somme dans les deux sens et
 additionner colonne par colonne :
 
-$$\begin{aligned}
+$$
+\begin{aligned}
 S &= 1 + 2 + \dots + (n-1) + n \\
 S &= n + (n-1) + \dots + 2 + 1 \\
 \hline
 2S &= \underbrace{(n+1) + (n+1) + \dots + (n+1)}_{n \text{ termes}} = n(n+1).
-\end{aligned}$$
+\end{aligned}
+$$
 
 D'où $S = n(n+1)/2$. $\square$
 
 ### Somme géométrique
 
-$$\sum_{i=0}^{n-1} r^i = \begin{cases} \dfrac{r^n - 1}{r - 1} & \text{si } r \ne 1 \\ n & \text{si } r = 1. \end{cases}$$
+$$
+\sum_{i=0}^{n-1} r^i = \begin{cases} \dfrac{r^n - 1}{r - 1} & \text{si } r \ne 1 \\ n & \text{si } r = 1. \end{cases}
+$$
 
 Pour $r > 1$ on a $\sum_{i=0}^{n-1} r^i = \Theta(r^n)$ : le **dernier
 terme domine**. Cette intuition est cruciale en analyse de récursion.
 
 ### Somme harmonique
 
-$$H_n = \sum_{i=1}^{n} \frac{1}{i} = \ln n + \gamma + O(1/n)\quad \text{où } \gamma \approx 0.5772.$$
+$$
+H_n = \sum_{i=1}^{n} \frac{1}{i} = \ln n + \gamma + O(1/n)\quad \text{où } \gamma \approx 0.5772.
+$$
 
 En particulier $H_n = \Theta(\log n)$. C'est la complexité au pire cas
 d'opérations comme « insertion dans un tas binaire », ou la profondeur
@@ -41,7 +49,9 @@ moyenne d'un arbre BST aléatoire.
 
 **Preuve (esquisse).** On encadre la somme par deux intégrales :
 
-$$\int_1^{n+1} \frac{dx}{x} \le \sum_{i=1}^{n} \frac{1}{i} \le 1 + \int_1^{n} \frac{dx}{x},$$
+$$
+\int_1^{n+1} \frac{dx}{x} \le \sum_{i=1}^{n} \frac{1}{i} \le 1 + \int_1^{n} \frac{dx}{x},
+$$
 
 soit $\ln(n+1) \le H_n \le 1 + \ln n$. $\square$
 
@@ -60,7 +70,9 @@ for i in range(n):           # n itérations
 
 Coût total :
 
-$$T(n) = \sum_{i=0}^{n-1} i = \frac{n(n-1)}{2} = \Theta(n^2).$$
+$$
+T(n) = \sum_{i=0}^{n-1} i = \frac{n(n-1)}{2} = \Theta(n^2).
+$$
 
 **Exemple visuel** : le tri par sélection a exactement cette
 structure de boucle imbriquée triangulaire, d'où sa complexité
