@@ -1,0 +1,153 @@
+<style>
+  canvas { width: 100%; max-width: 100%; display: block; background: transparent;
+           touch-action: none; cursor: grab; }
+  canvas.grabbing { cursor: grabbing; }
+  .si-verdict { text-align: center; font-weight: 700; font-size: 14px; margin-top: 10px; }
+  .si-yes { color: #16a34a; } .si-no { color: #dc2626; }
+  html.dark .si-yes { color: #4ade80; } html.dark .si-no { color: #f87171; }
+</style>
+<div class="stage">
+  <canvas id="cv" width="600" height="340"></canvas>
+</div>
+<div class="si-verdict" id="verdict"></div>
+<div class="meta-row" id="signs"></div>
+<div class="controls">
+  <button class="btn-icon-secondary" id="reset" title="reset"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('reset');
+
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var verdict = document.getElementById('verdict');
+  var signs = document.getElementById('signs');
+
+  var DEF = { A: [-5, -1], B: [4, 3], C: [-3, 3], D: [3, -3] };
+  var P = { A: DEF.A.slice(), B: DEF.B.slice(), C: DEF.C.slice(), D: DEF.D.slice() };
+
+  var unit = 26, W = 600, H = 340, cx = 300, cy = 170;
+
+  function isDark() { return document.documentElement.classList.contains('dark'); }
+  function w2s(p) { return [cx + p[0] * unit, cy - p[1] * unit]; }
+  function s2w(px, py) { return [Math.round((px - cx) / unit), Math.round((cy - py) / unit)]; }
+  function cross(o, a, b) {
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  }
+  function onSeg(p, q, r) { // r colineaire a pq : dans la boite englobante ?
+    return Math.min(p[0], q[0]) <= r[0] && r[0] <= Math.max(p[0], q[0]) &&
+           Math.min(p[1], q[1]) <= r[1] && r[1] <= Math.max(p[1], q[1]);
+  }
+
+  function intersect() {
+    var d1 = cross(P.C, P.D, P.A), d2 = cross(P.C, P.D, P.B);
+    var d3 = cross(P.A, P.B, P.C), d4 = cross(P.A, P.B, P.D);
+    var proper = ((d1 > 0) !== (d2 > 0)) && d1 && d2 &&
+                 ((d3 > 0) !== (d4 > 0)) && d3 && d4;
+    var touch = (d1 === 0 && onSeg(P.C, P.D, P.A)) ||
+                (d2 === 0 && onSeg(P.C, P.D, P.B)) ||
+                (d3 === 0 && onSeg(P.A, P.B, P.C)) ||
+                (d4 === 0 && onSeg(P.A, P.B, P.D));
+    return { hit: proper || touch, proper: proper, d1: d1, d2: d2, d3: d3, d4: d4 };
+  }
+
+  function resize() {
+    W = cv.clientWidth || 600; H = 340; cx = W / 2; cy = H / 2;
+    var dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function segColor() { }
+
+  function draw() {
+    var dark = isDark();
+    ctx.clearRect(0, 0, W, H);
+    // grille + axes
+    ctx.strokeStyle = dark ? 'rgba(148,163,184,0.13)' : 'rgba(100,116,139,0.13)';
+    ctx.lineWidth = 1;
+    var xspan = Math.ceil(cx / unit), yspan = Math.ceil(cy / unit);
+    for (var gx = -xspan; gx <= xspan; gx++) { var s = w2s([gx, 0]); ctx.beginPath(); ctx.moveTo(s[0], 0); ctx.lineTo(s[0], H); ctx.stroke(); }
+    for (var gy = -yspan; gy <= yspan; gy++) { var t = w2s([0, gy]); ctx.beginPath(); ctx.moveTo(0, t[1]); ctx.lineTo(W, t[1]); ctx.stroke(); }
+    ctx.strokeStyle = dark ? 'rgba(148,163,184,0.4)' : 'rgba(100,116,139,0.4)';
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+
+    var r = intersect();
+
+    // segment AB (bleu accent) et CD (orange)
+    seg(P.A, P.B, '#3a6690', dark);
+    seg(P.C, P.D, '#f97316', dark);
+
+    // point d'intersection (calcul flottant, affichage seul)
+    if (r.proper) {
+      var ip = interPoint();
+      if (ip) {
+        var sp = [cx + ip[0] * unit, cy - ip[1] * unit];
+        ctx.fillStyle = '#16a34a';
+        ctx.beginPath(); ctx.arc(sp[0], sp[1], 6, 0, 2 * Math.PI); ctx.fill();
+        ctx.strokeStyle = dark ? '#18181b' : '#fff'; ctx.lineWidth = 2; ctx.stroke();
+      }
+    }
+
+    pt(P.A, '#3a6690', 'A', dark); pt(P.B, '#3a6690', 'B', dark);
+    pt(P.C, '#f97316', 'C', dark); pt(P.D, '#f97316', 'D', dark);
+
+    verdict.textContent = r.hit ? 'Les segments se croisent' : 'Pas de croisement';
+    verdict.className = 'si-verdict ' + (r.hit ? 'si-yes' : 'si-no');
+    signs.innerHTML =
+      '<span>d1=<b>' + r.d1 + '</b></span><span>d2=<b>' + r.d2 + '</b></span>' +
+      '<span>d3=<b>' + r.d3 + '</b></span><span>d4=<b>' + r.d4 + '</b></span>';
+  }
+
+  function seg(u, v, color, dark) {
+    var a = w2s(u), b = w2s(v);
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+  }
+  function pt(world, color, label, dark) {
+    var s = w2s(world);
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(s[0], s[1], 6, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = dark ? '#18181b' : '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = dark ? '#e4e4e7' : '#18181b';
+    ctx.font = '600 13px system-ui';
+    ctx.fillText(label, s[0] + 9, s[1] - 9);
+  }
+  function interPoint() {
+    var x1 = P.A[0], y1 = P.A[1], x2 = P.B[0], y2 = P.B[1];
+    var x3 = P.C[0], y3 = P.C[1], x4 = P.D[0], y4 = P.D[1];
+    var den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    if (den === 0) return null;
+    var t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / den;
+    return [x1 + t * (x2 - x1), y1 + t * (y2 - y1)];
+  }
+
+  var dragging = null;
+  function hit(px, py) {
+    var keys = ['A', 'B', 'C', 'D'];
+    for (var i = 0; i < keys.length; i++) {
+      var s = w2s(P[keys[i]]);
+      if ((px - s[0]) * (px - s[0]) + (py - s[1]) * (py - s[1]) <= 196) return keys[i];
+    }
+    return null;
+  }
+  function pos(e) { var r = cv.getBoundingClientRect(); var t = e.touches ? e.touches[0] : e; return [t.clientX - r.left, t.clientY - r.top]; }
+  function down(e) { var p = pos(e); dragging = hit(p[0], p[1]); if (dragging) { cv.classList.add('grabbing'); e.preventDefault(); } }
+  function move(e) { if (!dragging) return; var p = pos(e); P[dragging] = s2w(p[0], p[1]); draw(); e.preventDefault(); }
+  function up() { dragging = null; cv.classList.remove('grabbing'); }
+
+  cv.addEventListener('mousedown', down);
+  window.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', up);
+  cv.addEventListener('touchstart', down, { passive: false });
+  cv.addEventListener('touchmove', move, { passive: false });
+  cv.addEventListener('touchend', up);
+
+  document.getElementById('reset').addEventListener('click', function () {
+    P = { A: DEF.A.slice(), B: DEF.B.slice(), C: DEF.C.slice(), D: DEF.D.slice() };
+    draw();
+  });
+  window.addEventListener('resize', function () { resize(); draw(); });
+  resize(); draw();
+})();
+</script>

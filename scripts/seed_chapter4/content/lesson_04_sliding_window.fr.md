@@ -106,6 +106,13 @@ C'est l'exemple de la leçon 3 - déjà vu. La frontière entre
 juste un focus différent (deux index vs une statistique
 agrégée).
 
+**La fenêtre en action** : `step` fait entrer un élément à droite, puis
+contracte à gauche tant que la somme reste $\ge S$. La plus petite
+fenêtre valide se fige en vert à la fin.
+
+:::viz-sliding-window{data="2,3,1,2,4,3" s="7"}
+:::
+
 ---
 
 ## 4.6 - Pièges

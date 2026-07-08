@@ -56,6 +56,14 @@ $$
   $j < lo$ et $A[j] \ge x$ pour $j \ge lo$ - exactement la
   définition de `lower_bound`. $\square$
 
+**Visualise la dichotomie** : `step` avance d'un tour ; observe la
+fenêtre $[lo, hi)$ perdre la moitié de sa largeur et les zones exclues
+se figer. Change la cible pour une valeur absente et vois `lower_bound`
+renvoyer la position d'insertion.
+
+:::viz-binary-search{data="1,3,4,7,9,11,15,20,25" target="11"}
+:::
+
 ---
 
 ## 1.3 - Complexité

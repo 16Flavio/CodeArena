@@ -56,6 +56,13 @@ def solve(n):
 Placing one queen per row already encodes the "one per row"
 constraint; the sets cover the rest in $O(1)$.
 
+**Explore the tree** : `run` unrolls the N-queens backtracking, placing
+row by row. A red cross marks a pruned square (attacked column or
+diagonal), and the algorithm backtracks at dead ends.
+
+:::viz-backtracking{n="6"}
+:::
+
 ---
 
 ## 4.3 - Complexity

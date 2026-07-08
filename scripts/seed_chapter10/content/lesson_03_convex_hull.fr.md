@@ -44,6 +44,13 @@ def convex_hull(points):
   sur un bord ; utiliser `< 0` les **inclurait**. Choisir selon le
   besoin.
 
+**Deroule l'algorithme** : `step` avance action par action. Regarde la
+pile grandir, puis un point creer un tour a droite (`cross ≤ 0`) et se
+faire depiler (croix rouge). `run` joue toute la construction.
+
+:::viz-convex-hull
+:::
+
 ---
 
 ## 3.3 - Complexite

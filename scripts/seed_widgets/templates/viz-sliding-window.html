@@ -1,0 +1,126 @@
+<style>
+  .sw-stage { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 0; }
+  .sw-row { display: flex; gap: 4px; flex-wrap: nowrap; overflow-x: auto; padding: 6px 0; }
+  .sw-col { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .sw-cell { min-width: 38px; height: 40px; display: flex; align-items: center; justify-content: center;
+             border-radius: 6px; background: #e4e4e7; color: #3f3f46;
+             font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 700;
+             transition: background 0.25s, color 0.25s, outline-color 0.2s; }
+  .sw-cell.out { background: #ececee; color: #b4b4bb; }
+  .sw-cell.win { background: #d7e2ec; color: #2b4a68; }
+  .sw-cell.valid { background: #bfe3cd; color: #14532d; }
+  .sw-cell.best { outline: 2px solid #16a34a; outline-offset: 2px; }
+  .sw-idx { font-size: 10px; color: #a1a1aa; font-family: ui-monospace, monospace; }
+  .sw-ptr { font-size: 11px; height: 14px; font-weight: 700; color: #3a6690; font-family: ui-monospace, monospace; }
+  html.dark .sw-cell { background: #3f3f46; color: #e4e4e7; }
+  html.dark .sw-cell.out { background: #2a2a2e; color: #6b6b73; }
+  html.dark .sw-cell.win { background: #2b3e50; color: #cbd9e6; }
+  html.dark .sw-cell.valid { background: #1f4230; color: #a7e3bf; }
+  html.dark .sw-idx { color: #71717a; }
+</style>
+<div class="stage sw-stage">
+  <div class="sw-row" id="row"></div>
+</div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">tableau <input type="text" id="data" value="2,3,1,2,4,3" /></label>
+  <label class="field">seuil S <input type="number" id="thr" value="7" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var dataInput = document.getElementById('data');
+  var thrInput = document.getElementById('thr');
+
+  var params = window.__params || {};
+  if (params.data != null) dataInput.value = params.data.toString().replace(/[\[\]\s]/g, '');
+  if (params.s != null) thrInput.value = params.s;
+
+  var A = [], S = 0, steps = [], cur = 0, timer = null;
+
+  function parseArr(s) { return s.split(/[^\-0-9]+/).filter(function (t) { return t.length; }).map(Number); }
+
+  function build() {
+    steps = [];
+    var i = 0, total = 0, best = Infinity, bestI = -1, bestJ = -1;
+    for (var j = 0; j < A.length; j++) {
+      total += A[j];
+      steps.push({ i: i, j: j, total: total, action: 'expand', best: best, bestI: bestI, bestJ: bestJ,
+        msg: 'A[' + j + '] = ' + A[j] + ' entre  ->  total = ' + total });
+      while (total >= S && i <= j) {
+        if (j - i + 1 < best) { best = j - i + 1; bestI = i; bestJ = j; }
+        steps.push({ i: i, j: j, total: total, action: 'contract', valid: true, best: best, bestI: bestI, bestJ: bestJ,
+          msg: 'total ' + total + ' >= ' + S + '  ->  fenetre valide de longueur ' + (j - i + 1) + ', on contracte' });
+        total -= A[i];
+        i++;
+      }
+    }
+    steps.push({ i: i, j: A.length - 1, total: total, done: true, best: best, bestI: bestI, bestJ: bestJ,
+      msg: best === Infinity ? 'aucune fenetre de somme >= ' + S
+        : 'plus petite fenetre de somme >= ' + S + ' : longueur ' + best });
+  }
+
+  function render() {
+    var st = steps[cur] || {};
+    var row = document.getElementById('row');
+    var html = '';
+    for (var k = 0; k < A.length; k++) {
+      var cls = 'sw-cell';
+      var inWin = k >= st.i && k <= st.j;
+      if (st.done) {
+        if (st.bestI >= 0 && k >= st.bestI && k <= st.bestJ) cls += ' valid best';
+        else cls += ' out';
+      } else if (inWin) {
+        cls += st.valid ? ' valid' : ' win';
+      } else {
+        cls += ' out';
+      }
+      var ptr = '';
+      if (!st.done) {
+        if (k === st.i && k === st.j) ptr = 'i,j';
+        else if (k === st.i) ptr = 'i';
+        else if (k === st.j) ptr = 'j';
+      }
+      html += '<div class="sw-col"><div class="sw-ptr">' + ptr + '</div>' +
+              '<div class="' + cls + '">' + A[k] + '</div>' +
+              '<div class="sw-idx">' + k + '</div></div>';
+    }
+    row.innerHTML = html;
+    info.textContent = st.msg || '';
+    meta.innerHTML = '<span>total <b>' + (st.total != null ? st.total : '-') + '</b></span>' +
+      '<span>seuil <b>' + S + '</b></span>' +
+      '<span>meilleure <b>' + (st.best === Infinity || st.best == null ? '-' : st.best) + '</b></span>';
+  }
+
+  function load() {
+    stopRun();
+    A = parseArr(dataInput.value);
+    S = parseInt(thrInput.value, 10) || 0;
+    if (!A.length) A = [1];
+    build(); cur = 0; render();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; render(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () { step(); if (cur >= steps.length - 1) { timer = null; return; } timer = setTimeout(tick, 650); };
+    timer = setTimeout(tick, 650);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+
+  load();
+})();
+</script>

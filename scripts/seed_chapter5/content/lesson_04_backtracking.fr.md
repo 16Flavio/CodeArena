@@ -58,6 +58,13 @@ def solve(n):
 Placer une reine par ligne encode déjà la contrainte « une par
 ligne » ; les ensembles couvrent le reste en $O(1)$.
 
+**Explore l'arbre** : `run` déroule le backtracking des N-reines,
+placement ligne par ligne. Une croix rouge marque un élagage (colonne ou
+diagonale attaquée), et l'algorithme rebrousse chemin aux culs-de-sac.
+
+:::viz-backtracking{n="6"}
+:::
+
 ---
 
 ## 4.3 - Complexité

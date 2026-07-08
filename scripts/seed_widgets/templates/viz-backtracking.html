@@ -1,0 +1,154 @@
+<style>
+  canvas { display: block; margin: 0 auto; background: transparent; max-width: 100%; }
+  html.dark { }
+</style>
+<div class="stage">
+  <canvas id="cv" width="320" height="320"></canvas>
+</div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">N <input type="number" id="n" value="6" min="4" max="8" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var nInput = document.getElementById('n');
+
+  var params = window.__params || {};
+  if (params.n != null) nInput.value = params.n;
+
+  var N = 6, steps = [], cur = 0, timer = null, totalSolutions = 0;
+  var MAX_STEPS = 6000;
+
+  function build() {
+    steps = [];
+    totalSolutions = 0;
+    var board = new Array(N).fill(-1);
+    var truncated = false;
+
+    function conflict(r, c) {
+      for (var k = 0; k < r; k++) {
+        if (board[k] === c || Math.abs(board[k] - c) === r - k) return k;
+      }
+      return -1;
+    }
+    function rec(r) {
+      if (truncated) return;
+      if (r === N) {
+        totalSolutions++;
+        steps.push({ type: 'solution', board: board.slice(), sols: totalSolutions,
+          msg: 'solution complete #' + totalSolutions });
+        return;
+      }
+      for (var c = 0; c < N; c++) {
+        if (steps.length >= MAX_STEPS) { truncated = true; return; }
+        var k = conflict(r, c);
+        if (k >= 0) {
+          steps.push({ type: 'reject', board: board.slice(), r: r, c: c, by: k, sols: totalSolutions,
+            msg: 'ligne ' + r + ', col ' + c + ' : attaquee par la reine ligne ' + k + '  ->  elague' });
+          continue;
+        }
+        board[r] = c;
+        steps.push({ type: 'place', board: board.slice(), r: r, c: c, sols: totalSolutions,
+          msg: 'place une reine en (ligne ' + r + ', col ' + c + ')' });
+        rec(r + 1);
+        board[r] = -1;
+        steps.push({ type: 'backtrack', board: board.slice(), r: r, c: c, sols: totalSolutions,
+          msg: 'backtrack : retire la reine de la ligne ' + r });
+      }
+    }
+    rec(0);
+    steps.push({ type: 'done', board: new Array(N).fill(-1), sols: totalSolutions, truncated: truncated,
+      msg: (truncated ? '(trace tronquee) ' : '') + totalSolutions + ' solution(s) au total pour N = ' + N });
+  }
+
+  function resize() {
+    var W = Math.min(320, cv.parentElement.clientWidth || 320);
+    var dpr = window.devicePixelRatio || 1;
+    cv.style.width = W + 'px'; cv.style.height = W + 'px';
+    cv.width = W * dpr; cv.height = W * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return W;
+  }
+
+  function draw() {
+    var dark = document.documentElement.classList.contains('dark');
+    var W = resize();
+    var cell = W / N;
+    var st = steps[cur] || { board: new Array(N).fill(-1) };
+    ctx.clearRect(0, 0, W, W);
+
+    var light = dark ? '#3f3f46' : '#e8ecf0';
+    var darkSq = dark ? '#2a2a2e' : '#cbd5e1';
+    for (var r = 0; r < N; r++) {
+      for (var c = 0; c < N; c++) {
+        ctx.fillStyle = ((r + c) % 2 === 0) ? light : darkSq;
+        ctx.fillRect(c * cell, r * cell, cell, cell);
+      }
+    }
+    // highlight courant
+    if (st.type === 'place' || st.type === 'reject' || st.type === 'backtrack') {
+      ctx.fillStyle = st.type === 'reject' ? 'rgba(220,38,38,0.35)'
+                    : (st.type === 'backtrack' ? 'rgba(148,163,184,0.35)' : 'rgba(249,115,22,0.35)');
+      ctx.fillRect(st.c * cell, st.r * cell, cell, cell);
+    }
+    // reines placees
+    for (var rr = 0; rr < N; rr++) {
+      if (st.board[rr] >= 0) {
+        var cx = st.board[rr] * cell + cell / 2, cy = rr * cell + cell / 2;
+        var isNew = (st.type === 'place' && rr === st.r);
+        ctx.fillStyle = isNew ? '#f97316' : (st.type === 'solution' ? '#16a34a' : '#3a6690');
+        ctx.beginPath(); ctx.arc(cx, cy, cell * 0.30, 0, 2 * Math.PI); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = (cell * 0.34) + 'px system-ui';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('Q', cx, cy + 1);
+      }
+    }
+    // croix rouge sur rejet
+    if (st.type === 'reject') {
+      var x = st.c * cell + cell / 2, y = st.r * cell + cell / 2, r6 = cell * 0.22;
+      ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(x - r6, y - r6); ctx.lineTo(x + r6, y + r6);
+      ctx.moveTo(x + r6, y - r6); ctx.lineTo(x - r6, y + r6); ctx.stroke();
+    }
+    ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
+
+    info.textContent = st.msg || '';
+    meta.innerHTML = '<span>solutions <b>' + (st.sols || 0) + '</b></span>' +
+      '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>';
+  }
+
+  function load() {
+    stopRun();
+    N = Math.max(4, Math.min(8, parseInt(nInput.value, 10) || 6));
+    nInput.value = N;
+    build(); cur = 0; draw();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; draw(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () { step(); if (cur >= steps.length - 1) { timer = null; return; } timer = setTimeout(tick, 300); };
+    timer = setTimeout(tick, 300);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+  window.addEventListener('resize', draw);
+
+  load();
+})();
+</script>

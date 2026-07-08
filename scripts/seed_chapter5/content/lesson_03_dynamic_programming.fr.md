@@ -60,6 +60,13 @@ sous-suite croissante finissant en $i$ se prolonge d'une sous-suite
 croissante finissant en un $j < i$ avec $a_j < a_i$ - sous-structure
 optimale.
 
+**Remplis la table** : `step` calcule chaque $L(i)$ et met en bleu le
+prédécesseur choisi. À la fin, la plus longue sous-suite croissante se
+reconstruit en vert.
+
+:::viz-dp-table{data="3,1,8,2,5,9,4,7,6"}
+:::
+
 ---
 
 ## 3.3 - Complexité

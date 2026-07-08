@@ -5,6 +5,13 @@ n'était pas le tableau : c'était la **monotonie**. On peut donc
 dichotomiser chaque fois qu'on a une fonction monotone - réelle ou
 discrète, parfois sans tableau du tout.
 
+Le même moteur, vu concrètement : ici le prédicat monotone est
+`A[mid] < x`, et la frontière cherchée est le premier indice où il
+bascule à faux. Glisse la cible pour déplacer cette frontière.
+
+:::viz-binary-search{data="2,4,6,8,10,12,14,16" target="9"}
+:::
+
 ---
 
 ## 2.1 - Sur les réels : bissection

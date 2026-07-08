@@ -1,0 +1,162 @@
+<style>
+  canvas { width: 100%; max-width: 100%; display: block; background: transparent; }
+</style>
+<div class="stage">
+  <canvas id="cv" width="600" height="320"></canvas>
+</div>
+<div class="info-line" id="info">balayage pour la paire la plus proche</div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">points <input type="text" id="pts" value="" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var ptsInput = document.getElementById('pts');
+
+  var DEFAULT = '0,3;1,7;2,2;3,9;4,4;5,6;6,1;7,8;8,3;9,5;10,2;11,7';
+  var params = window.__params || {};
+  ptsInput.value = (params.points || DEFAULT).toString();
+
+  var W = 600, H = 320, pad = 30;
+  var pts = [], steps = [], cur = 0, timer = null;
+  var minX, maxX, minY, maxY, scale, ox, oy;
+
+  function isDark() { return document.documentElement.classList.contains('dark'); }
+  function dist(a, b) { var dx = a[0] - b[0], dy = a[1] - b[1]; return Math.sqrt(dx * dx + dy * dy); }
+  function parsePts(str) {
+    var out = [];
+    str.split(/[;\n]+/).forEach(function (pair) {
+      var m = pair.split(/[,\s]+/).filter(function (s) { return s.length; }).map(Number);
+      if (m.length >= 2 && isFinite(m[0]) && isFinite(m[1])) out.push([m[0], m[1]]);
+    });
+    return out;
+  }
+  function fit() {
+    minX = Math.min.apply(null, pts.map(function (p) { return p[0]; }));
+    maxX = Math.max.apply(null, pts.map(function (p) { return p[0]; }));
+    minY = Math.min.apply(null, pts.map(function (p) { return p[1]; }));
+    maxY = Math.max.apply(null, pts.map(function (p) { return p[1]; }));
+    var sx = (W - 2 * pad) / Math.max(1, maxX - minX);
+    var sy = (H - 2 * pad) / Math.max(1, maxY - minY);
+    scale = Math.min(sx, sy);
+    ox = pad + ((W - 2 * pad) - (maxX - minX) * scale) / 2;
+    oy = pad + ((H - 2 * pad) - (maxY - minY) * scale) / 2;
+  }
+  function wx(x) { return ox + (x - minX) * scale; }
+  function wy(y) { return H - (oy + (y - minY) * scale); }
+  function w2s(p) { return [wx(p[0]), wy(p[1])]; }
+
+  function buildSteps() {
+    steps = [];
+    var sorted = pts.slice().sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+    var best = Infinity, bestPair = null, active = [];
+    for (var i = 0; i < sorted.length; i++) {
+      var p = sorted[i], compared = [];
+      // fenetre active : abscisse a moins de best
+      active = active.filter(function (j) { return sorted[j][0] >= p[0] - best; });
+      for (var a = 0; a < active.length; a++) {
+        var j = active[a];
+        if (Math.abs(sorted[j][1] - p[1]) <= best) {
+          compared.push(j);
+          var d = dist(sorted[j], p);
+          if (d < best) { best = d; bestPair = [j, i]; }
+        }
+      }
+      active.push(i);
+      steps.push({
+        i: i, sweepX: p[0], d: best, band: (best === Infinity ? null : best),
+        active: active.slice(), compared: compared,
+        bestPair: bestPair ? bestPair.slice() : null
+      });
+    }
+    steps._sorted = sorted;
+  }
+
+  function resize() {
+    W = cv.clientWidth || 600; H = 320;
+    var dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    fit();
+  }
+
+  function draw() {
+    var dark = isDark();
+    ctx.clearRect(0, 0, W, H);
+    var st = steps[cur];
+    var sorted = steps._sorted || [];
+    if (!st) return;
+
+    // bande active [sweepX - d, sweepX]
+    if (st.band != null && isFinite(st.band)) {
+      var xL = wx(st.sweepX - st.band), xR = wx(st.sweepX);
+      ctx.fillStyle = dark ? 'rgba(58,102,144,0.13)' : 'rgba(58,102,144,0.10)';
+      ctx.fillRect(xL, 0, xR - xL, H);
+    }
+    // ligne de balayage
+    var sx = wx(st.sweepX);
+    ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, H); ctx.stroke();
+
+    // meilleure paire
+    if (st.bestPair) {
+      var pa = w2s(sorted[st.bestPair[0]]), pb = w2s(sorted[st.bestPair[1]]);
+      ctx.strokeStyle = '#16a34a'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]); ctx.stroke();
+    }
+
+    // points
+    for (var k = 0; k < sorted.length; k++) {
+      var s = w2s(sorted[k]);
+      var isActive = st.active.indexOf(k) >= 0;
+      var isCur = k === st.i;
+      var isCmp = st.compared.indexOf(k) >= 0;
+      ctx.fillStyle = isCur ? '#f97316' : (isCmp ? '#3a6690' : (isActive ? (dark ? '#cbd5e1' : '#475569') : (dark ? '#52525b' : '#a1a1aa')));
+      ctx.beginPath(); ctx.arc(s[0], s[1], isCur ? 6 : 4.5, 0, 2 * Math.PI); ctx.fill();
+      if (isCur) { ctx.strokeStyle = dark ? '#18181b' : '#fff'; ctx.lineWidth = 2; ctx.stroke(); }
+    }
+
+    info.textContent = 'point ' + (st.i + 1) + '/' + sorted.length +
+      ' - compare a ' + st.compared.length + ' voisin(s) dans la bande';
+    meta.innerHTML = '<span>d min <b>' + (isFinite(st.d) ? st.d.toFixed(2) : 'inf') + '</b></span>' +
+      '<span>actifs <b>' + st.active.length + '</b></span>';
+  }
+
+  function load() {
+    stopRun();
+    pts = parsePts(ptsInput.value);
+    if (pts.length < 2) pts = parsePts(DEFAULT);
+    fit(); buildSteps(); cur = 0; draw();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; draw(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () {
+      step();
+      if (cur >= steps.length - 1) { timer = null; return; }
+      timer = setTimeout(tick, 650);
+    };
+    timer = setTimeout(tick, 650);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+  window.addEventListener('resize', function () { resize(); draw(); });
+
+  resize(); load();
+})();
+</script>

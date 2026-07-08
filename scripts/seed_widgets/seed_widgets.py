@@ -151,6 +151,231 @@ WIDGETS = [
         ],
         "example_params": {"data": "3,7,1,8,4,2,5"},
     },
+    {
+        "name": "viz-cross-product",
+        "title_fr": "Produit vectoriel & orientation",
+        "title_en": "Cross product & orientation",
+        "description_fr": (
+            "Plan cartesien avec un segment oriente $A \\to B$ et un point $C$ "
+            "a glisser. Affiche en direct le signe du produit vectoriel "
+            "`cross(A, B, C)` et l'orientation : $C$ a gauche (antihoraire), a "
+            "droite (horaire) ou aligne. Coordonnees entieres, calcul exact."
+        ),
+        "description_en": (
+            "Cartesian plane with a directed segment $A \\to B$ and a draggable "
+            "point $C$. Live-updates the sign of `cross(A, B, C)` and the "
+            "orientation: $C$ to the left (counter-clockwise), right (clockwise) "
+            "or collinear. Integer coordinates, exact arithmetic."
+        ),
+        "template_file": "viz-cross-product.html",
+        "params_schema": [],
+        "example_params": {},
+    },
+    {
+        "name": "viz-segment-intersect",
+        "title_fr": "Intersection de segments",
+        "title_en": "Segment intersection",
+        "description_fr": (
+            "Deux segments $[A, B]$ et $[C, D]$ a extremites deplacables. "
+            "Affiche les quatre orientations $d_1, d_2, d_3, d_4$ et le verdict "
+            "de croisement, exactement comme le predicat `seg_intersect` de la "
+            "lecon (signes opposes de chaque cote, cas colineaires compris)."
+        ),
+        "description_en": (
+            "Two segments $[A, B]$ and $[C, D]$ with draggable endpoints. Shows "
+            "the four orientations $d_1, d_2, d_3, d_4$ and the intersection "
+            "verdict, exactly like the lesson's `seg_intersect` predicate "
+            "(opposite signs on each side, collinear cases included)."
+        ),
+        "template_file": "viz-segment-intersect.html",
+        "params_schema": [],
+        "example_params": {},
+    },
+    {
+        "name": "viz-convex-hull",
+        "title_fr": "Enveloppe convexe (monotone chain)",
+        "title_en": "Convex hull (monotone chain)",
+        "description_fr": (
+            "Anime l'algorithme d'Andrew pas a pas : tri des points, puis "
+            "construction des chaines inferieure et superieure par une pile. Le "
+            "test `cross <= 0` depile les tours a droite (croix rouge). Boutons "
+            "`step` / `run`. Points passes en parametre (paires `x,y` separees "
+            "par `;`)."
+        ),
+        "description_en": (
+            "Animates Andrew's algorithm step-by-step: sort the points, then "
+            "build the lower and upper chains with a stack. The `cross <= 0` "
+            "test pops right turns (red cross). `step` / `run` buttons. Points "
+            "passed as a parameter (`x,y` pairs separated by `;`)."
+        ),
+        "template_file": "viz-convex-hull.html",
+        "params_schema": [
+            {"name": "points", "description": "nuage de points, paires x,y separees par ;",
+             "example": "1,1;3,8;7,2;9,9;5,5;2,6;8,4;4,3;6,7;0,4;9,5;2,1"},
+        ],
+        "example_params": {"points": "1,1;3,8;7,2;9,9;5,5;2,6;8,4;4,3;6,7;0,4;9,5;2,1"},
+    },
+    {
+        "name": "viz-sweep-line",
+        "title_fr": "Balayage : paire la plus proche",
+        "title_en": "Sweep line: closest pair",
+        "description_fr": (
+            "Visualise le balayage pour la paire la plus proche : une ligne "
+            "verticale glisse de gauche a droite, une bande active de largeur "
+            "$d$ (meilleure distance courante) suit, et seuls les voisins dans "
+            "la bande sont compares. La meilleure paire est reliee en vert. "
+            "Boutons `step` / `run`."
+        ),
+        "description_en": (
+            "Visualises the closest-pair sweep: a vertical line sweeps left to "
+            "right, an active band of width $d$ (current best distance) trails "
+            "it, and only neighbours inside the band are compared. The best pair "
+            "is joined in green. `step` / `run` buttons."
+        ),
+        "template_file": "viz-sweep-line.html",
+        "params_schema": [
+            {"name": "points", "description": "nuage de points, paires x,y separees par ;",
+             "example": "0,3;1,7;2,2;3,9;4,4;5,6;6,1;7,8;8,3;9,5;10,2;11,7"},
+        ],
+        "example_params": {"points": "0,3;1,7;2,2;3,9;4,4;5,6;6,1;7,8;8,3;9,5;10,2;11,7"},
+    },
+    {
+        "name": "viz-binary-search",
+        "title_fr": "Recherche dichotomique (lower_bound)",
+        "title_en": "Binary search (lower_bound)",
+        "description_fr": (
+            "Deroule `lower_bound` pas a pas sur un tableau trie, en intervalle "
+            "**semi-ouvert** $[lo, hi)$. Met en couleur la fenetre active, le "
+            "milieu `mid`, et les zones deja exclues (prouvees $< x$ a gauche, "
+            "$\\ge x$ a droite). Parametres `data` (tableau) et `target` (cible)."
+        ),
+        "description_en": (
+            "Steps through `lower_bound` on a sorted array using a "
+            "**half-open** interval $[lo, hi)$. Colours the active window, the "
+            "`mid` midpoint, and the already-excluded zones (proven $< x$ on the "
+            "left, $\\ge x$ on the right). Params `data` (array) and `target`."
+        ),
+        "template_file": "viz-binary-search.html",
+        "params_schema": [
+            {"name": "data", "description": "tableau trie (CSV)", "example": "1,3,4,7,9,11,15,20,25"},
+            {"name": "target", "description": "valeur cherchee", "example": "11"},
+        ],
+        "example_params": {"data": "1,3,4,7,9,11,15,20,25", "target": "11"},
+    },
+    {
+        "name": "viz-two-pointers",
+        "title_fr": "Two pointers : somme cible",
+        "title_en": "Two pointers: target sum",
+        "description_fr": (
+            "Anime `two_sum_sorted` : deux pointeurs $i$ (gauche) et $j$ "
+            "(droite) sur un tableau trie convergent vers une cible $T$. Si la "
+            "somme est trop petite `i++`, trop grande `j--` ; la paire trouvee "
+            "est mise en vert. Parametres `data` et `target`."
+        ),
+        "description_en": (
+            "Animates `two_sum_sorted`: two pointers $i$ (left) and $j$ (right) "
+            "on a sorted array converge on a target $T$. If the sum is too small "
+            "`i++`, too large `j--`; the found pair turns green. Params `data` "
+            "and `target`."
+        ),
+        "template_file": "viz-two-pointers.html",
+        "params_schema": [
+            {"name": "data", "description": "tableau trie (CSV)", "example": "1,3,5,8,11,14,18"},
+            {"name": "target", "description": "somme cible", "example": "16"},
+        ],
+        "example_params": {"data": "1,3,5,8,11,14,18", "target": "16"},
+    },
+    {
+        "name": "viz-sliding-window",
+        "title_fr": "Fenetre glissante : somme >= S",
+        "title_en": "Sliding window: sum >= S",
+        "description_fr": (
+            "Cherche la plus **petite** sous-tableau contigu de somme $\\ge S$. "
+            "La fenetre $[i, j]$ s'etend a droite (`j`), puis se contracte a "
+            "gauche (`i`) tant qu'elle reste valide. Cout $O(n)$ amorti : aucun "
+            "pointeur ne recule. Parametres `data` et `s`."
+        ),
+        "description_en": (
+            "Finds the **smallest** contiguous subarray with sum $\\ge S$. The "
+            "window $[i, j]$ grows on the right (`j`), then contracts on the "
+            "left (`i`) while it stays valid. Amortised $O(n)$: neither pointer "
+            "moves backward. Params `data` and `s`."
+        ),
+        "template_file": "viz-sliding-window.html",
+        "params_schema": [
+            {"name": "data", "description": "tableau d'entiers positifs (CSV)", "example": "2,3,1,2,4,3"},
+            {"name": "s", "description": "seuil de somme", "example": "7"},
+        ],
+        "example_params": {"data": "2,3,1,2,4,3", "s": "7"},
+    },
+    {
+        "name": "viz-greedy-intervals",
+        "title_fr": "Glouton : selection d'activites",
+        "title_en": "Greedy: activity selection",
+        "description_fr": (
+            "Anime la selection d'activites : les intervalles sont tries par "
+            "**fin croissante**, puis on prend gloutonnement chaque activite "
+            "compatible ($s \\ge$ fin courante). Choisis en vert, rejetes "
+            "(chevauchant) en gris, ligne de fin courante en pointille. "
+            "Parametre `intervals` (paires `s,e` separees par `;`)."
+        ),
+        "description_en": (
+            "Animates activity selection: intervals are sorted by **earliest "
+            "finish**, then each compatible activity ($s \\ge$ current end) is "
+            "greedily taken. Chosen in green, rejected (overlapping) in grey, "
+            "current-end line dashed. Param `intervals` (`s,e` pairs separated "
+            "by `;`)."
+        ),
+        "template_file": "viz-greedy-intervals.html",
+        "params_schema": [
+            {"name": "intervals", "description": "intervalles, paires s,e separees par ;",
+             "example": "1,4;3,5;0,6;5,7;3,8;5,9;6,10;8,11;8,12;2,13"},
+        ],
+        "example_params": {"intervals": "1,4;3,5;0,6;5,7;3,8;5,9;6,10;8,11;8,12;2,13"},
+    },
+    {
+        "name": "viz-dp-table",
+        "title_fr": "DP : plus longue sous-suite croissante",
+        "title_en": "DP: longest increasing subsequence",
+        "description_fr": (
+            "Remplit la table DP de la **LIS** pas a pas : $L(i) = 1 + "
+            "\\max\\{L(j) : j < i,\\ a_j < a_i\\}$. Case courante en orange, "
+            "predecesseur choisi en bleu ; a la fin, la sous-suite reconstruite "
+            "s'illumine en vert. Parametre `data` (la suite)."
+        ),
+        "description_en": (
+            "Fills the **LIS** DP table step-by-step: $L(i) = 1 + \\max\\{L(j) : "
+            "j < i,\\ a_j < a_i\\}$. Current cell orange, chosen predecessor "
+            "blue; at the end the reconstructed subsequence lights up green. "
+            "Param `data` (the sequence)."
+        ),
+        "template_file": "viz-dp-table.html",
+        "params_schema": [
+            {"name": "data", "description": "suite d'entiers (CSV)", "example": "3,1,8,2,5,9,4,7,6"},
+        ],
+        "example_params": {"data": "3,1,8,2,5,9,4,7,6"},
+    },
+    {
+        "name": "viz-backtracking",
+        "title_fr": "Backtracking : N-reines",
+        "title_en": "Backtracking: N-queens",
+        "description_fr": (
+            "Explore l'arbre de recherche des **N-reines** : placement ligne par "
+            "ligne, elagage O(1) sur colonnes et diagonales (croix rouge), "
+            "backtrack quand une ligne est bloquee. Compte les solutions. "
+            "Parametre `n` (taille de l'echiquier, 4 a 8)."
+        ),
+        "description_en": (
+            "Explores the **N-queens** search tree: row-by-row placement, O(1) "
+            "pruning on columns and diagonals (red cross), backtrack when a row "
+            "is blocked. Counts the solutions. Param `n` (board size, 4 to 8)."
+        ),
+        "template_file": "viz-backtracking.html",
+        "params_schema": [
+            {"name": "n", "description": "taille de l'echiquier (4 a 8)", "example": "6"},
+        ],
+        "example_params": {"n": "6"},
+    },
 ]
 
 

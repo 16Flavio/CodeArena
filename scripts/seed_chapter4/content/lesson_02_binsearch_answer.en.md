@@ -5,6 +5,13 @@ not the array - it was **monotonicity**. So we can binary-search
 whenever we have a monotone function, real or discrete, sometimes
 with no array at all.
 
+The same engine, made concrete: here the monotone predicate is
+`A[mid] < x`, and the frontier we seek is the first index where it flips
+to false. Slide the target to move that frontier.
+
+:::viz-binary-search{data="2,4,6,8,10,12,14,16" target="9"}
+:::
+
 ---
 
 ## 2.1 - On the reals: bisection

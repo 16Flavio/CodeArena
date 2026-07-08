@@ -1,0 +1,166 @@
+<style>
+  .cp-wrap { position: relative; width: 100%; }
+  canvas { width: 100%; max-width: 100%; display: block; background: transparent;
+           touch-action: none; cursor: grab; }
+  canvas.grabbing { cursor: grabbing; }
+  .cp-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; margin-top: 8px;
+               justify-content: center; color: #71717a; }
+  .cp-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .cp-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+  html.dark .cp-legend { color: #a1a1aa; }
+</style>
+<div class="stage cp-wrap">
+  <canvas id="cv" width="600" height="340"></canvas>
+  <div class="cp-legend">
+    <span><span class="cp-dot" style="background:#3a6690"></span>A</span>
+    <span><span class="cp-dot" style="background:#3a6690"></span>B</span>
+    <span><span class="cp-dot" style="background:#f97316"></span>C (a glisser)</span>
+  </div>
+</div>
+<div class="info-line" id="info">glissez un point pour changer l'orientation</div>
+<div class="controls">
+  <button class="btn-icon-secondary" id="reset" title="reset"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('reset');
+
+  var cv  = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var info = document.getElementById('info');
+
+  // Points en coordonnees ENTIERES (le fil rouge de la lecon : le
+  // produit vectoriel reste exact en entiers). y math vers le haut.
+  var DEFAULTS = { A: [-4, -2], B: [5, 1], C: [1, 4] };
+  var P = { A: DEFAULTS.A.slice(), B: DEFAULTS.B.slice(), C: DEFAULTS.C.slice() };
+
+  var unit = 26, W = 600, H = 340, cx = 300, cy = 170;
+
+  function isDark() { return document.documentElement.classList.contains('dark'); }
+  function w2s(p) { return [cx + p[0] * unit, cy - p[1] * unit]; }
+  function s2w(px, py) { return [Math.round((px - cx) / unit), Math.round((cy - py) / unit)]; }
+
+  function cross(o, a, b) {
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  }
+
+  function resize() {
+    W = cv.clientWidth || 600;
+    H = 340;
+    cx = W / 2; cy = H / 2;
+    var dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function draw() {
+    var dark = isDark();
+    ctx.clearRect(0, 0, W, H);
+
+    // grille
+    ctx.strokeStyle = dark ? 'rgba(148,163,184,0.13)' : 'rgba(100,116,139,0.13)';
+    ctx.lineWidth = 1;
+    var xspan = Math.ceil(cx / unit), yspan = Math.ceil(cy / unit);
+    for (var gx = -xspan; gx <= xspan; gx++) {
+      var s = w2s([gx, 0]);
+      ctx.beginPath(); ctx.moveTo(s[0], 0); ctx.lineTo(s[0], H); ctx.stroke();
+    }
+    for (var gy = -yspan; gy <= yspan; gy++) {
+      var t = w2s([0, gy]);
+      ctx.beginPath(); ctx.moveTo(0, t[1]); ctx.lineTo(W, t[1]); ctx.stroke();
+    }
+    // axes
+    ctx.strokeStyle = dark ? 'rgba(148,163,184,0.4)' : 'rgba(100,116,139,0.4)';
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy);
+    ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+
+    var d = cross(P.A, P.B, P.C);
+    // couleur d'orientation : gauche = accent bleu, droite = orange, aligne = gris
+    var col = d > 0 ? '#3a6690' : (d < 0 ? '#f97316' : '#71717a');
+
+    var a = w2s(P.A), b = w2s(P.B), c = w2s(P.C);
+
+    // demi-plan colore (cote de C) : on teinte le triangle A,B,C
+    ctx.fillStyle = d > 0 ? 'rgba(58,102,144,0.10)'
+                   : (d < 0 ? 'rgba(249,115,22,0.10)' : 'rgba(113,113,122,0.10)');
+    ctx.beginPath();
+    ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]);
+    ctx.closePath(); ctx.fill();
+
+    // segment oriente A -> B avec fleche
+    ctx.strokeStyle = dark ? '#cbd5e1' : '#334155';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    var ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+    ctx.fillStyle = dark ? '#cbd5e1' : '#334155';
+    ctx.beginPath();
+    ctx.moveTo(b[0], b[1]);
+    ctx.lineTo(b[0] - 12 * Math.cos(ang - 0.4), b[1] - 12 * Math.sin(ang - 0.4));
+    ctx.lineTo(b[0] - 12 * Math.cos(ang + 0.4), b[1] - 12 * Math.sin(ang + 0.4));
+    ctx.closePath(); ctx.fill();
+
+    // segments A->C et B->C fins pour donner le triangle
+    ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(c[0], c[1]);
+    ctx.moveTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.stroke();
+    ctx.setLineDash([]);
+
+    drawPoint(a, '#3a6690', 'A', P.A, dark);
+    drawPoint(b, '#3a6690', 'B', P.B, dark);
+    drawPoint(c, col, 'C', P.C, dark);
+
+    var word = d > 0 ? 'a gauche (antihoraire)'
+              : (d < 0 ? 'a droite (horaire)' : 'alignes (colineaires)');
+    info.innerHTML = 'cross(A,B,C) = ' + d + '  →  C ' + word;
+  }
+
+  function drawPoint(s, color, label, world, dark) {
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(s[0], s[1], 6, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = dark ? '#18181b' : '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = dark ? '#e4e4e7' : '#18181b';
+    ctx.font = '600 13px system-ui';
+    ctx.fillText(label + '(' + world[0] + ',' + world[1] + ')', s[0] + 10, s[1] - 8);
+  }
+
+  // drag
+  var dragging = null;
+  function hit(px, py) {
+    var keys = ['A', 'B', 'C'];
+    for (var i = 0; i < keys.length; i++) {
+      var s = w2s(P[keys[i]]);
+      if ((px - s[0]) * (px - s[0]) + (py - s[1]) * (py - s[1]) <= 196) return keys[i];
+    }
+    return null;
+  }
+  function pos(e) {
+    var r = cv.getBoundingClientRect();
+    var t = e.touches ? e.touches[0] : e;
+    return [t.clientX - r.left, t.clientY - r.top];
+  }
+  function down(e) {
+    var p = pos(e); dragging = hit(p[0], p[1]);
+    if (dragging) { cv.classList.add('grabbing'); e.preventDefault(); }
+  }
+  function move(e) {
+    if (!dragging) return;
+    var p = pos(e); P[dragging] = s2w(p[0], p[1]); draw(); e.preventDefault();
+  }
+  function up() { dragging = null; cv.classList.remove('grabbing'); }
+
+  cv.addEventListener('mousedown', down);
+  window.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', up);
+  cv.addEventListener('touchstart', down, { passive: false });
+  cv.addEventListener('touchmove', move, { passive: false });
+  cv.addEventListener('touchend', up);
+
+  document.getElementById('reset').addEventListener('click', function () {
+    P = { A: DEFAULTS.A.slice(), B: DEFAULTS.B.slice(), C: DEFAULTS.C.slice() };
+    draw();
+  });
+
+  window.addEventListener('resize', function () { resize(); draw(); });
+  resize(); draw();
+})();
+</script>

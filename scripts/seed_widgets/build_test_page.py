@@ -24,6 +24,16 @@ CASES = [
     {"name": "viz-heap",        "params": {"data": "5,12,3,8,17,9,21"},       "title": "Tas binaire (max-heap)"},
     {"name": "viz-partition",   "params": {"data": "3,7,1,8,4,2,5"},          "title": "Partition de Lomuto pas à pas"},
     {"name": "viz-quicksort",   "params": {"data": "8,3,5,1,9,2,7,4,6"},      "title": "Tri rapide complet (vue d'ensemble)"},
+    {"name": "viz-cross-product",    "params": {},                            "title": "Produit vectoriel & orientation"},
+    {"name": "viz-segment-intersect","params": {},                            "title": "Intersection de segments"},
+    {"name": "viz-convex-hull",      "params": {"points": "1,1;3,8;7,2;9,9;5,5;2,6;8,4;4,3;6,7;0,4;9,5;2,1"}, "title": "Enveloppe convexe (monotone chain)"},
+    {"name": "viz-sweep-line",       "params": {"points": "0,3;1,7;2,2;3,9;4,4;5,6;6,1;7,8;8,3;9,5;10,2;11,7"}, "title": "Balayage : paire la plus proche"},
+    {"name": "viz-binary-search",    "params": {"data": "1,3,4,7,9,11,15,20,25", "target": "11"}, "title": "Recherche dichotomique (lower_bound)"},
+    {"name": "viz-two-pointers",     "params": {"data": "1,3,5,8,11,14,18", "target": "16"},       "title": "Two pointers : somme cible"},
+    {"name": "viz-sliding-window",   "params": {"data": "2,3,1,2,4,3", "s": "7"},                  "title": "Fenetre glissante : somme >= S"},
+    {"name": "viz-greedy-intervals", "params": {"intervals": "1,4;3,5;0,6;5,7;3,8;5,9;6,10;8,11;8,12;2,13"}, "title": "Glouton : selection d'activites"},
+    {"name": "viz-dp-table",         "params": {"data": "3,1,8,2,5,9,4,7,6"},                       "title": "DP : plus longue sous-suite croissante"},
+    {"name": "viz-backtracking",     "params": {"n": "6"},                                          "title": "Backtracking : N-reines"},
 ]
 
 # Mirror of the CSS preamble + icon helper injected by CustomWidget.jsx

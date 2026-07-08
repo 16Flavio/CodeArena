@@ -54,6 +54,13 @@ $$
   and $A[j] \ge x$ for $j \ge lo$ - that's the definition of
   `lower_bound`. $\square$
 
+**Watch it search** : `step` advances one round; watch the window
+$[lo, hi)$ halve and the excluded zones freeze. Change the target to a
+missing value and see `lower_bound` return the insertion position.
+
+:::viz-binary-search{data="1,3,4,7,9,11,15,20,25" target="11"}
+:::
+
 ---
 
 ## 1.3 - Complexity

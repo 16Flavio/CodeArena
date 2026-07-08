@@ -1,0 +1,122 @@
+<style>
+  .dp-stage { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 0; }
+  .dp-row { display: flex; gap: 4px; flex-wrap: nowrap; overflow-x: auto; padding: 2px 0; align-items: center; }
+  .dp-label { min-width: 34px; font-size: 11px; color: #71717a; font-family: ui-monospace, monospace; text-align: right; padding-right: 4px; }
+  .dp-cell { min-width: 36px; height: 34px; display: flex; align-items: center; justify-content: center;
+             border-radius: 6px; background: #e4e4e7; color: #3f3f46;
+             font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 700;
+             transition: background 0.25s, color 0.25s, outline-color 0.2s; }
+  .dp-cell.empty { background: #f4f4f5; color: #d4d4d8; }
+  .dp-cell.cur { background: #f97316; color: #fff; outline: 2px solid #c2410c; outline-offset: 2px; }
+  .dp-cell.pred { background: #3a6690; color: #fff; }
+  .dp-cell.lis { background: #16a34a; color: #fff; }
+  .dp-idx { font-size: 10px; color: #a1a1aa; font-family: ui-monospace, monospace; }
+  html.dark .dp-cell { background: #3f3f46; color: #e4e4e7; }
+  html.dark .dp-cell.empty { background: #27272a; color: #52525b; }
+  html.dark .dp-label { color: #a1a1aa; }
+  html.dark .dp-idx { color: #71717a; }
+</style>
+<div class="stage dp-stage">
+  <div class="dp-row" id="rowA"></div>
+  <div class="dp-row" id="rowL"></div>
+</div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">suite <input type="text" id="data" value="3,1,8,2,5,9,4,7,6" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var dataInput = document.getElementById('data');
+
+  var params = window.__params || {};
+  if (params.data != null) dataInput.value = params.data.toString().replace(/[\[\]\s]/g, '');
+
+  var a = [], steps = [], cur = 0, timer = null;
+
+  function parseArr(s) { return s.split(/[^\-0-9]+/).filter(function (t) { return t.length; }).map(Number); }
+
+  function build() {
+    steps = [];
+    var n = a.length, L = new Array(n).fill(0), par = new Array(n).fill(-1);
+    for (var i = 0; i < n; i++) {
+      var best = 0, bestJ = -1;
+      for (var j = 0; j < i; j++) {
+        if (a[j] < a[i] && L[j] > best) { best = L[j]; bestJ = j; }
+      }
+      L[i] = 1 + best; par[i] = bestJ;
+      steps.push({ i: i, L: L.slice(), par: par.slice(), bestJ: bestJ, done: false,
+        msg: bestJ >= 0
+          ? 'L[' + i + '] = 1 + max = 1 + L[' + bestJ + '] = ' + L[i] + '  (predecesseur a[' + bestJ + '] = ' + a[bestJ] + ')'
+          : 'L[' + i + '] = 1  (aucun a[j] < a[' + i + '] = ' + a[i] + ' a gauche)' });
+    }
+    // reconstruction LIS
+    var argmax = 0;
+    for (var k = 1; k < n; k++) if (L[k] > L[argmax]) argmax = k;
+    var lis = [], t = argmax;
+    while (t >= 0) { lis.push(t); t = par[t]; }
+    lis.reverse();
+    steps.push({ i: -1, L: L.slice(), par: par.slice(), done: true, lis: lis,
+      msg: 'LIS = ' + lis.map(function (x) { return a[x]; }).join(', ') + '  (longueur ' + (n ? L[argmax] : 0) + ')' });
+  }
+
+  function render() {
+    var st = steps[cur] || {};
+    var rowA = document.getElementById('rowA'), rowL = document.getElementById('rowL');
+    var htmlA = '<div class="dp-label">a[i]</div>', htmlL = '<div class="dp-label">L[i]</div>';
+    var lisSet = {};
+    if (st.done && st.lis) st.lis.forEach(function (x) { lisSet[x] = 1; });
+    for (var k = 0; k < a.length; k++) {
+      var clsA = 'dp-cell', clsL = 'dp-cell';
+      if (st.done) {
+        if (lisSet[k]) { clsA += ' lis'; clsL += ' lis'; }
+      } else {
+        if (k === st.i) { clsA += ' cur'; clsL += ' cur'; }
+        else if (k === st.bestJ) { clsA += ' pred'; clsL += ' pred'; }
+      }
+      var filled = st.done || k <= st.i;
+      if (!filled) clsL += ' empty';
+      htmlA += '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">' +
+               '<div class="' + clsA + '">' + a[k] + '</div><div class="dp-idx">' + k + '</div></div>';
+      htmlL += '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">' +
+               '<div class="' + clsL + '">' + (filled ? st.L[k] : '') + '</div><div class="dp-idx">&nbsp;</div></div>';
+    }
+    rowA.innerHTML = htmlA; rowL.innerHTML = htmlL;
+    info.textContent = st.msg || '';
+    var bestSoFar = 0;
+    if (st.L) for (var m = 0; m < st.L.length; m++) if ((st.done || m <= st.i) && st.L[m] > bestSoFar) bestSoFar = st.L[m];
+    meta.innerHTML = '<span>meilleure longueur <b>' + bestSoFar + '</b></span>' +
+      '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>';
+  }
+
+  function load() {
+    stopRun();
+    a = parseArr(dataInput.value);
+    if (!a.length) a = [1];
+    build(); cur = 0; render();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; render(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () { step(); if (cur >= steps.length - 1) { timer = null; return; } timer = setTimeout(tick, 750); };
+    timer = setTimeout(tick, 750);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+
+  load();
+})();
+</script>

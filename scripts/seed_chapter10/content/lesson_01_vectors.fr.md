@@ -33,6 +33,12 @@ def cross(o, a, b):
 Le **signe** dit tout : positif = $C$ a gauche de $A \to B$
 (antihoraire), negatif = a droite (horaire), nul = alignes.
 
+**A toi de jouer** : glisse le point $C$ et regarde le signe de
+`cross(A, B, C)` basculer a l'instant ou il traverse la droite $A \to B$.
+
+:::viz-cross-product
+:::
+
 ### Aire par la formule du lacet
 
 Pour un polygone $P_0, \dots, P_{n-1}$ :

@@ -42,6 +42,13 @@ def convex_hull(points):
 - **Collinearity.** The test `cross <= 0` **excludes** points collinear
   on an edge; `< 0` would **include** them. Choose per need.
 
+**Step through it** : `step` advances one action at a time. Watch the
+stack grow, then a point create a right turn (`cross ≤ 0`) and get
+popped (red cross). `run` plays the whole construction.
+
+:::viz-convex-hull
+:::
+
 ---
 
 ## 3.3 - Complexity
