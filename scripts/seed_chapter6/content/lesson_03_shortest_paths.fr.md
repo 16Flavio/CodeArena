@@ -43,6 +43,13 @@ def dijkstra(adj, s, n):
   **exige des poids $\ge 0$** ; une arete negative pourrait rabaisser
   `dist[u]` apres son extraction. $\square$
 
+**Deroule Dijkstra** : a chaque etape le sommet non fige de plus petite
+distance est extrait (il devient definitif), puis ses aretes sont
+relachees. Les etiquettes montrent la distance provisoire courante.
+
+:::viz-dijkstra{source="0"}
+:::
+
 ### Bellman-Ford
 
 Relaxer **toutes** les aretes $n-1$ fois suffit : un plus court

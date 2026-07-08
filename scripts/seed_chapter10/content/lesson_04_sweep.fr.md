@@ -24,6 +24,13 @@ dont l'abscisse est a moins de $d$ (la meilleure distance courante),
 tries par $y$. Pour chaque nouveau point, seuls les voisins dans une
 bande de hauteur $2d$ sont a comparer - un nombre **constant**.
 
+**Regarde le balayage vivre** : la ligne verticale glisse, la bande
+active de largeur $d$ la suit, et seuls les voisins a l'interieur sont
+compares. La meilleure paire courante est reliee en vert.
+
+:::viz-sweep-line
+:::
+
 ### Union de rectangles
 
 Trier les abscisses distinctes. Entre deux abscisses consecutives,

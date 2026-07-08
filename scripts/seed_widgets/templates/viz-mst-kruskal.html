@@ -1,0 +1,140 @@
+<style>
+  canvas { width: 100%; max-width: 100%; display: block; background: transparent; }
+  .mk-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; margin-top: 6px;
+               justify-content: center; color: #71717a; }
+  .mk-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .mk-sw { width: 16px; height: 3px; border-radius: 2px; display: inline-block; }
+  html.dark .mk-legend { color: #a1a1aa; }
+</style>
+<div class="stage">
+  <canvas id="cv" width="600" height="320"></canvas>
+  <div class="mk-legend">
+    <span><span class="mk-sw" style="background:#f97316"></span>arete testee</span>
+    <span><span class="mk-sw" style="background:#16a34a"></span>retenue (MST)</span>
+    <span><span class="mk-sw" style="background:#dc2626"></span>rejetee (cycle)</span>
+  </div>
+</div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+
+  var POS = [[0.09,0.32],[0.28,0.11],[0.28,0.60],[0.50,0.33],[0.50,0.80],[0.72,0.15],[0.72,0.62],[0.93,0.40]];
+  var WE = [[0,1,4],[0,2,3],[1,2,2],[1,3,5],[2,3,6],[2,4,7],[3,4,4],[3,5,3],[4,6,2],[5,6,6],[5,7,5],[6,7,4],[3,6,8]];
+  var N = POS.length;
+  var W = 600, H = 320, steps = [], cur = 0, timer = null;
+  var COMPCOL = ['#3a6690','#0d9488','#7c3aed','#c2410c','#be185d','#4d7c0f','#a16207','#0369a1'];
+
+  function isDark() { return document.documentElement.classList.contains('dark'); }
+
+  function build() {
+    steps = [];
+    var edges = WE.map(function (e, i) { return { u: e[0], v: e[1], w: e[2], id: i }; });
+    edges.sort(function (a, b) { return a.w - b.w; });
+    var par = []; for (var i = 0; i < N; i++) par.push(i);
+    function find(x) { while (par[x] !== x) { par[x] = par[par[x]]; x = par[x]; } return x; }
+    var chosen = [], rejected = [], total = 0, comps = N;
+    steps.push({ idx: -1, chosen: [], rejected: [], total: 0, comps: comps, par: par.slice(),
+      msg: 'aretes triees par poids croissant : ' + edges.map(function (e) { return e.w; }).join(', ') });
+    for (var k = 0; k < edges.length; k++) {
+      var e = edges[k], ru = find(e.u), rv = find(e.v);
+      if (ru !== rv) {
+        par[ru] = rv; chosen.push(e.id); total += e.w; comps--;
+        steps.push({ idx: k, edge: e, accepted: true, chosen: chosen.slice(), rejected: rejected.slice(),
+          total: total, comps: comps, par: par.slice(),
+          msg: 'arete ' + e.u + '-' + e.v + ' (poids ' + e.w + ') : composantes distinctes -> on retient' });
+      } else {
+        rejected.push(e.id);
+        steps.push({ idx: k, edge: e, accepted: false, chosen: chosen.slice(), rejected: rejected.slice(),
+          total: total, comps: comps, par: par.slice(),
+          msg: 'arete ' + e.u + '-' + e.v + ' (poids ' + e.w + ') : deja connectees -> cycle, on rejette' });
+      }
+      if (chosen.length === N - 1) break;
+    }
+    steps.push({ idx: -2, chosen: chosen.slice(), rejected: rejected.slice(), total: total, comps: comps,
+      par: par.slice(), done: true,
+      msg: 'MST complet : ' + (N - 1) + ' aretes, poids total ' + total });
+  }
+
+  function resize() {
+    W = cv.clientWidth || 600; H = 320;
+    var dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function nx(i) { return 26 + POS[i][0] * (W - 52); }
+  function ny(i) { return 22 + POS[i][1] * (H - 44); }
+  function root(par, x) { while (par[x] !== x) x = par[x]; return x; }
+
+  function draw() {
+    var dark = isDark();
+    ctx.clearRect(0, 0, W, H);
+    var st = steps[cur] || { chosen: [], rejected: [], par: (function () { var p = []; for (var i = 0; i < N; i++) p.push(i); return p; })() };
+    var chosenSet = {}; st.chosen.forEach(function (id) { chosenSet[id] = 1; });
+    var curId = st.edge ? st.edge.id : -1;
+    // aretes
+    WE.forEach(function (e, id) {
+      var col, lw;
+      if (id === curId) { col = st.accepted ? '#16a34a' : '#dc2626'; lw = 3.5; }
+      else if (chosenSet[id]) { col = '#16a34a'; lw = 3; }
+      else { col = dark ? 'rgba(148,163,184,0.35)' : 'rgba(100,116,139,0.35)'; lw = 1.5; }
+      ctx.strokeStyle = col; ctx.lineWidth = lw;
+      if (id === curId && !st.accepted) ctx.setLineDash([5, 4]); else ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(nx(e[0]), ny(e[0])); ctx.lineTo(nx(e[1]), ny(e[1])); ctx.stroke();
+      ctx.setLineDash([]);
+      var mx = (nx(e[0]) + nx(e[1])) / 2, my = (ny(e[0]) + ny(e[1])) / 2;
+      ctx.fillStyle = dark ? '#09090b' : '#fff';
+      ctx.beginPath(); ctx.arc(mx, my, 8, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = dark ? '#a1a1aa' : '#71717a'; ctx.font = '10px ui-monospace, monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(e[2], mx, my);
+    });
+    // noeuds colores par composante
+    for (var i = 0; i < N; i++) {
+      var x = nx(i), y = ny(i);
+      var r = root(st.par, i);
+      ctx.fillStyle = COMPCOL[r % COMPCOL.length];
+      ctx.beginPath(); ctx.arc(x, y, 15, 0, 2 * Math.PI); ctx.fill();
+      ctx.strokeStyle = dark ? '#18181b' : '#fff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font = '600 13px system-ui';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(i, x, y);
+    }
+    ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
+    info.textContent = st.msg || '';
+    meta.innerHTML = '<span>poids total <b>' + (st.total || 0) + '</b></span>' +
+      '<span>composantes <b>' + (st.comps != null ? st.comps : N) + '</b></span>' +
+      '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>';
+  }
+
+  function load() { stopRun(); build(); cur = 0; resize(); draw(); }
+  function step() { if (cur < steps.length - 1) { cur++; draw(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () { step(); if (cur >= steps.length - 1) { timer = null; return; } timer = setTimeout(tick, 750); };
+    timer = setTimeout(tick, 750);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+  window.addEventListener('resize', function () { resize(); draw(); });
+
+  load();
+})();
+</script>

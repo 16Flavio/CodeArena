@@ -32,6 +32,12 @@ def cross(o, a, b):
 The **sign** says everything: positive = $C$ left of $A \to B$
 (counterclockwise), negative = right (clockwise), zero = collinear.
 
+**Try it** : drag point $C$ and watch the sign of `cross(A, B, C)` flip
+the instant it crosses the line $A \to B$.
+
+:::viz-cross-product
+:::
+
 ### Area via the shoelace formula
 
 For a polygon $P_0, \dots, P_{n-1}$:

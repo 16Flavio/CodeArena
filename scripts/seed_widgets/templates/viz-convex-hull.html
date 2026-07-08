@@ -1,0 +1,208 @@
+<style>
+  canvas { width: 100%; max-width: 100%; display: block; background: transparent; }
+</style>
+<div class="stage">
+  <canvas id="cv" width="600" height="320"></canvas>
+</div>
+<div class="info-line" id="info">step : construit l'enveloppe par la methode d'Andrew</div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">points <input type="text" id="pts" value="" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var ptsInput = document.getElementById('pts');
+
+  var DEFAULT = '1,1;3,8;7,2;9,9;5,5;2,6;8,4;4,3;6,7;0,4;9,5;2,1';
+  var params = window.__params || {};
+  ptsInput.value = (params.points || DEFAULT).toString();
+
+  var W = 600, H = 320, pad = 34;
+  var pts = [], steps = [], cur = 0, timer = null;
+  var minX, maxX, minY, maxY, scale, ox, oy;
+
+  function isDark() { return document.documentElement.classList.contains('dark'); }
+  function cross(o, a, b) {
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  }
+  function parsePts(str) {
+    var out = [];
+    str.split(/[;\n]+/).forEach(function (pair) {
+      var m = pair.split(/[,\s]+/).filter(function (s) { return s.length; }).map(Number);
+      if (m.length >= 2 && isFinite(m[0]) && isFinite(m[1])) out.push([m[0], m[1]]);
+    });
+    return out;
+  }
+
+  function fit() {
+    minX = Math.min.apply(null, pts.map(function (p) { return p[0]; }));
+    maxX = Math.max.apply(null, pts.map(function (p) { return p[0]; }));
+    minY = Math.min.apply(null, pts.map(function (p) { return p[1]; }));
+    maxY = Math.max.apply(null, pts.map(function (p) { return p[1]; }));
+    var sx = (W - 2 * pad) / Math.max(1, maxX - minX);
+    var sy = (H - 2 * pad) / Math.max(1, maxY - minY);
+    scale = Math.min(sx, sy);
+    ox = pad + ((W - 2 * pad) - (maxX - minX) * scale) / 2;
+    oy = pad + ((H - 2 * pad) - (maxY - minY) * scale) / 2;
+  }
+  function w2s(p) { return [ox + (p[0] - minX) * scale, H - (oy + (p[1] - minY) * scale)]; }
+
+  // Simule le monotone chain en enregistrant chaque action primitive.
+  function buildSteps() {
+    steps = [];
+    var uniq = [];
+    var seen = {};
+    pts.forEach(function (p) { var k = p[0] + ',' + p[1]; if (!seen[k]) { seen[k] = 1; uniq.push(p); } });
+    uniq.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+
+    function half(seq, phase) {
+      var h = [];
+      for (var i = 0; i < seq.length; i++) {
+        var p = seq[i];
+        while (h.length >= 2 && cross(h[h.length - 2], h[h.length - 1], p) <= 0) {
+          var popped = h[h.length - 1];
+          steps.push({ phase: phase, hull: h.slice(), consider: p, action: 'pop',
+            popped: popped, c: cross(h[h.length - 2], h[h.length - 1], p) });
+          h.pop();
+        }
+        h.push(p);
+        steps.push({ phase: phase, hull: h.slice(), consider: p, action: 'push' });
+      }
+      return h;
+    }
+    half(uniq, 'inferieure');
+    var rev = uniq.slice().reverse();
+    half(rev, 'superieure');
+    steps.push({ phase: 'fini', hull: null, consider: null, action: 'done' });
+  }
+
+  function resize() {
+    W = cv.clientWidth || 600; H = 320;
+    var dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    fit();
+  }
+
+  function draw() {
+    var dark = isDark();
+    ctx.clearRect(0, 0, W, H);
+    var st = steps[cur] || {};
+
+    // enveloppe finie : polygone ferme
+    var finalHull = null;
+    if (st.action === 'done') {
+      finalHull = computeFinalHull();
+    }
+
+    // hull courant (ligne)
+    var hull = st.hull;
+    if (hull && hull.length) {
+      ctx.strokeStyle = '#3a6690'; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (var i = 0; i < hull.length; i++) {
+        var s = w2s(hull[i]);
+        if (i === 0) ctx.moveTo(s[0], s[1]); else ctx.lineTo(s[0], s[1]);
+      }
+      ctx.stroke();
+    }
+    if (finalHull) {
+      ctx.fillStyle = dark ? 'rgba(58,102,144,0.16)' : 'rgba(58,102,144,0.12)';
+      ctx.strokeStyle = '#3a6690'; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (var k = 0; k < finalHull.length; k++) {
+        var q = w2s(finalHull[k]);
+        if (k === 0) ctx.moveTo(q[0], q[1]); else ctx.lineTo(q[0], q[1]);
+      }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+
+    // tous les points
+    for (var j = 0; j < pts.length; j++) {
+      var sp = w2s(pts[j]);
+      ctx.fillStyle = dark ? '#a1a1aa' : '#71717a';
+      ctx.beginPath(); ctx.arc(sp[0], sp[1], 4, 0, 2 * Math.PI); ctx.fill();
+    }
+    // point considere
+    if (st.consider) {
+      var c = w2s(st.consider);
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath(); ctx.arc(c[0], c[1], 6, 0, 2 * Math.PI); ctx.fill();
+      ctx.strokeStyle = dark ? '#18181b' : '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    }
+    // point depile (croix rouge)
+    if (st.action === 'pop' && st.popped) {
+      var pp = w2s(st.popped);
+      ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(pp[0] - 6, pp[1] - 6); ctx.lineTo(pp[0] + 6, pp[1] + 6);
+      ctx.moveTo(pp[0] + 6, pp[1] - 6); ctx.lineTo(pp[0] - 6, pp[1] + 6);
+      ctx.stroke();
+    }
+
+    var msg;
+    if (st.action === 'pop') msg = 'depile : tour a droite ou plat (cross = ' + st.c + ' ≤ 0)';
+    else if (st.action === 'push') msg = 'empile le point (' + st.consider[0] + ',' + st.consider[1] + ')';
+    else if (st.action === 'done') msg = 'enveloppe terminee : ' + (finalHull ? finalHull.length : 0) + ' sommets';
+    else msg = 'pret';
+    info.textContent = 'chaine ' + (st.phase || '') + ' - ' + msg;
+    meta.innerHTML = '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>' +
+      '<span>points <b>' + pts.length + '</b></span>';
+  }
+
+  function computeFinalHull() {
+    var uniq = [], seen = {};
+    pts.forEach(function (p) { var k = p[0] + ',' + p[1]; if (!seen[k]) { seen[k] = 1; uniq.push(p); } });
+    uniq.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+    if (uniq.length <= 1) return uniq;
+    function half(seq) {
+      var h = [];
+      for (var i = 0; i < seq.length; i++) {
+        var p = seq[i];
+        while (h.length >= 2 && cross(h[h.length - 2], h[h.length - 1], p) <= 0) h.pop();
+        h.push(p);
+      }
+      return h;
+    }
+    var lower = half(uniq), upper = half(uniq.slice().reverse());
+    return lower.slice(0, -1).concat(upper.slice(0, -1));
+  }
+
+  function load() {
+    stopRun();
+    pts = parsePts(ptsInput.value);
+    if (pts.length < 1) pts = parsePts(DEFAULT);
+    fit(); buildSteps(); cur = 0; draw();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; draw(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () {
+      step();
+      if (cur >= steps.length - 1) { timer = null; return; }
+      timer = setTimeout(tick, 550);
+    };
+    timer = setTimeout(tick, 550);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+  window.addEventListener('resize', function () { resize(); draw(); });
+
+  resize(); load();
+})();
+</script>

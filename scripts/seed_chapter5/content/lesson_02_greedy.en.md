@@ -37,6 +37,13 @@ def select(intervals):
 
 The greedy choice: **take the activity that finishes earliest**.
 
+**Watch the greedy pick** : intervals are sorted by earliest finish;
+`step` takes each compatible activity and rejects those overlapping the
+current end (dashed line).
+
+:::viz-greedy-intervals{intervals="1,4;3,5;0,6;5,7;3,8;5,9;6,10;8,11;8,12;2,13"}
+:::
+
 ### Proof by exchange argument
 
 Let $g_1$ be the activity with minimum finish time, and let $O$ be an

@@ -38,6 +38,13 @@ def select(intervals):
 
 Le choix glouton : **prendre l'activité qui finit le plus tôt**.
 
+**Regarde le glouton choisir** : les intervalles sont triés par fin
+croissante ; `step` prend chaque activité compatible et rejette celles
+qui chevauchent la fin courante (ligne pointillée).
+
+:::viz-greedy-intervals{intervals="1,4;3,5;0,6;5,7;3,8;5,9;6,10;8,11;8,12;2,13"}
+:::
+
 ### Preuve par argument d'échange
 
 Soit $g_1$ l'activité de fin minimale, et soit $O$ une solution

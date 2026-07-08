@@ -1,0 +1,169 @@
+<style>
+  .fe-stage { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 4px 0; }
+  .fe-bits { display: flex; gap: 5px; flex-wrap: nowrap; overflow-x: auto; padding: 4px 0;
+             justify-content: center; }
+  .fe-col { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .fe-bit { min-width: 30px; height: 34px; display: flex; align-items: center; justify-content: center;
+            border-radius: 6px; background: #e4e4e7; color: #3f3f46;
+            font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 700;
+            transition: background 0.25s, color 0.25s, outline-color 0.25s; }
+  .fe-bit.done { background: #d7e2ec; color: #2b4a68; }
+  .fe-bit.cur  { background: #f97316; color: #fff; outline: 2px solid #c2410c; outline-offset: 2px; }
+  .fe-pow { font-size: 10px; color: #a1a1aa; font-family: ui-monospace, monospace; }
+  .fe-panel { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .fe-box { border: 1px solid #d4d4d8; border-radius: 8px; padding: 6px 12px; min-width: 96px;
+            text-align: center; background: #fff; }
+  .fe-box .lab { font-size: 11px; color: #71717a; }
+  .fe-box .val { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 700;
+                 font-size: 16px; color: #325575; }
+  .fe-box.res .val { color: #16a34a; }
+  .fe-table { border-collapse: collapse; font-size: 12px; width: 100%; max-width: 420px; }
+  .fe-table th, .fe-table td { border: 1px solid #e4e4e7; padding: 3px 8px; text-align: center;
+                               font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .fe-table th { background: #f4f4f5; color: #52525b; font-weight: 600; }
+  .fe-table td.on { color: #16a34a; font-weight: 700; }
+  .fe-table td.off { color: #a1a1aa; }
+  html.dark .fe-bit { background: #3f3f46; color: #e4e4e7; }
+  html.dark .fe-bit.done { background: #2b3e50; color: #cbd9e6; }
+  html.dark .fe-bit.cur  { background: #ea580c; color: #fff; outline-color: #fb923c; }
+  html.dark .fe-pow { color: #71717a; }
+  html.dark .fe-box { background: #27272a; border-color: #52525b; }
+  html.dark .fe-box .lab { color: #a1a1aa; }
+  html.dark .fe-box .val { color: #9cbbd6; }
+  html.dark .fe-box.res .val { color: #4ade80; }
+  html.dark .fe-table th { background: #27272a; color: #a1a1aa; }
+  html.dark .fe-table th, html.dark .fe-table td { border-color: #3f3f46; }
+  html.dark .fe-table td.off { color: #6b6b73; }
+</style>
+<div class="stage fe-stage">
+  <div class="fe-bits" id="bits"></div>
+  <div class="fe-panel" id="panel"></div>
+  <table class="fe-table" id="tbl"></table>
+</div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">a <input type="number" id="ia" value="3" /></label>
+  <label class="field">b <input type="number" id="ib" value="13" /></label>
+  <label class="field">m <input type="number" id="im" value="1000" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var bitsEl = document.getElementById('bits');
+  var panel = document.getElementById('panel');
+  var tbl = document.getElementById('tbl');
+  var ia = document.getElementById('ia'), ib = document.getElementById('ib'), im = document.getElementById('im');
+
+  var params = window.__params || {};
+  if (params.a != null) ia.value = params.a;
+  if (params.b != null) ib.value = params.b;
+  if (params.m != null) im.value = params.m;
+
+  var A = 3, B = 13, M = 1000, bitArr = [], steps = [], cur = 0, timer = null;
+
+  function build() {
+    steps = [];
+    bitArr = [];
+    var L = Math.max(1, (B > 0 ? B.toString(2).length : 1));
+    for (var i = 0; i < L; i++) bitArr.push((B >> i) & 1);
+    var base = A % M, result = 1;
+    var rows = [];
+    steps.push({ hi: -1, base: base, result: result, rows: rows.slice(),
+      msg: 'Depart : resultat = 1, base = a mod m = ' + base + '.' });
+    for (var i = 0; i < L; i++) {
+      var bit = (B >> i) & 1;
+      var msg;
+      if (bit === 1) {
+        var nr = (result * base) % M;
+        msg = 'bit ' + i + ' = 1  ->  resultat = resultat * base mod m = ' +
+              result + ' * ' + base + ' mod ' + M + ' = ' + nr;
+        result = nr;
+      } else {
+        msg = 'bit ' + i + ' = 0  ->  on ne multiplie pas, resultat = ' + result + '.';
+      }
+      rows.push({ i: i, bit: bit, base: base, result: result });
+      steps.push({ hi: i, base: base, result: result, rows: rows.slice(), msg: msg });
+      if (i < L - 1) {
+        var nb = (base * base) % M;
+        var m2 = 'base = base^2 mod m = ' + base + '^2 mod ' + M + ' = ' + nb + '.';
+        base = nb;
+        steps.push({ hi: i, base: base, result: result, rows: rows.slice(), msg: m2 });
+      }
+    }
+    steps.push({ hi: -1, base: base, result: result, rows: rows.slice(), done: true,
+      msg: 'Resultat : ' + A + '^' + B + ' mod ' + M + ' = ' + result + '.' });
+  }
+
+  function render() {
+    var st = steps[cur] || {};
+    // bits (affiches du bit de poids fort a droite : index L-1 ... 0)
+    var bh = '';
+    for (var k = bitArr.length - 1; k >= 0; k--) {
+      var cls = 'fe-bit';
+      if (k === st.hi) cls += ' cur';
+      else if (st.hi >= 0 && k < st.hi) cls += ' done';
+      else if (st.done) cls += ' done';
+      bh += '<div class="fe-col"><div class="' + cls + '">' + bitArr[k] + '</div>' +
+            '<div class="fe-pow">2^' + k + '</div></div>';
+    }
+    bitsEl.innerHTML = bh;
+
+    panel.innerHTML =
+      '<div class="fe-box"><div class="lab">base courante</div><div class="val">' + st.base + '</div></div>' +
+      '<div class="fe-box res"><div class="lab">resultat</div><div class="val">' + st.result + '</div></div>';
+
+    var th = '<tr><th>bit</th><th>valeur</th><th>base</th><th>resultat</th></tr>';
+    var body = '';
+    var rows = st.rows || [];
+    for (var r = 0; r < rows.length; r++) {
+      var row = rows[r];
+      body += '<tr><td>2^' + row.i + '</td>' +
+              '<td class="' + (row.bit ? 'on' : 'off') + '">' + row.bit + '</td>' +
+              '<td>' + row.base + '</td><td>' + row.result + '</td></tr>';
+    }
+    tbl.innerHTML = th + body;
+
+    info.textContent = st.msg || '';
+    meta.innerHTML = '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>' +
+      '<span>base <b>' + st.base + '</b></span>' +
+      '<span>resultat <b>' + st.result + '</b></span>';
+  }
+
+  function load() {
+    stopRun();
+    A = parseInt(ia.value, 10); if (!isFinite(A)) A = 3;
+    B = parseInt(ib.value, 10); if (!isFinite(B) || B < 0) B = 0;
+    M = parseInt(im.value, 10); if (!isFinite(M) || M < 2) M = 2;
+    if (A < 0) A = ((A % M) + M) % M;
+    ia.value = A; ib.value = B; im.value = M;
+    build(); cur = 0; render();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; render(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () {
+      step();
+      if (cur >= steps.length - 1) { timer = null; return; }
+      timer = setTimeout(tick, 600);
+    };
+    timer = setTimeout(tick, 600);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+
+  load();
+})();
+</script>

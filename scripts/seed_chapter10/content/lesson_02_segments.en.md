@@ -41,6 +41,13 @@ lies within the bounding box of $[p, q]$ - hence on the segment.
   point; a zero signals a collinear contact, tested explicitly.
   $\square$
 
+**Experiment** : drag the endpoints $A, B, C, D$. The four orientations
+$d_1 \dots d_4$ and the verdict update live; try an end-to-end contact
+to see the collinear case.
+
+:::viz-segment-intersect
+:::
+
 ---
 
 ## 2.3 - Complexity

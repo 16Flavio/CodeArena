@@ -1,0 +1,149 @@
+<style>
+  .za-stage { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 0; }
+  .za-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+              color: #3a6690; align-self: flex-start; }
+  .za-scroll { max-width: 100%; overflow-x: auto; display: flex; flex-direction: column; gap: 6px; }
+  .za-row { display: flex; gap: 4px; flex-wrap: nowrap; padding: 2px; width: max-content; }
+  .za-col { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 0 0 auto; }
+  .za-cell { width: 30px; height: 34px; display: flex; align-items: center; justify-content: center;
+             border-radius: 6px; background: #e4e4e7; color: #3f3f46;
+             font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 700; font-size: 15px;
+             transition: background 0.2s, color 0.2s; }
+  .za-cell.box { background: #eef2f6; color: #3f3f46; outline: 1px dashed #9cbbd6; outline-offset: -2px; }
+  .za-cell.pref { background: #d7e2ec; color: #2b4a68; }
+  .za-cell.match { background: #16a34a; color: #fff; }
+  .za-cell.cur { background: #f97316; color: #fff; }
+  .za-idx { font-size: 10px; color: #a1a1aa; font-family: ui-monospace, monospace; height: 12px; }
+  .za-ptr { font-size: 11px; height: 14px; font-weight: 700; color: #3a6690;
+            font-family: ui-monospace, monospace; }
+  .za-z { width: 30px; height: 22px; display: flex; align-items: center; justify-content: center;
+          border-radius: 5px; background: #f4f4f5; color: #b4b4bb; font-size: 12px; font-weight: 700;
+          font-family: ui-monospace, monospace; flex: 0 0 auto; }
+  .za-z.set { background: #eef2f6; color: #2b4a68; }
+  .za-z.now { background: #f97316; color: #fff; }
+  html.dark .za-cell { background: #3f3f46; color: #e4e4e7; }
+  html.dark .za-cell.box { background: #26333f; color: #e4e4e7; outline-color: #3a6690; }
+  html.dark .za-cell.pref { background: #2b3e50; color: #cbd9e6; }
+  html.dark .za-idx { color: #71717a; }
+  html.dark .za-ptr { color: #9cbbd6; }
+  html.dark .za-label { color: #9cbbd6; }
+  html.dark .za-z { background: #2a2a2e; color: #6b6b73; }
+  html.dark .za-z.set { background: #2b3e50; color: #cbd9e6; }
+</style>
+<div class="stage za-stage" id="stage"></div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">chaine <input type="text" id="s" value="aabxaabxcaabxaabxay" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var stage = document.getElementById('stage');
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var sInput = document.getElementById('s');
+
+  var params = window.__params || {};
+  if (params.s != null) sInput.value = String(params.s);
+
+  var S = '', steps = [], cur = 0, timer = null;
+
+  function esc(c) { return c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '&' ? '&amp;' : c; }
+
+  // z[i] = longueur du plus long prefixe commun de s et de s[i:].
+  // La boite [l, r) memorise le prefixe apparie le plus a droite.
+  function buildZ(s) {
+    var n = s.length, z = new Array(n).fill(0), st = [], l = 0, r = 0;
+    st.push({ i: 0, l: 0, r: 0, z: z.slice(), upto: 0, zi: 0,
+      msg: 'z[0] = 0 par convention (le prefixe est compare a lui-meme)' });
+    for (var i = 1; i < n; i++) {
+      if (i < r) {
+        z[i] = Math.min(r - i, z[i - l]);
+        st.push({ i: i, l: l, r: r, z: z.slice(), upto: i, zi: z[i],
+          msg: 'i=' + i + ' dans la boite [l=' + l + ', r=' + (r - 1) + '] : heritage du miroir ' + (i - l) +
+               ', z[' + i + '] = min(r-i, z[' + (i - l) + ']) = min(' + (r - i) + ', ' + z[i - l] + ') = ' + z[i] });
+      } else {
+        st.push({ i: i, l: l, r: r, z: z.slice(), upto: i, zi: 0,
+          msg: 'i=' + i + ' hors de la boite : extension naive a partir de z[' + i + '] = 0' });
+      }
+      var ext = 0;
+      while (i + z[i] < n && s[z[i]] === s[i + z[i]]) { z[i]++; ext++; }
+      var grow = (i + z[i] > r);
+      var nl = grow ? i : l, nr = grow ? i + z[i] : r;
+      st.push({ i: i, l: nl, r: nr, z: z.slice(), upto: i, zi: z[i],
+        msg: 'extension : ' + (ext > 0 ? ext + ' caractere(s) apparie(s), ' : 'aucune extension, ') +
+             'z[' + i + '] = ' + z[i] +
+             (grow ? '  ->  nouvelle boite [l=' + i + ', r=' + (i + z[i] - 1) + ']' : '  (boite inchangee)') });
+      if (grow) { l = i; r = i + z[i]; }
+    }
+    return { steps: st, z: z };
+  }
+
+  function render() {
+    var st = steps[cur] || {};
+    var zi = st.zi || 0, i = st.i;
+    var h = '<div class="za-label">Z-function : z[i] = prefixe commun de s et s[i:]</div>';
+    h += '<div class="za-scroll"><div class="za-row">';
+    for (var k = 0; k < S.length; k++) {
+      var cls = 'za-cell', ptr = '';
+      if (k === i) { cls += ' cur'; ptr = 'i'; }
+      else if (k >= i && k < i + zi) { cls += ' match'; }
+      else if (k < zi) { cls += ' pref'; }
+      else if (k >= st.l && k < st.r) { cls += ' box'; }
+      if (ptr === '' && k === st.l && st.r > st.l && k !== i) ptr = 'l';
+      if (ptr === '' && k === st.r - 1 && st.r > st.l && k !== i) ptr = 'r';
+      h += '<div class="za-col"><div class="za-ptr">' + ptr + '</div><div class="' + cls + '">' +
+           esc(S[k]) + '</div><div class="za-idx">' + k + '</div></div>';
+    }
+    h += '</div><div class="za-row">';
+    for (var k2 = 0; k2 < S.length; k2++) {
+      var zcls = 'za-z';
+      if (k2 === i) zcls += ' now';
+      else if (k2 <= st.upto) zcls += ' set';
+      h += '<div class="' + zcls + '">' + (k2 <= st.upto ? st.z[k2] : '.') + '</div>';
+    }
+    h += '</div></div>';
+    stage.innerHTML = h;
+    info.textContent = st.msg || '';
+    var boxw = Math.max(0, st.r - st.l);
+    meta.innerHTML = '<span>i <b>' + i + '</b></span>' +
+      '<span>boite [l,r) <b>[' + st.l + ',' + st.r + ')</b></span>' +
+      '<span>largeur <b>' + boxw + '</b></span>' +
+      '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>';
+  }
+
+  function load() {
+    stopRun();
+    S = sInput.value || '';
+    if (!S.length) S = 'a';
+    steps = buildZ(S).steps;
+    cur = 0;
+    render();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; render(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () {
+      step();
+      if (cur >= steps.length - 1) { timer = null; return; }
+      timer = setTimeout(tick, 600);
+    };
+    timer = setTimeout(tick, 600);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+
+  load();
+})();
+</script>

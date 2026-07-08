@@ -23,6 +23,13 @@ x-coordinate is within $d$ (the current best distance), sorted by $y$.
 For each new point, only neighbors in a strip of height $2d$ need
 comparing - a **constant** number.
 
+**Watch the sweep in motion** : the vertical line glides, the active
+band of width $d$ trails it, and only the neighbours inside get
+compared. The current best pair is joined in green.
+
+:::viz-sweep-line
+:::
+
 ### Rectangle union
 
 Sort the distinct x-coordinates. Between two consecutive x's, the set

@@ -43,6 +43,13 @@ def dijkstra(adj, s, n):
   contradiction. This argument **requires weights $\ge 0$**; a
   negative edge could lower `dist[u]` after its extraction. $\square$
 
+**Step through Dijkstra** : at each step the unsettled vertex with the
+smallest distance is extracted (it becomes final), then its edges are
+relaxed. The labels show the current tentative distance.
+
+:::viz-dijkstra{source="0"}
+:::
+
 ### Bellman-Ford
 
 Relaxing **all** edges $n-1$ times suffices: a shortest simple path

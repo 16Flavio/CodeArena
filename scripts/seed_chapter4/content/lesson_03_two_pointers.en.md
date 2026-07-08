@@ -45,6 +45,13 @@ $i \le i^* \le j^* \le j$ throughout the loop.
 Each iteration either returns, or **shrinks the interval by 1**.
 At most $n$ iterations → **$O(n)$ after sorting**.
 
+**Watch the pointers converge** : `step` moves $i$ or $j$ depending on
+whether the sum is too small or too large; the target pair lights up
+green the moment it is reached.
+
+:::viz-two-pointers{data="1,3,5,8,11,14,18" target="16"}
+:::
+
 ---
 
 ## 3.3 - Variant 2: pointers in the same direction

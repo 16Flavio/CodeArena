@@ -41,6 +41,13 @@ dans la boite englobante de $[p, q]$ - donc sur le segment.
   point interieur unique ; un zero signale un contact colineaire, teste
   explicitement. $\square$
 
+**Experimente** : deplace les extremites $A, B, C, D$. Les quatre
+orientations $d_1 \dots d_4$ et le verdict se mettent a jour en direct ;
+essaie un contact bout a bout pour voir le cas colineaire.
+
+:::viz-segment-intersect
+:::
+
 ---
 
 ## 2.3 - Complexite

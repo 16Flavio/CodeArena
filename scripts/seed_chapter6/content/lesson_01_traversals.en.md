@@ -54,6 +54,13 @@ two values more than $1$ apart.
 DFS, in turn, is coded recursively (or with an explicit stack): visit
 an unseen neighbor, recurse, return.
 
+**Compare the two traversals** : toggle between BFS (queue) and DFS
+(stack), pick the source, and step through. The #k labels give the
+discovery order; watch BFS spread in layers while DFS plunges deep.
+
+:::viz-graph-traversal{mode="bfs" source="0"}
+:::
+
 ---
 
 ## 1.3 - Complexity

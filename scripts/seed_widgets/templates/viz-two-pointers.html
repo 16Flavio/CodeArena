@@ -1,0 +1,117 @@
+<style>
+  .tp2-stage { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 0; }
+  .tp2-row { display: flex; gap: 4px; flex-wrap: nowrap; overflow-x: auto; padding: 6px 0; }
+  .tp2-col { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .tp2-cell { min-width: 38px; height: 40px; display: flex; align-items: center; justify-content: center;
+              border-radius: 6px; background: #e4e4e7; color: #3f3f46;
+              font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 700;
+              transition: background 0.25s, color 0.25s; }
+  .tp2-cell.out { background: #ececee; color: #b4b4bb; }
+  .tp2-cell.i { background: #3a6690; color: #fff; }
+  .tp2-cell.j { background: #f97316; color: #fff; }
+  .tp2-cell.hit { background: #16a34a; color: #fff; }
+  .tp2-idx { font-size: 10px; color: #a1a1aa; font-family: ui-monospace, monospace; }
+  .tp2-ptr { font-size: 11px; height: 14px; font-weight: 700; color: #3a6690; font-family: ui-monospace, monospace; }
+  html.dark .tp2-cell { background: #3f3f46; color: #e4e4e7; }
+  html.dark .tp2-cell.out { background: #2a2a2e; color: #6b6b73; }
+  html.dark .tp2-idx { color: #71717a; }
+</style>
+<div class="stage tp2-stage">
+  <div class="tp2-row" id="row"></div>
+</div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">tableau trie <input type="text" id="data" value="1,3,5,8,11,14,18" /></label>
+  <label class="field">cible <input type="number" id="target" value="16" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var dataInput = document.getElementById('data');
+  var targetInput = document.getElementById('target');
+
+  var params = window.__params || {};
+  if (params.data != null) dataInput.value = params.data.toString().replace(/[\[\]\s]/g, '');
+  if (params.target != null) targetInput.value = params.target;
+
+  var A = [], T = 0, steps = [], cur = 0, timer = null;
+
+  function parseArr(s) { return s.split(/[^\-0-9]+/).filter(function (t) { return t.length; }).map(Number); }
+
+  function build() {
+    steps = [];
+    var i = 0, j = A.length - 1;
+    while (i < j) {
+      var s = A[i] + A[j];
+      if (s === T) {
+        steps.push({ i: i, j: j, hit: true, msg: 'A[' + i + '] + A[' + j + '] = ' + A[i] + ' + ' + A[j] + ' = ' + T + '  ->  paire trouvee !' });
+        return;
+      } else if (s < T) {
+        steps.push({ i: i, j: j, msg: 'somme ' + s + ' < ' + T + '  ->  i++ (augmenter A[i])' });
+        i++;
+      } else {
+        steps.push({ i: i, j: j, msg: 'somme ' + s + ' > ' + T + '  ->  j-- (diminuer A[j])' });
+        j--;
+      }
+    }
+    steps.push({ i: i, j: j, done: true, msg: 'i >= j  ->  aucune paire de somme ' + T });
+  }
+
+  function render() {
+    var st = steps[cur] || {};
+    var row = document.getElementById('row');
+    var html = '';
+    for (var k = 0; k < A.length; k++) {
+      var cls = 'tp2-cell';
+      if (st.hit && (k === st.i || k === st.j)) cls += ' hit';
+      else if (k === st.i) cls += ' i';
+      else if (k === st.j) cls += ' j';
+      else if (k < st.i || k > st.j) cls += ' out';
+      var ptr = '';
+      if (k === st.i && k === st.j) ptr = 'i,j';
+      else if (k === st.i) ptr = 'i';
+      else if (k === st.j) ptr = 'j';
+      html += '<div class="tp2-col"><div class="tp2-ptr">' + ptr + '</div>' +
+              '<div class="' + cls + '">' + A[k] + '</div>' +
+              '<div class="tp2-idx">' + k + '</div></div>';
+    }
+    row.innerHTML = html;
+    info.textContent = st.msg || '';
+    var sum = (st.i != null && st.j != null && st.i < A.length && st.j >= 0) ? (A[st.i] + A[st.j]) : '-';
+    meta.innerHTML = '<span>somme <b>' + sum + '</b></span><span>cible <b>' + T + '</b></span>' +
+      '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>';
+  }
+
+  function load() {
+    stopRun();
+    A = parseArr(dataInput.value).sort(function (a, b) { return a - b; });
+    dataInput.value = A.join(',');
+    T = parseInt(targetInput.value, 10) || 0;
+    if (A.length < 2) A = [0, 0];
+    build(); cur = 0; render();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; render(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () { step(); if (cur >= steps.length - 1) { timer = null; return; } timer = setTimeout(tick, 700); };
+    timer = setTimeout(tick, 700);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+
+  load();
+})();
+</script>

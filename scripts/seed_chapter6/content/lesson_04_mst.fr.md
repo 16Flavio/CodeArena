@@ -51,6 +51,14 @@ def kruskal(n, edges):            # edges = [(w, u, v), ...]
 Kruskal applique cette propriete : chaque arete ajoutee est la plus
 legere traversant la coupe separant sa composante du reste.
 
+**Construis le MST** : les aretes sont triees par poids ; `step` teste
+chacune et la retient (vert) si elle relie deux composantes, ou la
+rejette (rouge) si elle formerait un cycle. Les couleurs des sommets
+montrent les composantes fusionner.
+
+:::viz-mst-kruskal
+:::
+
 ---
 
 ## 4.3 - Complexite

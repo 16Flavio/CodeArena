@@ -54,6 +54,13 @@ jamais deux valeurs eloignees de plus de $1$.
 Le DFS, lui, se code recursivement (ou avec une pile explicite) :
 visiter un voisin non vu, recurser, revenir.
 
+**Compare les deux parcours** : bascule entre BFS (file) et DFS (pile),
+choisis la source, et deroule. Les numeros #k donnent l'ordre de
+decouverte ; observe comme BFS s'etend par couches et DFS plonge.
+
+:::viz-graph-traversal{mode="bfs" source="0"}
+:::
+
 ---
 
 ## 1.3 - Complexite

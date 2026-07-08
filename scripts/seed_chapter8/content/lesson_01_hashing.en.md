@@ -49,6 +49,11 @@ fix: a **double hash** (two prime moduli $M_1, M_2$), lowering the
 probability to $\sim 1/(M_1 M_2)$, negligible. When correctness is
 critical, verify the match character by character.
 
+**Follow the algorithm**: slide the window, update the hash in $O(1)$ (drop the leading character, add the trailing one), and verify every hash equality to rule out collisions.
+
+:::viz-rolling-hash{text="abracadabra" pattern="cada"}
+:::
+
 ---
 
 ## 1.3 - Complexity

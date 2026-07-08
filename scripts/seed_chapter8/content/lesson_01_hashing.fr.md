@@ -50,6 +50,11 @@ $M_1, M_2$ premiers), ramenant la probabilite a $\sim 1/(M_1 M_2)$,
 negligeable. En cas de doute critique, verifier le match caractere par
 caractere.
 
+**Suis l'algorithme** : fais glisser la fenetre, mets a jour le hash en $O(1)$ (retire le caractere de tete, ajoute celui de queue) et verifie chaque egalite de hash pour ecarter les collisions.
+
+:::viz-rolling-hash{text="abracadabra" pattern="cada"}
+:::
+
 ---
 
 ## 1.3 - Complexite

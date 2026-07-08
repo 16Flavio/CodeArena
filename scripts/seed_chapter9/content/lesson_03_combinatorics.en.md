@@ -34,6 +34,12 @@ def binom(n, k, p):                 # p prime, p > n
 
 Precomputing factorials and inverses makes each query $O(1)$.
 
+**Build Pascal's triangle**: each interior cell is the sum of its two
+parents, $C(n,k) = C(n-1,k-1) + C(n-1,k)$.
+
+:::viz-pascal{n="8"}
+:::
+
 ### Lucas' theorem (case $n \ge p$)
 
 Write $n$ and $k$ in base $p$: $n = \sum n_i p^i$, $k = \sum k_i p^i$.

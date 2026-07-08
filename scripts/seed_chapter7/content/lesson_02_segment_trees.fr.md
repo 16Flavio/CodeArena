@@ -57,6 +57,11 @@ on marque le noeud couvrant la plage d'un `lazy` differe, et on ne le
 repercute aux enfants qu'au moment de les visiter. Cela garde les
 mises a jour de plage en $O(\log n)$.
 
+**Deroule une requete de somme** : la plage se decoupe en O(log n) noeuds canoniques (verts) ; la mise a jour ponctuelle remonte le chemin feuille -> racine.
+
+:::viz-segment-tree{data="3,1,4,1,5,9,2,6" l="2" r="5"}
+:::
+
 ---
 
 ## 2.3 - Complexite

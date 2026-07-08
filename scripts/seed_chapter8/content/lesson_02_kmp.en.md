@@ -44,6 +44,11 @@ $|P|$ marks an occurrence.
   decrease only $O(n)$ times in total: each `j = pi[j-1]` consumes a
   prior increase. So the total operations are linear.
 
+**Follow the algorithm**: first build the pattern's pi table, then slide the pattern across the text, using pi on every mismatch.
+
+:::viz-kmp{text="abxabcabcaby" pattern="abcaby"}
+:::
+
 ---
 
 ## 2.3 - Complexity

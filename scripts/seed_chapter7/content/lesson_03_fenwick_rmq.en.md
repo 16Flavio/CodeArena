@@ -36,6 +36,11 @@ def prefix(bit, i):               # sum a[1..i]
 
 The range sum is `prefix(r) - prefix(l-1)`.
 
+**Step through the bit jumps**: `prefix(i)` descends by blocks (`i -= i & -i`), `update(i)` climbs (`i += i & -i`), both from the same index `i`.
+
+:::viz-fenwick{data="3,1,4,1,5,9,2,6" i="6"}
+:::
+
 ### Sparse table (static RMQ)
 
 Precompute `sp[k][i]` = minimum of range $[i, i + 2^k)$. A query

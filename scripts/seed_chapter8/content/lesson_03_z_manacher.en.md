@@ -37,6 +37,11 @@ def z_function(s):
     return z
 ```
 
+**Follow the algorithm**: compute z[i] left to right, reusing the [l, r] box (mirror inheritance) instead of rescanning from scratch.
+
+:::viz-z-array{s="aabxaabxcaabxaabxay"}
+:::
+
 ### Manacher
 
 To handle even and odd palindromes uniformly, insert separators: `abc`

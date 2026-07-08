@@ -1,0 +1,147 @@
+<style>
+  .fw-stage { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px 0; }
+  .fw-row { display: flex; gap: 4px; flex-wrap: nowrap; overflow-x: auto; padding: 2px 0; align-items: flex-end; }
+  .fw-label { min-width: 44px; font-size: 11px; color: #71717a; font-family: ui-monospace, monospace;
+              text-align: right; padding-right: 4px; align-self: center; }
+  .fw-col { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .fw-cell { min-width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+             border-radius: 6px; background: #e4e4e7; color: #3f3f46;
+             font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 700;
+             transition: background 0.25s, color 0.25s, outline-color 0.2s; }
+  .fw-cell.visit { background: #f97316; color: #fff; outline: 2px solid #c2410c; outline-offset: 2px; }
+  .fw-cell.done { background: #3a6690; color: #fff; }
+  .fw-cell.answer { background: #16a34a; color: #fff; }
+  .fw-idx { font-size: 10px; color: #a1a1aa; font-family: ui-monospace, monospace; }
+  .fw-cov { font-size: 9px; color: #a1a1aa; font-family: ui-monospace, monospace; min-height: 11px; }
+  html.dark .fw-cell { background: #3f3f46; color: #e4e4e7; }
+  html.dark .fw-label { color: #a1a1aa; }
+  html.dark .fw-idx { color: #71717a; }
+  html.dark .fw-cov { color: #71717a; }
+</style>
+<div class="stage fw-stage">
+  <div class="fw-row" id="rowA"></div>
+  <div class="fw-row" id="rowB"></div>
+</div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">data <input type="text" id="data" value="3,1,4,1,5,9,2,6" /></label>
+  <label class="field">i <input type="number" id="idx" value="6" min="1" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var dataInput = document.getElementById('data');
+  var idxInput = document.getElementById('idx');
+
+  var params = window.__params || {};
+  if (params.data != null) dataInput.value = params.data.toString().replace(/[\[\]\s]/g, '');
+
+  var A = [], n = 0, bit = [], I = 6;
+  var steps = [], cur = 0, timer = null;
+
+  function parseArr(s) { return s.split(/[^\-0-9]+/).filter(function (t) { return t.length; }).map(Number); }
+  function lowbit(x) { return x & (-x); }
+
+  // BIT en 1-indexe : A[1..n], bit[i] couvre A[i-lowbit(i)+1 .. i].
+  function build() {
+    bit = new Array(n + 1).fill(0);
+    for (var i = 1; i <= n; i++) { var j = i; while (j <= n) { bit[j] += A[i - 1]; j += lowbit(j); } }
+  }
+
+  function simulate() {
+    steps = [];
+    // requete prefixe(I) : i -= i & -i, on cumule
+    var s = 0, i = I, visited = [];
+    steps.push({ mode: 'prefix', i: I, visited: [], sum: 0, kind: 'start',
+      msg: 'prefixe(' + I + ') = somme a[1..' + I + '] : on descend par blocs (i -= i & -i)' });
+    while (i > 0) {
+      s += bit[i]; visited = visited.concat([i]);
+      steps.push({ mode: 'prefix', i: i, visited: visited.slice(), sum: s, kind: 'visit',
+        msg: 'i=' + i + ' : lowbit = ' + lowbit(i) + ', on ajoute bit[' + i + '] = ' + bit[i] +
+             ' (somme ' + s + '), puis i -= ' + lowbit(i) + ' -> ' + (i - lowbit(i)) });
+      i -= lowbit(i);
+    }
+    steps.push({ mode: 'prefix', i: 0, visited: visited.slice(), sum: s, kind: 'done',
+      msg: 'i = 0 : fin. prefixe(' + I + ') = ' + s + '  (' + visited.length + ' blocs, O(log n))' });
+
+    // mise a jour ponctuelle update(I) : i += i & -i
+    var up = [], j = I;
+    steps.push({ mode: 'update', i: I, visited: [], kind: 'start',
+      msg: 'update(' + I + ') : a[' + I + '] change, on remonte par blocs (i += i & -i)' });
+    while (j <= n) {
+      up = up.concat([j]);
+      steps.push({ mode: 'update', i: j, visited: up.slice(), kind: 'visit',
+        msg: 'i=' + j + ' : lowbit = ' + lowbit(j) + ', bit[' + j + '] contient a[' + j + '], on met a jour, puis i += ' +
+             lowbit(j) + ' -> ' + (j + lowbit(j)) });
+      j += lowbit(j);
+    }
+    steps.push({ mode: 'update', i: -1, visited: up.slice(), kind: 'done',
+      msg: 'i > ' + n + ' : fin. ' + up.length + ' blocs mis a jour (O(log n))' });
+  }
+
+  function coverText(i) {
+    var lo = i - lowbit(i) + 1;
+    return lo === i ? ('a[' + i + ']') : ('a[' + lo + '..' + i + ']');
+  }
+
+  function render() {
+    var st = steps[cur] || {};
+    var rowA = document.getElementById('rowA'), rowB = document.getElementById('rowB');
+    var vis = {}; if (st.visited) st.visited.forEach(function (v) { vis[v] = 1; });
+    var htmlA = '<div class="fw-label">a[i]</div>', htmlB = '<div class="fw-label">bit[i]</div>';
+    for (var k = 1; k <= n; k++) {
+      var clsA = 'fw-cell', clsB = 'fw-cell';
+      if (st.mode === 'update' && k === st.i) clsA += ' visit';
+      if (vis[k]) clsB += (st.kind === 'done' && st.mode === 'prefix') ? ' answer' : ' done';
+      if (k === st.i && st.kind === 'visit') clsB = 'fw-cell visit';
+      htmlA += '<div class="fw-col"><div class="' + clsA + '">' + A[k - 1] + '</div>' +
+               '<div class="fw-idx">' + k + '</div></div>';
+      htmlB += '<div class="fw-col"><div class="' + clsB + '">' + bit[k] + '</div>' +
+               '<div class="fw-idx">' + k + '</div>' +
+               '<div class="fw-cov">' + coverText(k) + '</div></div>';
+    }
+    rowA.innerHTML = htmlA; rowB.innerHTML = htmlB;
+    info.textContent = st.msg || '';
+    var mode = st.mode === 'update' ? 'mise a jour' : 'somme prefixe';
+    meta.innerHTML = '<span>operation <b>' + mode + '</b></span>' +
+      (st.mode === 'prefix' ? '<span>somme <b>' + (st.sum || 0) + '</b></span>' : '') +
+      '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>';
+  }
+
+  function load() {
+    stopRun();
+    A = parseArr(dataInput.value);
+    if (!A.length) A = [0];
+    if (A.length > 16) A = A.slice(0, 16);
+    dataInput.value = A.join(',');
+    n = A.length;
+    I = parseInt(idxInput.value, 10) || 1;
+    if (I < 1) I = 1; if (I > n) I = n;
+    idxInput.value = I;
+    build(); simulate(); cur = 0; render();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; render(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () { step(); if (cur >= steps.length - 1) { timer = null; return; } timer = setTimeout(tick, 750); };
+    timer = setTimeout(tick, 750);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+
+  load();
+})();
+</script>

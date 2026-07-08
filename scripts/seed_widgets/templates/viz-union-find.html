@@ -1,0 +1,215 @@
+<style>
+  .uf-wrap canvas { width: 100%; max-width: 100%; display: block; background: transparent; }
+</style>
+<div class="stage uf-wrap">
+  <canvas id="cv" width="600" height="300"></canvas>
+</div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">n <input type="number" id="n" value="8" min="2" max="16" /></label>
+  <label class="field">unions <input type="text" id="ops" value="0-1;2-3;1-3;4-5;5-6;3-6" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var nInput = document.getElementById('n');
+  var opsInput = document.getElementById('ops');
+
+  var params = window.__params || {};
+  if (params.n != null) nInput.value = params.n;
+  if (params.ops != null) opsInput.value = params.ops.toString();
+
+  var W = 600, H = 300, R = 15;
+  var N = 8, ops = [];
+  var parentOf = [], edgeOp = [];
+  var pos = [], maxX = 1, maxDepth = 1;
+  var steps = [], cur = 0, timer = null;
+
+  function isDark() { return document.documentElement.classList.contains('dark'); }
+
+  function parseOps(s) {
+    var out = [];
+    s.split(/[;\n]+/).forEach(function (t) {
+      var m = t.split(/[^0-9]+/).filter(function (x) { return x.length; }).map(Number);
+      if (m.length >= 2) out.push([m[0], m[1]]);
+    });
+    return out;
+  }
+
+  // Simule la suite d'unions (union par taille) puis un find final avec
+  // compression de chemin sur le noeud le plus profond. Precalcule steps.
+  function simulate() {
+    var par = [], sz = [];
+    for (var i = 0; i < N; i++) { par[i] = i; sz[i] = 1; }
+    function findRaw(x) { while (par[x] !== x) x = par[x]; return x; }
+    parentOf = new Array(N).fill(-1);
+    edgeOp = new Array(N).fill(-1);
+    steps = [];
+    steps.push({ edgesUpTo: -1, phase: 'init',
+      msg: 'depart : ' + N + ' elements, chacun seul dans son ensemble (taille 1)' });
+    for (var k = 0; k < ops.length; k++) {
+      var a = ops[k][0], b = ops[k][1];
+      if (a < 0 || a >= N || b < 0 || b >= N) continue;
+      var ra = findRaw(a), rb = findRaw(b);
+      if (ra === rb) {
+        steps.push({ edgesUpTo: k, phase: 'noop', a: a, b: b,
+          msg: 'union(' + a + ',' + b + ') : deja dans le meme ensemble (racine ' + ra + '), rien a faire' });
+        continue;
+      }
+      var big = ra, small = rb;
+      if (sz[big] < sz[small]) { big = rb; small = ra; }
+      parentOf[small] = big; edgeOp[small] = k;
+      var newSize = sz[big] + sz[small];
+      par[small] = big; sz[big] = newSize;
+      steps.push({ edgesUpTo: k, phase: 'union', a: a, b: b, big: big, small: small, newSize: newSize,
+        msg: 'union(' + a + ',' + b + ') : racines ' + ra + ' et ' + rb + ' -> on accroche ' +
+             small + ' sous ' + big + ' (par taille), taille -> ' + newSize });
+    }
+    // find final avec compression sur le noeud le plus profond
+    var depth = new Array(N).fill(0);
+    for (var v = 0; v < N; v++) { var d = 0, x = v; while (parentOf[x] >= 0) { x = parentOf[x]; d++; } depth[v] = d; }
+    var target = -1;
+    for (var v2 = 0; v2 < N; v2++) { if (depth[v2] >= 2 && (target < 0 || depth[v2] > depth[target])) target = v2; }
+    if (target >= 0) {
+      var path = [], y = target;
+      while (y >= 0) { path.push(y); if (parentOf[y] < 0) break; y = parentOf[y]; }
+      var root = path[path.length - 1];
+      steps.push({ edgesUpTo: ops.length - 1, phase: 'findPath', path: path.slice(), root: root, target: target,
+        msg: 'find(' + target + ') : on remonte ' + path.join(' -> ') + ' jusqu a la racine ' + root });
+      steps.push({ edgesUpTo: ops.length - 1, phase: 'compress', path: path.slice(), root: root, target: target,
+        msg: 'compression de chemin : ' + target + ' pointe desormais direct sur la racine ' + root +
+             ' (arbre aplati)' });
+    }
+  }
+
+  function layout() {
+    var children = []; for (var i = 0; i < N; i++) children.push([]);
+    var roots = [];
+    for (var i2 = 0; i2 < N; i2++) { if (parentOf[i2] < 0) roots.push(i2); else children[parentOf[i2]].push(i2); }
+    pos = new Array(N);
+    var leaf = 0; maxDepth = 0;
+    function rec(node, depth) {
+      if (depth > maxDepth) maxDepth = depth;
+      var ch = children[node];
+      if (ch.length === 0) { pos[node] = { x: leaf, depth: depth }; leaf += 1; return; }
+      var sum = 0;
+      for (var c = 0; c < ch.length; c++) { rec(ch[c], depth + 1); sum += pos[ch[c]].x; }
+      pos[node] = { x: sum / ch.length, depth: depth };
+    }
+    for (var r = 0; r < roots.length; r++) { if (r > 0) leaf += 1; rec(roots[r], 0); }
+    maxX = Math.max(1, leaf - 1);
+    if (maxDepth < 1) maxDepth = 1;
+  }
+
+  function nodeXY(node) {
+    var marginX = 42, marginTop = 34;
+    var levelH = (H - marginTop - 34) / maxDepth;
+    var px = marginX + (pos[node].x / maxX) * (W - 2 * marginX);
+    var py = marginTop + pos[node].depth * levelH;
+    return [px, py];
+  }
+
+  function draw() {
+    var dark = isDark();
+    ctx.clearRect(0, 0, W, H);
+    var st = steps[cur] || {};
+    var pathSet = {}; if (st.path) st.path.forEach(function (p) { pathSet[p] = 1; });
+
+    // tailles / composantes visibles a cette etape
+    function visRoot(x) { while (parentOf[x] >= 0 && edgeOp[x] <= st.edgesUpTo) x = parentOf[x]; return x; }
+    var compSize = {}, largest = 1, sets = 0;
+    for (var s = 0; s < N; s++) { var rr = visRoot(s); compSize[rr] = (compSize[rr] || 0) + 1; }
+    for (var key in compSize) { sets++; if (compSize[key] > largest) largest = compSize[key]; }
+
+    // aretes
+    for (var i = 0; i < N; i++) {
+      if (parentOf[i] < 0) continue;
+      if (edgeOp[i] > st.edgesUpTo) continue;
+      var parent = parentOf[i];
+      var color = dark ? '#52525b' : '#a1a1aa', lw = 1.5;
+      if (st.phase === 'compress' && pathSet[i] && i !== st.root) { parent = st.root; color = '#16a34a'; lw = 2.6; }
+      else if (st.phase === 'findPath' && pathSet[i]) { color = '#f97316'; lw = 2.6; }
+      else if (st.phase === 'union' && i === st.small) { color = '#f97316'; lw = 2.6; }
+      var A = nodeXY(i), B = nodeXY(parent);
+      ctx.strokeStyle = color; ctx.lineWidth = lw;
+      ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();
+    }
+
+    // noeuds
+    ctx.font = '600 13px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    var zinc = dark ? '#3f3f46' : '#e4e4e7';
+    var zincTxt = dark ? '#e4e4e7' : '#3f3f46';
+    for (var n2 = 0; n2 < N; n2++) {
+      var P = nodeXY(n2);
+      var isRoot = parentOf[n2] < 0 || edgeOp[n2] > st.edgesUpTo;
+      var fill = isRoot ? '#3a6690' : zinc;
+      var txt = isRoot ? '#fff' : zincTxt;
+      var stroke = isRoot ? '#2c5070' : (dark ? '#52525b' : '#c4c4c8');
+      if (st.phase === 'union') {
+        if (n2 === st.big) { stroke = '#f97316'; }
+        if (n2 === st.small) { fill = '#f97316'; txt = '#fff'; stroke = '#c2410c'; }
+      }
+      if (st.phase === 'findPath' && pathSet[n2]) { fill = '#f97316'; txt = '#fff'; stroke = '#c2410c'; }
+      if (st.phase === 'compress' && pathSet[n2] && n2 !== st.root) { fill = '#16a34a'; txt = '#fff'; stroke = '#15803d'; }
+      ctx.beginPath(); ctx.arc(P[0], P[1], R, 0, 2 * Math.PI);
+      ctx.fillStyle = fill; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = stroke; ctx.stroke();
+      ctx.fillStyle = txt; ctx.fillText(String(n2), P[0], P[1] + 0.5);
+      if (isRoot) {
+        ctx.font = '11px ui-monospace, monospace';
+        ctx.fillStyle = dark ? '#9cbbd6' : '#3a6690';
+        ctx.fillText('t=' + compSize[n2], P[0], P[1] + R + 11);
+        ctx.font = '600 13px ui-monospace, monospace';
+      }
+    }
+
+    info.textContent = st.msg || '';
+    meta.innerHTML = '<span>ensembles <b>' + sets + '</b></span>' +
+      '<span>plus grand <b>' + largest + '</b></span>' +
+      '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>';
+  }
+
+  function resize() {
+    W = cv.clientWidth || 600; H = 300;
+    var dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function load() {
+    stopRun();
+    N = parseInt(nInput.value, 10) || 8;
+    if (N < 2) N = 2; if (N > 16) N = 16;
+    nInput.value = N;
+    ops = parseOps(opsInput.value);
+    simulate(); layout(); cur = 0; resize(); draw();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; draw(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () { step(); if (cur >= steps.length - 1) { timer = null; return; } timer = setTimeout(tick, 700); };
+    timer = setTimeout(tick, 700);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+  window.addEventListener('resize', function () { resize(); draw(); });
+
+  load();
+})();
+</script>

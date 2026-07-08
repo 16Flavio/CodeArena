@@ -56,6 +56,13 @@ increasing subsequence ending at $i$ extends an increasing
 subsequence ending at some $j < i$ with $a_j < a_i$ - optimal
 substructure.
 
+**Fill the table** : `step` computes each $L(i)$ and highlights the
+chosen predecessor in blue. At the end, the longest increasing
+subsequence is reconstructed in green.
+
+:::viz-dp-table{data="3,1,8,2,5,9,4,7,6"}
+:::
+
 ---
 
 ## 3.3 - Complexity

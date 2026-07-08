@@ -49,6 +49,11 @@ Deux optimisations rendent la structure efficace :
 - **Union par taille (ou rang)** : on accroche toujours le petit arbre
   sous le grand, gardant les arbres plats.
 
+**Deroule les unions** : chaque etape accroche le petit arbre sous le grand ; le find final compresse le chemin jusqu a la racine.
+
+:::viz-union-find{n="8" ops="0-1;2-3;1-3;4-5;5-6;3-6"}
+:::
+
 ---
 
 ## 1.3 - Complexite

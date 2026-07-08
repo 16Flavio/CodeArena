@@ -45,6 +45,13 @@ satisfait $i \le i^* \le j^* \le j$ tout au long de la boucle.
 À chaque tour soit on retourne, soit on **réduit l'intervalle de
 1**. Au plus $n$ itérations → **$O(n)$ après tri**.
 
+**Regarde les pointeurs converger** : `step` déplace $i$ ou $j$ selon
+que la somme est trop petite ou trop grande ; la paire cible s'illumine
+en vert dès qu'elle est atteinte.
+
+:::viz-two-pointers{data="1,3,5,8,11,14,18" target="16"}
+:::
+
 ---
 
 ## 3.3 - Variante 2 : pointeurs dans le même sens

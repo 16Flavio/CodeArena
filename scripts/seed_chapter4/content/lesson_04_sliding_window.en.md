@@ -104,6 +104,13 @@ That's lesson 3's example - already seen. The boundary between
 "two-pointer" and "sliding window" is fuzzy: same idea, different
 emphasis (two indices vs an aggregated statistic).
 
+**The window in action** : `step` brings in an element on the right,
+then contracts on the left while the sum stays $\ge S$. The smallest
+valid window freezes in green at the end.
+
+:::viz-sliding-window{data="2,3,1,2,4,3" s="7"}
+:::
+
 ---
 
 ## 4.6 - Pitfalls

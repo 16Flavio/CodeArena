@@ -1,0 +1,170 @@
+<style>
+  canvas { width: 100%; max-width: 100%; display: block; background: transparent; }
+  .gi-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; margin-top: 6px;
+               justify-content: center; color: #71717a; }
+  .gi-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .gi-sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  html.dark .gi-legend { color: #a1a1aa; }
+</style>
+<div class="stage">
+  <canvas id="cv" width="600" height="300"></canvas>
+  <div class="gi-legend">
+    <span><span class="gi-sw" style="background:#16a34a"></span>choisi</span>
+    <span><span class="gi-sw" style="background:#f97316"></span>candidat</span>
+    <span><span class="gi-sw" style="background:#cbd5e1"></span>rejete (chevauche)</span>
+  </div>
+</div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">intervalles <input type="text" id="data" value="1,4;3,5;0,6;5,7;3,8;5,9;6,10;8,11;8,12;2,13" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var dataInput = document.getElementById('data');
+
+  var params = window.__params || {};
+  if (params.intervals != null) dataInput.value = params.intervals.toString();
+
+  var iv = [], steps = [], cur = 0, timer = null;
+  var W = 600, H = 300, padL = 30, padR = 20, padT = 16, padB = 28;
+  var tmin = 0, tmax = 1;
+
+  function isDark() { return document.documentElement.classList.contains('dark'); }
+  function parseIv(s) {
+    var out = [];
+    s.split(/[;\n]+/).forEach(function (p) {
+      var m = p.split(/[,\s]+/).filter(function (t) { return t.length; }).map(Number);
+      if (m.length >= 2) out.push([m[0], m[1]]);
+    });
+    return out;
+  }
+
+  function build() {
+    // tri par fin croissante puis simulation gloutonne
+    iv = iv.map(function (p, k) { return { s: p[0], e: p[1], id: k }; });
+    iv.sort(function (a, b) { return a.e - b.e || a.s - b.s; });
+    steps = [];
+    var curEnd = -Infinity, count = 0;
+    for (var i = 0; i < iv.length; i++) {
+      var ok = iv[i].s >= curEnd;
+      if (ok) { count++; curEnd = iv[i].e; }
+      steps.push({
+        idx: i, accepted: ok, curEnd: curEnd, count: count, status: null,
+        msg: ok
+          ? 'debut ' + iv[i].s + ' >= fin courante  ->  on prend [' + iv[i].s + ', ' + iv[i].e + ')'
+          : 'debut ' + iv[i].s + ' < ' + curEnd + '  ->  chevauche, on rejette'
+      });
+    }
+    // recompute status cleanly (cumulative)
+    var st = iv.map(function () { return 'pending'; });
+    for (var s2 = 0; s2 < steps.length; s2++) {
+      st[steps[s2].idx] = steps[s2].accepted ? 'chosen' : 'rejected';
+      steps[s2].status = st.slice();
+    }
+  }
+
+  function resize() {
+    W = cv.clientWidth || 600; H = Math.max(160, 30 + iv.length * 22 + padB);
+    var dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function tx(t) { return padL + (t - tmin) / (tmax - tmin) * (W - padL - padR); }
+
+  function draw() {
+    var dark = isDark();
+    ctx.clearRect(0, 0, W, H);
+    var st = steps[cur] || { status: iv.map(function () { return 'pending'; }) };
+    var rowH = 18, gap = 4;
+    var top = padT;
+
+    // axe temporel
+    ctx.strokeStyle = dark ? 'rgba(148,163,184,0.4)' : 'rgba(100,116,139,0.4)';
+    ctx.lineWidth = 1;
+    var axisY = top + iv.length * (rowH + gap) + 6;
+    ctx.beginPath(); ctx.moveTo(padL, axisY); ctx.lineTo(W - padR, axisY); ctx.stroke();
+    ctx.fillStyle = dark ? '#a1a1aa' : '#71717a'; ctx.font = '10px ui-monospace, monospace';
+    for (var t = Math.ceil(tmin); t <= Math.floor(tmax); t++) {
+      var x = tx(t);
+      ctx.beginPath(); ctx.moveTo(x, axisY - 3); ctx.lineTo(x, axisY + 3); ctx.stroke();
+      ctx.fillText(t, x - 3, axisY + 15);
+    }
+
+    // ligne de fin courante
+    if (steps[cur] && isFinite(steps[cur].curEnd)) {
+      var cx = tx(steps[cur].curEnd);
+      ctx.strokeStyle = '#16a34a'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(cx, top - 4); ctx.lineTo(cx, axisY); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    for (var i = 0; i < iv.length; i++) {
+      var y = top + i * (rowH + gap);
+      var x1 = tx(iv[i].s), x2 = tx(iv[i].e);
+      var status = st.status[i];
+      var isCur = steps[cur] && steps[cur].idx === i;
+      var fill;
+      if (isCur && status !== 'chosen' && status !== 'rejected') fill = '#f97316';
+      else if (isCur) fill = status === 'chosen' ? '#16a34a' : '#f97316';
+      else if (status === 'chosen') fill = '#16a34a';
+      else if (status === 'rejected') fill = dark ? '#3f3f46' : '#cbd5e1';
+      else fill = dark ? '#52525b' : '#e4e4e7';
+      ctx.fillStyle = fill;
+      roundRect(x1, y, Math.max(4, x2 - x1), rowH, 5); ctx.fill();
+      // label
+      ctx.fillStyle = (status === 'chosen' || (isCur && status !== 'rejected')) ? '#fff' : (dark ? '#cbd5e1' : '#475569');
+      ctx.font = '11px ui-monospace, monospace';
+      ctx.fillText('[' + iv[i].s + ',' + iv[i].e + ')', x1 + 5, y + 13);
+    }
+
+    info.textContent = steps[cur] ? steps[cur].msg : 'tri par fin croissante, puis choix glouton';
+    meta.innerHTML = '<span>choisis <b>' + (steps[cur] ? steps[cur].count : 0) + '</b></span>' +
+      '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>';
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+
+  function load() {
+    stopRun();
+    iv = parseIv(dataInput.value);
+    if (iv.length < 1) iv = parseIv('1,4;3,5;0,6;5,7');
+    build();
+    tmin = Math.min.apply(null, iv.map(function (p) { return p.s; }));
+    tmax = Math.max.apply(null, iv.map(function (p) { return p.e; }));
+    if (tmax === tmin) tmax = tmin + 1;
+    cur = 0; resize(); draw();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; draw(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () { step(); if (cur >= steps.length - 1) { timer = null; return; } timer = setTimeout(tick, 700); };
+    timer = setTimeout(tick, 700);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+  window.addEventListener('resize', function () { resize(); draw(); });
+
+  load();
+})();
+</script>

@@ -42,6 +42,11 @@ class Trie:
         return self.cnt[cur]
 ```
 
+**Step through a search**: descend character by character; the path turns green if it exists, red at the first missing edge.
+
+:::viz-trie{words="car,card,cart,dog,do,dot" query="cart"}
+:::
+
 ### The binary trie
 
 By storing an integer through its bits (most significant first), you

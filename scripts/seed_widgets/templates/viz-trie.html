@@ -1,0 +1,199 @@
+<style>
+  .tr-wrap canvas { width: 100%; max-width: 100%; display: block; background: transparent; }
+</style>
+<div class="stage tr-wrap">
+  <canvas id="cv" width="600" height="300"></canvas>
+</div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">mots <input type="text" id="words" value="car,card,cart,dog,do,dot" /></label>
+  <label class="field">requete <input type="text" id="query" value="cart" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var wordsInput = document.getElementById('words');
+  var queryInput = document.getElementById('query');
+
+  var params = window.__params || {};
+  if (params.words != null) wordsInput.value = params.words.toString();
+  if (params.query != null) queryInput.value = params.query.toString();
+
+  var W = 600, H = 300, R = 14;
+  var child = [], isEnd = [], edgeChar = [];
+  var pos = [], maxX = 1, maxDepth = 1;
+  var query = '', steps = [], cur = 0, timer = null;
+
+  function isDark() { return document.documentElement.classList.contains('dark'); }
+
+  function newNode() { child.push({}); isEnd.push(false); edgeChar.push(''); return child.length - 1; }
+
+  function buildTrie(words) {
+    child = []; isEnd = []; edgeChar = [];
+    newNode(); // racine = 0
+    words.forEach(function (w) {
+      var curNode = 0;
+      for (var i = 0; i < w.length; i++) {
+        var c = w[i];
+        if (!(c in child[curNode])) { var nn = newNode(); child[curNode][c] = nn; edgeChar[nn] = c; }
+        curNode = child[curNode][c];
+      }
+      if (w.length) isEnd[curNode] = true;
+    });
+  }
+
+  function layout() {
+    pos = new Array(child.length);
+    var leaf = 0; maxDepth = 0;
+    function rec(node, depth) {
+      if (depth > maxDepth) maxDepth = depth;
+      var keys = Object.keys(child[node]).sort();
+      if (keys.length === 0) { pos[node] = { x: leaf, depth: depth }; leaf += 1; return; }
+      var sum = 0;
+      for (var i = 0; i < keys.length; i++) { var kid = child[node][keys[i]]; rec(kid, depth + 1); sum += pos[kid].x; }
+      pos[node] = { x: sum / keys.length, depth: depth };
+    }
+    rec(0, 0);
+    maxX = Math.max(1, leaf - 1);
+    if (maxDepth < 1) maxDepth = 1;
+  }
+
+  function simulate() {
+    steps = [];
+    steps.push({ node: 0, matched: [0], missChar: null, done: false,
+      msg: 'recherche de "' + query + '" : depart a la racine (mot vide)' });
+    var curNode = 0, matched = [0], ok = true;
+    for (var i = 0; i < query.length; i++) {
+      var c = query[i];
+      if (c in child[curNode]) {
+        curNode = child[curNode][c];
+        matched = matched.concat([curNode]);
+        steps.push({ node: curNode, matched: matched.slice(), missChar: null, done: false,
+          msg: 'lettre "' + c + '" trouvee -> on descend au noeud "' + c + '"' });
+      } else {
+        steps.push({ node: curNode, matched: matched.slice(), missChar: c, missAt: curNode, done: true, found: false,
+          msg: 'lettre "' + c + '" absente depuis ce noeud -> "' + query + '" introuvable' });
+        ok = false;
+        break;
+      }
+    }
+    if (ok) {
+      var found = isEnd[curNode];
+      steps.push({ node: curNode, matched: matched.slice(), missChar: null, done: true, found: found,
+        msg: found
+          ? 'chemin complet et noeud de fin de mot -> "' + query + '" est present'
+          : 'chemin complet mais pas un noeud de fin -> "' + query + '" est seulement un prefixe' });
+    }
+  }
+
+  function nodeXY(node) {
+    var marginX = 34, marginTop = 30, marginBot = 24;
+    var levelH = (H - marginTop - marginBot) / maxDepth;
+    var px = maxX > 0 ? marginX + (pos[node].x / maxX) * (W - 2 * marginX) : W / 2;
+    var py = marginTop + pos[node].depth * levelH;
+    return [px, py];
+  }
+
+  function draw() {
+    var dark = isDark();
+    ctx.clearRect(0, 0, W, H);
+    var st = steps[cur] || {};
+    var matchSet = {}; if (st.matched) st.matched.forEach(function (m) { matchSet[m] = 1; });
+
+    // aretes avec etiquette de caractere
+    ctx.lineWidth = 1.5;
+    for (var node = 0; node < child.length; node++) {
+      var keys = Object.keys(child[node]);
+      for (var kk = 0; kk < keys.length; kk++) {
+        var kid = child[node][keys[kk]];
+        var A = nodeXY(node), B = nodeXY(kid);
+        var onMatch = matchSet[node] && matchSet[kid];
+        ctx.strokeStyle = onMatch ? '#16a34a' : (dark ? '#52525b' : '#c4c4c8');
+        ctx.lineWidth = onMatch ? 2.4 : 1.5;
+        ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();
+        // etiquette de l'arete
+        ctx.fillStyle = onMatch ? '#16a34a' : (dark ? '#a1a1aa' : '#71717a');
+        ctx.font = '600 11px ui-monospace, monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(keys[kk], (A[0] + B[0]) / 2 + 7, (A[1] + B[1]) / 2);
+      }
+    }
+
+    // arete manquante (lettre absente)
+    if (st.missChar != null && st.missAt != null) {
+      var Pm = nodeXY(st.missAt);
+      ctx.fillStyle = '#dc2626';
+      ctx.font = '700 13px ui-monospace, monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('"' + st.missChar + '" ?', Pm[0], Pm[1] - R - 10);
+    }
+
+    // noeuds
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (var n2 = 0; n2 < child.length; n2++) {
+      var P = nodeXY(n2);
+      var zinc = dark ? '#3f3f46' : '#e4e4e7', zTxt = dark ? '#e4e4e7' : '#3f3f46';
+      var onMatch = matchSet[n2];
+      var fill = onMatch ? '#16a34a' : zinc;
+      var txt = onMatch ? '#fff' : zTxt;
+      var stroke = onMatch ? '#15803d' : (dark ? '#52525b' : '#c4c4c8');
+      if (n2 === st.node && st.done && st.found === false) { fill = '#dc2626'; txt = '#fff'; stroke = '#991b1b'; }
+      else if (n2 === st.node && !st.done) { fill = '#f97316'; txt = '#fff'; stroke = '#c2410c'; }
+      // anneau fin de mot
+      if (isEnd[n2]) { ctx.beginPath(); ctx.arc(P[0], P[1], R + 3, 0, 2 * Math.PI); ctx.strokeStyle = onMatch ? '#15803d' : '#3a6690'; ctx.lineWidth = 1.6; ctx.stroke(); }
+      ctx.beginPath(); ctx.arc(P[0], P[1], R, 0, 2 * Math.PI);
+      ctx.fillStyle = fill; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = stroke; ctx.stroke();
+      ctx.fillStyle = txt; ctx.font = '600 12px ui-monospace, monospace';
+      ctx.fillText(n2 === 0 ? '•' : edgeChar[n2], P[0], P[1] + 0.5);
+    }
+
+    info.textContent = st.msg || '';
+    var depthNow = (st.matched ? st.matched.length - 1 : 0);
+    meta.innerHTML = '<span>noeuds <b>' + child.length + '</b></span>' +
+      '<span>profondeur atteinte <b>' + depthNow + '</b></span>' +
+      '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>';
+  }
+
+  function resize() {
+    W = cv.clientWidth || 600; H = 300;
+    var dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function load() {
+    stopRun();
+    var words = wordsInput.value.split(/[,;\s]+/).filter(function (w) { return w.length; }).slice(0, 12);
+    if (!words.length) words = ['a'];
+    query = (queryInput.value || '').trim();
+    buildTrie(words); layout(); simulate(); cur = 0; resize(); draw();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; draw(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () { step(); if (cur >= steps.length - 1) { timer = null; return; } timer = setTimeout(tick, 700); };
+    timer = setTimeout(tick, 700);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+  window.addEventListener('resize', function () { resize(); draw(); });
+
+  load();
+})();
+</script>
