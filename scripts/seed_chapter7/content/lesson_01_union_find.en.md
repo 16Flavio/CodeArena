@@ -49,6 +49,11 @@ Two optimizations make the structure efficient:
 - **Union by size (or rank)**: always attach the small tree under the
   large one, keeping the trees flat.
 
+**Step through the unions**: each step attaches the smaller tree under the larger one; the final find compresses the path up to the root.
+
+:::viz-union-find{n="8" ops="0-1;2-3;1-3;4-5;5-6;3-6"}
+:::
+
 ---
 
 ## 1.3 - Complexity

@@ -44,6 +44,11 @@ $\pi$ atteint $|P|$ marque une occurrence.
   decroitre qu'en tout $O(n)$ fois : chaque `j = pi[j-1]` consomme une
   hausse anterieure. Le total des operations est donc lineaire.
 
+**Suis l'algorithme** : construis d'abord la table pi du motif, puis fais glisser le motif sur le texte en te servant de pi a chaque echec.
+
+:::viz-kmp{text="abxabcabcaby" pattern="abcaby"}
+:::
+
 ---
 
 ## 2.3 - Complexite

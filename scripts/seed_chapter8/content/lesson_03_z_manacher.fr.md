@@ -38,6 +38,11 @@ def z_function(s):
     return z
 ```
 
+**Suis l'algorithme** : calcule z[i] de gauche a droite en reutilisant la boite [l, r] (heritage du miroir) au lieu de tout reparcourir.
+
+:::viz-z-array{s="aabxaabxcaabxaabxay"}
+:::
+
 ### Manacher
 
 Pour traiter uniformement palindromes pairs et impairs, on insere des

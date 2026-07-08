@@ -1,0 +1,182 @@
+<style>
+  .rh-stage { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 0; }
+  .rh-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+              color: #3a6690; align-self: flex-start; }
+  .rh-scroll { max-width: 100%; overflow-x: auto; display: flex; padding: 2px; }
+  .rh-row { display: flex; gap: 4px; flex-wrap: nowrap; width: max-content; }
+  .rh-col { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 0 0 auto; }
+  .rh-cell { width: 30px; height: 34px; display: flex; align-items: center; justify-content: center;
+             border-radius: 6px; background: #e4e4e7; color: #3f3f46;
+             font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 700; font-size: 15px;
+             transition: background 0.2s, color 0.2s; }
+  .rh-cell.dim { background: #ececee; color: #b4b4bb; }
+  .rh-cell.win { background: #3a6690; color: #fff; }
+  .rh-cell.hit { background: #16a34a; color: #fff; }
+  .rh-cell.coll { background: #f97316; color: #fff; }
+  .rh-cell.lead { outline: 2px solid #dc2626; outline-offset: 2px; }
+  .rh-cell.tail { outline: 2px solid #16a34a; outline-offset: 2px; }
+  .rh-cell.pat { background: #d7e2ec; color: #2b4a68; }
+  .rh-idx { font-size: 10px; color: #a1a1aa; font-family: ui-monospace, monospace; height: 12px; }
+  .rh-ptr { font-size: 11px; height: 14px; font-weight: 700; color: #3a6690;
+            font-family: ui-monospace, monospace; }
+  .rh-panel { display: flex; flex-direction: column; gap: 3px; font-family: ui-monospace, monospace;
+              font-size: 12px; color: #52525b; }
+  .rh-panel b { color: #18181b; font-weight: 700; }
+  .rh-eq { font-weight: 700; }
+  .rh-eq.yes { color: #16a34a; }
+  .rh-eq.no { color: #dc2626; }
+  html.dark .rh-cell { background: #3f3f46; color: #e4e4e7; }
+  html.dark .rh-cell.dim { background: #2a2a2e; color: #6b6b73; }
+  html.dark .rh-cell.pat { background: #2b3e50; color: #cbd9e6; }
+  html.dark .rh-idx { color: #71717a; }
+  html.dark .rh-ptr { color: #9cbbd6; }
+  html.dark .rh-label { color: #9cbbd6; }
+  html.dark .rh-panel { color: #a1a1aa; }
+  html.dark .rh-panel b { color: #e4e4e7; }
+</style>
+<div class="stage rh-stage" id="stage"></div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">texte <input type="text" id="text" value="abracadabra" /></label>
+  <label class="field">motif <input type="text" id="pattern" value="cada" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var stage = document.getElementById('stage');
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var textInput = document.getElementById('text');
+  var patInput = document.getElementById('pattern');
+
+  var params = window.__params || {};
+  if (params.text != null) textInput.value = String(params.text);
+  if (params.pattern != null) patInput.value = String(params.pattern);
+
+  var BASE = 31, MOD = 1000000007;
+  if (params.base != null && +params.base > 1) BASE = +params.base;
+  if (params.mod != null && +params.mod > 1) MOD = +params.mod;
+
+  var T = '', P = '', HP = 0, POWER = 1, steps = [], cur = 0, timer = null;
+
+  function esc(c) { return c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '&' ? '&amp;' : c; }
+  function norm(x) { return ((x % MOD) + MOD) % MOD; }
+  function modpow(b, e) { var r = 1; b %= MOD; while (e > 0) { if (e & 1) r = norm(r * b); b = norm(b * b); e = Math.floor(e / 2); } return r; }
+  function hashOf(str) { var h = 0; for (var i = 0; i < str.length; i++) h = norm(h * BASE + str.charCodeAt(i)); return h; }
+
+  // Hachage polynomial glissant : h = s0*B^(m-1) + ... + s(m-1).
+  // Glissement : h' = (h - s_i*B^(m-1))*B + s_(i+m).
+  function build(t, p) {
+    var n = t.length, m = p.length, st = [];
+    HP = hashOf(p);
+    POWER = modpow(BASE, m - 1);
+    if (m > n || m === 0) {
+      st.push({ i: -1, h: HP, eq: false, kind: 'none',
+        msg: 'motif plus long que le texte : aucune fenetre possible' });
+      return st;
+    }
+    var h = hashOf(t.slice(0, m)), prev;
+    for (var i = 0; i <= n - m; i++) {
+      var win = t.slice(i, i + m);
+      var eq = (h === HP);
+      var verified = eq && (win === p);
+      var arith = (i > 0) ? { rem: t[i - 1], add: t[i + m - 1], prev: prev } : null;
+      var msg;
+      if (i === 0) {
+        msg = 'fenetre initiale "' + win + '" : hash = ' + h + '  (hash du motif = ' + HP + ')';
+      } else {
+        msg = 'glissement : retire "' + arith.rem + '", ajoute "' + arith.add +
+              '"  ->  h = (h_prec - "' + arith.rem + '"*B^' + (m - 1) + ')*B + "' + arith.add + '" = ' + h;
+      }
+      if (verified) msg += '  ->  hash egaux, verification OK : correspondance a l\'indice ' + i;
+      else if (eq) msg += '  ->  hash egaux mais chaines differentes : collision (verification indispensable)';
+      st.push({ i: i, h: h, eq: eq, verified: verified, kind: verified ? 'hit' : (eq ? 'coll' : 'no'),
+        arith: arith, m: m, msg: msg });
+      prev = h;
+      if (i < n - m) {
+        var lead = t.charCodeAt(i), addc = t.charCodeAt(i + m);
+        h = norm(norm(h - norm(lead * POWER)) * BASE + addc);
+      }
+    }
+    return st;
+  }
+
+  function render() {
+    var st = steps[cur] || {};
+    var i = st.i, m = st.m || P.length;
+    var h = '<div class="rh-label">Motif (hash cible = ' + HP + ')</div>';
+    h += '<div class="rh-scroll"><div class="rh-row">';
+    for (var q = 0; q < P.length; q++) {
+      h += '<div class="rh-col"><div class="rh-ptr"></div><div class="rh-cell pat">' + esc(P[q]) +
+           '</div><div class="rh-idx">' + q + '</div></div>';
+    }
+    h += '</div></div>';
+    h += '<div class="rh-label">Texte</div>';
+    h += '<div class="rh-scroll"><div class="rh-row">';
+    for (var k = 0; k < T.length; k++) {
+      var cls = 'rh-cell', ptr = '';
+      var inWin = (i >= 0 && k >= i && k < i + m);
+      if (inWin) {
+        cls += (st.kind === 'hit') ? ' hit' : (st.kind === 'coll') ? ' coll' : ' win';
+        if (k === i) ptr = 'i';
+      } else { cls += ' dim'; }
+      // marquer le caractere sortant (lead) et entrant (tail) lors d'un glissement
+      if (st.arith && k === i - 1) cls += ' lead';
+      if (st.arith && k === i + m - 1) cls += ' tail';
+      h += '<div class="rh-col"><div class="rh-ptr">' + ptr + '</div><div class="' + cls + '">' +
+           esc(T[k]) + '</div><div class="rh-idx">' + k + '</div></div>';
+    }
+    h += '</div></div>';
+    var eqSym = st.eq ? '<span class="rh-eq yes">= egaux</span>' : '<span class="rh-eq no">!= differents</span>';
+    var winStr = (i >= 0) ? T.slice(i, i + m) : '-';
+    h += '<div class="rh-panel">' +
+         '<div>hash(motif) = <b>' + HP + '</b></div>' +
+         '<div>hash(fenetre "' + winStr + '") = <b>' + (st.h != null ? st.h : '-') + '</b> &nbsp; ' + eqSym + '</div>' +
+         '</div>';
+    stage.innerHTML = h;
+    info.textContent = st.msg || '';
+    var matches = 0;
+    for (var z = 0; z <= cur && z < steps.length; z++) if (steps[z].verified) matches++;
+    meta.innerHTML = '<span>base <b>' + BASE + '</b></span>' +
+      '<span>mod <b>' + MOD + '</b></span>' +
+      '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>' +
+      '<span>correspondances <b>' + matches + '</b></span>';
+  }
+
+  function load() {
+    stopRun();
+    T = textInput.value || '';
+    P = patInput.value || '';
+    if (!T.length) T = 'a';
+    if (!P.length) P = 'a';
+    steps = build(T, P);
+    cur = 0;
+    render();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; render(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () {
+      step();
+      if (cur >= steps.length - 1) { timer = null; return; }
+      timer = setTimeout(tick, 650);
+    };
+    timer = setTimeout(tick, 650);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+
+  load();
+})();
+</script>

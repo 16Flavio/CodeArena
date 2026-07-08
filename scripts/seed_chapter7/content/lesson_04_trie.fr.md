@@ -42,6 +42,11 @@ class Trie:
         return self.cnt[cur]
 ```
 
+**Deroule une recherche** : on descend caractere par caractere ; le chemin devient vert s il existe, rouge des la premiere arete manquante.
+
+:::viz-trie{words="car,card,cart,dog,do,dot" query="cart"}
+:::
+
 ### Le trie binaire
 
 En stockant un entier par ses bits (du plus significatif au moins),

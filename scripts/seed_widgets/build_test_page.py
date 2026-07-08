@@ -34,6 +34,19 @@ CASES = [
     {"name": "viz-greedy-intervals", "params": {"intervals": "1,4;3,5;0,6;5,7;3,8;5,9;6,10;8,11;8,12;2,13"}, "title": "Glouton : selection d'activites"},
     {"name": "viz-dp-table",         "params": {"data": "3,1,8,2,5,9,4,7,6"},                       "title": "DP : plus longue sous-suite croissante"},
     {"name": "viz-backtracking",     "params": {"n": "6"},                                          "title": "Backtracking : N-reines"},
+    {"name": "viz-graph-traversal",  "params": {"mode": "bfs", "source": "0"},                      "title": "Parcours de graphe : BFS / DFS"},
+    {"name": "viz-dijkstra",         "params": {"source": "0"},                                     "title": "Dijkstra : plus courts chemins"},
+    {"name": "viz-mst-kruskal",      "params": {},                                                  "title": "Kruskal : arbre couvrant minimal"},
+    {"name": "viz-sieve",            "params": {"n": "60"},                                         "title": "Crible d'Eratosthene"},
+    {"name": "viz-fast-exp",         "params": {"a": "3", "b": "13", "m": "1000"},                  "title": "Exponentiation modulaire rapide"},
+    {"name": "viz-pascal",           "params": {"n": "8", "hn": "8", "hk": "4"},                    "title": "Triangle de Pascal"},
+    {"name": "viz-union-find",       "params": {"n": "8", "ops": "0-1;2-3;1-3;4-5;5-6;3-6"},        "title": "Union-Find (DSU) : foret & compression"},
+    {"name": "viz-segment-tree",     "params": {"data": "3,1,4,1,5,9,2,6", "l": "2", "r": "5"},     "title": "Arbre de segments (somme)"},
+    {"name": "viz-fenwick",          "params": {"data": "3,1,4,1,5,9,2,6", "i": "6"},               "title": "Arbre de Fenwick (BIT)"},
+    {"name": "viz-trie",             "params": {"words": "car,card,cart,dog,do,dot", "query": "cart"}, "title": "Trie (arbre de prefixes)"},
+    {"name": "viz-kmp",              "params": {"text": "abxabcabcaby", "pattern": "abcaby"},        "title": "KMP : fonction prefixe & recherche"},
+    {"name": "viz-z-array",          "params": {"s": "aabxaabxcaabxaabxay"},                        "title": "Z-function & boite [l, r]"},
+    {"name": "viz-rolling-hash",     "params": {"text": "abracadabra", "pattern": "cada"},          "title": "Hachage glissant (Rabin-Karp)"},
 ]
 
 # Mirror of the CSS preamble + icon helper injected by CustomWidget.jsx

@@ -1,0 +1,147 @@
+<style>
+  canvas { width: 100%; max-width: 100%; display: block; background: transparent; }
+  .dj-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; margin-top: 6px;
+               justify-content: center; color: #71717a; }
+  .dj-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .dj-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+  html.dark .dj-legend { color: #a1a1aa; }
+</style>
+<div class="stage">
+  <canvas id="cv" width="600" height="320"></canvas>
+  <div class="dj-legend">
+    <span><span class="dj-dot" style="background:#f97316"></span>extrait (fige)</span>
+    <span><span class="dj-dot" style="background:#16a34a"></span>definitif</span>
+    <span><span class="dj-dot" style="background:#3a6690"></span>atteint (provisoire)</span>
+  </div>
+</div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">source <input type="number" id="src" value="0" min="0" max="7" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var srcInput = document.getElementById('src');
+
+  var params = window.__params || {};
+  if (params.source != null) srcInput.value = params.source;
+
+  var POS = [[0.09,0.32],[0.28,0.11],[0.28,0.60],[0.50,0.33],[0.50,0.80],[0.72,0.15],[0.72,0.62],[0.93,0.40]];
+  var WE = [[0,1,4],[0,2,3],[1,2,2],[1,3,5],[2,3,6],[2,4,7],[3,4,4],[3,5,3],[4,6,2],[5,6,6],[5,7,5],[6,7,4],[3,6,8]];
+  var N = POS.length;
+  var adj = [];
+  (function () { for (var i = 0; i < N; i++) adj.push([]);
+    WE.forEach(function (e) { adj[e[0]].push([e[1], e[2]]); adj[e[1]].push([e[0], e[2]]); }); })();
+
+  var W = 600, H = 320, steps = [], cur = 0, timer = null;
+  var INF = Infinity;
+
+  function isDark() { return document.documentElement.classList.contains('dark'); }
+
+  function build() {
+    var s = Math.max(0, Math.min(N - 1, parseInt(srcInput.value, 10) || 0));
+    steps = [];
+    var dist = new Array(N).fill(INF), settled = new Array(N).fill(false);
+    dist[s] = 0;
+    steps.push({ current: null, dist: dist.slice(), settled: settled.slice(), relaxed: [],
+      msg: 'dist[' + s + '] = 0, tout le reste a l\'infini' });
+    while (true) {
+      var u = -1, best = INF;
+      for (var i = 0; i < N; i++) if (!settled[i] && dist[i] < best) { best = dist[i]; u = i; }
+      if (u < 0) break;
+      settled[u] = true;
+      var relaxed = [];
+      for (var k = 0; k < adj[u].length; k++) {
+        var v = adj[u][k][0], w = adj[u][k][1];
+        if (dist[u] + w < dist[v]) { dist[v] = dist[u] + w; relaxed.push([u, v]); }
+      }
+      steps.push({ current: u, dist: dist.slice(), settled: settled.slice(), relaxed: relaxed,
+        msg: 'extrait ' + u + ' (dist ' + dist[u] + '), definitif' +
+             (relaxed.length ? ' -> relache ' + relaxed.map(function (r) { return r[1]; }).join(', ') : '') });
+    }
+    steps.push({ current: null, dist: dist.slice(), settled: settled.slice(), relaxed: [], done: true,
+      msg: 'termine : distances = [' + dist.map(function (d) { return d === INF ? 'inf' : d; }).join(', ') + ']' });
+  }
+
+  function resize() {
+    W = cv.clientWidth || 600; H = 320;
+    var dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function nx(i) { return 26 + POS[i][0] * (W - 52); }
+  function ny(i) { return 22 + POS[i][1] * (H - 44); }
+
+  function draw() {
+    var dark = isDark();
+    ctx.clearRect(0, 0, W, H);
+    var st = steps[cur] || { dist: new Array(N).fill(INF), settled: new Array(N).fill(false), relaxed: [] };
+    var relSet = {};
+    st.relaxed.forEach(function (r) { relSet[r[0] + '-' + r[1]] = 1; relSet[r[1] + '-' + r[0]] = 1; });
+    // aretes + poids
+    WE.forEach(function (e) {
+      var a = e[0], b = e[1];
+      var isRel = relSet[a + '-' + b];
+      ctx.strokeStyle = isRel ? '#f97316' : (dark ? 'rgba(148,163,184,0.4)' : 'rgba(100,116,139,0.4)');
+      ctx.lineWidth = isRel ? 3 : 1.5;
+      ctx.beginPath(); ctx.moveTo(nx(a), ny(a)); ctx.lineTo(nx(b), ny(b)); ctx.stroke();
+      var mx = (nx(a) + nx(b)) / 2, my = (ny(a) + ny(b)) / 2;
+      ctx.fillStyle = dark ? '#09090b' : '#fff';
+      ctx.beginPath(); ctx.arc(mx, my, 8, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = dark ? '#a1a1aa' : '#71717a'; ctx.font = '10px ui-monospace, monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(e[2], mx, my);
+    });
+    // noeuds
+    for (var i = 0; i < N; i++) {
+      var x = nx(i), y = ny(i), col;
+      if (st.current === i) col = '#f97316';
+      else if (st.settled[i]) col = '#16a34a';
+      else if (st.dist[i] < INF) col = '#3a6690';
+      else col = dark ? '#52525b' : '#cbd5e1';
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(x, y, 15, 0, 2 * Math.PI); ctx.fill();
+      ctx.strokeStyle = dark ? '#18181b' : '#fff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = (col === '#cbd5e1' || col === '#52525b') ? (dark ? '#e4e4e7' : '#3f3f46') : '#fff';
+      ctx.font = '600 13px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(i, x, y);
+      var dlab = st.dist[i] === INF ? '∞' : st.dist[i];
+      ctx.fillStyle = dark ? '#9cbbd6' : '#325575'; ctx.font = '600 11px ui-monospace, monospace';
+      ctx.fillText(dlab, x, y - 23);
+    }
+    ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
+    info.textContent = st.msg || '';
+    var nSettled = st.settled.filter(Boolean).length;
+    meta.innerHTML = '<span>figes <b>' + nSettled + '/' + N + '</b></span>' +
+      '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>';
+  }
+
+  function load() { stopRun(); build(); cur = 0; resize(); draw(); }
+  function step() { if (cur < steps.length - 1) { cur++; draw(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () { step(); if (cur >= steps.length - 1) { timer = null; return; } timer = setTimeout(tick, 800); };
+    timer = setTimeout(tick, 800);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+  window.addEventListener('resize', function () { resize(); draw(); });
+
+  load();
+})();
+</script>

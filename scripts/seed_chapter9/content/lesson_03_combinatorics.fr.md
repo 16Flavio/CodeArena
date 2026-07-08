@@ -34,6 +34,12 @@ def binom(n, k, p):                 # p premier, p > n
 
 Precalculer factorielles et inverses rend chaque requete $O(1)$.
 
+**Construis le triangle de Pascal** : chaque case interne est la somme
+de ses deux parents, $C(n,k) = C(n-1,k-1) + C(n-1,k)$.
+
+:::viz-pascal{n="8"}
+:::
+
 ### Theoreme de Lucas (cas $n \ge p$)
 
 Ecrire $n$ et $k$ en base $p$ : $n = \sum n_i p^i$, $k = \sum k_i

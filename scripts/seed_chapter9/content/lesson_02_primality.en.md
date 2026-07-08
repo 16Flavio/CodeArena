@@ -29,6 +29,12 @@ def sieve(n):
     return primes
 ```
 
+**Step through the sieve**: at each step take the next unmarked number
+(prime, in green), then cross out its multiples starting at its square.
+
+:::viz-sieve{n="60"}
+:::
+
 ### Miller-Rabin
 
 Write $n - 1 = 2^r d$ with $d$ odd. For a witness $a$, if

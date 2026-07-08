@@ -1,0 +1,149 @@
+<style>
+  .pt-stage { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 0;
+              overflow-x: auto; width: 100%; }
+  .pt-tri { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: min-content; }
+  .pt-row { display: flex; gap: 4px; justify-content: center; }
+  .pt-cell { min-width: 40px; height: 32px; display: flex; align-items: center; justify-content: center;
+             border-radius: 6px; background: #e4e4e7; color: #3f3f46;
+             font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 700; font-size: 13px;
+             transition: background 0.25s, color 0.25s, outline-color 0.25s, opacity 0.25s; }
+  .pt-hidden { background: #f1f1f3; color: transparent; opacity: 0.5; }
+  .pt-parent { background: #d7e2ec; color: #2b4a68; outline: 2px solid #3a6690; outline-offset: 1px; }
+  .pt-cur    { background: #f97316; color: #fff; outline: 2px solid #c2410c; outline-offset: 1px; }
+  .pt-target { background: #16a34a; color: #fff; }
+  html.dark .pt-cell { background: #3f3f46; color: #e4e4e7; }
+  html.dark .pt-hidden { background: #232326; color: transparent; }
+  html.dark .pt-parent { background: #2b3e50; color: #cbd9e6; outline-color: #9cbbd6; }
+  html.dark .pt-cur    { background: #ea580c; color: #fff; outline-color: #fb923c; }
+  html.dark .pt-target { background: #15803d; color: #fff; }
+</style>
+<div class="stage pt-stage">
+  <div class="pt-tri" id="tri"></div>
+</div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">n <input type="number" id="nn" value="8" min="3" max="12" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var tri = document.getElementById('tri');
+  var nn = document.getElementById('nn');
+
+  var params = window.__params || {};
+  if (params.n != null) nn.value = params.n;
+  var HN = params.hn != null ? parseInt(params.hn, 10) : null;
+  var HK = params.hk != null ? parseInt(params.hk, 10) : null;
+
+  var N = 8, tval = [], steps = [], cur = 0, timer = null;
+
+  function clampN(v) {
+    v = parseInt(v, 10);
+    if (!isFinite(v)) v = 8;
+    if (v < 3) v = 3;
+    if (v > 12) v = 12;
+    return v;
+  }
+
+  function build() {
+    tval = [];
+    for (var r = 0; r <= N; r++) {
+      tval[r] = [];
+      for (var c = 0; c <= r; c++) {
+        if (c === 0 || c === r) tval[r][c] = 1;
+        else tval[r][c] = tval[r - 1][c - 1] + tval[r - 1][c];
+      }
+    }
+    steps = [];
+    for (var r2 = 0; r2 <= N; r2++) {
+      for (var c2 = 0; c2 <= r2; c2++) {
+        var msg;
+        var parents = null;
+        if (c2 === 0 || c2 === r2) {
+          msg = 'C(' + r2 + ',' + c2 + ') = 1  (bord du triangle).';
+        } else {
+          parents = [[r2 - 1, c2 - 1], [r2 - 1, c2]];
+          msg = 'C(' + r2 + ',' + c2 + ') = C(' + (r2 - 1) + ',' + (c2 - 1) + ') + C(' + (r2 - 1) + ',' + c2 + ') = ' +
+                tval[r2 - 1][c2 - 1] + ' + ' + tval[r2 - 1][c2] + ' = ' + tval[r2][c2] + '.';
+        }
+        steps.push({ r: r2, c: c2, parents: parents, msg: msg });
+      }
+    }
+  }
+
+  function isRevealed(r, c) {
+    // une cellule (r,c) est revelee si son ordre est <= cur
+    var order = r * (r + 1) / 2 + c;
+    return order <= cur;
+  }
+
+  function render() {
+    var st = steps[cur] || {};
+    var parents = st.parents || [];
+    var html = '';
+    for (var r = 0; r <= N; r++) {
+      html += '<div class="pt-row">';
+      for (var c = 0; c <= r; c++) {
+        var cls = 'pt-cell';
+        var revealed = isRevealed(r, c);
+        var isTarget = (HN != null && HK != null && r === HN && c === HK);
+        if (!revealed) {
+          cls += ' pt-hidden';
+        } else if (r === st.r && c === st.c) {
+          cls += ' pt-cur';
+        } else if (parents.length && ((r === parents[0][0] && c === parents[0][1]) ||
+                                      (r === parents[1][0] && c === parents[1][1]))) {
+          cls += ' pt-parent';
+        } else if (isTarget) {
+          cls += ' pt-target';
+        }
+        html += '<div class="' + cls + '">' + (revealed ? tval[r][c] : '.') + '</div>';
+      }
+      html += '</div>';
+    }
+    tri.innerHTML = html;
+    info.textContent = st.msg || '';
+
+    var metaHtml = '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>' +
+      '<span>ligne <b>' + st.r + '</b></span>';
+    if (HN != null && HK != null && HN >= 0 && HN <= N && HK >= 0 && HK <= HN) {
+      metaHtml += '<span>C(' + HN + ',' + HK + ') = <b>' + tval[HN][HK] + '</b></span>';
+    }
+    meta.innerHTML = metaHtml;
+  }
+
+  function load() {
+    stopRun();
+    N = clampN(nn.value);
+    nn.value = N;
+    build(); cur = 0; render();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; render(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () {
+      step();
+      if (cur >= steps.length - 1) { timer = null; return; }
+      timer = setTimeout(tick, 500);
+    };
+    timer = setTimeout(tick, 500);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+
+  load();
+})();
+</script>

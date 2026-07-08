@@ -35,6 +35,12 @@ def modexp(a, b, m):
 On decompose $b$ en binaire : chaque bit double l'exposant. D'ou
 $O(\log b)$ multiplications.
 
+**Deroule l'exponentiation rapide** : chaque bit de $b$, du plus faible
+au plus fort, carre la base et multiplie le resultat quand le bit vaut 1.
+
+:::viz-fast-exp{a="3" b="13" m="1000"}
+:::
+
 ### Inverse modulaire
 
 Deux methodes :

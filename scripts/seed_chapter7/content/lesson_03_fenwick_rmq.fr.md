@@ -36,6 +36,11 @@ def prefix(bit, i):               # somme a[1..i]
 
 La somme de plage est `prefix(r) - prefix(l-1)`.
 
+**Deroule les sauts de bits** : prefix(i) descend par blocs (i -= i & -i), update(i) remonte (i += i & -i), depuis un meme indice i.
+
+:::viz-fenwick{data="3,1,4,1,5,9,2,6" i="6"}
+:::
+
 ### Sparse table (RMQ statique)
 
 Precalculer `sp[k][i]` = minimum de la plage $[i, i + 2^k)$. Une

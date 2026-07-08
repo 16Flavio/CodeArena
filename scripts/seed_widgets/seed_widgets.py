@@ -376,6 +376,306 @@ WIDGETS = [
         ],
         "example_params": {"n": "6"},
     },
+    {
+        "name": "viz-graph-traversal",
+        "title_fr": "Parcours de graphe : BFS / DFS",
+        "title_en": "Graph traversal: BFS / DFS",
+        "description_fr": (
+            "Compare le parcours en largeur (BFS, file) et en profondeur (DFS, "
+            "pile) sur un meme graphe. Bascule le mode et la source ; les "
+            "numeros `#k` donnent l'ordre de decouverte. BFS s'etend par "
+            "couches, DFS plonge le plus loin possible."
+        ),
+        "description_en": (
+            "Compares breadth-first (BFS, queue) and depth-first (DFS, stack) "
+            "traversal on the same graph. Toggle the mode and the source; the "
+            "`#k` labels give the discovery order. BFS spreads in layers, DFS "
+            "plunges as deep as possible."
+        ),
+        "template_file": "viz-graph-traversal.html",
+        "params_schema": [
+            {"name": "mode", "description": "bfs ou dfs", "example": "bfs"},
+            {"name": "source", "description": "sommet de depart (0 a 7)", "example": "0"},
+        ],
+        "example_params": {"mode": "bfs", "source": "0"},
+    },
+    {
+        "name": "viz-dijkstra",
+        "title_fr": "Dijkstra : plus courts chemins",
+        "title_en": "Dijkstra: shortest paths",
+        "description_fr": (
+            "Deroule l'algorithme de Dijkstra sur un graphe pondere positif. A "
+            "chaque etape le sommet non fige de plus petite distance est extrait "
+            "(fige, definitif), puis ses aretes sont relachees. Les etiquettes "
+            "montrent la distance provisoire de chaque sommet."
+        ),
+        "description_en": (
+            "Runs Dijkstra on a non-negative weighted graph. At each step the "
+            "unsettled vertex with the smallest distance is extracted (settled, "
+            "final), then its edges are relaxed. The labels show each vertex's "
+            "tentative distance."
+        ),
+        "template_file": "viz-dijkstra.html",
+        "params_schema": [
+            {"name": "source", "description": "sommet source (0 a 7)", "example": "0"},
+        ],
+        "example_params": {"source": "0"},
+    },
+    {
+        "name": "viz-mst-kruskal",
+        "title_fr": "Kruskal : arbre couvrant minimal",
+        "title_en": "Kruskal: minimum spanning tree",
+        "description_fr": (
+            "Construit un MST par l'algorithme de Kruskal : les aretes sont "
+            "triees par poids croissant ; chaque arete est retenue (vert) si "
+            "elle relie deux composantes distinctes, ou rejetee (rouge) si elle "
+            "formerait un cycle (test par Union-Find). Les couleurs des sommets "
+            "montrent les composantes fusionner."
+        ),
+        "description_en": (
+            "Builds an MST with Kruskal's algorithm: edges are sorted by "
+            "increasing weight; each edge is kept (green) if it joins two "
+            "distinct components, or rejected (red) if it would form a cycle "
+            "(tested with Union-Find). The vertex colours show the components "
+            "merging."
+        ),
+        "template_file": "viz-mst-kruskal.html",
+        "params_schema": [],
+        "example_params": {},
+    },
+    {
+        "name": "viz-sieve",
+        "title_fr": "Crible d'Eratosthene",
+        "title_en": "Sieve of Eratosthenes",
+        "description_fr": (
+            "Deroule le crible d'Eratosthene sur une grille de $2$ a $n$ : "
+            "chaque prochain nombre non marque est premier (vert), puis ses "
+            "multiples a partir de $p^2$ sont barres (gris/rouge)."
+        ),
+        "description_en": (
+            "Steps through the sieve of Eratosthenes on a grid from $2$ to $n$: "
+            "each next unmarked number is prime (green), then its multiples from "
+            "$p^2$ on are crossed out (grey/red)."
+        ),
+        "template_file": "viz-sieve.html",
+        "params_schema": [
+            {"name": "n", "description": "borne superieure de la grille (clampe 20..120)", "example": "60"},
+        ],
+        "example_params": {"n": "60"},
+    },
+    {
+        "name": "viz-fast-exp",
+        "title_fr": "Exponentiation modulaire rapide",
+        "title_en": "Fast modular exponentiation",
+        "description_fr": (
+            "Calcule $a^b \\bmod m$ bit par bit (du poids faible au poids fort) : "
+            "a chaque bit on carre la base et, si le bit vaut $1$, on multiplie "
+            "le resultat. Table d'etat et bits mis en evidence."
+        ),
+        "description_en": (
+            "Computes $a^b \\bmod m$ bit by bit (LSB to MSB): at each bit the base "
+            "is squared and, if the bit is $1$, it is multiplied into the result. "
+            "State table with highlighted bits."
+        ),
+        "template_file": "viz-fast-exp.html",
+        "params_schema": [
+            {"name": "a", "description": "base", "example": "3"},
+            {"name": "b", "description": "exposant", "example": "13"},
+            {"name": "m", "description": "modulo (>= 2)", "example": "1000"},
+        ],
+        "example_params": {"a": "3", "b": "13", "m": "1000"},
+    },
+    {
+        "name": "viz-pascal",
+        "title_fr": "Triangle de Pascal",
+        "title_en": "Pascal's triangle",
+        "description_fr": (
+            "Construit le triangle des coefficients binomiaux $\\binom{n}{k}$ "
+            "case par case via $C(n,k) = C(n-1,k-1) + C(n-1,k)$, en mettant en "
+            "evidence les deux parents. Cible optionnelle via `hn`/`hk`."
+        ),
+        "description_en": (
+            "Builds the triangle of binomial coefficients $\\binom{n}{k}$ cell by "
+            "cell via $C(n,k) = C(n-1,k-1) + C(n-1,k)$, highlighting the two "
+            "parents. Optional target via `hn`/`hk`."
+        ),
+        "template_file": "viz-pascal.html",
+        "params_schema": [
+            {"name": "n",  "description": "nombre de lignes (clampe 3..12)", "example": "8"},
+            {"name": "hn", "description": "ligne cible a mettre en evidence (optionnel)", "example": "8"},
+            {"name": "hk", "description": "colonne cible a mettre en evidence (optionnel)", "example": "4"},
+        ],
+        "example_params": {"n": "8", "hn": "8", "hk": "4"},
+    },
+    {
+        "name": "viz-union-find",
+        "title_fr": "Union-Find (DSU) : foret & compression",
+        "title_en": "Union-Find (DSU): forest & compression",
+        "description_fr": (
+            "Deroule une suite d'`union(a, b)` par taille sur une foret d'arbres "
+            "(les racines en bleu portent leur taille), puis un `find(x)` avec "
+            "**compression de chemin** qui rebranche le noeud le plus profond "
+            "directement sur la racine. Boutons `step` / `run`. Parametres `n` et `ops`."
+        ),
+        "description_en": (
+            "Steps through a sequence of `union(a, b)` by size over a forest of trees "
+            "(blue roots carry their size), then a `find(x)` with **path compression** "
+            "that rewires the deepest node straight onto its root. `step` / `run` "
+            "buttons. Params `n` and `ops`."
+        ),
+        "template_file": "viz-union-find.html",
+        "params_schema": [
+            {"name": "n", "description": "nombre d'elements (2 a 16)", "example": "8"},
+            {"name": "ops", "description": "unions a jouer, paires a-b separees par ;",
+             "example": "0-1;2-3;1-3;4-5;5-6;3-6"},
+        ],
+        "example_params": {"n": "8", "ops": "0-1;2-3;1-3;4-5;5-6;3-6"},
+    },
+    {
+        "name": "viz-segment-tree",
+        "title_fr": "Arbre de segments (somme)",
+        "title_en": "Segment tree (sum)",
+        "description_fr": (
+            "Construit un arbre de segments de sommes puis deroule une requete "
+            "`somme[l, r]` : les noeuds entierement couverts (canoniques, verts) sont "
+            "les $O(\\log n)$ noeuds visites, les disjoints sont ignores (rouge). "
+            "Enchaine avec une mise a jour ponctuelle qui remonte le chemin "
+            "feuille -> racine. Parametres `data`, `l`, `r`."
+        ),
+        "description_en": (
+            "Builds a sum segment tree then steps through a `sum[l, r]` query: the "
+            "fully-covered (canonical, green) nodes are the $O(\\log n)$ visited "
+            "nodes, disjoint ones are pruned (red). Follows up with a point update "
+            "walking the leaf-to-root path. Params `data`, `l`, `r`."
+        ),
+        "template_file": "viz-segment-tree.html",
+        "params_schema": [
+            {"name": "data", "description": "tableau d'entiers (CSV)", "example": "3,1,4,1,5,9,2,6"},
+            {"name": "l", "description": "borne gauche de la requete", "example": "2"},
+            {"name": "r", "description": "borne droite de la requete", "example": "5"},
+        ],
+        "example_params": {"data": "3,1,4,1,5,9,2,6", "l": "2", "r": "5"},
+    },
+    {
+        "name": "viz-fenwick",
+        "title_fr": "Arbre de Fenwick (BIT)",
+        "title_en": "Fenwick tree (BIT)",
+        "description_fr": (
+            "Affiche le tableau `a[]` et le tableau `bit[]` (avec la plage couverte "
+            "par chaque case), puis anime les sauts de bits depuis un meme indice "
+            "`i` : `prefix(i)` descend par blocs (`i -= i & -i`) en cumulant la "
+            "somme, `update(i)` remonte (`i += i & -i`). Le `lowbit` est affiche a "
+            "chaque etape. Parametres `data` et `i`."
+        ),
+        "description_en": (
+            "Shows the `a[]` array and the `bit[]` array (with the range each cell "
+            "covers), then animates the bit jumps from the same index `i`: "
+            "`prefix(i)` descends by blocks (`i -= i & -i`) accumulating the sum, "
+            "`update(i)` climbs (`i += i & -i`). The `lowbit` is shown at each step. "
+            "Params `data` and `i`."
+        ),
+        "template_file": "viz-fenwick.html",
+        "params_schema": [
+            {"name": "data", "description": "tableau d'entiers (CSV, 1-indexe a l'affichage)", "example": "3,1,4,1,5,9,2,6"},
+            {"name": "i", "description": "indice de depart (1-indexe)", "example": "6"},
+        ],
+        "example_params": {"data": "3,1,4,1,5,9,2,6", "i": "6"},
+    },
+    {
+        "name": "viz-trie",
+        "title_fr": "Trie (arbre de prefixes)",
+        "title_en": "Trie (prefix tree)",
+        "description_fr": (
+            "Insere un jeu de mots pour construire le trie (aretes etiquetees par "
+            "caractere, noeuds de fin de mot cercles), puis recherche un mot `query` "
+            "en descendant caractere par caractere : le chemin parcouru devient vert "
+            "s'il existe, rouge des la premiere arete manquante. Boutons `step` / "
+            "`run`. Parametres `words` et `query`."
+        ),
+        "description_en": (
+            "Inserts a set of words to build the trie (edges labelled by character, "
+            "end-of-word nodes ringed), then searches a `query` word descending "
+            "character by character: the traced path turns green if it exists, red "
+            "at the first missing edge. `step` / `run` buttons. Params `words` and "
+            "`query`."
+        ),
+        "template_file": "viz-trie.html",
+        "params_schema": [
+            {"name": "words", "description": "mots a inserer (separes par des virgules)", "example": "car,card,cart,dog,do,dot"},
+            {"name": "query", "description": "mot a rechercher", "example": "cart"},
+        ],
+        "example_params": {"words": "car,card,cart,dog,do,dot", "query": "cart"},
+    },
+    {
+        "name": "viz-kmp",
+        "title_fr": "KMP : fonction prefixe & recherche",
+        "title_en": "KMP: prefix function & search",
+        "description_fr": (
+            "Deroule Knuth-Morris-Pratt en deux temps : construction de la table "
+            "`pi` du motif, puis glissement du motif sur le texte en se servant de "
+            "`pi` a chaque echec. Caracteres compares mis en couleur, decalage "
+            "affiche, correspondances en vert. Parametres `text` et `pattern`."
+        ),
+        "description_en": (
+            "Walks through Knuth-Morris-Pratt in two phases: building the pattern's "
+            "`pi` table, then sliding the pattern over the text using `pi` on every "
+            "mismatch. Compared characters are coloured, the shift is shown, matches "
+            "turn green. Params `text` and `pattern`."
+        ),
+        "template_file": "viz-kmp.html",
+        "params_schema": [
+            {"name": "text", "description": "texte a fouiller", "example": "abxabcabcaby"},
+            {"name": "pattern", "description": "motif recherche", "example": "abcaby"},
+        ],
+        "example_params": {"text": "abxabcabcaby", "pattern": "abcaby"},
+    },
+    {
+        "name": "viz-z-array",
+        "title_fr": "Z-function & boite [l, r]",
+        "title_en": "Z-function & [l, r] box",
+        "description_fr": (
+            "Calcule la Z-function : $z[i]$ = plus long prefixe commun de $s$ et de "
+            "$s[i:]$. Montre la boite $[l, r)$ la plus a droite, l'heritage du "
+            "miroir puis l'extension naive, et remplit les valeurs $z$ de gauche a "
+            "droite. Parametre `s`."
+        ),
+        "description_en": (
+            "Computes the Z-function: $z[i]$ = longest common prefix of $s$ and "
+            "$s[i:]$. Shows the rightmost $[l, r)$ box, the mirror inheritance then "
+            "the naive extension, and fills the $z$ values left to right. Param `s`."
+        ),
+        "template_file": "viz-z-array.html",
+        "params_schema": [
+            {"name": "s", "description": "chaine a analyser", "example": "aabxaabxcaabxaabxay"},
+        ],
+        "example_params": {"s": "aabxaabxcaabxaabxay"},
+    },
+    {
+        "name": "viz-rolling-hash",
+        "title_fr": "Hachage glissant (Rabin-Karp)",
+        "title_en": "Rolling hash (Rabin-Karp)",
+        "description_fr": (
+            "Fait glisser une fenetre de la taille du motif sur le texte et met a "
+            "jour le hash polynomial en $O(1)$ (retire le caractere de tete, ajoute "
+            "celui de queue). Compare le hash de la fenetre a celui du motif ; "
+            "egalite verifiee en vert, collision en orange. Parametres `text`, "
+            "`pattern` (et `base`, `mod`)."
+        ),
+        "description_en": (
+            "Slides a pattern-length window over the text and updates the "
+            "polynomial hash in $O(1)$ (drop the leading char, add the trailing "
+            "one). Compares the window hash to the pattern hash; a verified match is "
+            "green, a collision orange. Params `text`, `pattern` (and `base`, `mod`)."
+        ),
+        "template_file": "viz-rolling-hash.html",
+        "params_schema": [
+            {"name": "text", "description": "texte a fouiller", "example": "abracadabra"},
+            {"name": "pattern", "description": "motif recherche", "example": "cada"},
+            {"name": "base", "description": "base du polynome (optionnel)", "example": "31"},
+            {"name": "mod", "description": "modulo (optionnel)", "example": "1000000007"},
+        ],
+        "example_params": {"text": "abracadabra", "pattern": "cada"},
+    },
 ]
 
 

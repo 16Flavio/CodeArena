@@ -56,6 +56,11 @@ covering the range with a deferred `lazy` value, and push it to the
 children only when they are visited. This keeps range updates at
 $O(\log n)$.
 
+**Step through a range-sum query**: the range splits into $O(\log n)$ canonical nodes (green); the point update walks the leaf-to-root path.
+
+:::viz-segment-tree{data="3,1,4,1,5,9,2,6" l="2" r="5"}
+:::
+
 ---
 
 ## 2.3 - Complexity

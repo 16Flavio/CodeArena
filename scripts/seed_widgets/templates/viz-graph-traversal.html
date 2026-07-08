@@ -1,0 +1,169 @@
+<style>
+  canvas { width: 100%; max-width: 100%; display: block; background: transparent; }
+  .gt-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; margin-top: 6px;
+               justify-content: center; color: #71717a; }
+  .gt-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .gt-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+  html.dark .gt-legend { color: #a1a1aa; }
+</style>
+<div class="stage">
+  <canvas id="cv" width="600" height="320"></canvas>
+  <div class="gt-legend">
+    <span><span class="gt-dot" style="background:#f97316"></span>courant</span>
+    <span><span class="gt-dot" style="background:#3a6690"></span>dans la file/pile</span>
+    <span><span class="gt-dot" style="background:#16a34a"></span>visite</span>
+  </div>
+</div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">parcours
+    <select id="mode" class="form-input">
+      <option value="bfs">BFS (file)</option>
+      <option value="dfs">DFS (pile)</option>
+    </select>
+  </label>
+  <label class="field">source <input type="number" id="src" value="0" min="0" max="7" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var modeSel = document.getElementById('mode');
+  var srcInput = document.getElementById('src');
+
+  var params = window.__params || {};
+  if (params.mode) modeSel.value = params.mode;
+  if (params.source != null) srcInput.value = params.source;
+
+  // graphe fixe (positions normalisees + aretes non ponderees ici)
+  var POS = [[0.09,0.32],[0.28,0.11],[0.28,0.60],[0.50,0.33],[0.50,0.80],[0.72,0.15],[0.72,0.62],[0.93,0.40]];
+  var E = [[0,1],[0,2],[1,2],[1,3],[2,3],[2,4],[3,4],[3,5],[4,6],[5,6],[5,7],[6,7],[3,6]];
+  var N = POS.length;
+  var adj = [];
+  (function () { for (var i = 0; i < N; i++) adj.push([]);
+    E.forEach(function (e) { adj[e[0]].push(e[1]); adj[e[1]].push(e[0]); });
+    adj.forEach(function (l) { l.sort(function (a, b) { return a - b; }); }); })();
+
+  var W = 600, H = 320, steps = [], cur = 0, timer = null;
+
+  function isDark() { return document.documentElement.classList.contains('dark'); }
+
+  function build() {
+    var s = Math.max(0, Math.min(N - 1, parseInt(srcInput.value, 10) || 0));
+    var mode = modeSel.value;
+    steps = [];
+    var visited = new Array(N).fill(false), order = new Array(N).fill(-1), oc = 0;
+    if (mode === 'bfs') {
+      var q = [s]; visited[s] = true; order[s] = oc++;
+      steps.push({ current: null, frontier: q.slice(), visited: visited.slice(), order: order.slice(),
+        msg: 'enfile la source ' + s });
+      while (q.length) {
+        var u = q.shift();
+        var disc = [];
+        for (var i = 0; i < adj[u].length; i++) {
+          var v = adj[u][i];
+          if (!visited[v]) { visited[v] = true; order[v] = oc++; q.push(v); disc.push(v); }
+        }
+        steps.push({ current: u, frontier: q.slice(), visited: visited.slice(), order: order.slice(),
+          msg: 'defile ' + u + (disc.length ? ' -> decouvre ' + disc.join(', ') : ' -> aucun nouveau voisin') });
+      }
+    } else {
+      // DFS iteratif avec pile explicite, pour visualiser la pile
+      var st = [s];
+      steps.push({ current: null, frontier: st.slice(), visited: visited.slice(), order: order.slice(),
+        msg: 'empile la source ' + s });
+      while (st.length) {
+        var u2 = st[st.length - 1];
+        if (!visited[u2]) { visited[u2] = true; order[u2] = oc++; }
+        // prochain voisin non visite
+        var next = -1;
+        for (var j = 0; j < adj[u2].length; j++) { if (!visited[adj[u2][j]]) { next = adj[u2][j]; break; } }
+        if (next >= 0) {
+          st.push(next);
+          steps.push({ current: next, frontier: st.slice(), visited: visited.slice(), order: order.slice(),
+            msg: 'visite ' + u2 + ' -> plonge vers ' + next });
+        } else {
+          st.pop();
+          steps.push({ current: st.length ? st[st.length - 1] : null, frontier: st.slice(),
+            visited: visited.slice(), order: order.slice(),
+            msg: 'cul-de-sac en ' + u2 + ' -> depile' });
+        }
+      }
+    }
+  }
+
+  function resize() {
+    W = cv.clientWidth || 600; H = 320;
+    var dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function nx(i) { return 24 + POS[i][0] * (W - 48); }
+  function ny(i) { return 20 + POS[i][1] * (H - 40); }
+
+  function draw() {
+    var dark = isDark();
+    ctx.clearRect(0, 0, W, H);
+    var st = steps[cur] || { visited: new Array(N).fill(false), frontier: [], order: new Array(N).fill(-1) };
+    // aretes
+    ctx.strokeStyle = dark ? 'rgba(148,163,184,0.45)' : 'rgba(100,116,139,0.4)';
+    ctx.lineWidth = 1.5;
+    E.forEach(function (e) {
+      ctx.beginPath(); ctx.moveTo(nx(e[0]), ny(e[0])); ctx.lineTo(nx(e[1]), ny(e[1])); ctx.stroke();
+    });
+    // noeuds
+    var inFrontier = {};
+    st.frontier.forEach(function (v) { inFrontier[v] = true; });
+    for (var i = 0; i < N; i++) {
+      var x = nx(i), y = ny(i), col;
+      if (st.current === i) col = '#f97316';
+      else if (st.visited[i]) col = '#16a34a';
+      else if (inFrontier[i]) col = '#3a6690';
+      else col = dark ? '#52525b' : '#cbd5e1';
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(x, y, 15, 0, 2 * Math.PI); ctx.fill();
+      ctx.strokeStyle = dark ? '#18181b' : '#fff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = (col === '#cbd5e1' || col === '#52525b') ? (dark ? '#e4e4e7' : '#3f3f46') : '#fff';
+      ctx.font = '600 13px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(i, x, y);
+      if (st.order[i] >= 0) {
+        ctx.fillStyle = dark ? '#9cbbd6' : '#325575'; ctx.font = '10px ui-monospace, monospace';
+        ctx.fillText('#' + st.order[i], x, y - 22);
+      }
+    }
+    ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
+    info.textContent = st.msg || '';
+    var label = modeSel.value === 'bfs' ? 'file' : 'pile';
+    meta.innerHTML = '<span>' + label + ' <b>[' + st.frontier.join(', ') + ']</b></span>' +
+      '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>';
+  }
+
+  function load() { stopRun(); build(); cur = 0; resize(); draw(); }
+  function step() { if (cur < steps.length - 1) { cur++; draw(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () { step(); if (cur >= steps.length - 1) { timer = null; return; } timer = setTimeout(tick, 650); };
+    timer = setTimeout(tick, 650);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+  modeSel.addEventListener('change', load);
+  window.addEventListener('resize', function () { resize(); draw(); });
+
+  load();
+})();
+</script>

@@ -29,6 +29,13 @@ def sieve(n):
     return primes
 ```
 
+**Deroule le crible** : a chaque etape on prend le prochain nombre non
+marque (premier, en vert), puis on barre ses multiples a partir de son
+carre.
+
+:::viz-sieve{n="60"}
+:::
+
 ### Miller-Rabin
 
 Ecrire $n - 1 = 2^r d$ avec $d$ impair. Pour un temoin $a$, si

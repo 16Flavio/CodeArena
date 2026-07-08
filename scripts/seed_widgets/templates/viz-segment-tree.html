@@ -1,0 +1,190 @@
+<style>
+  .sg-wrap canvas { width: 100%; max-width: 100%; display: block; background: transparent; }
+</style>
+<div class="stage sg-wrap">
+  <canvas id="cv" width="600" height="320"></canvas>
+</div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">data <input type="text" id="data" value="3,1,4,1,5,9,2,6" /></label>
+  <label class="field">l <input type="number" id="l" value="2" min="0" /></label>
+  <label class="field">r <input type="number" id="r" value="5" min="0" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var dataInput = document.getElementById('data');
+  var lInput = document.getElementById('l');
+  var rInput = document.getElementById('r');
+
+  var params = window.__params || {};
+  if (params.data != null) dataInput.value = params.data.toString().replace(/[\[\]\s]/g, '');
+
+  var W = 600, H = 320;
+  var A = [], n = 0, size = 1, tree = [], levels = 1;
+  var ql = 0, qr = 0;
+  var steps = [], cur = 0, timer = null;
+
+  function isDark() { return document.documentElement.classList.contains('dark'); }
+  function parseArr(s) { return s.split(/[^\-0-9]+/).filter(function (t) { return t.length; }).map(Number); }
+
+  function nodeInterval(idx) {
+    var level = Math.floor(Math.log(idx) / Math.log(2));
+    var span = size >> level;
+    var posInLevel = idx - (1 << level);
+    var lo = posInLevel * span;
+    return [lo, lo + span - 1, level];
+  }
+
+  function build() {
+    size = 1; while (size < n) size *= 2;
+    levels = Math.round(Math.log(size) / Math.log(2)) + 1;
+    tree = new Array(2 * size).fill(0);
+    for (var i = 0; i < n; i++) tree[size + i] = A[i];
+    for (var j = size - 1; j >= 1; j--) tree[j] = tree[2 * j] + tree[2 * j + 1];
+  }
+
+  function simulate() {
+    steps = [];
+    var canon = [], running = 0;
+    steps.push({ phase: 'query', node: 1, kind: 'start', running: 0, canon: [],
+      msg: 'requete somme [' + ql + ', ' + qr + '] : on part de la racine' });
+    function q(node, nl, nr) {
+      var kind;
+      if (qr < nl || nr < ql) kind = 'disjoint';
+      else if (ql <= nl && nr <= qr) { kind = 'canonical'; canon = canon.concat([node]); running += tree[node]; }
+      else kind = 'partial';
+      var m;
+      if (kind === 'disjoint') m = 'noeud [' + nl + ',' + nr + '] disjoint de [' + ql + ',' + qr + '] -> ignore';
+      else if (kind === 'canonical') m = 'noeud [' + nl + ',' + nr + '] entierement couvert -> on prend sa somme ' + tree[node] + ' (total ' + running + ')';
+      else m = 'noeud [' + nl + ',' + nr + '] a cheval -> on descend dans les deux enfants';
+      steps.push({ phase: 'query', node: node, kind: kind, running: running, canon: canon.slice(), msg: m });
+      if (kind === 'partial') { var mid = (nl + nr) >> 1; q(2 * node, nl, mid); q(2 * node + 1, mid + 1, nr); }
+    }
+    q(1, 0, size - 1);
+    steps.push({ phase: 'query', node: 0, kind: 'done', running: running, canon: canon.slice(),
+      msg: 'somme [' + ql + ', ' + qr + '] = ' + running + '  (' + canon.length + ' noeuds canoniques, O(log n))' });
+
+    // mise a jour ponctuelle : chemin feuille -> racine a l'indice l
+    var idx = ql, leaf = size + idx, path = [];
+    for (var p = leaf; p >= 1; p = p >> 1) path.push(p);
+    steps.push({ phase: 'update', node: leaf, path: [leaf], full: path, idx: idx,
+      msg: 'mise a jour ponctuelle a[' + idx + '] : depart de la feuille, on va recalculer vers la racine' });
+    var acc = [];
+    for (var k = 0; k < path.length; k++) {
+      acc = acc.concat([path[k]]);
+      steps.push({ phase: 'update', node: path[k], path: acc.slice(), full: path, idx: idx,
+        msg: 'noeud ' + path[k] + ' recalcule (chemin feuille -> racine, ' + path.length + ' noeuds = O(log n))' });
+    }
+  }
+
+  function nodeXY(idx) {
+    var iv = nodeInterval(idx), level = iv[2];
+    var marginTop = 26, marginBot = 18, marginX = 16;
+    var levelH = levels > 1 ? (H - marginTop - marginBot) / (levels - 1) : 0;
+    var countAtLevel = 1 << level;
+    var posInLevel = idx - (1 << level);
+    var px = marginX + (posInLevel + 0.5) / countAtLevel * (W - 2 * marginX);
+    var py = marginTop + level * levelH;
+    return [px, py];
+  }
+
+  function draw() {
+    var dark = isDark();
+    ctx.clearRect(0, 0, W, H);
+    var st = steps[cur] || {};
+    var canonSet = {}; if (st.canon) st.canon.forEach(function (c) { canonSet[c] = 1; });
+    var pathSet = {}; if (st.path) st.path.forEach(function (p) { pathSet[p] = 1; });
+    var rw = W < 520 ? 14 : 17, rh = 14;
+
+    // aretes
+    ctx.strokeStyle = dark ? '#3f3f46' : '#d4d4d8'; ctx.lineWidth = 1.4;
+    for (var i = 2; i < 2 * size; i++) {
+      var pa = nodeXY(i >> 1), me = nodeXY(i);
+      ctx.beginPath(); ctx.moveTo(pa[0], pa[1] + rh); ctx.lineTo(me[0], me[1] - rh); ctx.stroke();
+    }
+
+    // noeuds
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (var idx = 1; idx < 2 * size; idx++) {
+      var iv = nodeInterval(idx);
+      if (iv[0] >= n) continue; // feuille fantome hors tableau
+      var P = nodeXY(idx);
+      var zinc = dark ? '#3f3f46' : '#e4e4e7', zTxt = dark ? '#e4e4e7' : '#3f3f46';
+      var fill = zinc, txt = zTxt, stroke = dark ? '#52525b' : '#c4c4c8';
+      if (st.phase === 'query') {
+        if (canonSet[idx]) { fill = '#16a34a'; txt = '#fff'; stroke = '#15803d'; }
+        if (idx === st.node && st.kind === 'disjoint') { fill = dark ? '#3a1414' : '#fee2e2'; txt = dark ? '#fca5a5' : '#b91c1c'; stroke = '#dc2626'; }
+        if (idx === st.node && (st.kind === 'partial' || st.kind === 'start')) { fill = '#f97316'; txt = '#fff'; stroke = '#c2410c'; }
+      } else if (st.phase === 'update') {
+        if (pathSet[idx]) { fill = '#f97316'; txt = '#fff'; stroke = '#c2410c'; }
+        if (idx === st.node) { stroke = '#7c2d12'; }
+      }
+      ctx.beginPath();
+      if (ctx.roundRect) { ctx.roundRect(P[0] - rw, P[1] - rh, 2 * rw, 2 * rh, 5); }
+      else { ctx.rect(P[0] - rw, P[1] - rh, 2 * rw, 2 * rh); }
+      ctx.fillStyle = fill; ctx.fill();
+      ctx.lineWidth = 1.8; ctx.strokeStyle = stroke; ctx.stroke();
+      ctx.fillStyle = txt;
+      ctx.font = '600 12px ui-monospace, monospace';
+      ctx.fillText(String(tree[idx]), P[0], P[1] - 3);
+      ctx.font = '9px ui-monospace, monospace';
+      ctx.fillStyle = txt;
+      ctx.fillText(iv[0] === iv[1] ? ('[' + iv[0] + ']') : (iv[0] + '..' + iv[1]), P[0], P[1] + 7);
+    }
+
+    info.textContent = st.msg || '';
+    var mrun = (st.running != null) ? st.running : 0;
+    meta.innerHTML = '<span>somme courante <b>' + mrun + '</b></span>' +
+      '<span>noeuds canoniques <b>' + (st.canon ? st.canon.length : 0) + '</b></span>' +
+      '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>';
+  }
+
+  function resize() {
+    W = cv.clientWidth || 600; H = 320;
+    var dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function load() {
+    stopRun();
+    A = parseArr(dataInput.value);
+    if (!A.length) A = [0];
+    if (A.length > 16) A = A.slice(0, 16);
+    dataInput.value = A.join(',');
+    n = A.length;
+    ql = parseInt(lInput.value, 10); if (isNaN(ql)) ql = 0;
+    qr = parseInt(rInput.value, 10); if (isNaN(qr)) qr = n - 1;
+    if (ql < 0) ql = 0; if (qr > n - 1) qr = n - 1; if (qr < ql) qr = ql;
+    lInput.value = ql; rInput.value = qr;
+    build(); simulate(); cur = 0; resize(); draw();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; draw(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () { step(); if (cur >= steps.length - 1) { timer = null; return; } timer = setTimeout(tick, 650); };
+    timer = setTimeout(tick, 650);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+  window.addEventListener('resize', function () { resize(); draw(); });
+
+  load();
+})();
+</script>

@@ -1,0 +1,137 @@
+<style>
+  .sv-stage { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 0; }
+  .sv-grid { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px;
+             width: 100%; max-width: 560px; }
+  .sv-cell { height: 34px; display: flex; align-items: center; justify-content: center;
+             border-radius: 6px; background: #e4e4e7; color: #3f3f46;
+             font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 700;
+             font-size: 13px;
+             transition: background 0.25s, color 0.25s, outline-color 0.25s; }
+  .sv-prime { background: #16a34a; color: #fff; }
+  .sv-comp  { background: #ececee; color: #b4b4bb; }
+  .sv-active { outline: 2px solid #0f7a37; outline-offset: 2px; }
+  .sv-mark  { background: #dc2626; color: #fff; outline: 2px solid #991b1b; outline-offset: 2px; }
+  html.dark .sv-cell { background: #3f3f46; color: #e4e4e7; }
+  html.dark .sv-prime { background: #15803d; color: #fff; }
+  html.dark .sv-comp  { background: #2a2a2e; color: #6b6b73; }
+  html.dark .sv-active { outline-color: #4ade80; }
+  html.dark .sv-mark  { background: #b91c1c; color: #fff; outline-color: #f87171; }
+</style>
+<div class="stage sv-stage">
+  <div class="sv-grid" id="grid"></div>
+</div>
+<div class="info-line" id="info"></div>
+<div class="meta-row" id="meta"></div>
+<div class="controls">
+  <label class="field">n <input type="number" id="nn" value="60" min="20" max="120" /></label>
+  <button class="btn-icon-secondary" id="reset" title="load"></button>
+  <button class="btn-icon-secondary" id="step" title="step"></button>
+  <button class="btn-icon-primary" id="run" title="run"></button>
+</div>
+<script>
+(function () {
+  document.getElementById('reset').innerHTML = window.__svg('load');
+  document.getElementById('step').innerHTML = window.__svg('step');
+  document.getElementById('run').innerHTML = window.__svg('play');
+
+  var info = document.getElementById('info');
+  var meta = document.getElementById('meta');
+  var grid = document.getElementById('grid');
+  var nn   = document.getElementById('nn');
+
+  var params = window.__params || {};
+  if (params.n != null) nn.value = params.n;
+
+  var N = 60, steps = [], cur = 0, timer = null;
+
+  function clampN(v) {
+    v = parseInt(v, 10);
+    if (!isFinite(v)) v = 60;
+    if (v < 20) v = 20;
+    if (v > 120) v = 120;
+    return v;
+  }
+
+  function listStr(arr) {
+    if (arr.length <= 5) return arr.join(', ');
+    return arr.slice(0, 4).join(', ') + ', ... (' + arr.length + ')';
+  }
+
+  function snap(comp, prime, hi, msg, count, isMark) {
+    return { comp: comp.slice(), prime: prime.slice(), hi: hi.slice(),
+             msg: msg, count: count, isMark: !!isMark };
+  }
+
+  function build() {
+    steps = [];
+    var comp  = new Array(N + 1).fill(false);
+    var prime = new Array(N + 1).fill(false);
+    var count = 0;
+    steps.push(snap(comp, prime, [], 'On commence : tous les nombres de 2 a ' + N + ' sont candidats.', count));
+    for (var i = 2; i <= N; i++) {
+      if (!comp[i]) {
+        prime[i] = true;
+        count++;
+        steps.push(snap(comp, prime, [i], 'p = ' + i + ' est premier (aucun diviseur ne l\'a marque).', count));
+        var marked = [];
+        for (var j = i * i; j <= N; j += i) {
+          if (!comp[j]) { comp[j] = true; marked.push(j); }
+        }
+        if (marked.length) {
+          steps.push(snap(comp, prime, marked,
+            'p = ' + i + ' premier, on marque ' + listStr(marked) + '.', count, true));
+        }
+      }
+    }
+    steps.push(snap(comp, prime, [],
+      'Termine : ' + count + ' nombres premiers inferieurs ou egaux a ' + N + '.', count));
+  }
+
+  function render() {
+    var st = steps[cur] || {};
+    var hiSet = {};
+    for (var h = 0; h < (st.hi || []).length; h++) hiSet[st.hi[h]] = true;
+    var html = '';
+    for (var v = 2; v <= N; v++) {
+      var cls = 'sv-cell';
+      if (st.prime[v]) {
+        cls += ' sv-prime';
+        if (hiSet[v]) cls += ' sv-active';
+      } else if (st.comp[v]) {
+        cls += ' sv-comp';
+        if (hiSet[v] && st.isMark) cls += ' sv-mark';
+      }
+      html += '<div class="' + cls + '">' + v + '</div>';
+    }
+    grid.innerHTML = html;
+    info.textContent = st.msg || '';
+    meta.innerHTML = '<span>etape <b>' + Math.min(cur + 1, steps.length) + '</b>/' + steps.length + '</span>' +
+      '<span>nombres premiers <b>' + (st.count || 0) + '</b></span>';
+  }
+
+  function load() {
+    stopRun();
+    N = clampN(nn.value);
+    nn.value = N;
+    build(); cur = 0; render();
+  }
+  function step() { if (cur < steps.length - 1) { cur++; render(); } }
+  function run() {
+    if (timer) return;
+    if (cur >= steps.length - 1) cur = 0;
+    var tick = function () {
+      step();
+      if (cur >= steps.length - 1) { timer = null; return; }
+      timer = setTimeout(tick, 600);
+    };
+    timer = setTimeout(tick, 600);
+  }
+  function stopRun() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  document.getElementById('reset').addEventListener('click', load);
+  document.getElementById('step').addEventListener('click', function () { stopRun(); step(); });
+  document.getElementById('run').addEventListener('click', run);
+
+  load();
+})();
+</script>

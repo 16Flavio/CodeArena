@@ -48,6 +48,13 @@ def kruskal(n, edges):            # edges = [(w, u, v), ...]
 Kruskal applies this property: each added edge is the lightest
 crossing the cut separating its component from the rest.
 
+**Build the MST** : edges are sorted by weight; `step` tests each and
+keeps it (green) if it joins two components, or rejects it (red) if it
+would form a cycle. The vertex colours show the components merging.
+
+:::viz-mst-kruskal
+:::
+
 ---
 
 ## 4.3 - Complexity
