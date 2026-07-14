@@ -702,7 +702,21 @@ def run_exercise(
     results: list[schemas.LessonExerciseRunResult] = []
     compile_output = ""
     all_passed = True
-    with tempfile.TemporaryDirectory(prefix="lex-") as workdir:
+    # In docker mode the workdir must live under SCORING_WORKDIR - the
+    # directory shared host<->worker at the same absolute path - so the
+    # sandbox sibling container can bind-mount it and actually see main.py.
+    # (The default /tmp lives only inside the worker container, so the
+    # mount resolves against the host and the source file is missing:
+    # "python3: can't open file '/tmp/lex-.../main.py'".)
+    _wd_parent = os.environ.get("SCORING_WORKDIR") or None
+    with tempfile.TemporaryDirectory(prefix="lex-", dir=_wd_parent) as workdir:
+        if icpc_runner._use_docker():
+            # The sandbox runs as a non-root uid; let it write build
+            # artefacts into the bind-mounted workdir.
+            try:
+                os.chmod(workdir, 0o777)
+            except OSError:
+                pass
         compile_res = icpc_runner.compile_source(
             language_id=lang.id, compile_cmd=lang.compile_cmd or "",
             source_code=code, workdir=workdir,
