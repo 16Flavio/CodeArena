@@ -276,6 +276,14 @@ def _python_bin() -> str:
     return _sys.executable or "python3"
 
 
+def _infra_error(rc: int, stderr: str) -> Optional[str]:
+    """Docker-level failure message, or None. Always None outside docker mode:
+    on the host path a non-zero exit really is the contestant's program."""
+    if not _use_docker():
+        return None
+    return icpc_sandbox.docker_infra_error(rc, stderr)
+
+
 def _child_cpu_ms() -> Optional[int]:
     """Cumulative user+sys CPU of every child this process has reaped, in ms.
     None on Windows. Only meaningful as a delta around one ``subprocess.run``
@@ -436,6 +444,13 @@ def compile_source(language_id: str, compile_cmd: str, source_code: str, *, work
         measure_cpu=False,
     )
     if rc != 0:
+        # A docker-level failure is the platform's fault, not the source's.
+        # Reporting it as CE would tell the contestant their code doesn't
+        # compile and hand them the daemon's error message as "compiler
+        # output".
+        infra = _infra_error(rc, err)
+        if infra:
+            return RunResult(verdict=IE, compile_output=infra)
         msg = (err or "") + ("\n" + out if out else "")
         return RunResult(verdict=CE, compile_output=msg[:4000].strip() or "compile failed")
     return RunResult(verdict=AC, compile_output=(out or "")[:2000])
@@ -486,6 +501,13 @@ def run_against_testcase(
     # other than the exact RLIMIT_AS OOM (often 137 / -9) as RE. Memory-kill
     # patterns in stderr bump us to MLE.
     if rc != 0:
+        # ...unless docker itself failed, in which case blaming the
+        # contestant for a Runtime Error would be plain wrong.
+        infra = _infra_error(rc, err)
+        if infra:
+            return RunResult(
+                verdict=IE, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=infra,
+            )
         if re.search(r"MemoryError|std::bad_alloc|out of memory", err, re.IGNORECASE):
             return RunResult(
                 verdict=MLE, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=err[:1000],
@@ -929,6 +951,10 @@ def judge(
             except OSError:
                 pass
         compile_res = compile_source(language_id, compile_cmd, source_code, workdir=workdir)
+        if compile_res.verdict == IE:
+            # Sandbox/daemon failure during compilation - a judge error, and
+            # the message is ours, never the contestant's source.
+            return IE, compile_res.compile_output, []
         if compile_res.verdict == CE:
             return CE, compile_res.compile_output, []
 
@@ -1057,6 +1083,13 @@ def judge(
                                 cpu_ms=res.cpu_ms,
                                 stdout=res.stdout, stderr=res.stderr,
                             )
+            # A sandbox/daemon failure aborts the whole judging: it says
+            # nothing about the submission, and continuing would fill the
+            # grid with meaningless verdicts. Subtask mode included - partial
+            # credit computed from a broken judge would be worse than none.
+            if res.verdict == IE:
+                return IE, (res.stderr or "sandbox failure").strip() or None, runs
+
             runs.append((tc_id, res, passed))
             if res.verdict != AC:
                 # For plain ICPC scoring we short-circuit on first non-AC -
