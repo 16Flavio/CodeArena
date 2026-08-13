@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
 from ..auth import get_current_user, require_admin, require_admin_or_organizer, require_verified
@@ -189,6 +190,40 @@ def _is_team_owner(db, team_id: int, user_id: int) -> bool:
         .first()
     )
     return bool(m and m.role == "owner")
+
+
+@router.get("/registrations/mine", response_model=list[int])
+def list_my_registered_contests(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Contest ids the caller is registered in, whether as a solo entrant or
+    through one of their teams.
+
+    Deliberately just ids: this backs the "registered" badge on the contests
+    listing, and the alternative was one ``/{id}/my-registration`` call per
+    row. The per-contest endpoint stays the source of truth for the richer
+    eligibility answer (can_register, reasons, DQ) on a contest's own page.
+
+    Two path segments on purpose: ``contests.router`` is mounted first and
+    owns ``GET /api/contests/{contest_id}``, so a single-segment path here
+    (``/my-registrations``) would be swallowed by it and 422 on int
+    validation."""
+    team_ids = [
+        m.team_id
+        for m in db.query(models.TeamMember)
+        .filter(models.TeamMember.user_id == user.id)
+        .all()
+    ]
+    conds = [models.ContestRegistration.user_id == user.id]
+    if team_ids:
+        conds.append(models.ContestRegistration.team_id.in_(team_ids))
+    rows = (
+        db.query(models.ContestRegistration.contest_id)
+        .filter(or_(*conds))
+        .all()
+    )
+    return sorted({r[0] for r in rows})
 
 
 @router.get("/{contest_id}/my-registration", response_model=schemas.MyRegistrationOut)

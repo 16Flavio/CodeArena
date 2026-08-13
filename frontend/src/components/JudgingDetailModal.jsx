@@ -129,9 +129,32 @@ export default function JudgingDetailModal({ submissionId, problemLabel, onClose
           <div className="space-y-4">
             <div className="flex items-center gap-2 flex-wrap">
               <VerdictBadge verdict={judging.verdict} pendingLabel={t('icpc.verdictPending')} />
+              {judging.max_cpu_ms ? (
+                <span
+                  className="text-xs text-zinc-600 font-mono tabular-nums dark:text-zinc-300"
+                  title={t('icpc.cpuVsWallHint')}
+                >
+                  {t('icpc.maxCpu', { ms: judging.max_cpu_ms })}
+                </span>
+              ) : null}
               {judging.max_runtime_ms ? (
-                <span className="text-xs text-zinc-500 font-mono tabular-nums dark:text-zinc-400">
+                <span
+                  className="text-xs text-zinc-500 font-mono tabular-nums dark:text-zinc-400"
+                  title={t('icpc.cpuVsWallHint')}
+                >
                   {t('icpc.maxRuntime', { ms: judging.max_runtime_ms })}
+                </span>
+              ) : null}
+              {judging.time_limit_effective_ms ? (
+                <span
+                  className="text-xs text-zinc-400 font-mono tabular-nums dark:text-zinc-500"
+                  title={judging.language_time_factor > 1
+                    ? t('icpc.factorHint', { factor: judging.language_time_factor })
+                    : undefined}
+                >
+                  {t('icpc.judgedAgainst', {
+                    eff: (judging.time_limit_effective_ms / 1000).toFixed(1),
+                  })}
                 </span>
               ) : null}
               {judging.judged_at && (
@@ -164,7 +187,18 @@ export default function JudgingDetailModal({ submissionId, problemLabel, onClose
                       <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-2 pr-4 dark:text-zinc-400">{t('judging.colTest')}</th>
                       <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-2 pr-4 dark:text-zinc-400">{t('judging.colKind')}</th>
                       <th className="text-left text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-2 pr-4 dark:text-zinc-400">{t('judging.colVerdict')}</th>
-                      <th className="text-right text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-2 pr-4 dark:text-zinc-400">{t('judging.colTime')}</th>
+                      <th
+                        className="text-right text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-2 pr-4 dark:text-zinc-400"
+                        title={t('icpc.cpuVsWallHint')}
+                      >
+                        {t('judging.colCpu')}
+                      </th>
+                      <th
+                        className="text-right text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-2 pr-4 dark:text-zinc-400"
+                        title={t('icpc.cpuVsWallHint')}
+                      >
+                        {t('judging.colTime')}
+                      </th>
                       <th className="text-right text-[11px] uppercase tracking-wide text-zinc-500 font-semibold pb-2 dark:text-zinc-400">{t('judging.colOutput')}</th>
                     </tr>
                   </thead>
@@ -221,7 +255,12 @@ function TestcaseRow({ n, isSample, run, hasOutput, isOpen, onToggle, t }) {
             </span>
           )}
         </td>
-        <td className="py-2 pr-4 text-right font-mono tabular-nums text-xs text-zinc-500 dark:text-zinc-400">
+        {/* CPU first: it is the figure the time limit is checked against.
+            Wall clock sits next to it, greyer, since it carries startup. */}
+        <td className="py-2 pr-4 text-right font-mono tabular-nums text-xs text-zinc-700 dark:text-zinc-300">
+          {run && run.cpu_ms != null ? `${run.cpu_ms} ms` : '-'}
+        </td>
+        <td className="py-2 pr-4 text-right font-mono tabular-nums text-xs text-zinc-400 dark:text-zinc-500">
           {run && run.runtime_ms != null ? `${run.runtime_ms} ms` : '-'}
         </td>
         <td className="py-2 text-right">
@@ -239,7 +278,7 @@ function TestcaseRow({ n, isSample, run, hasOutput, isOpen, onToggle, t }) {
       </tr>
       {isOpen && run && (
         <tr className="border-b border-zinc-100 dark:border-zinc-800/30">
-          <td colSpan={5} className="px-2 py-3 space-y-2 text-xs">
+          <td colSpan={6} className="px-2 py-3 space-y-2 text-xs">
             {run.stdout_truncated && (
               <div>
                 <p className="text-[10px] uppercase text-zinc-500 dark:text-zinc-400 mb-1">

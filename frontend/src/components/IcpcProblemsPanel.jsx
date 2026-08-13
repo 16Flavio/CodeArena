@@ -517,9 +517,19 @@ function EditForm({ draft, setDraft, onSave, onCancel, t, isNew }) {
       </div>
       <div className="grid grid-cols-4 gap-2">
         <div>
-          <label className="block text-[10px] uppercase text-zinc-400 dark:text-zinc-500">{t('icpcProblems.timeField')}</label>
+          <label
+            className="block text-[10px] uppercase text-zinc-400 dark:text-zinc-500"
+            title={t('icpcProblems.timeFieldHint')}
+          >
+            {t('icpcProblems.timeField')}
+          </label>
           <input type="number" min={100} className="input-field text-sm py-1 px-2"
             value={draft.time_limit_ms} onChange={(e) => setDraft({ ...draft, time_limit_ms: e.target.value })} />
+          {/* The judge multiplies this by the language time_factor, so the
+              raw number is not what a Python submission is measured against. */}
+          <p className="text-[10px] text-zinc-400 mt-0.5 dark:text-zinc-500">
+            {t('icpcProblems.timeFieldNote')}
+          </p>
         </div>
         <div>
           <label className="block text-[10px] uppercase text-zinc-400 dark:text-zinc-500">{t('icpcProblems.memoryField')}</label>

@@ -12,6 +12,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
+import Contests from './pages/Contests';
 
 // Lazy-load the heavier authenticated pages. ContestDetail pulls CodeMirror +
 // ReactMarkdown, Admin pulls the whole form tree - splitting these out drops
@@ -59,6 +60,7 @@ export default function App() {
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/contests" element={<Contests />} />
           <Route path="/teams" element={<Teams />} />
           <Route path="/my-submissions" element={<MySubmissions />} />
           <Route path="/contests/:id" element={<ContestDetail />} />

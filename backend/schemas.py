@@ -647,7 +647,12 @@ class TestcaseAdminIn(BaseModel):
 class JudgingRunOut(BaseModel):
     testcase_id: int
     verdict: str
+    # Wall clock (carries interpreter + container startup).
     runtime_ms: Optional[int] = None
+    # CPU time of the contestant process - the figure the time limit is
+    # actually checked against. None when unmeasurable (killed run,
+    # interactive problem, judging predating the measurement).
+    cpu_ms: Optional[int] = None
     is_sample: bool = False
     # First ~1 KB of the program's stdout + stderr on this testcase. Only
     # populated for the submitter / teammates / admin (same authz as the
@@ -671,6 +676,12 @@ class JudgingOut(BaseModel):
     submission_id: int
     verdict: str
     max_runtime_ms: Optional[int] = None
+    max_cpu_ms: Optional[int] = None
+    # Soft limit actually applied to this submission: the problem's
+    # time_limit_ms times the language's time_factor. Saves the UI from
+    # re-deriving it (and from showing "1.0 s" next to an accepted 1500 ms).
+    time_limit_effective_ms: Optional[int] = None
+    language_time_factor: Optional[float] = None
     compile_output: Optional[str] = None
     judged_at: Optional[datetime] = None
     runs: list[JudgingRunOut] = []
@@ -708,6 +719,12 @@ class IcpcScoreCell(BaseModel):
     # non-zero and ``solved`` is False, the UI renders the cell as a
     # pale-blue "pending" tile ("?" style, DOMjudge convention).
     pending_attempts: int = 0
+    # Submissions still sitting in the judging queue (no verdict yet).
+    # DELIBERATELY distinct from ``pending_attempts`` above, which means
+    # "judged, but the verdict is withheld until the freeze lifts". This
+    # one means "the judge has not answered yet" and clears on its own
+    # within seconds. Never affects solved_count or penalty.
+    judging_pending: int = 0
 
 
 class IcpcScoreRow(BaseModel):
@@ -889,6 +906,11 @@ class InstanceScore(BaseModel):
     # submission ever) or "score +/- ?" (had a pre-freeze score that
     # might still move).
     pending_changes: int = 0
+    # Submissions still in the scoring queue (status="pending"). Distinct
+    # from ``pending_changes``: that one is about the freeze withholding a
+    # known result, this one is about the result not existing yet. Never
+    # contributes to best_score or the total.
+    judging_pending: int = 0
 
 
 class TeamScore(BaseModel):

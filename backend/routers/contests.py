@@ -461,14 +461,21 @@ def create_contest(
 @router.get("/my-submissions", response_model=list[schemas.MySubmissionOut])
 def list_my_submissions(
     limit: int = 50,
+    contest_id: Optional[int] = None,
+    problem_id: Optional[int] = None,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Cross-contest view of the current user's own submissions. Declared
     before the `/{contest_id}` route so FastAPI matches it as a literal rather
-    than as a contest_id that fails int validation."""
+    than as a contest_id that fails int validation.
+
+    ``contest_id`` / ``problem_id`` narrow the list server-side. The ICPC
+    contest view uses them to restore the judging panel after a page reload:
+    filtering client-side over the default 50 most recent rows would miss the
+    submission as soon as the user has been active in another contest."""
     limit = max(1, min(limit, 200))
-    rows = (
+    q = (
         db.query(models.Submission)
         .options(
             joinedload(models.Submission.contest),
@@ -477,7 +484,13 @@ def list_my_submissions(
             joinedload(models.Submission.submitted_by_user),
         )
         .filter(models.Submission.submitted_by == user.id)
-        .order_by(models.Submission.submitted_at.desc())
+    )
+    if contest_id is not None:
+        q = q.filter(models.Submission.contest_id == contest_id)
+    if problem_id is not None:
+        q = q.filter(models.Submission.problem_id == problem_id)
+    rows = (
+        q.order_by(models.Submission.submitted_at.desc())
         .limit(limit)
         .all()
     )

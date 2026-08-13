@@ -148,6 +148,9 @@ export const unregisterFromContest = (contestId) =>
   api.delete(`/contests/${contestId}/register`);
 export const listContestRegistrations = (contestId) =>
   api.get(`/contests/${contestId}/registrations`);
+// Ids of the contests the caller is registered in (solo or via a team).
+export const getMyRegisteredContestIds = () =>
+  api.get('/contests/registrations/mine');
 
 // Instances
 export const getInstances = (contestId) => api.get(`/contests/${contestId}/instances`);
@@ -180,8 +183,14 @@ export const getSubmissions = (contestId, teamId, limit = 50, offset = 0) =>
   });
 export const getSubmission = (submissionId) =>
   api.get(`/contests/submissions/${submissionId}`);
-export const getMySubmissions = (limit = 50) =>
-  api.get('/contests/my-submissions', { params: { limit } });
+export const getMySubmissions = (limit = 50, params = {}) =>
+  api.get('/contests/my-submissions', { params: { limit, ...params } });
+// Most recent own submission on one ICPC problem. Used to restore the
+// judging panel after a page reload.
+export const getMyLatestProblemSubmission = (contestId, problemId) =>
+  api.get('/contests/my-submissions', {
+    params: { limit: 1, contest_id: contestId, problem_id: problemId },
+  });
 export const downloadMySubmission = (submissionId) =>
   api.get(`/contests/submissions/${submissionId}/file`, { responseType: 'blob' });
 export const getSubmissionContent = (submissionId) =>

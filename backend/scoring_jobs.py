@@ -354,19 +354,24 @@ def _judge_icpc_inner(db, sub: models.Submission, contest: models.Contest) -> No
     judging.judged_at = datetime.now(timezone.utc)
 
     max_rt = 0
+    max_cpu = 0
     for tc_id, res, _passed in runs:
         db.add(models.JudgingRun(
             judging_id=judging.id,
             testcase_id=tc_id,
             verdict=res.verdict,
             runtime_ms=res.runtime_ms,
+            cpu_ms=res.cpu_ms,
             memory_used_mb=res.memory_used_mb,
             stdout_truncated=(res.stdout or "")[:1000] or None,
             stderr_truncated=(res.stderr or "")[:1000] or None,
         ))
         if res.runtime_ms and res.runtime_ms > max_rt:
             max_rt = res.runtime_ms
+        if res.cpu_ms and res.cpu_ms > max_cpu:
+            max_cpu = res.cpu_ms
     judging.max_runtime_ms = max_rt or None
+    judging.max_cpu_ms = max_cpu or None
 
     # For subtask-mode problems, compute partial credit: group testcases
     # by their ``group_name`` (None = singleton group), and award a

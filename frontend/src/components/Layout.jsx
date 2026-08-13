@@ -3,7 +3,7 @@ import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
 import {
   LayoutDashboard, Users, Shield, LogOut, Menu, X, Zap, Sun, Moon, Mail,
-  FileText, ShieldCheck, GraduationCap, Medal, UserRound, ChevronDown,
+  FileText, ShieldCheck, GraduationCap, Medal, UserRound, ChevronDown, Trophy,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -107,6 +107,7 @@ export default function Layout() {
 
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
+    { to: '/contests', icon: Trophy, label: t('nav.contests') },
     { to: '/teams', icon: Users, label: t('nav.teams'), badge: pendingRequests },
     { to: '/my-submissions', icon: FileText, label: t('nav.mySubmissions') },
     { to: '/learn', icon: GraduationCap, label: t('nav.learn') },

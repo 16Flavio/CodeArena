@@ -89,7 +89,12 @@
     "clarToggleVisibilityHint": "Basculer entre publique (visible par toutes les équipes) et privée (seulement par l'équipe émettrice).",
     "toastClarUpdated": "Clarification mise à jour",
     "toastClarDeleted": "Clarification supprimée",
-    "confirmDeleteClar": "Supprimer cette clarification ?"
+    "confirmDeleteClar": "Supprimer cette clarification ?",
+    "effectiveLimit": "Limite effective : {{eff}} s ({{time}} s x{{factor}} pour {{lang}})",
+    "maxCpu": "max {{ms}} ms CPU",
+    "judgedAgainst": "jugé sur {{eff}} s",
+    "cpuVsWallHint": "Le temps CPU est celui sur lequel le verdict est décidé. Le temps écoulé inclut le démarrage de l'interpréteur et du conteneur, il est toujours plus grand.",
+    "factorHint": "Limite du problème multipliée par le facteur x{{factor}} du langage."
   },
   "judging": {
     "title": "Détail du jugement",
@@ -101,7 +106,8 @@
     "colOutput": "Sortie",
     "noRuns": "Aucun test n'a encore été exécuté.",
     "showOutput": "Afficher la sortie",
-    "hideOutput": "Masquer la sortie"
+    "hideOutput": "Masquer la sortie",
+    "colCpu": "CPU"
   },
   "icpcScoreboard": {
     "openStatement": "Ouvrir l'énoncé (PDF)",
@@ -114,7 +120,8 @@
     "wrongAttempts": "{{n}}",
     "firstToSolve": "Premier à résoudre 🎈",
     "frozenTooltip": "Soumissions après le gel - verdict caché.",
-    "empty": "Aucune équipe classée pour l'instant."
+    "empty": "Aucune équipe classée pour l'instant.",
+    "judgingTooltip": "{{n}} soumission(s) en cours de jugement, verdict pas encore connu"
   },
   "errors": {
     "invalidCredentials": "Nom d'utilisateur ou mot de passe invalide",
@@ -284,7 +291,9 @@
     "pdfNotPdf": "Le fichier doit être un PDF",
     "pdfUploadFailed": "Échec du téléversement du PDF",
     "pdfOpenFailed": "Impossible d'ouvrir l'énoncé",
-    "pdfConfirmDelete": "Supprimer le PDF d'énoncé du problème {{label}} ({{name}}) ?"
+    "pdfConfirmDelete": "Supprimer le PDF d'énoncé du problème {{label}} ({{name}}) ?",
+    "timeFieldHint": "Limite de base, en millisecondes. Le juge la multiplie par le facteur du langage avant de trancher.",
+    "timeFieldNote": "x facteur du langage (Python x3, Java x2)"
   },
   "adminHints": {
     "heading": "Indices (admin)",
@@ -424,7 +433,8 @@
     "collapseSidebar": "Replier le menu",
     "expandSidebar": "Déplier le menu",
     "account": "Mon compte",
-    "primary": "Navigation principale"
+    "primary": "Navigation principale",
+    "contests": "Compétitions"
   },
   "accountModal": {
     "passwordTitle": "Changer de mot de passe",
@@ -852,7 +862,8 @@
     "loadFailed": "Impossible de charger le classement",
     "loadFailedHeading": "Impossible de charger le classement",
     "refreshed": "Classement actualisé",
-    "refreshFailed": "Impossible de charger le classement"
+    "refreshFailed": "Impossible de charger le classement",
+    "judgingTooltip": "{{n}} soumission(s) en attente de notation"
   },
   "admin": {
     "title": "Panneau d'administration",
@@ -1456,5 +1467,33 @@
     "loadFailed": "Impossible de charger les exercices",
     "deleted": "Exercice supprimé",
     "confirmDelete": "Supprimer cet exercice ?"
+  },
+  "contests": {
+    "eyebrow": "Compétitions",
+    "title": "Toutes les compétitions",
+    "description": "Parcourez les compétitions en cours, à venir et passées.",
+    "searchPlaceholder": "Rechercher une compétition",
+    "loadFailed": "Impossible de charger les compétitions",
+    "emptyAll": "Aucune compétition n'est visible pour le moment.",
+    "emptyFiltered": "Aucune compétition ne correspond à ces filtres.",
+    "registered": "Inscrit",
+    "notRegistered": "Non inscrit",
+    "open": "Ouvrir",
+    "state": {
+      "all": "Toutes",
+      "active": "En cours",
+      "upcoming": "À venir",
+      "past": "Terminées"
+    },
+    "kind": {
+      "all": "Tous types",
+      "icpc": "ICPC",
+      "output": "Sortie seule"
+    },
+    "mode": {
+      "team": "Équipe",
+      "solo": "Solo",
+      "both": "Équipe ou solo"
+    }
   }
 }
