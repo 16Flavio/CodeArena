@@ -57,10 +57,47 @@ or `__has_include` of an absolute path. Legitimate submissions (`<vector>`,
 `<bits/stdc++.h>`, local `"helper.h"`) are unaffected. Docker mode contains
 this anyway via the read-only isolated rootfs.
 
+### How time limits are enforced
+
+Same model as DOMjudge, in three layers:
+
+1. **Soft limit** = the problem's `time_limit_ms` x the language's
+   `time_factor` (`languages` table: Python x3, Java x2, C/C++ x1). This is
+   what a verdict is decided on. A 1.0 s problem gives a Python submission
+   3.0 s, so an accepted 1500 ms Python run is correct, not a bug. The UI
+   shows the effective limit next to the base one.
+2. **Hard limit** = soft + `SCORING_TIMELIMIT_OVERSHOOT` (default `1s|10%`,
+   DOMjudge's own syntax: absolute margin, relative margin, or both). This is
+   the wall-clock budget at which the process is actually killed. The margin
+   exists so a submission that overruns slightly still reports a real
+   runtime, letting a jury tell "1.05 s, algorithmically fine" from an
+   infinite loop.
+3. **Which clock:** the soft limit is checked against **CPU time**
+   (user+sys of the contestant process), captured via a POSIX `times` hook
+   inside the sandbox and stored in `judging_runs.cpu_ms`. The wall clock
+   (`judging_runs.runtime_ms`) carries interpreter startup and 200-500 ms of
+   container create/teardown, so it is only used as the anti-idle guard at
+   the hard limit - which is what still catches a program that sleeps or
+   blocks on I/O rather than burning CPU.
+
+If the CPU capture doesn't land (killed run, interactive problem, Windows
+dev box), `cpu_ms` is NULL and the judge falls back to the wall clock for
+that run.
+
+**For reproducible timings**, pin each worker to its own core with
+`SCORING_CPUSET` (maps to docker `--cpuset-cpus`). Two judgings sharing a
+core inflate each other's wall clock, and the hard limit is wall-based.
+DOMjudge does the same with one judgedaemon per core (`judgedaemon -n`).
+Note that `SCORING_WORKER_REPLICAS` gives every replica the same env, so all
+replicas would share one core: for true per-core isolation declare the
+workers as separate compose services, each with its own `SCORING_CPUSET`.
+On the host itself, disabling hyperthreading, CPU frequency scaling and
+Turbo Boost is what removes the remaining jitter.
+
 **Caveats to validate in staging first** (`backend/icpc_sandbox.py`):
-- Container startup adds latency; TLE is enforced by the in-container
-  `timeout` (not wall-clock measured across startup), but validate your time
-  limits against the sandbox image before the contest.
+- Container startup adds latency. It no longer inflates the judged time
+  (that is measured in CPU), but it does bound throughput - budget for it
+  when sizing workers.
 - The Docker socket mount grants root-equivalent on the host - run this on a
   single-tenant contest box only.
 - Compiled (non-Python) interactors write the expected-output file into the
@@ -269,6 +306,8 @@ no rebuild needed unless noted.
 | `SCORING_MODE`              | `subprocess` | `docker` isolates each compile/run in a container (see above). |
 | `SCORING_ICPC_IMAGE`        | `codearena-icpc-sandbox:latest` | Toolchain sandbox image for ICPC docker mode. |
 | `JUDGE_WORKDIR`             | `/judge-work` | Abs path mounted host↔container at the SAME path for the ICPC sandbox. |
+| `SCORING_TIMELIMIT_OVERSHOOT` | `1s\|10%` | How far past the soft limit before the hard kill. Verdict still uses the soft limit. |
+| `SCORING_CPUSET`            | _(unset)_ | Cores the sandbox is pinned to (`--cpuset-cpus`), e.g. `2` or `2-3`. Set it when running several workers. |
 | `POSTGRES_MAX_CONNECTIONS`  | `200`   | Postgres connection ceiling. Recreate the postgres container.     |
 | `POSTGRES_SHARED_BUFFERS`   | `256MB` | Postgres page cache. Recreate the postgres container.             |
 

@@ -659,6 +659,12 @@ class Judging(Base):
     submission_id = Column(Integer, ForeignKey("submissions.id", ondelete="CASCADE"), nullable=False, index=True)
     verdict = Column(String(8), nullable=False, default="pending")
     max_runtime_ms = Column(Integer, nullable=True)
+    # Peak CPU time across the runs. This is the figure the TLE verdict was
+    # decided on; ``max_runtime_ms`` is wall clock and carries container +
+    # interpreter startup, so the two differ by a few hundred ms. NULL for
+    # judgings made before the CPU measurement landed, and for interactive
+    # problems (no attributable per-process CPU).
+    max_cpu_ms = Column(Integer, nullable=True)
     compile_output = Column(Text, nullable=True)
     judged_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
@@ -682,7 +688,11 @@ class JudgingRun(Base):
     judging_id = Column(Integer, ForeignKey("judgings.id", ondelete="CASCADE"), nullable=False, index=True)
     testcase_id = Column(Integer, ForeignKey("testcases.id", ondelete="CASCADE"), nullable=False, index=True)
     verdict = Column(String(8), nullable=False, default="pending")
+    # Wall clock around the whole run (includes startup overhead).
     runtime_ms = Column(Integer, nullable=True)
+    # User+sys CPU of the contestant process alone - the metric the soft
+    # time limit is checked against. NULL when unmeasurable.
+    cpu_ms = Column(Integer, nullable=True)
     memory_used_mb = Column(Integer, nullable=True)
     # Truncated stdout/stderr (first ~1 KB) for the jury view. Full output
     # is discarded - we don't want to retain arbitrary team-controlled data.

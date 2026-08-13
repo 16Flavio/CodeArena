@@ -57,11 +57,76 @@ IE = "IE"      # internal/judge error - e.g. admin-supplied interactor failed to
 class RunResult:
     verdict: str
     runtime_ms: int = 0
+    # User+sys CPU time of the contestant process, excluding interpreter
+    # and container startup. None when the measurement didn't land (killed
+    # run, Windows dev box) - callers fall back to ``runtime_ms``.
+    cpu_ms: Optional[int] = None
     memory_used_mb: Optional[int] = None
     stdout: str = ""
     stderr: str = ""
     # For CE: compiler output.
     compile_output: str = ""
+
+
+# ── Soft / hard time limits (DOMjudge semantics) ─────────────────────────────
+#
+# The problem's limit x the language's time_factor is the SOFT limit: the
+# one a verdict is decided on. The program is only killed at the HARD limit
+# (soft + overshoot), so a submission that overruns slightly still reports a
+# real runtime instead of "exactly the limit" - which is what lets a jury
+# tell "1.05 s, algorithmically fine" from "infinite loop".
+#
+# ``SCORING_TIMELIMIT_OVERSHOOT`` uses DOMjudge's own syntax: an absolute
+# margin, a relative one, or both separated by "|". Default "1s|10%".
+_DEFAULT_OVERSHOOT = "1s|10%"
+
+
+def _parse_overshoot(spec: str) -> tuple[float, float]:
+    """``"1s|10%"`` -> ``(absolute_seconds, relative_fraction)``. Unparseable
+    input falls back to the default rather than raising - a malformed env var
+    must not take the judge down mid-contest."""
+    abs_s = 0.0
+    rel = 0.0
+    seen = False
+    for part in (spec or "").split("|"):
+        part = part.strip().lower()
+        if not part:
+            continue
+        try:
+            if part.endswith("%"):
+                rel = float(part[:-1]) / 100.0
+                seen = True
+            else:
+                abs_s = float(part.rstrip("s"))
+                seen = True
+        except ValueError:
+            return _parse_overshoot(_DEFAULT_OVERSHOOT) if spec != _DEFAULT_OVERSHOOT else (1.0, 0.10)
+    if not seen:
+        return (1.0, 0.10)
+    return (max(0.0, abs_s), max(0.0, rel))
+
+
+def hard_limit_s(soft_s: float) -> float:
+    """Wall-clock budget before the process is killed outright."""
+    abs_s, rel = _parse_overshoot(
+        os.environ.get("SCORING_TIMELIMIT_OVERSHOOT") or _DEFAULT_OVERSHOOT
+    )
+    return soft_s * (1.0 + rel) + abs_s
+
+
+def _verdict_time_ms(cpu_ms: Optional[int], elapsed_ms: int) -> int:
+    """The number a TLE verdict is decided on.
+
+    DOMjudge enforces limits "primarily in CPU time"; the wall clock is only
+    a lax anti-idle guard. We do the same, but clamp to the wall clock: in
+    subprocess mode ``cpu_ms`` is a getrusage delta over ALL the worker's
+    children, so a concurrently-judged sibling could inflate it. Clamping
+    means a polluted reading can only ever be as harsh as the old wall-clock
+    behaviour, never harsher. In docker mode ``--cpus`` caps CPU at wall
+    anyway, so the clamp is a no-op there."""
+    if cpu_ms is None:
+        return elapsed_ms
+    return min(cpu_ms, elapsed_ms)
 
 
 # ── Checkers ──────────────────────────────────────────────────────────────────
@@ -211,17 +276,36 @@ def _python_bin() -> str:
     return _sys.executable or "python3"
 
 
-def _run_shell(cmd: str, *, cwd: str, stdin: Optional[str], timeout_s: float, memory_mb: int) -> tuple[int, str, str, int]:
+def _child_cpu_ms() -> Optional[int]:
+    """Cumulative user+sys CPU of every child this process has reaped, in ms.
+    None on Windows. Only meaningful as a delta around one ``subprocess.run``
+    - see ``_verdict_time_ms`` for why that delta is clamped before use."""
+    try:
+        import resource  # type: ignore
+    except ImportError:
+        return None
+    ru = resource.getrusage(resource.RUSAGE_CHILDREN)
+    return int((ru.ru_utime + ru.ru_stime) * 1000)
+
+
+def _run_shell(
+    cmd: str, *, cwd: str, stdin: Optional[str], timeout_s: float, memory_mb: int,
+    measure_cpu: bool = True,
+) -> tuple[int, str, str, int, Optional[int]]:
     """Run ``cmd`` with a wall-clock timeout and memory cap. Returns
-    ``(exit_code, stdout, stderr, elapsed_ms)``.
+    ``(exit_code, stdout, stderr, elapsed_ms, cpu_ms)``.
 
     In docker mode the command runs inside an isolated sibling container
     (no network, read-only rootfs, non-root uid); otherwise it runs as a
-    host subprocess bounded only by the env scrub + POSIX rlimits below."""
+    host subprocess bounded only by the env scrub + POSIX rlimits below.
+
+    ``cpu_ms`` excludes interpreter/container startup and is the metric the
+    TLE verdict is decided on; it is None when unmeasurable."""
     if _use_docker():
         return icpc_sandbox.run_in_container(
             cmd, workdir=cwd, stdin=stdin, timeout_s=timeout_s,
             memory_mb=memory_mb, cpus=os.environ.get("SCORING_CPUS", "1.0"),
+            measure_cpu=measure_cpu,
         )
 
     env = _sandbox_env(
@@ -232,6 +316,7 @@ def _run_shell(cmd: str, *, cwd: str, stdin: Optional[str], timeout_s: float, me
     preexec = _child_rlimits(memory_mb, int(timeout_s) + 1)
 
     import time as _t
+    cpu_before = _child_cpu_ms()
     t0 = _t.monotonic()
     try:
         proc = subprocess.run(
@@ -246,9 +331,23 @@ def _run_shell(cmd: str, *, cwd: str, stdin: Optional[str], timeout_s: float, me
             shell=(os.name == "nt"),
         )
         elapsed_ms = int((_t.monotonic() - t0) * 1000)
-        return proc.returncode, proc.stdout, proc.stderr, elapsed_ms
+        cpu_after = _child_cpu_ms()
+        cpu_ms = (
+            max(0, cpu_after - cpu_before)
+            if cpu_before is not None and cpu_after is not None
+            else None
+        )
+        return proc.returncode, proc.stdout, proc.stderr, elapsed_ms, cpu_ms
     except subprocess.TimeoutExpired as e:
-        return -9, (e.stdout.decode() if isinstance(e.stdout, bytes) else (e.stdout or "")), "TIMEOUT", int(timeout_s * 1000)
+        # A killed child is never reaped into getrusage, so there is no CPU
+        # figure to report - the caller only needs "it hit the hard limit".
+        return (
+            -9,
+            (e.stdout.decode() if isinstance(e.stdout, bytes) else (e.stdout or "")),
+            "TIMEOUT",
+            int(timeout_s * 1000),
+            None,
+        )
 
 
 # ── Compile + run helpers ─────────────────────────────────────────────────────
@@ -329,7 +428,13 @@ def compile_source(language_id: str, compile_cmd: str, source_code: str, *, work
     cmd = _expand(compile_cmd, src=src_path, exe=exe_path, workdir=workdir)
     # Give the compiler a generous fixed budget independent of the per-problem
     # run limit. 30 s is plenty for any realistic ICPC submission.
-    rc, out, err, _ = _run_shell(cmd, cwd=workdir, stdin=None, timeout_s=30, memory_mb=512)
+    # measure_cpu=False: nothing reports compiler CPU time, and skipping the
+    # capture keeps its meta file out of subdirectories the sandbox uid may
+    # not be able to write (checker / interactor workdirs).
+    rc, out, err, _, _ = _run_shell(
+        cmd, cwd=workdir, stdin=None, timeout_s=30, memory_mb=512,
+        measure_cpu=False,
+    )
     if rc != 0:
         msg = (err or "") + ("\n" + out if out else "")
         return RunResult(verdict=CE, compile_output=msg[:4000].strip() or "compile failed")
@@ -346,28 +451,52 @@ def run_against_testcase(
     memory_limit_mb: int,
     time_factor: float,
 ) -> RunResult:
-    """Execute one testcase run; returns AC/WA/TLE/MLE/RE with metadata."""
+    """Execute one testcase run; returns AC/WA/TLE/MLE/RE with metadata.
+
+    Two limits, as in DOMjudge. The SOFT limit (``time_limit_ms`` x
+    ``time_factor``) decides the verdict and is compared against CPU time.
+    The HARD limit (soft + overshoot) is the wall-clock budget the process
+    is actually killed at, so a slight overrun still yields a measurable
+    runtime instead of a value pinned to the limit."""
     exe_path = os.path.join(workdir, "bin")
     src_path = os.path.join(workdir, _guess_language_filename(language_id))
     cmd = _expand(run_cmd, src=src_path, exe=exe_path, workdir=workdir)
-    wall = max(0.1, (time_limit_ms / 1000.0) * max(1.0, time_factor))
-    rc, out, err, elapsed_ms = _run_shell(
-        cmd, cwd=workdir, stdin=stdin, timeout_s=wall, memory_mb=memory_limit_mb,
+    soft = max(0.1, (time_limit_ms / 1000.0) * max(1.0, time_factor))
+    hard = hard_limit_s(soft)
+    rc, out, err, elapsed_ms, cpu_ms = _run_shell(
+        cmd, cwd=workdir, stdin=stdin, timeout_s=hard, memory_mb=memory_limit_mb,
     )
     # rc in TIMEOUT_RCS covers both the subprocess wall-kill (-9) and the
-    # container's coreutils ``timeout`` (124/137). The elapsed>limit fallback
-    # is only trustworthy for the subprocess path - in docker mode container
-    # startup jitter inflates elapsed_ms, so we rely on the rc there.
-    if rc in icpc_sandbox.TIMEOUT_RCS or (not _use_docker() and elapsed_ms > int(time_limit_ms * time_factor)):
-        return RunResult(verdict=TLE, runtime_ms=elapsed_ms, stderr=err[:1000])
+    # container's coreutils ``timeout`` (124/137): the hard wall limit was
+    # blown, which is a TLE whatever the CPU says (this is what catches a
+    # program that sleeps or blocks on I/O rather than burning CPU).
+    if rc in icpc_sandbox.TIMEOUT_RCS:
+        return RunResult(
+            verdict=TLE, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=err[:1000],
+        )
+    # Otherwise the process finished within the hard budget; the soft limit
+    # decides. Measured on CPU time when we have it, which is what stops
+    # container/interpreter startup from being charged to the contestant.
+    soft_ms = int(soft * 1000)
+    if _verdict_time_ms(cpu_ms, elapsed_ms) > soft_ms:
+        return RunResult(
+            verdict=TLE, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=err[:1000],
+        )
     # Linux OOM killers show up as various signals; treat any non-zero exit
     # other than the exact RLIMIT_AS OOM (often 137 / -9) as RE. Memory-kill
     # patterns in stderr bump us to MLE.
     if rc != 0:
         if re.search(r"MemoryError|std::bad_alloc|out of memory", err, re.IGNORECASE):
-            return RunResult(verdict=MLE, runtime_ms=elapsed_ms, stderr=err[:1000])
-        return RunResult(verdict=RE, runtime_ms=elapsed_ms, stderr=err[:1000])
-    return RunResult(verdict=AC, runtime_ms=elapsed_ms, stdout=out, stderr=err[:1000])
+            return RunResult(
+                verdict=MLE, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=err[:1000],
+            )
+        return RunResult(
+            verdict=RE, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=err[:1000],
+        )
+    return RunResult(
+        verdict=AC, runtime_ms=elapsed_ms, cpu_ms=cpu_ms,
+        stdout=out, stderr=err[:1000],
+    )
 
 
 # ── Custom output validators (Kattis interface) ─────────────────────────────
@@ -396,9 +525,10 @@ def _run_custom_checker(
     with open(ans_path, "w", encoding="utf-8") as f:
         f.write(expected_output or "")
     cmd = f'{run_cmd_str} "{in_path}" "{ans_path}" "{feedback_dir}"'
-    rc, _out, err, _ms = _run_shell(
+    # The validator's own CPU time is the judge's cost, never the team's.
+    rc, _out, err, _ms, _cpu = _run_shell(
         cmd, cwd=chk_workdir, stdin=team_output or "",
-        timeout_s=60, memory_mb=1024,
+        timeout_s=60, memory_mb=1024, measure_cpu=False,
     )
     if rc in (42, 0):
         return True, None
@@ -564,7 +694,13 @@ def _run_interactive(
     src_path = os.path.join(workdir, _guess_language_filename(language_id))
     exe_path = os.path.join(workdir, "bin")
     user_cmd = _expand(run_cmd, src=src_path, exe=exe_path, workdir=workdir)
-    wall = max(0.2, (time_limit_ms / 1000.0) * max(1.0, time_factor))
+    # Interactive problems get the same soft/hard split, but only the hard
+    # limit is actionable here: the clock covers the user program AND the
+    # interactor talking to each other, so there is no per-process CPU
+    # figure worth charging to the contestant. cpu_ms stays None and the
+    # verdict comes from the interactor's exit code (or the kill).
+    soft = max(0.2, (time_limit_ms / 1000.0) * max(1.0, time_factor))
+    wall = hard_limit_s(soft)
     docker = _use_docker()
     pybin = "python3" if docker else (_sys.executable or "python3")
 
@@ -637,10 +773,13 @@ def _run_interactive(
         # A touch more container memory than the user's cap: the interactor +
         # python runtime share the cgroup, while the user's precise RLIMIT_AS
         # is applied per-process by the orchestrator's preexec.
-        rc, _out, err, elapsed_ms = icpc_sandbox.run_in_container(
+        # measure_cpu=False: the ``times`` capture would sum the user program
+        # and the interactor, which is not a number we can attribute.
+        rc, _out, err, elapsed_ms, _cpu = icpc_sandbox.run_in_container(
             cmd, workdir=workdir, stdin=None, timeout_s=wall + 2,
             memory_mb=memory_limit_mb + 256,
             cpus=os.environ.get("SCORING_CPUS", "1.0"),
+            measure_cpu=False,
         )
         if rc in icpc_sandbox.TIMEOUT_RCS:
             return RunResult(verdict=TLE, runtime_ms=elapsed_ms, stderr=(err or "")[:1000])
@@ -907,6 +1046,7 @@ def judge(
                         if not passed:
                             res = RunResult(
                                 verdict=WA, runtime_ms=res.runtime_ms,
+                                cpu_ms=res.cpu_ms,
                                 stdout=res.stdout, stderr=res.stderr,
                             )
                     else:
@@ -914,6 +1054,7 @@ def judge(
                         if not passed:
                             res = RunResult(
                                 verdict=WA, runtime_ms=res.runtime_ms,
+                                cpu_ms=res.cpu_ms,
                                 stdout=res.stdout, stderr=res.stderr,
                             )
             runs.append((tc_id, res, passed))

@@ -947,6 +947,31 @@ async def submit_icpc(
 
 # ── Judging polling ───────────────────────────────────────────────────────────
 
+def _effective_limit(db: Session, sub: models.Submission) -> tuple[Optional[int], Optional[float]]:
+    """``(soft_limit_ms, time_factor)`` actually applied to this submission.
+
+    The judge multiplies the problem's ``time_limit_ms`` by the language's
+    ``time_factor`` (Python x3, Java x2 by default), exactly as DOMjudge
+    does. Surfacing it stops the UI from advertising a bare "1.0 s" next to
+    an accepted 1500 ms Python run. Returns ``(None, None)`` when either
+    side is missing rather than guessing."""
+    if not sub.problem_id or not sub.source_language:
+        return None, None
+    problem = (
+        db.query(models.Problem)
+        .filter(models.Problem.id == sub.problem_id)
+        .first()
+    )
+    lang = (
+        db.query(models.Language)
+        .filter(models.Language.id == sub.source_language)
+        .first()
+    )
+    if not problem or not lang:
+        return None, None
+    factor = max(1.0, float(lang.time_factor or 1.0))
+    return int(problem.time_limit_ms * factor), factor
+
 @router.get("/submissions/{submission_id}/judging", response_model=schemas.JudgingOut)
 def get_judging(
     submission_id: int,
@@ -984,11 +1009,13 @@ def get_judging(
         schemas.TestcaseOutline(id=tc.id, rank=tc.rank or 0, is_sample=bool(tc.is_sample))
         for tc in all_tcs
     ]
+    eff_ms, factor = _effective_limit(db, s)
     if not j:
         # No judging yet - the worker may not have picked the job up.
         return schemas.JudgingOut(
             id=0, submission_id=submission_id, verdict="pending", runs=[],
             all_testcases=all_testcases,
+            time_limit_effective_ms=eff_ms, language_time_factor=factor,
         )
     tc_map = {tc.id: tc for tc in all_tcs}
     # Per-testcase stdout/stderr reveals what the team's binary produced
@@ -1004,7 +1031,7 @@ def get_judging(
         allow_output = is_sample or bool(user.is_admin)
         runs.append(schemas.JudgingRunOut(
             testcase_id=r.testcase_id, verdict=r.verdict,
-            runtime_ms=r.runtime_ms,
+            runtime_ms=r.runtime_ms, cpu_ms=r.cpu_ms,
             is_sample=is_sample,
             stdout_truncated=r.stdout_truncated if allow_output else None,
             stderr_truncated=r.stderr_truncated if allow_output else None,
@@ -1012,6 +1039,8 @@ def get_judging(
     return schemas.JudgingOut(
         id=j.id, submission_id=submission_id, verdict=j.verdict,
         max_runtime_ms=j.max_runtime_ms,
+        max_cpu_ms=j.max_cpu_ms,
+        time_limit_effective_ms=eff_ms, language_time_factor=factor,
         compile_output=j.compile_output,
         judged_at=j.judged_at,
         runs=runs,
@@ -2025,14 +2054,17 @@ def override_judging(
         .all()
     ) if sub.problem_id else []
     tc_by_id = {tc.id: tc for tc in all_tcs}
+    eff_ms, factor = _effective_limit(db, sub)
     return schemas.JudgingOut(
         id=j.id, submission_id=j.submission_id, verdict=j.verdict,
-        max_runtime_ms=j.max_runtime_ms, compile_output=j.compile_output,
+        max_runtime_ms=j.max_runtime_ms, max_cpu_ms=j.max_cpu_ms,
+        time_limit_effective_ms=eff_ms, language_time_factor=factor,
+        compile_output=j.compile_output,
         judged_at=j.judged_at,
         runs=[
             schemas.JudgingRunOut(
                 testcase_id=r.testcase_id, verdict=r.verdict,
-                runtime_ms=r.runtime_ms,
+                runtime_ms=r.runtime_ms, cpu_ms=r.cpu_ms,
                 is_sample=bool(tc_by_id.get(r.testcase_id).is_sample) if r.testcase_id in tc_by_id else False,
                 stdout_truncated=r.stdout_truncated,
                 stderr_truncated=r.stderr_truncated,

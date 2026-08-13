@@ -89,7 +89,12 @@
     "clarToggleVisibilityHint": "Basculer entre publique (visible par toutes les équipes) et privée (seulement par l'équipe émettrice).",
     "toastClarUpdated": "Clarification mise à jour",
     "toastClarDeleted": "Clarification supprimée",
-    "confirmDeleteClar": "Supprimer cette clarification ?"
+    "confirmDeleteClar": "Supprimer cette clarification ?",
+    "effectiveLimit": "Limite effective : {{eff}} s ({{time}} s x{{factor}} pour {{lang}})",
+    "maxCpu": "max {{ms}} ms CPU",
+    "judgedAgainst": "jugé sur {{eff}} s",
+    "cpuVsWallHint": "Le temps CPU est celui sur lequel le verdict est décidé. Le temps écoulé inclut le démarrage de l'interpréteur et du conteneur, il est toujours plus grand.",
+    "factorHint": "Limite du problème multipliée par le facteur x{{factor}} du langage."
   },
   "judging": {
     "title": "Détail du jugement",
@@ -101,7 +106,8 @@
     "colOutput": "Sortie",
     "noRuns": "Aucun test n'a encore été exécuté.",
     "showOutput": "Afficher la sortie",
-    "hideOutput": "Masquer la sortie"
+    "hideOutput": "Masquer la sortie",
+    "colCpu": "CPU"
   },
   "icpcScoreboard": {
     "openStatement": "Ouvrir l'énoncé (PDF)",
@@ -284,7 +290,9 @@
     "pdfNotPdf": "Le fichier doit être un PDF",
     "pdfUploadFailed": "Échec du téléversement du PDF",
     "pdfOpenFailed": "Impossible d'ouvrir l'énoncé",
-    "pdfConfirmDelete": "Supprimer le PDF d'énoncé du problème {{label}} ({{name}}) ?"
+    "pdfConfirmDelete": "Supprimer le PDF d'énoncé du problème {{label}} ({{name}}) ?",
+    "timeFieldHint": "Limite de base, en millisecondes. Le juge la multiplie par le facteur du langage avant de trancher.",
+    "timeFieldNote": "x facteur du langage (Python x3, Java x2)"
   },
   "adminHints": {
     "heading": "Indices (admin)",

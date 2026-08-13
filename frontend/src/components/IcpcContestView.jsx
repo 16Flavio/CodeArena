@@ -36,6 +36,11 @@ const VERDICT_STYLE = {
 };
 
 
+// The number worth showing for a run: CPU time when the judge could measure
+// it (that's what the time limit is checked against), else the wall clock,
+// which also carries interpreter and container startup.
+const runMs = (r) => (r && r.cpu_ms != null ? r.cpu_ms : (r ? r.runtime_ms || 0 : 0));
+
 export default function IcpcContestView({ contest, canParticipate, selectedTeamId }) {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -79,6 +84,17 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
     () => problems.find((p) => p.id === activeProblemId) || null,
     [problems, activeProblemId],
   );
+
+  // The judge multiplies the problem's limit by the language's time_factor
+  // (Python x3, Java x2 by default), same as DOMjudge. Showing only the base
+  // limit made an accepted 1500 ms Python run look like a bug against a
+  // "1.0 s" problem, so surface the effective limit for the language the
+  // contestant has actually selected.
+  const activeLanguage = useMemo(
+    () => languages.find((l) => l.id === language) || null,
+    [languages, language],
+  );
+  const timeFactor = Math.max(1, Number(activeLanguage?.time_factor) || 1);
 
   const pollJudging = (sid) => {
     if (pollTimer.current) clearInterval(pollTimer.current);
@@ -278,6 +294,16 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                         {' · '}
                         {t('icpc.checker', { kind: activeProblem.checker_kind })}
                       </p>
+                      {timeFactor > 1 && activeLanguage && (
+                        <p className="text-xs text-accent-700 mt-0.5 dark:text-accent-400">
+                          {t('icpc.effectiveLimit', {
+                            eff: ((activeProblem.time_limit_ms * timeFactor) / 1000).toFixed(1),
+                            time: (activeProblem.time_limit_ms / 1000).toFixed(1),
+                            factor: timeFactor,
+                            lang: activeLanguage.display_name,
+                          })}
+                        </p>
+                      )}
                     </div>
                     {activeProblem.has_statement_pdf && (
                       <button
@@ -451,9 +477,30 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                           </>
                         )}
                       </span>
+                      {/* CPU time is what the limit was checked against;
+                          wall clock is shown next to it but carries
+                          interpreter + container startup. */}
+                      {currentJudging.max_cpu_ms ? (
+                        <span
+                          className="text-xs text-zinc-600 font-mono tabular-nums dark:text-zinc-300"
+                          title={t('icpc.cpuVsWallHint')}
+                        >
+                          {t('icpc.maxCpu', { ms: currentJudging.max_cpu_ms })}
+                        </span>
+                      ) : null}
                       {currentJudging.max_runtime_ms ? (
-                        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                        <span
+                          className="text-xs text-zinc-500 dark:text-zinc-400"
+                          title={t('icpc.cpuVsWallHint')}
+                        >
                           {t('icpc.maxRuntime', { ms: currentJudging.max_runtime_ms })}
+                        </span>
+                      ) : null}
+                      {currentJudging.time_limit_effective_ms ? (
+                        <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                          {t('icpc.judgedAgainst', {
+                            eff: (currentJudging.time_limit_effective_ms / 1000).toFixed(1),
+                          })}
                         </span>
                       ) : null}
                     </div>
@@ -516,8 +563,8 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                                     !run
                                       ? `${isSample ? 'sample' : 'secret'} #${n} · ${t('icpc.notEvaluated')}`
                                       : hasDetail
-                                        ? t('icpc.clickForDetail', { kind: isSample ? 'sample' : 'secret', n, ms: run.runtime_ms || 0 })
-                                        : `${isSample ? 'sample' : 'secret'} #${n} · ${run.runtime_ms || 0} ms`
+                                        ? t('icpc.clickForDetail', { kind: isSample ? 'sample' : 'secret', n, ms: runMs(run) })
+                                        : `${isSample ? 'sample' : 'secret'} #${n} · ${runMs(run)} ms`
                                   }
                                 >
                                   {n}: {run ? verdict : '?'}
@@ -544,7 +591,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                                       kind: r.is_sample ? t('icpc.sampleKind') : t('icpc.secretKind'),
                                       n: cellIdx + 1,
                                       verdict: r.verdict,
-                                      ms: r.runtime_ms || 0,
+                                      ms: runMs(r),
                                     })}
                                   </p>
                                 {showCompare ? (

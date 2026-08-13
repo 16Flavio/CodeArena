@@ -647,7 +647,12 @@ class TestcaseAdminIn(BaseModel):
 class JudgingRunOut(BaseModel):
     testcase_id: int
     verdict: str
+    # Wall clock (carries interpreter + container startup).
     runtime_ms: Optional[int] = None
+    # CPU time of the contestant process - the figure the time limit is
+    # actually checked against. None when unmeasurable (killed run,
+    # interactive problem, judging predating the measurement).
+    cpu_ms: Optional[int] = None
     is_sample: bool = False
     # First ~1 KB of the program's stdout + stderr on this testcase. Only
     # populated for the submitter / teammates / admin (same authz as the
@@ -671,6 +676,12 @@ class JudgingOut(BaseModel):
     submission_id: int
     verdict: str
     max_runtime_ms: Optional[int] = None
+    max_cpu_ms: Optional[int] = None
+    # Soft limit actually applied to this submission: the problem's
+    # time_limit_ms times the language's time_factor. Saves the UI from
+    # re-deriving it (and from showing "1.0 s" next to an accepted 1500 ms).
+    time_limit_effective_ms: Optional[int] = None
+    language_time_factor: Optional[float] = None
     compile_output: Optional[str] = None
     judged_at: Optional[datetime] = None
     runs: list[JudgingRunOut] = []

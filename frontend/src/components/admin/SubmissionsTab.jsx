@@ -446,8 +446,20 @@ export default function SubmissionsTab({ contests }) {
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   {t('admin.submissions.judgingMeta', {
                     when: judgingViewer.judging.judged_at ? new Date(judgingViewer.judging.judged_at).toLocaleString() : '-',
-                    ms: judgingViewer.judging.max_runtime_ms ?? '-',
+                    // CPU time when measured: that is what the limit was
+                    // checked against. Wall clock otherwise.
+                    ms: judgingViewer.judging.max_cpu_ms
+                      ?? judgingViewer.judging.max_runtime_ms
+                      ?? '-',
                   })}
+                  {judgingViewer.judging.time_limit_effective_ms ? (
+                    <>
+                      {' · '}
+                      {t('icpc.judgedAgainst', {
+                        eff: (judgingViewer.judging.time_limit_effective_ms / 1000).toFixed(1),
+                      })}
+                    </>
+                  ) : null}
                 </p>
                 {judgingViewer.judging.compile_output && (
                   <div>
@@ -484,7 +496,9 @@ export default function SubmissionsTab({ contests }) {
                             {r.verdict}
                           </span>
                           <span className="text-zinc-600 dark:text-zinc-400">
-                            #{i + 1} · {r.is_sample ? t('icpc.sampleKind') : t('icpc.secretKind')} · {r.runtime_ms || 0} ms
+                            #{i + 1} · {r.is_sample ? t('icpc.sampleKind') : t('icpc.secretKind')}
+                            {' · '}
+                            {r.cpu_ms != null ? `${r.cpu_ms} ms CPU` : `${r.runtime_ms || 0} ms`}
                           </span>
                         </summary>
                         {r.stderr_truncated && (

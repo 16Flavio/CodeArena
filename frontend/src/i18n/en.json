@@ -89,7 +89,12 @@
     "clarToggleVisibilityHint": "Toggle between public (visible to all teams) and private (only the asking team).",
     "toastClarUpdated": "Clarification updated",
     "toastClarDeleted": "Clarification deleted",
-    "confirmDeleteClar": "Delete this clarification?"
+    "confirmDeleteClar": "Delete this clarification?",
+    "effectiveLimit": "Effective limit: {{eff}} s ({{time}} s x{{factor}} for {{lang}})",
+    "maxCpu": "max {{ms}} ms CPU",
+    "judgedAgainst": "judged against {{eff}} s",
+    "cpuVsWallHint": "CPU time is what the verdict is decided on. Elapsed time includes interpreter and container startup, so it is always larger.",
+    "factorHint": "Problem limit multiplied by the language's x{{factor}} factor."
   },
   "judging": {
     "title": "Judging detail",
@@ -101,7 +106,8 @@
     "colOutput": "Output",
     "noRuns": "No testcase has been run yet.",
     "showOutput": "Show output",
-    "hideOutput": "Hide output"
+    "hideOutput": "Hide output",
+    "colCpu": "CPU"
   },
   "icpcScoreboard": {
     "openStatement": "Open the statement (PDF)",
@@ -284,7 +290,9 @@
     "pdfNotPdf": "File must be a PDF",
     "pdfUploadFailed": "Failed to upload the PDF",
     "pdfOpenFailed": "Failed to open the statement",
-    "pdfConfirmDelete": "Remove the statement PDF for problem {{label}} ({{name}})?"
+    "pdfConfirmDelete": "Remove the statement PDF for problem {{label}} ({{name}})?",
+    "timeFieldHint": "Base limit, in milliseconds. The judge multiplies it by the language factor before deciding.",
+    "timeFieldNote": "x language factor (Python x3, Java x2)"
   },
   "adminHints": {
     "heading": "Hints (admin)",

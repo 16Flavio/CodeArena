@@ -40,6 +40,11 @@ services:
       SCORING_WORKDIR: ${JUDGE_WORKDIR:-/judge-work}
       SCORING_MEMORY_MB: ${SCORING_MEMORY_MB:-256}
       SCORING_CPUS: ${SCORING_CPUS:-0.5}
+      # How far past the soft time limit a submission may run before being
+      # killed (DOMjudge's timelimit_overshoot syntax: absolute|relative).
+      # The verdict is still decided on the soft limit; the margin only
+      # exists so an overrun reports a real runtime instead of the limit.
+      SCORING_TIMELIMIT_OVERSHOOT: ${SCORING_TIMELIMIT_OVERSHOOT:-1s|10%}
       # Composed URL uses the postgres service below. Override DATABASE_URL
       # in .env if you want to point at an external DB instead.
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-codearena}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-codearena}}
@@ -200,6 +205,18 @@ services:
       SCORING_WORKDIR: ${JUDGE_WORKDIR:-/judge-work}
       SCORING_MEMORY_MB: ${SCORING_MEMORY_MB:-256}
       SCORING_CPUS: ${SCORING_CPUS:-0.5}
+      SCORING_TIMELIMIT_OVERSHOOT: ${SCORING_TIMELIMIT_OVERSHOOT:-1s|10%}
+      # Cores the sandbox containers are pinned to (docker --cpuset-cpus).
+      # Unset = no pinning. Set this when you run more than one worker: two
+      # judgings sharing a core inflate each other's wall clock, and the
+      # anti-idle hard limit is wall-based. DOMjudge does the same with one
+      # judgedaemon per core (``judgedaemon -n <core>``).
+      #
+      # NOTE: with replicas > 1 every worker inherits the same value, so all
+      # replicas would share one core. For true per-core isolation, declare
+      # the workers as separate services with their own SCORING_CPUSET
+      # (worker-0 -> "2", worker-1 -> "3", ...) instead of using replicas.
+      SCORING_CPUSET: ${SCORING_CPUSET:-}
     volumes:
       - ${UPLOADS_DIR:-./uploads}:/app/backend/uploads
       - /var/run/docker.sock:/var/run/docker.sock
