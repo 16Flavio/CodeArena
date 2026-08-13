@@ -177,6 +177,44 @@ def build_docker_argv(
 # Return codes that mean "the timeout wrapper killed it".
 TIMEOUT_RCS = frozenset({124, 137, -9})
 
+# ``docker run`` itself failing, as opposed to the contained command failing.
+# 125 is docker's own reserved code (unknown flag, missing image, unreachable
+# daemon). The distinction matters: without it a missing sandbox image makes
+# every submission come back as a contestant Runtime Error, with nothing
+# saying the fault is the platform's.
+DOCKER_CLI_RC = 125
+_DOCKER_ERROR_PATTERNS = (
+    "Unable to find image",
+    "pull access denied",
+    "Error response from daemon",
+    # Both wordings occur in the wild: the classic "Cannot connect to the
+    # Docker daemon at unix://..." and, on newer clients, "failed to connect
+    # to the docker API at npipe://...".
+    "Cannot connect to the Docker daemon",
+    "connect to the docker API",
+    "no such image",
+    "manifest unknown",
+    "executable file not found",
+    "docker: command not found",
+)
+
+
+def docker_infra_error(rc: int, stderr: str) -> Optional[str]:
+    """Message describing a docker-level failure, or None if ``rc``/``stderr``
+    look like an ordinary failure of the contained program.
+
+    Only meaningful for the containerised path. Matching on the message as
+    well as the exit code because docker occasionally surfaces a daemon error
+    through a different code, and a false negative here is a contestant
+    wrongly blamed for the platform's outage."""
+    text = stderr or ""
+    if rc == DOCKER_CLI_RC:
+        return (text.strip() or f"docker exited {DOCKER_CLI_RC}")[:800]
+    for pat in _DOCKER_ERROR_PATTERNS:
+        if pat.lower() in text.lower():
+            return text.strip()[:800]
+    return None
+
 
 def run_in_container(
     cmd: str,

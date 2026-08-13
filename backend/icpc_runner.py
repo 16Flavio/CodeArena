@@ -147,6 +147,49 @@ def _check_tokens(team_out: str, expected: str) -> bool:
     return (team_out or "").split() == (expected or "").split()
 
 
+# Output normalisation + hashing, shared VERBATIM with the in-container batch
+# orchestrator. It is a source string rather than a function so both sides run
+# byte-identical code: the orchestrator embeds it, and this module execs it.
+# A divergence would mean the container calls a submission wrong (or right)
+# on a testcase the host would have judged the other way.
+#
+# Why hashes at all: the batch orchestrator needs to know whether a testcase
+# passed, so it can stop at the first failure the way the per-testcase path
+# does. It must NOT be given the expected outputs to do that - the
+# contestant's program runs in that same container and could just read them
+# off the filesystem and print them back. A SHA-256 of the normalised
+# expected output is enough to compare against and gives nothing away.
+_NORMALISE_SNIPPET = r'''
+import hashlib as _hashlib
+
+
+def _norm_diff(s):
+    lines = [ln.rstrip() for ln in (s or "").splitlines()]
+    while lines and not lines[-1]:
+        lines.pop()
+    return "\n".join(lines)
+
+
+def _norm_tokens(s):
+    # NUL-joined: "a b" and "ab" must not collide the way "".join would.
+    return "\x00".join((s or "").split())
+
+
+def _digest(kind, s):
+    text = _norm_diff(s) if kind == "diff" else _norm_tokens(s)
+    return _hashlib.sha256(text.encode("utf-8", "surrogateescape")).hexdigest()
+'''
+
+_NORM_NS: dict = {}
+exec(_NORMALISE_SNIPPET, _NORM_NS)  # noqa: S102 - our own constant, not input
+_digest = _NORM_NS["_digest"]
+
+# Checkers whose verdict is an exact match after normalisation, and can
+# therefore be decided from a hash. ``float`` needs the actual numbers for its
+# tolerance and ``custom`` runs a script, so both keep host-side checking.
+HASHABLE_CHECKERS = frozenset({"tokens", "diff"})
+
+
 def _check_float(team_out: str, expected: str, epsilon: float) -> bool:
     a = (team_out or "").split()
     b = (expected or "").split()
@@ -274,6 +317,14 @@ def _python_bin() -> str:
         return "python3"
     import sys as _sys
     return _sys.executable or "python3"
+
+
+def _infra_error(rc: int, stderr: str) -> Optional[str]:
+    """Docker-level failure message, or None. Always None outside docker mode:
+    on the host path a non-zero exit really is the contestant's program."""
+    if not _use_docker():
+        return None
+    return icpc_sandbox.docker_infra_error(rc, stderr)
 
 
 def _child_cpu_ms() -> Optional[int]:
@@ -436,6 +487,13 @@ def compile_source(language_id: str, compile_cmd: str, source_code: str, *, work
         measure_cpu=False,
     )
     if rc != 0:
+        # A docker-level failure is the platform's fault, not the source's.
+        # Reporting it as CE would tell the contestant their code doesn't
+        # compile and hand them the daemon's error message as "compiler
+        # output".
+        infra = _infra_error(rc, err)
+        if infra:
+            return RunResult(verdict=IE, compile_output=infra)
         msg = (err or "") + ("\n" + out if out else "")
         return RunResult(verdict=CE, compile_output=msg[:4000].strip() or "compile failed")
     return RunResult(verdict=AC, compile_output=(out or "")[:2000])
@@ -466,10 +524,34 @@ def run_against_testcase(
     rc, out, err, elapsed_ms, cpu_ms = _run_shell(
         cmd, cwd=workdir, stdin=stdin, timeout_s=hard, memory_mb=memory_limit_mb,
     )
-    # rc in TIMEOUT_RCS covers both the subprocess wall-kill (-9) and the
-    # container's coreutils ``timeout`` (124/137): the hard wall limit was
-    # blown, which is a TLE whatever the CPU says (this is what catches a
-    # program that sleeps or blocks on I/O rather than burning CPU).
+    return verdict_from_run(
+        rc=rc, stdout=out, stderr=err, elapsed_ms=elapsed_ms, cpu_ms=cpu_ms,
+        soft_ms=int(soft * 1000), check_infra=True,
+    )
+
+
+def verdict_from_run(
+    *,
+    rc: int,
+    stdout: str,
+    stderr: str,
+    elapsed_ms: int,
+    cpu_ms: Optional[int],
+    soft_ms: int,
+    check_infra: bool = True,
+) -> RunResult:
+    """Turn one raw execution into a verdict.
+
+    Shared by the per-testcase path and the batch orchestrator so the two can
+    never drift on what counts as TLE / MLE / RE. ``check_infra`` is off for
+    batch results: there the docker-level check happens once, around the
+    single container, not per testcase."""
+    err = stderr or ""
+    # rc in TIMEOUT_RCS covers the subprocess wall-kill (-9), the container's
+    # coreutils ``timeout`` (124/137) and the orchestrator's own kill: the
+    # hard wall limit was blown, which is a TLE whatever the CPU says (this
+    # is what catches a program that sleeps or blocks on I/O rather than
+    # burning CPU).
     if rc in icpc_sandbox.TIMEOUT_RCS:
         return RunResult(
             verdict=TLE, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=err[:1000],
@@ -477,7 +559,6 @@ def run_against_testcase(
     # Otherwise the process finished within the hard budget; the soft limit
     # decides. Measured on CPU time when we have it, which is what stops
     # container/interpreter startup from being charged to the contestant.
-    soft_ms = int(soft * 1000)
     if _verdict_time_ms(cpu_ms, elapsed_ms) > soft_ms:
         return RunResult(
             verdict=TLE, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=err[:1000],
@@ -486,6 +567,13 @@ def run_against_testcase(
     # other than the exact RLIMIT_AS OOM (often 137 / -9) as RE. Memory-kill
     # patterns in stderr bump us to MLE.
     if rc != 0:
+        # ...unless docker itself failed, in which case blaming the
+        # contestant for a Runtime Error would be plain wrong.
+        infra = _infra_error(rc, err) if check_infra else None
+        if infra:
+            return RunResult(
+                verdict=IE, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=infra,
+            )
         if re.search(r"MemoryError|std::bad_alloc|out of memory", err, re.IGNORECASE):
             return RunResult(
                 verdict=MLE, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=err[:1000],
@@ -495,7 +583,7 @@ def run_against_testcase(
         )
     return RunResult(
         verdict=AC, runtime_ms=elapsed_ms, cpu_ms=cpu_ms,
-        stdout=out, stderr=err[:1000],
+        stdout=stdout, stderr=err[:1000],
     )
 
 
@@ -877,6 +965,307 @@ def _run_interactive(
     return RunResult(verdict=RE, runtime_ms=elapsed_ms, stderr=(inter_err or user_err))
 
 
+# ── Batch judging: one container for the whole submission ────────────────────
+#
+# The containerised path used to spawn one ``docker run`` per testcase. On a
+# real judgehost that costs ~370 ms each, so a 20-testcase problem spent over
+# 7 s creating and tearing down containers to do ~0.1 s of actual work.
+#
+# DOMjudge does not pay this: it mounts its prebuilt chroot ONCE per
+# submission (judgedaemon.main.php gates the chroot script on
+# `$lastWorkdir !== $workdir`), compiles once, and then each testcase is just
+# a fork+exec of runguard into the already-mounted tree, with its own
+# directory `$workdir/testcase%05d`. Isolation between testcases comes from
+# the fresh directory, not from tearing the sandbox down.
+#
+# This mirrors that: one container per submission, one directory per testcase.
+# The orchestrator below is the batch sibling of _INTERACTIVE_ORCHESTRATOR,
+# which already runs contestant code from inside the container.
+_BATCH_ORCHESTRATOR = r'''
+import json, os, subprocess, sys, time
+
+# Always present in the sandbox image (Linux). Guarded only so the script can
+# be executed, and therefore tested, off-POSIX - this is the riskiest piece of
+# the judging path and a test that never runs it would be worth little.
+try:
+    import resource
+except ImportError:
+    resource = None
+
+__NORMALISE__
+
+# Everything arrives on stdin, never through a file in the bind-mounted
+# workdir: the contestant's program runs in this same container and can read
+# any path in it. That matters for two things it must not see.
+#
+#   * the expected-output hashes. A hash gives nothing away for a free-form
+#     answer, but on a problem whose output is "YES"/"NO" or a small integer
+#     a submission could read the hashes and simply try candidates until one
+#     matches, solving every testcase without solving the problem.
+#   * the other testcases' inputs. Only the one being run is written to disk,
+#     and it is deleted immediately afterwards, so at no point can a program
+#     read the inputs it has not been given yet.
+#
+# Line-framed: a header, then one JSON-encoded input string per testcase,
+# read lazily just before that testcase runs so only one is ever in memory.
+_stdin = sys.stdin
+p = json.loads(_stdin.readline())
+argv = p["argv"]
+base = p["base"]
+mem_mb = int(p.get("mem_mb") or 0)
+hard_s = float(p["hard_s"])
+cap = int(p["max_output_bytes"])
+stop_on_fail = bool(p.get("stop_on_fail"))
+hash_kind = p.get("hash_kind")
+
+
+def _limits():  # runs in the forked child, before exec
+    if resource is None:
+        return
+    if mem_mb:
+        b = mem_mb * 1024 * 1024
+        try:
+            resource.setrlimit(resource.RLIMIT_AS, (b, b))
+        except Exception:
+            pass
+    try:
+        resource.setrlimit(resource.RLIMIT_NPROC, (256, 256))
+    except Exception:
+        pass
+    try:
+        f = 256 * 1024 * 1024
+        resource.setrlimit(resource.RLIMIT_FSIZE, (f, f))
+    except Exception:
+        pass
+
+
+def _cpu_ms():
+    # Children are spawned strictly one at a time here, so the delta across a
+    # single run is exactly that run's CPU - more precise than the whole-
+    # container `times` capture the per-testcase path has to settle for.
+    if resource is None:
+        return None
+    r = resource.getrusage(resource.RUSAGE_CHILDREN)
+    return int((r.ru_utime + r.ru_stime) * 1000)
+
+
+results = []
+for tc in p["testcases"]:
+    # A directory of its own, as DOMjudge gives each testcase. Anything the
+    # program writes relative to cwd stays out of the next testcase's way.
+    d = os.path.join(base, tc["dir"])
+    inp_path = os.path.join(d, "input.txt")
+    try:
+        os.makedirs(d, exist_ok=True)
+        with open(inp_path, "w", encoding="utf-8", newline="") as fh:
+            fh.write(json.loads(_stdin.readline()))
+    except Exception as e:
+        # Environment failure, not the submission's doing. Flagged so the
+        # host reports IE rather than pinning a Runtime Error on the team.
+        results.append({"id": tc["id"], "rc": 127, "wall_ms": 0, "cpu_ms": None,
+                        "stdout": "", "stderr": "orchestrator: %r" % (e,),
+                        "orchestrator_error": True})
+        break
+    before = _cpu_ms()
+    t0 = time.monotonic()
+    out, err, rc = b"", b"", 0
+    try:
+        with open(inp_path, "rb") as fh:
+            proc = subprocess.Popen(
+                argv, stdin=fh, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                cwd=d, close_fds=True,
+                # preexec_fn is POSIX-only and rejected outright elsewhere.
+                preexec_fn=(_limits if resource is not None else None),
+            )
+            try:
+                out, err = proc.communicate(timeout=hard_s)
+                rc = proc.returncode
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                try:
+                    out, err = proc.communicate(timeout=5)
+                except Exception:
+                    out, err = b"", b""
+                rc = 124  # same code coreutils timeout uses
+    except Exception as e:
+        rc, err = 127, ("orchestrator: %r" % (e,)).encode()
+    wall_ms = int((time.monotonic() - t0) * 1000)
+    after = _cpu_ms()
+    cpu_ms = None if (before is None or after is None) else max(0, after - before)
+    # Gone before the next program starts, so a submission can never read an
+    # input other than its own.
+    try:
+        os.unlink(inp_path)
+    except OSError:
+        pass
+
+    over_limit = len(out) > cap
+    text = out[:cap].decode("utf-8", "replace")
+    r = {
+        "id": tc["id"], "rc": rc, "wall_ms": wall_ms, "cpu_ms": cpu_ms,
+        "stderr": err[:1000].decode("utf-8", "replace"),
+    }
+    if over_limit:
+        # Truncating and then hashing would turn a correct-but-enormous
+        # output into a silent WA. Call it what it is, as DOMjudge does with
+        # its output limit.
+        r["passed"] = False
+        r["stdout"] = text[:4096]
+        r["stderr"] = ("output limit exceeded (%d bytes)\n" % len(out)) + r["stderr"]
+        results.append(r)
+        if stop_on_fail:
+            break
+        continue
+    if rc == 0 and hash_kind:
+        # Decide pass/fail in here so we can stop at the first failure. Only
+        # the hash of the expected output was ever sent in.
+        r["passed"] = (_digest(hash_kind, text) == tc["hash"])
+        # The host still wants a sample of stdout for the UI, but not the
+        # whole thing - it has no checking left to do.
+        r["stdout"] = text[:4096]
+    else:
+        # float / custom checkers: the host needs the real output.
+        r["stdout"] = text
+    results.append(r)
+    if stop_on_fail and (rc != 0 or r.get("passed") is False):
+        break
+
+with open(os.path.join(base, "batch_results.json"), "w") as fh:
+    json.dump({"results": results}, fh)
+'''.replace("__NORMALISE__", _NORMALISE_SNIPPET)
+
+
+# Per-testcase stdout we are willing to carry back. The per-testcase path is
+# bounded only by the pipe; here everything lands in one JSON file, so a
+# runaway printer could otherwise eat the workdir.
+BATCH_MAX_OUTPUT_BYTES = 32 * 1024 * 1024
+
+
+def _run_batch_in_container(
+    *,
+    argv_cmd: str,
+    workdir: str,
+    testcases: list[tuple[int, str, str]],
+    soft_s: float,
+    hard_s: float,
+    memory_limit_mb: int,
+    checker_kind: str,
+    stop_on_fail: bool,
+) -> tuple[Optional[str], list[tuple[int, RunResult, Optional[bool]]]]:
+    """Run every testcase inside ONE container.
+
+    Returns ``(infra_error, results)``. Each result is
+    ``(testcase_id, RunResult, passed)`` where ``passed`` is None when the
+    orchestrator could not decide it (float / custom checkers) and the caller
+    must still run its own checker over ``RunResult.stdout``."""
+    import json as _json
+
+    hash_kind = (checker_kind or "tokens").lower()
+    hash_kind = hash_kind if hash_kind in HASHABLE_CHECKERS else None
+
+    payload_tcs = []
+    for idx, (tc_id, _stdin, expected) in enumerate(testcases):
+        d = "tc%05d" % idx
+        tc_dir = os.path.join(workdir, d)
+        os.makedirs(tc_dir, exist_ok=True)
+        try:
+            os.chmod(tc_dir, 0o777)  # the sandbox uid writes its cwd
+        except OSError:
+            pass
+        entry = {"id": tc_id, "dir": d}
+        if hash_kind:
+            entry["hash"] = _digest(hash_kind, expected or "")
+        payload_tcs.append(entry)
+
+    header = {
+        "argv": shlex.split(argv_cmd),
+        "base": workdir,
+        "mem_mb": memory_limit_mb,
+        "hard_s": hard_s,
+        "max_output_bytes": BATCH_MAX_OUTPUT_BYTES,
+        "stop_on_fail": stop_on_fail,
+        "hash_kind": hash_kind,
+        "testcases": payload_tcs,
+    }
+    # Header, then one JSON-encoded input per line. Handed to the
+    # orchestrator on stdin rather than written into the bind-mounted
+    # workdir: the contestant's program shares that filesystem, and the
+    # hashes (brute-forceable on a yes/no problem) plus the not-yet-run
+    # inputs have no business being readable from it.
+    stream = "\n".join(
+        [_json.dumps(header)] + [_json.dumps(s or "") for _i, s, _e in testcases]
+    ) + "\n"
+
+    orch = os.path.join(workdir, "_batch_orch.py")
+    res_path = os.path.join(workdir, "batch_results.json")
+    with open(orch, "w", encoding="utf-8") as f:
+        f.write(_BATCH_ORCHESTRATOR)
+    if os.path.exists(res_path):
+        os.unlink(res_path)
+
+    # One wall budget for the whole container: every testcase's hard limit,
+    # plus slack for interpreter startup. The orchestrator enforces the
+    # per-testcase limit itself; this is only the backstop for an
+    # orchestrator that wedges.
+    total = hard_s * len(testcases) + 15
+    cmd = f"{_python_bin()} {shlex.quote(orch)}"
+    rc, _out, err, _elapsed, _cpu = icpc_sandbox.run_in_container(
+        cmd, workdir=workdir, stdin=stream, timeout_s=total,
+        memory_mb=memory_limit_mb + 256,
+        cpus=os.environ.get("SCORING_CPUS", "1.0"),
+        measure_cpu=False,
+    )
+    infra = icpc_sandbox.docker_infra_error(rc, err or "")
+    if infra:
+        return infra, []
+
+    try:
+        with open(res_path, "r", encoding="utf-8") as f:
+            raw = _json.load(f)["results"]
+    except (OSError, ValueError, KeyError):
+        # No results file: the container died before writing one. Whatever
+        # happened, it is not a statement about the submission.
+        return (
+            "batch orchestrator produced no results"
+            + (f": {(err or '').strip()[:400]}" if err else ""),
+            [],
+        )
+
+    # A container that died halfway leaves a partial results file. Accepting
+    # it would report AC off an incomplete grid, which is the one failure
+    # mode of this design that could silently pass a wrong submission. The
+    # run is complete only if every testcase reported, or the last one that
+    # did was a failure the orchestrator legitimately stopped on.
+    complete = len(raw) == len(testcases)
+    if not complete and stop_on_fail and raw:
+        last = raw[-1]
+        complete = int(last.get("rc", 0)) != 0 or last.get("passed") is False
+    if not complete:
+        return (
+            f"batch judging stopped early: {len(raw)}/{len(testcases)} testcases "
+            "reported" + (f" ({(err or '').strip()[:300]})" if err else ""),
+            [],
+        )
+
+    soft_ms = int(soft_s * 1000)
+    out: list[tuple[int, RunResult, Optional[bool]]] = []
+    for r in raw:
+        if r.get("orchestrator_error"):
+            # The sandbox failed us, not the other way round.
+            return (r.get("stderr") or "orchestrator failure").strip(), []
+        res = verdict_from_run(
+            rc=int(r.get("rc", 0)),
+            stdout=r.get("stdout", ""),
+            stderr=r.get("stderr", ""),
+            elapsed_ms=int(r.get("wall_ms", 0)),
+            cpu_ms=r.get("cpu_ms"),
+            soft_ms=soft_ms,
+            check_infra=False,
+        )
+        out.append((int(r["id"]), res, r.get("passed")))
+    return None, out
+
+
 def judge(
     *,
     language_id: str,
@@ -929,6 +1318,10 @@ def judge(
             except OSError:
                 pass
         compile_res = compile_source(language_id, compile_cmd, source_code, workdir=workdir)
+        if compile_res.verdict == IE:
+            # Sandbox/daemon failure during compilation - a judge error, and
+            # the message is ours, never the contestant's source.
+            return IE, compile_res.compile_output, []
         if compile_res.verdict == CE:
             return CE, compile_res.compile_output, []
 
@@ -936,6 +1329,11 @@ def judge(
         overall = AC
         is_interactive = (checker_kind or "").lower() == "interactive" and interactor_script
         passes = max(1, int(num_passes or 1))
+        # The batch path gets results back keyed by testcase id, so it needs
+        # to look the input/expected pair back up. Last one wins on a
+        # duplicate id, matching the sequential loop's behaviour.
+        input_by_id = {tc_id: stdin for tc_id, stdin, _ in testcases}
+        expected_by_id = {tc_id: exp for tc_id, _, exp in testcases}
 
         # Prepare the interactor once per judge() call. Python interactors
         # re-use the inline wrapper (interactor_run_cmd_str=None); compiled
@@ -1001,6 +1399,62 @@ def judge(
                     src=chk_src, exe=chk_exe, workdir=chk_workdir,
                 )
 
+        # ── Fast path: one container for every testcase ──────────────────
+        # Only where the semantics are identical to the loop below:
+        #   * docker mode (the host path has no container cost to amortise);
+        #   * not interactive (that path has its own orchestrator);
+        #   * single pass (multi-pass feeds each run's stdout into the next,
+        #     which the orchestrator does not model).
+        is_subtasks = (scoring_mode or "icpc").lower() == "subtasks"
+        stop_on_fail = not is_subtasks and not run_all_testcases
+        if _use_docker() and not is_interactive and passes == 1 and testcases:
+            soft = max(0.1, (time_limit_ms / 1000.0) * max(1.0, time_factor))
+            infra, batch = _run_batch_in_container(
+                argv_cmd=_expand(
+                    run_cmd,
+                    src=os.path.join(workdir, _guess_language_filename(language_id)),
+                    exe=os.path.join(workdir, "bin"), workdir=workdir,
+                ),
+                workdir=workdir,
+                testcases=testcases,
+                soft_s=soft,
+                hard_s=hard_limit_s(soft),
+                memory_limit_mb=memory_limit_mb,
+                checker_kind=checker_kind or "tokens",
+                stop_on_fail=stop_on_fail,
+            )
+            if infra:
+                return IE, infra, []
+            for tc_id, res, pre_passed in batch:
+                expected = expected_by_id.get(tc_id, "")
+                stdin = input_by_id.get(tc_id, "")
+                passed = False
+                if res.verdict == AC:
+                    if pre_passed is not None:
+                        # The orchestrator already compared hashes.
+                        passed = bool(pre_passed)
+                    elif use_custom_checker and chk_run_cmd_str:
+                        passed, judge_err = _run_custom_checker(
+                            chk_run_cmd_str, chk_workdir=chk_workdir,
+                            testcase_input=stdin, expected_output=expected,
+                            team_output=res.stdout or "",
+                        )
+                        if judge_err is not None:
+                            return IE, judge_err, runs
+                    else:
+                        passed = check_output(
+                            res.stdout, expected, checker_kind, checker_epsilon,
+                        )
+                    if not passed:
+                        res = RunResult(
+                            verdict=WA, runtime_ms=res.runtime_ms, cpu_ms=res.cpu_ms,
+                            stdout=res.stdout, stderr=res.stderr,
+                        )
+                runs.append((tc_id, res, passed))
+                if res.verdict != AC and overall == AC:
+                    overall = res.verdict
+            return overall, compile_res.compile_output or None, runs
+
         for tc_id, stdin, expected in testcases:
             if is_interactive:
                 res = _run_interactive(
@@ -1057,6 +1511,13 @@ def judge(
                                 cpu_ms=res.cpu_ms,
                                 stdout=res.stdout, stderr=res.stderr,
                             )
+            # A sandbox/daemon failure aborts the whole judging: it says
+            # nothing about the submission, and continuing would fill the
+            # grid with meaningless verdicts. Subtask mode included - partial
+            # credit computed from a broken judge would be worse than none.
+            if res.verdict == IE:
+                return IE, (res.stderr or "sandbox failure").strip() or None, runs
+
             runs.append((tc_id, res, passed))
             if res.verdict != AC:
                 # For plain ICPC scoring we short-circuit on first non-AC -

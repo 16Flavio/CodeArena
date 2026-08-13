@@ -235,3 +235,108 @@ def test_isolation_flags_survive_cpu_pinning():
         assert flag in argv
     assert "no-new-privileges" in " ".join(argv)
     assert argv[argv.index("-u") + 1] == icpc_sandbox.SANDBOX_UID
+
+
+# ── Docker-level failures are judge errors, not contestant verdicts ──────────
+
+def _force_docker(monkeypatch):
+    """Pretend we are in docker mode with a reachable daemon."""
+    monkeypatch.setenv("SCORING_MODE", "docker")
+    monkeypatch.setattr(icpc_sandbox, "docker_available", lambda: True)
+    monkeypatch.setattr(icpc_runner, "_DOCKER_MODE", True)
+
+
+@pytest.mark.parametrize("rc,stderr", [
+    (125, "docker: Error response from daemon: pull access denied"),
+    (125, ""),
+    (1, "Unable to find image 'codearena-icpc-sandbox:latest' locally"),
+    (1, "Cannot connect to the Docker daemon at unix:///var/run/docker.sock"),
+])
+def test_docker_failure_is_ie_not_re(monkeypatch, rc, stderr):
+    """A missing sandbox image used to hand every contestant a Runtime Error,
+    with nothing anywhere saying the platform was at fault."""
+    _force_docker(monkeypatch)
+    _stub_run_shell(monkeypatch, rc=rc, elapsed_ms=40, cpu_ms=None)
+    monkeypatch.setattr(
+        icpc_runner, "_run_shell",
+        lambda cmd, **kw: (rc, "", stderr, 40, None),
+    )
+    res = _run(run_cmd="{exe}", time_factor=1.0)
+    assert res.verdict == "IE", "docker failing is not the submission's fault"
+    assert res.stderr
+
+
+def test_ordinary_nonzero_exit_is_still_re(monkeypatch):
+    """The contestant's own crash must keep being an RE, in docker mode too."""
+    _force_docker(monkeypatch)
+    monkeypatch.setattr(
+        icpc_runner, "_run_shell",
+        lambda cmd, **kw: (1, "", "Traceback: ZeroDivisionError", 40, 12),
+    )
+    assert _run(run_cmd="{exe}", time_factor=1.0).verdict == "RE"
+
+
+def test_subprocess_mode_never_reports_infra_errors(monkeypatch):
+    """Outside docker there is no daemon to blame - a non-zero exit really is
+    the program, even if its stderr happens to mention docker."""
+    monkeypatch.delenv("SCORING_MODE", raising=False)
+    monkeypatch.setattr(icpc_runner, "_DOCKER_MODE", None)
+    monkeypatch.setattr(
+        icpc_runner, "_run_shell",
+        lambda cmd, **kw: (125, "", "Error response from daemon", 40, 5),
+    )
+    assert _run(run_cmd="{exe}", time_factor=1.0).verdict == "RE"
+
+
+def test_infra_error_aborts_the_judging(monkeypatch):
+    """judge() must stop and return IE rather than filling the grid.
+
+    Stubbed at run_in_container rather than _run_shell: in docker mode a
+    single-pass batch problem now goes through the one-container path, which
+    calls the sandbox directly."""
+    _force_docker(monkeypatch)
+    monkeypatch.setattr(icpc_runner, "compile_source",
+                        lambda *a, **k: icpc_runner.RunResult(verdict="AC"))
+    monkeypatch.setattr(
+        icpc_sandbox, "run_in_container",
+        lambda cmd, **kw: (125, "", "docker: no such image", 10, None),
+    )
+    monkeypatch.setattr(
+        icpc_runner, "_run_shell",
+        lambda cmd, **kw: (125, "", "docker: no such image", 10, None),
+    )
+    verdict, output, runs = icpc_runner.judge(
+        language_id="cpp", compile_cmd="", run_cmd="{exe}", time_factor=1.0,
+        source_code="int main(){}", testcases=[(1, "", ""), (2, "", "")],
+        time_limit_ms=1000, memory_limit_mb=256,
+        checker_kind="tokens", checker_epsilon=None,
+    )
+    assert verdict == "IE"
+    assert "no such image" in (output or "")
+    assert runs == [], "no per-testcase verdict should be recorded"
+
+
+def test_compile_failure_from_docker_is_ie(monkeypatch):
+    """Same at compile time: the daemon's error must not be served to the
+    contestant as their compiler output."""
+    _force_docker(monkeypatch)
+    monkeypatch.setattr(
+        icpc_runner, "_run_shell",
+        lambda cmd, **kw: (125, "", "docker: Error response from daemon: x", 10, None),
+    )
+    res = icpc_runner.compile_source("cpp", "g++ -o {exe} {src}", "int main(){}",
+                                     workdir=".")
+    assert res.verdict == "IE"
+    assert "daemon" in res.compile_output
+
+
+def test_real_compile_error_is_still_ce(monkeypatch):
+    _force_docker(monkeypatch)
+    monkeypatch.setattr(
+        icpc_runner, "_run_shell",
+        lambda cmd, **kw: (1, "", "main.cpp:1:1: error: expected ';'", 10, None),
+    )
+    res = icpc_runner.compile_source("cpp", "g++ -o {exe} {src}", "int main(){}",
+                                     workdir=".")
+    assert res.verdict == "CE"
+    assert "expected ';'" in res.compile_output

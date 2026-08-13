@@ -94,10 +94,50 @@ workers as separate compose services, each with its own `SCORING_CPUSET`.
 On the host itself, disabling hyperthreading, CPU frequency scaling and
 Turbo Boost is what removes the remaining jitter.
 
+### One container per submission, not per testcase
+
+Measured on a real judgehost, starting a locked-down sandbox container costs
+~370 ms. Spawning one per testcase meant a 20-testcase problem spent over 7 s
+creating and destroying containers to do a fraction of a second of actual
+work - more than 95% overhead.
+
+The batch path runs the whole submission in a single container, with a
+dedicated working directory per testcase. This is DOMjudge's model: it mounts
+its prebuilt chroot once per submission and each testcase is a fork+exec into
+the already-mounted tree, isolated by its own directory rather than by
+tearing the sandbox down.
+
+Used only where the semantics are identical to the per-testcase loop:
+
+| Condition | Path |
+| --- | --- |
+| `SCORING_MODE=docker`, batch problem, single pass | one container |
+| `SCORING_MODE=subprocess` | per testcase (no container cost to amortise) |
+| Interactive problem | its own orchestrator, unchanged |
+| `num_passes > 1` | per testcase (each pass feeds the next) |
+
+Two things the orchestrator does that are worth knowing about:
+
+- **Nothing secret touches the workdir.** The contestant's program shares
+  that filesystem, so the testcase inputs and the expected-output hashes
+  arrive on the orchestrator's stdin. Only the testcase being run has its
+  input on disk, and it is deleted immediately afterwards.
+- **Short-circuiting is preserved via hashes.** Stopping at the first
+  failure requires knowing whether a testcase passed, and handing the
+  expected outputs to a process sharing a filesystem with the submission is
+  not an option. For `tokens` and `diff` the orchestrator instead compares a
+  SHA-256 of the normalised output. `float` and `custom` cannot be hashed
+  (tolerance, external script), so those run every testcase and the host
+  checks afterwards.
+
+A partial results file - container killed mid-run - is reported as `IE`, not
+as a verdict computed from an incomplete grid.
+
 **Caveats to validate in staging first** (`backend/icpc_sandbox.py`):
 - Container startup adds latency. It no longer inflates the judged time
-  (that is measured in CPU), but it does bound throughput - budget for it
-  when sizing workers.
+  (that is measured in CPU) and is now paid once per submission rather than
+  once per testcase, but it still bounds throughput - budget for it when
+  sizing workers.
 - The Docker socket mount grants root-equivalent on the host - run this on a
   single-tenant contest box only.
 - Compiled (non-Python) interactors write the expected-output file into the
