@@ -45,6 +45,9 @@ services:
       # The verdict is still decided on the soft limit; the margin only
       # exists so an overrun reports a real runtime instead of the limit.
       SCORING_TIMELIMIT_OVERSHOOT: ${SCORING_TIMELIMIT_OVERSHOOT:-1s|10%}
+      # Mirrored from the worker: with REDIS_URL unset the backend judges
+      # in-process, and that fallback should honour the same pinning.
+      SCORING_CPUSET: ${SCORING_CPUSET:-}
       # Composed URL uses the postgres service below. Override DATABASE_URL
       # in .env if you want to point at an external DB instead.
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-codearena}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-codearena}}
