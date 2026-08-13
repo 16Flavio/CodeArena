@@ -289,10 +289,18 @@ def test_subprocess_mode_never_reports_infra_errors(monkeypatch):
 
 
 def test_infra_error_aborts_the_judging(monkeypatch):
-    """judge() must stop and return IE rather than filling the grid."""
+    """judge() must stop and return IE rather than filling the grid.
+
+    Stubbed at run_in_container rather than _run_shell: in docker mode a
+    single-pass batch problem now goes through the one-container path, which
+    calls the sandbox directly."""
     _force_docker(monkeypatch)
     monkeypatch.setattr(icpc_runner, "compile_source",
                         lambda *a, **k: icpc_runner.RunResult(verdict="AC"))
+    monkeypatch.setattr(
+        icpc_sandbox, "run_in_container",
+        lambda cmd, **kw: (125, "", "docker: no such image", 10, None),
+    )
     monkeypatch.setattr(
         icpc_runner, "_run_shell",
         lambda cmd, **kw: (125, "", "docker: no such image", 10, None),

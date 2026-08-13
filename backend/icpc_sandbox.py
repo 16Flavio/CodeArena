@@ -187,10 +187,15 @@ _DOCKER_ERROR_PATTERNS = (
     "Unable to find image",
     "pull access denied",
     "Error response from daemon",
+    # Both wordings occur in the wild: the classic "Cannot connect to the
+    # Docker daemon at unix://..." and, on newer clients, "failed to connect
+    # to the docker API at npipe://...".
     "Cannot connect to the Docker daemon",
+    "connect to the docker API",
     "no such image",
     "manifest unknown",
     "executable file not found",
+    "docker: command not found",
 )
 
 
