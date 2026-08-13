@@ -120,7 +120,8 @@
     "wrongAttempts": "{{n}}",
     "firstToSolve": "First to solve 🎈",
     "frozenTooltip": "Attempts made after the freeze - verdict hidden.",
-    "empty": "No teams ranked yet."
+    "empty": "No teams ranked yet.",
+    "judgingTooltip": "{{n}} submission(s) being judged, no verdict yet"
   },
   "errors": {
     "invalidCredentials": "Invalid username or password",
@@ -432,7 +433,8 @@
     "collapseSidebar": "Collapse menu",
     "expandSidebar": "Expand menu",
     "account": "My account",
-    "primary": "Main navigation"
+    "primary": "Main navigation",
+    "contests": "Contests"
   },
   "accountModal": {
     "passwordTitle": "Change password",
@@ -860,7 +862,8 @@
     "loadFailed": "Could not load scoreboard",
     "loadFailedHeading": "Could not load scoreboard",
     "refreshed": "Scoreboard refreshed",
-    "refreshFailed": "Could not load scoreboard"
+    "refreshFailed": "Could not load scoreboard",
+    "judgingTooltip": "{{n}} submission(s) waiting to be scored"
   },
   "admin": {
     "title": "Admin panel",
@@ -1464,5 +1467,33 @@
     "loadFailed": "Could not load exercises",
     "deleted": "Exercise deleted",
     "confirmDelete": "Delete this exercise?"
+  },
+  "contests": {
+    "eyebrow": "Contests",
+    "title": "All contests",
+    "description": "Browse running, upcoming and past contests.",
+    "searchPlaceholder": "Search a contest",
+    "loadFailed": "Could not load contests",
+    "emptyAll": "No contest is visible right now.",
+    "emptyFiltered": "No contest matches these filters.",
+    "registered": "Registered",
+    "notRegistered": "Not registered",
+    "open": "Open",
+    "state": {
+      "all": "All",
+      "active": "Running",
+      "upcoming": "Upcoming",
+      "past": "Finished"
+    },
+    "kind": {
+      "all": "All kinds",
+      "icpc": "ICPC",
+      "output": "Output-only"
+    },
+    "mode": {
+      "team": "Team",
+      "solo": "Solo",
+      "both": "Team or solo"
+    }
   }
 }

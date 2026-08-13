@@ -4,12 +4,14 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   RefreshCw, CheckCircle, Snowflake, FileSpreadsheet, Sparkles, Trophy, AlertCircle,
+  Clock,
 } from 'lucide-react';
 import { textOn } from '../utils/contrast';
 import {
   getIcpcScoreboard, icpcScoreboardCsvUrl, openStatementPdf,
-  getContests, getContest, getMyTeams, getStreamTicket, scoreboardStreamUrl,
+  getContests, getContest, getMyTeams,
 } from '../api';
+import useScoreboardStream from '../utils/useScoreboardStream';
 import { useAuth } from '../AuthContext';
 import { getToken } from '../utils/tokenStore';
 import { formatDateTime, backendIsoMs } from '../utils/datetime';
@@ -108,60 +110,20 @@ export default function IcpcScoreboard({ contestId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contestId]);
 
-  // Prefer Server-Sent Events: the backend pushes updates on change (no
-  // client-side polling). Fall back to fetchData if the EventSource errors,
-  // or if autoRefresh is off (then no background refresh at all).
-  useEffect(() => {
-    if (!autoRefresh) return undefined;
-
-    let source;
-    let pollInterval;
-    let cancelled = false;
-
-    const onMessage = (e) => {
-      try {
-        const payload = JSON.parse(e.data);
-        hasLoadedOnce.current = true;
-        setData(payload);
-        setError(false);
-        setLastUpdate(new Date());
-      } catch {
-        /* malformed event; ignore */
-      }
-    };
-
-    // Fetch a short-lived stream ticket (sent with the normal Bearer header)
-    // and open the EventSource with that instead of the long-lived session
-    // token - EventSource can't set headers, so the ticket is the only thing
-    // that lands in the URL, and it expires in ~60s.
-    getStreamTicket()
-      .then((r) => {
-        if (cancelled) return;
-        const ticket = r.data.ticket;
-        const url = `${scoreboardStreamUrl(contestId)}?token=${encodeURIComponent(ticket)}`;
-        source = new EventSource(url, { withCredentials: false });
-        source.onmessage = onMessage;
-        source.onerror = () => {
-          // Server closed the stream or the ticket expired. Fall back to one
-          // refresh via the normal GET so the UI doesn't stall.
-          source.close();
-          if (!cancelled) fetchData();
-        };
-      })
-      .catch(() => {
-        if (cancelled) return;
-        // No EventSource / couldn't get a ticket - degrade to polling.
-        fetchData();
-        pollInterval = setInterval(() => fetchData(), 10000);
-      });
-
-    return () => {
-      cancelled = true;
-      if (source) source.close();
-      if (pollInterval) clearInterval(pollInterval);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoRefresh, contestId]);
+  // Live updates over SSE, with reconnect + backoff handled by the shared
+  // hook (see utils/useScoreboardStream.js for why closing on error is not
+  // enough on its own).
+  useScoreboardStream({
+    contestId,
+    enabled: autoRefresh,
+    onPayload: (payload) => {
+      hasLoadedOnce.current = true;
+      setData(payload);
+      setError(false);
+      setLastUpdate(new Date());
+    },
+    onFallbackRefresh: () => fetchData(),
+  });
 
   // For each problem, find the team that solved it first (lowest
   // first_solve_minutes; ties broken by row order = scoreboard rank).
@@ -510,6 +472,36 @@ export default function IcpcScoreboard({ contestId }) {
                             )}
                             <span className="text-zinc-800 dark:text-white font-semibold">
                               {cell.pending_attempts}?
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                    );
+                  }
+                  // Submitted, not judged yet. Deliberately a different
+                  // colour from the freeze tile above: that one means "we
+                  // know but won't tell you", this one means "nobody knows
+                  // yet" and clears on its own within seconds.
+                  if (cell.judging_pending > 0) {
+                    return (
+                      <td
+                        key={p.id}
+                        className="py-2 px-2 text-center bg-amber-400/15 ring-1 ring-amber-400/40"
+                        title={t('icpcScoreboard.judgingTooltip', { n: cell.judging_pending })}
+                      >
+                        <div className="inline-flex flex-col items-center gap-0.5">
+                          <Clock className="w-3 h-3 text-amber-600 animate-pulse dark:text-amber-400" />
+                          <div className="inline-flex items-baseline gap-0.5 text-xs font-mono tabular-nums">
+                            {cell.attempts > 0 && (
+                              <span className="text-red-500 dark:text-red-400">
+                                {cell.attempts}
+                              </span>
+                            )}
+                            {cell.attempts > 0 && (
+                              <span className="text-zinc-500 dark:text-zinc-400">+</span>
+                            )}
+                            <span className="font-semibold text-amber-700 dark:text-amber-300">
+                              {cell.judging_pending}
                             </span>
                           </div>
                         </div>

@@ -719,6 +719,12 @@ class IcpcScoreCell(BaseModel):
     # non-zero and ``solved`` is False, the UI renders the cell as a
     # pale-blue "pending" tile ("?" style, DOMjudge convention).
     pending_attempts: int = 0
+    # Submissions still sitting in the judging queue (no verdict yet).
+    # DELIBERATELY distinct from ``pending_attempts`` above, which means
+    # "judged, but the verdict is withheld until the freeze lifts". This
+    # one means "the judge has not answered yet" and clears on its own
+    # within seconds. Never affects solved_count or penalty.
+    judging_pending: int = 0
 
 
 class IcpcScoreRow(BaseModel):
@@ -900,6 +906,11 @@ class InstanceScore(BaseModel):
     # submission ever) or "score +/- ?" (had a pre-freeze score that
     # might still move).
     pending_changes: int = 0
+    # Submissions still in the scoring queue (status="pending"). Distinct
+    # from ``pending_changes``: that one is about the freeze withholding a
+    # known result, this one is about the result not existing yet. Never
+    # contributes to best_score or the total.
+    judging_pending: int = 0
 
 
 class TeamScore(BaseModel):

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import CodeMirror from '@uiw/react-codemirror';
@@ -12,7 +13,7 @@ import {
   listIcpcProblems, listIcpcLanguages, submitIcpc, getJudging,
   listClarifications, createClarification, answerClarification,
   updateClarification, deleteClarification,
-  openStatementPdf,
+  openStatementPdf, getMyLatestProblemSubmission,
 } from '../api';
 import { textOn } from '../utils/contrast';
 import { useTheme } from '../ThemeContext';
@@ -63,27 +64,111 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
   const [clarBody, setClarBody] = useState('');
 
   const pollTimer = useRef(null);
+  const pollStopTimer = useRef(null);
+
+  // Which problem is open lives in the URL (?problem=K), not in component
+  // state: a reload used to drop the contestant back on problem A. The label
+  // rather than the id so the link is readable and survives a re-import.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const problemParam = searchParams.get('problem');
+
+  // Declared before the effects that call them - the rehydration effect
+  // below needs both.
+  const stopPolling = () => {
+    if (pollTimer.current) {
+      clearInterval(pollTimer.current);
+      pollTimer.current = null;
+    }
+    if (pollStopTimer.current) {
+      clearTimeout(pollStopTimer.current);
+      pollStopTimer.current = null;
+    }
+  };
+
+  const pollJudging = (sid) => {
+    stopPolling();
+    const run = async () => {
+      try {
+        const { data } = await getJudging(sid);
+        setCurrentJudging(data);
+        if (data.verdict !== 'pending') stopPolling();
+      } catch {
+        /* keep polling briefly */
+      }
+    };
+    run();
+    pollTimer.current = setInterval(run, 800);
+    // Hard stop so we don't poll forever on a wedged judge. Tracked in a ref
+    // so unmounting (or switching problems) cancels it - it used to be a
+    // bare setTimeout that fired into a dead component.
+    pollStopTimer.current = setTimeout(stopPolling, 120000);
+  };
 
   useEffect(() => {
     Promise.all([listIcpcProblems(contest.id), listIcpcLanguages()])
       .then(([p, l]) => {
-        setProblems(p.data || []);
+        const list = p.data || [];
+        setProblems(list);
         setLanguages(l.data || []);
-        if (p.data?.length && !activeProblemId) setActiveProblemId(p.data[0].id);
+        if (!list.length) return;
+        const fromUrl = problemParam
+          ? list.find((x) => x.label === problemParam)
+          : null;
+        setActiveProblemId((cur) => cur ?? (fromUrl ? fromUrl.id : list[0].id));
       })
       .catch(() => {});
     listClarifications(contest.id).then((r) => setClars(r.data || [])).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contest.id]);
 
-  useEffect(() => () => {
-    if (pollTimer.current) clearInterval(pollTimer.current);
-  }, []);
+  useEffect(() => () => stopPolling(), []);
 
   const activeProblem = useMemo(
     () => problems.find((p) => p.id === activeProblemId) || null,
     [problems, activeProblemId],
   );
+
+  // Keep ?problem= in step with the open problem, so a reload (or a link
+  // pasted in a clarification) lands back on the same one.
+  useEffect(() => {
+    if (!activeProblem || problemParam === activeProblem.label) return;
+    const next = new URLSearchParams(searchParams);
+    next.set('problem', activeProblem.label);
+    // replace, not push: 12 problems browsed = 12 useless history entries.
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProblem, problemParam]);
+
+  // Rehydrate the judging panel for whichever problem is open. Previously
+  // ``currentJudging`` was write-only component state: refreshing the page
+  // mid-judging left the contestant with no way at all to see their pending
+  // submission, since this view has no submission history of its own.
+  useEffect(() => {
+    if (!activeProblem) return undefined;
+    let cancelled = false;
+    stopPolling();
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setCurrentJudging(null);
+    setExpandedTestcaseId(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
+    getMyLatestProblemSubmission(contest.id, activeProblem.id)
+      .then(({ data }) => {
+        const sub = (data || [])[0];
+        if (cancelled || !sub) return;
+        setRecentSubId(sub.id);
+        if (!sub.latest_verdict || sub.latest_verdict === 'pending') {
+          // Still in the queue - resume the live poll.
+          pollJudging(sub.id);
+        } else {
+          getJudging(sub.id)
+            .then((j) => { if (!cancelled) setCurrentJudging(j.data); })
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contest.id, activeProblem?.id]);
 
   // The judge multiplies the problem's limit by the language's time_factor
   // (Python x3, Java x2 by default), same as DOMjudge. Showing only the base
@@ -95,31 +180,6 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
     [languages, language],
   );
   const timeFactor = Math.max(1, Number(activeLanguage?.time_factor) || 1);
-
-  const pollJudging = (sid) => {
-    if (pollTimer.current) clearInterval(pollTimer.current);
-    const run = async () => {
-      try {
-        const { data } = await getJudging(sid);
-        setCurrentJudging(data);
-        if (data.verdict !== 'pending') {
-          clearInterval(pollTimer.current);
-          pollTimer.current = null;
-        }
-      } catch {
-        /* keep polling briefly */
-      }
-    };
-    run();
-    pollTimer.current = setInterval(run, 800);
-    // Hard stop after 60s so we don't poll forever.
-    setTimeout(() => {
-      if (pollTimer.current) {
-        clearInterval(pollTimer.current);
-        pollTimer.current = null;
-      }
-    }, 60000);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -250,10 +310,10 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                 key={p.id}
                 type="button"
                 onClick={() => {
+                  // The judging panel is restored by the effect keyed on the
+                  // active problem, so nothing to clear by hand here.
                   setActiveProblemId(p.id);
                   setSourceText('');
-                  setCurrentJudging(null);
-                  setRecentSubId(null);
                 }}
                 className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                   activeProblemId === p.id

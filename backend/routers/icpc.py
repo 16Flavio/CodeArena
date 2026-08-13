@@ -15,6 +15,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 from fastapi.responses import FileResponse, Response
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from ..auth import get_current_user, get_current_user_from_query, require_admin, require_admin_or_organizer, require_contest_owner, require_verified, can_manage_contest
@@ -1123,6 +1124,13 @@ def _build_icpc_scoreboard(
         # Costly but only runs during the (usually brief) freeze window.
         row_map = _rows_from_live(db, contest_id, problems, cutoff, dq_teams, dq_users)
 
+    # Both paths agree on what a *judged* cell looks like; neither knows
+    # about submissions that are still queued. Overlay them last so the two
+    # sources stay simple.
+    _apply_judging_pending(
+        db, contest_id, row_map, problem_by_id, dq_teams, dq_users, cutoff,
+    )
+
     rows = sorted(
         row_map.values(),
         key=lambda r: (-r.solved_count, r.total_penalty, r.team_name.lower()),
@@ -1373,6 +1381,77 @@ def icpc_presentation(
         medals=medals,
         language_stats=language_stats,
     )
+
+
+def _apply_judging_pending(
+    db: Session,
+    contest_id: int,
+    row_map: dict,
+    problem_by_id: dict,
+    dq_teams: set,
+    dq_users: set,
+    cutoff,
+) -> None:
+    """Overlay "still in the judging queue" counts onto the cells, in place.
+
+    Neither source of truth carries this. The materialised
+    ``IcpcScoreboardEntry`` cache is only written once a judging *finishes*,
+    and the freeze path deliberately hides post-cutoff verdicts. So a
+    submission that has been accepted by the API but not yet judged is
+    invisible on the scoreboard, which reads as "my submission vanished".
+
+    A scope whose only submission is still queued has no cache row at all, so
+    we create one here: DOMjudge likewise lists a team as soon as it has
+    submitted anything. The counts never touch ``solved_count`` or
+    ``total_penalty`` - an unjudged submission must not move the ranking."""
+    q = (
+        db.query(
+            models.Submission.team_id,
+            models.Submission.submitted_by,
+            models.Submission.problem_id,
+            func.count(models.Submission.id),
+        )
+        .filter(
+            models.Submission.contest_id == contest_id,
+            models.Submission.problem_id.isnot(None),
+            models.Submission.is_practice.is_(False),
+            models.Submission.status == "pending",
+        )
+        .group_by(
+            models.Submission.team_id,
+            models.Submission.submitted_by,
+            models.Submission.problem_id,
+        )
+    )
+    if cutoff is not None:
+        # During a freeze, a queued submission made after the cutoff is
+        # already represented as ``pending_attempts``; counting it again
+        # here would double-report it.
+        q = q.filter(models.Submission.submitted_at < cutoff)
+
+    for team_id, submitted_by, problem_id, count in q.all():
+        # Solo scopes key on the user, team scopes on the team - same
+        # convention as the cache and ``_new_row``.
+        user_id = submitted_by if team_id is None else None
+        if team_id in dq_teams or user_id in dq_users:
+            continue
+        p = problem_by_id.get(problem_id)
+        if not p:
+            continue
+        key = (team_id, user_id)
+        row = row_map.get(key)
+        if row is None:
+            row = _new_row(db, team_id, user_id)
+            if row is None:
+                continue
+            row_map[key] = row
+        cell = row.cells.get(p.label)
+        if cell is None:
+            cell = schemas.IcpcScoreCell(
+                problem_id=p.id, label=p.label, solved=False, attempts=0,
+            )
+            row.cells[p.label] = cell
+        cell.judging_pending += count
 
 
 def _rows_from_cache(

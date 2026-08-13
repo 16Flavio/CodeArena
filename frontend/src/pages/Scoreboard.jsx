@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { getScoreboard, getContests, getContest, scoreboardStreamUrl, scoreboardCsvUrl, getStreamTicket } from '../api';
+import { getScoreboard, getContests, getContest, scoreboardCsvUrl } from '../api';
+import useScoreboardStream from '../utils/useScoreboardStream';
 import IcpcScoreboard from '../components/IcpcScoreboard';
 import PageHeader from '../components/PageHeader';
 import {
   Trophy, ArrowUpDown, RefreshCw, Users, AlertCircle, Snowflake, FileSpreadsheet, X, Medal, Sparkles,
+  Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -122,77 +124,40 @@ function OutputScoreboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // Prefer Server-Sent Events: the backend pushes updates on change (no
-  // client-side polling). Fall back to fetchData if the EventSource errors,
-  // or if autoRefresh is off (then no background refresh at all).
-  useEffect(() => {
-    if (!autoRefresh) return undefined;
-
-    let source;
-    let pollInterval;
-    let cancelled = false;
-
-    const onMessage = (e) => {
-      try {
-        const payload = JSON.parse(e.data);
-        // Mimic the change-detection behavior fetchData had.
-        if (hasLoadedOnce.current) {
-          const changed = new Set();
-          payload.teams.forEach((team) => {
-            const prev = prevScores.current[team.team_id];
-            if (prev !== undefined && prev !== team.total_score) changed.add(team.team_id);
-            prevScores.current[team.team_id] = team.total_score;
-          });
-          if (changed.size > 0) {
-            setFlashTeams(changed);
-            setTimeout(() => setFlashTeams(new Set()), 600);
-          }
-        } else {
-          payload.teams.forEach((team) => {
-            prevScores.current[team.team_id] = team.total_score;
-          });
-          hasLoadedOnce.current = true;
-        }
-        setData(payload);
-        setError(false);
-        setLastUpdate(new Date());
-      } catch {
-        /* malformed event; ignore */
-      }
-    };
-
-    // Fetch a short-lived stream ticket (sent with the normal Bearer header)
-    // and open the EventSource with that instead of the long-lived session
-    // token - EventSource can't set headers, so the ticket is the only thing
-    // that lands in the URL, and it expires in ~60s.
-    getStreamTicket()
-      .then((r) => {
-        if (cancelled) return;
-        const ticket = r.data.ticket;
-        const url = `${scoreboardStreamUrl(id)}?token=${encodeURIComponent(ticket)}`;
-        source = new EventSource(url, { withCredentials: false });
-        source.onmessage = onMessage;
-        source.onerror = () => {
-          // Server closed the stream or the ticket expired. Fall back to one
-          // refresh via the normal GET so the UI doesn't stall.
-          source.close();
-          if (!cancelled) fetchData();
-        };
-      })
-      .catch(() => {
-        if (cancelled) return;
-        // No EventSource / couldn't get a ticket - degrade to polling.
-        fetchData();
-        pollInterval = setInterval(() => fetchData(), 10000);
+  // Live updates over SSE, with reconnect + backoff handled by the shared
+  // hook (see utils/useScoreboardStream.js for why closing on error is not
+  // enough on its own).
+  const applyPayload = (payload) => {
+    // Same change-detection as fetchData, so a streamed update flashes the
+    // rows whose total moved.
+    if (hasLoadedOnce.current) {
+      const changed = new Set();
+      payload.teams.forEach((team) => {
+        const prev = prevScores.current[team.team_id];
+        if (prev !== undefined && prev !== team.total_score) changed.add(team.team_id);
+        prevScores.current[team.team_id] = team.total_score;
       });
+      if (changed.size > 0) {
+        setFlashTeams(changed);
+        setTimeout(() => setFlashTeams(new Set()), 600);
+      }
+    } else {
+      payload.teams.forEach((team) => {
+        prevScores.current[team.team_id] = team.total_score;
+      });
+      hasLoadedOnce.current = true;
+    }
+    setData(payload);
+    setError(false);
+    setLastUpdate(new Date());
+  };
 
-    return () => {
-      cancelled = true;
-      if (source) source.close();
-      if (pollInterval) clearInterval(pollInterval);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoRefresh, id]);
+  useScoreboardStream({
+    contestId: id,
+    enabled: autoRefresh,
+    onPayload: applyPayload,
+    onFallbackRefresh: () => fetchData(),
+  });
 
   const handleSort = (key) => {
     if (sortBy === key) {
@@ -607,13 +572,27 @@ function OutputScoreboard() {
                           : 0;
                         const hasPending = !!(score && score.pending_changes > 0);
                         const hasScore = !!(score && score.submission_count > 0);
+                        // Submitted but not scored yet. Distinct from the
+                        // freeze state above: that one hides a known result,
+                        // this one is a result that does not exist yet.
+                        const hasJudging = !!(score && score.judging_pending > 0);
                         return (
                           <td
                             key={inst.id}
                             className={`py-4 px-3 text-center whitespace-nowrap ${
-                              hasPending ? 'bg-sky-500/20 ring-1 ring-sky-400/40' : ''
+                              hasPending
+                                ? 'bg-sky-500/20 ring-1 ring-sky-400/40'
+                                : hasJudging
+                                ? 'bg-amber-400/15 ring-1 ring-amber-400/40'
+                                : ''
                             }`}
-                            title={hasPending ? t('scoreboard.frozenTooltip') : undefined}
+                            title={
+                              hasPending
+                                ? t('scoreboard.frozenTooltip')
+                                : hasJudging
+                                ? t('scoreboard.judgingTooltip', { n: score.judging_pending })
+                                : undefined
+                            }
                           >
                             {hasScore ? (
                               <div>
@@ -639,6 +618,12 @@ function OutputScoreboard() {
                                     <Snowflake className="w-3 h-3 text-sky-500 dark:text-sky-300" />
                                   </span>
                                 )}
+                                {!hasPending && hasJudging && (
+                                  <span className="ml-1 inline-flex items-baseline gap-0.5 text-xs font-mono text-amber-700 dark:text-amber-300">
+                                    <Clock className="w-3 h-3 animate-pulse" />
+                                    <span className="font-semibold">{score.judging_pending}</span>
+                                  </span>
+                                )}
                                 <div className="w-full bg-zinc-200 rounded-full h-1 mt-1.5 overflow-hidden dark:bg-zinc-800">
                                   <div
                                     className="h-1 rounded-full transition-all duration-500"
@@ -662,6 +647,16 @@ function OutputScoreboard() {
                               <div className="inline-flex flex-col items-center gap-0.5">
                                 <Snowflake className="w-3 h-3 text-sky-500 dark:text-sky-300" />
                                 <span className="font-mono font-bold text-sm text-zinc-700 dark:text-zinc-200">?</span>
+                              </div>
+                            ) : hasJudging ? (
+                              // First submission on this instance, still in
+                              // the queue: it has no score to show yet, but
+                              // it must not read as "never submitted".
+                              <div className="inline-flex flex-col items-center gap-0.5">
+                                <Clock className="w-3 h-3 text-amber-600 animate-pulse dark:text-amber-400" />
+                                <span className="font-mono font-bold text-sm text-amber-700 dark:text-amber-300">
+                                  {score.judging_pending}
+                                </span>
                               </div>
                             ) : (
                               <span className="text-zinc-300 dark:text-zinc-700">-</span>

@@ -120,7 +120,8 @@
     "wrongAttempts": "{{n}}",
     "firstToSolve": "Premier à résoudre 🎈",
     "frozenTooltip": "Soumissions après le gel - verdict caché.",
-    "empty": "Aucune équipe classée pour l'instant."
+    "empty": "Aucune équipe classée pour l'instant.",
+    "judgingTooltip": "{{n}} soumission(s) en cours de jugement, verdict pas encore connu"
   },
   "errors": {
     "invalidCredentials": "Nom d'utilisateur ou mot de passe invalide",
@@ -432,7 +433,8 @@
     "collapseSidebar": "Replier le menu",
     "expandSidebar": "Déplier le menu",
     "account": "Mon compte",
-    "primary": "Navigation principale"
+    "primary": "Navigation principale",
+    "contests": "Compétitions"
   },
   "accountModal": {
     "passwordTitle": "Changer de mot de passe",
@@ -860,7 +862,8 @@
     "loadFailed": "Impossible de charger le classement",
     "loadFailedHeading": "Impossible de charger le classement",
     "refreshed": "Classement actualisé",
-    "refreshFailed": "Impossible de charger le classement"
+    "refreshFailed": "Impossible de charger le classement",
+    "judgingTooltip": "{{n}} soumission(s) en attente de notation"
   },
   "admin": {
     "title": "Panneau d'administration",
@@ -1464,5 +1467,33 @@
     "loadFailed": "Impossible de charger les exercices",
     "deleted": "Exercice supprimé",
     "confirmDelete": "Supprimer cet exercice ?"
+  },
+  "contests": {
+    "eyebrow": "Compétitions",
+    "title": "Toutes les compétitions",
+    "description": "Parcourez les compétitions en cours, à venir et passées.",
+    "searchPlaceholder": "Rechercher une compétition",
+    "loadFailed": "Impossible de charger les compétitions",
+    "emptyAll": "Aucune compétition n'est visible pour le moment.",
+    "emptyFiltered": "Aucune compétition ne correspond à ces filtres.",
+    "registered": "Inscrit",
+    "notRegistered": "Non inscrit",
+    "open": "Ouvrir",
+    "state": {
+      "all": "Toutes",
+      "active": "En cours",
+      "upcoming": "À venir",
+      "past": "Terminées"
+    },
+    "kind": {
+      "all": "Tous types",
+      "icpc": "ICPC",
+      "output": "Sortie seule"
+    },
+    "mode": {
+      "team": "Équipe",
+      "solo": "Solo",
+      "both": "Équipe ou solo"
+    }
   }
 }

@@ -16,6 +16,8 @@ import time
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response, StreamingResponse
+from starlette.concurrency import run_in_threadpool
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from ..auth import get_current_user, get_current_user_from_query, require_admin
@@ -169,6 +171,48 @@ def _build_scoreboard(
 
     teams_data = []
 
+    # Submissions accepted by the API but not yet scored. Neither the cache
+    # (written only once scoring finishes) nor the frozen recompute (which
+    # only looks at ``status == "scored"`` rows) reports them, so a
+    # contestant who just submitted saw no trace of it on the board. One
+    # grouped query for the whole contest rather than one per cell.
+    pending_q = (
+        db.query(
+            models.Submission.team_id,
+            models.Submission.submitted_by,
+            models.Submission.instance_id,
+            func.count(models.Submission.id),
+        )
+        .filter(
+            models.Submission.contest_id == contest_id,
+            models.Submission.instance_id.isnot(None),
+            models.Submission.is_practice.is_(False),
+            models.Submission.status == "pending",
+        )
+        .group_by(
+            models.Submission.team_id,
+            models.Submission.submitted_by,
+            models.Submission.instance_id,
+        )
+    )
+    if cutoff is not None:
+        # Post-cutoff submissions already surface as ``pending_changes``.
+        pending_q = pending_q.filter(models.Submission.submitted_at < cutoff)
+    pending_by_scope: dict[tuple, int] = {}
+    for t_id, sub_by, inst_id, n in pending_q.all():
+        key = (t_id, sub_by if t_id is None else None, inst_id)
+        pending_by_scope[key] = pending_by_scope.get(key, 0) + n
+
+    # The unfrozen scope list comes from the cache, which has no row for a
+    # scope whose only submission is still queued. Add those in, or the very
+    # case that makes a contestant think their submission was lost (their
+    # first submission, still judging) would be missing from the board.
+    for p_team, p_user, _inst in pending_by_scope:
+        if p_team is not None and p_team not in dq_team_ids:
+            team_ids.add(p_team)
+        elif p_user is not None and p_user not in dq_user_ids:
+            solo_user_ids.add(p_user)
+
     # Fast path: when the scoreboard isn't frozen we serve from the cache.
     if cutoff is None:
         cache_rows = (
@@ -198,6 +242,7 @@ def _build_scoreboard(
                     instance_id=inst.id,
                     best_score=scored,
                     submission_count=count,
+                    judging_pending=pending_by_scope.get((team_id, user_id, inst.id), 0),
                 )
                 total += scored
             return scores, total
@@ -241,6 +286,7 @@ def _build_scoreboard(
                     best_score=best_score,
                     submission_count=pre.count(),
                     pending_changes=post.count(),
+                    judging_pending=pending_by_scope.get((team_id, user_id, inst.id), 0),
                 )
                 total += best_score
             return scores, total
@@ -306,19 +352,29 @@ async def _scoreboard_sse(
 ):
     """Generator that yields the scoreboard JSON on change, keeping the
     connection alive with periodic comments. ``fetch(db)`` returns the
-    kind-appropriate scoreboard payload."""
+    kind-appropriate scoreboard payload.
+
+    ``fetch`` is synchronous SQLAlchemy, so it runs in a threadpool: called
+    inline it would block the event loop for the duration of the query, once
+    every ``poll_seconds``, for EVERY connected spectator. On a contest with
+    a scoreboard on the projector and a few dozen open tabs that is enough to
+    stall unrelated requests on the same worker."""
     last_payload = None
     last_ping = time.monotonic()
-    while True:
+
+    def _fetch_body():
         db = db_factory()
         try:
-            payload = fetch(db)
-            body = payload.model_dump_json()
+            return fetch(db).model_dump_json()
+        finally:
+            db.close()
+
+    while True:
+        try:
+            body = await run_in_threadpool(_fetch_body)
         except HTTPException as e:
             yield f"event: error\ndata: {json.dumps({'detail': e.detail})}\n\n"
             return
-        finally:
-            db.close()
         if body != last_payload:
             last_payload = body
             yield f"data: {body}\n\n"
