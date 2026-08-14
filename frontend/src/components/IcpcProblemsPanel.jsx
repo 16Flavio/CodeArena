@@ -477,8 +477,13 @@ function DryRunModal({ problem, onClose, t }) {
                           <td className="py-2 pr-4">
                             <VerdictBadge verdict={r.verdict} pendingLabel={t('icpc.verdictPending')} />
                           </td>
+                          {/* CPU time when we have it: that is what the
+                              verdict was decided on, and what DOMjudge
+                              reports. Wall clock only as a fallback. */}
                           <td className="py-2 text-right font-mono tabular-nums text-xs text-zinc-500 dark:text-zinc-400">
-                            {r.runtime_ms != null ? `${r.runtime_ms} ms` : '-'}
+                            {(r.cpu_ms ?? r.runtime_ms) != null
+                              ? `${r.cpu_ms ?? r.runtime_ms} ms`
+                              : '-'}
                           </td>
                         </tr>
                       ))}

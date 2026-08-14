@@ -90,11 +90,8 @@
     "toastClarUpdated": "Clarification updated",
     "toastClarDeleted": "Clarification deleted",
     "confirmDeleteClar": "Delete this clarification?",
-    "effectiveLimit": "Effective limit: {{eff}} s ({{time}} s x{{factor}} for {{lang}})",
     "maxCpu": "max {{ms}} ms CPU",
-    "judgedAgainst": "judged against {{eff}} s",
-    "cpuVsWallHint": "CPU time is what the verdict is decided on. Elapsed time includes interpreter and container startup, so it is always larger.",
-    "factorHint": "Problem limit multiplied by the language's x{{factor}} factor."
+    "cpuVsWallHint": "CPU time is what the verdict is decided on. Elapsed time includes interpreter and container startup, so it is always larger."
   },
   "judging": {
     "title": "Judging detail",

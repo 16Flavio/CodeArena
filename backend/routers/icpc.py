@@ -953,9 +953,12 @@ def _effective_limit(db: Session, sub: models.Submission) -> tuple[Optional[int]
 
     The judge multiplies the problem's ``time_limit_ms`` by the language's
     ``time_factor`` (Python x3, Java x2 by default), exactly as DOMjudge
-    does. Surfacing it stops the UI from advertising a bare "1.0 s" next to
-    an accepted 1500 ms Python run. Returns ``(None, None)`` when either
-    side is missing rather than guessing."""
+    does. Not shown to anyone - the UI advertises the problem's own limit,
+    as DOMjudge's does - but jury tooling reading the API should not have to
+    reimplement the arithmetic. Returns ``(None, None)`` when either side is
+    missing rather than guessing."""
+    from ..icpc_runner import soft_limit_s
+
     if not sub.problem_id or not sub.source_language:
         return None, None
     problem = (
@@ -970,8 +973,10 @@ def _effective_limit(db: Session, sub: models.Submission) -> tuple[Optional[int]
     )
     if not problem or not lang:
         return None, None
-    factor = max(1.0, float(lang.time_factor or 1.0))
-    return int(problem.time_limit_ms * factor), factor
+    factor = float(lang.time_factor or 0.0)
+    if factor <= 0:  # corrupt data; the judge degrades to x1 as well
+        factor = 1.0
+    return int(soft_limit_s(problem.time_limit_ms, factor) * 1000), factor
 
 @router.get("/submissions/{submission_id}/judging", response_model=schemas.JudgingOut)
 def get_judging(
