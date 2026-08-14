@@ -32,8 +32,14 @@ def _no_docker(monkeypatch):
     conftest scrubs SCORING_MODE inside the ``client`` fixture, which these
     tests don't use - so without this they inherit the developer's (or
     .env's) SCORING_MODE=docker and ``_use_docker`` raises on a machine with
-    no daemon. Nothing here needs a container: the shell is stubbed out."""
+    no daemon. Nothing here needs a container: the shell is stubbed out.
+
+    SCORING_CPUS is pinned for the same reason: the repo's .env carries a
+    value, ``backend.main`` loads it into os.environ as soon as another test
+    module imports the app, and every wall-budget assertion here would then
+    depend on test ordering. Tests that care set their own value."""
     monkeypatch.delenv("SCORING_MODE", raising=False)
+    monkeypatch.setenv("SCORING_CPUS", "1.0")
     monkeypatch.setattr(icpc_runner, "_DOCKER_MODE", None)
 
 
@@ -483,3 +489,56 @@ def test_interactive_meta_rejects_anything_it_cannot_trust(body):
             f.write(body)
         assert icpc_runner._read_interactive_meta(wd)[1] is None
         assert not os.path.exists(path)
+
+
+# ── The wall budget compensates a throttled sandbox ──────────────────────────
+#
+# runguard is never throttled: it owns its core, so a second of wall clock is
+# a second of CPU and DOMjudge can hand it the same figure for both. Our
+# sandboxes run under docker --cpus, and below 1.0 the wall limit would start
+# biting before the CPU limit it is supposed to back up.
+
+def test_wall_budget_matches_the_hard_limit_on_a_whole_core(monkeypatch):
+    _force_docker(monkeypatch)
+    monkeypatch.setenv("SCORING_CPUS", "1.0")
+    assert icpc_runner.wall_budget_s(4.0) == pytest.approx(4.0)
+
+
+def test_wall_budget_is_stretched_when_the_sandbox_is_throttled(monkeypatch):
+    """At 0.5 CPU a Python x3 submission had 4 s of wall clock, which buys
+    only 2 s of CPU: it died a second and a half before its 3 s limit."""
+    _force_docker(monkeypatch)
+    monkeypatch.setenv("SCORING_CPUS", "0.5")
+    assert icpc_runner.wall_budget_s(4.0) == pytest.approx(8.0)
+
+
+def test_wall_budget_never_shrinks_on_a_generous_cap(monkeypatch):
+    _force_docker(monkeypatch)
+    monkeypatch.setenv("SCORING_CPUS", "4.0")
+    assert icpc_runner.wall_budget_s(4.0) == pytest.approx(4.0)
+
+
+@pytest.mark.parametrize("value", ["not-a-number", "0", "-2"])
+def test_wall_budget_ignores_a_nonsense_cap(monkeypatch, value):
+    _force_docker(monkeypatch)
+    monkeypatch.setenv("SCORING_CPUS", value)
+    assert icpc_runner.wall_budget_s(4.0) == pytest.approx(4.0)
+
+
+def test_wall_budget_is_untouched_outside_docker(monkeypatch):
+    """Nothing throttles a host subprocess, whatever the variable says."""
+    monkeypatch.delenv("SCORING_MODE", raising=False)
+    monkeypatch.setattr(icpc_runner, "_DOCKER_MODE", None)
+    monkeypatch.setenv("SCORING_CPUS", "0.5")
+    assert icpc_runner.wall_budget_s(4.0) == pytest.approx(4.0)
+
+
+def test_throttled_sandbox_does_not_shorten_the_kill_budget(monkeypatch):
+    """End to end: the container is handed the stretched wall budget, not the
+    raw hard limit, so the CPU limit stays the one that decides."""
+    _force_docker(monkeypatch)
+    monkeypatch.setenv("SCORING_CPUS", "0.5")
+    monkeypatch.setenv("SCORING_TIMELIMIT_OVERSHOOT", "1s|10%")
+    seen = _stub_run_shell(monkeypatch, rc=0, elapsed_ms=10, cpu_ms=10)
+    _run(time_factor=3.0)
+    assert seen["timeout_s"] == pytest.approx(8.0)  # (3.0 + 1.0) / 0.5

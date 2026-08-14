@@ -542,3 +542,98 @@ def test_partial_results_never_become_an_accepted_verdict(monkeypatch):
         testcases=[(1, "a\n", "a\n"), (2, "b\n", "b\n"), (3, "c\n", "c\n")])
     assert verdict == "IE"
     assert "1/3" in (out or "")
+
+
+# ── The output validator also gets ONE container, not one per testcase ───────
+#
+# It was the last O(N) container cost in the judging path: ~370 ms per
+# testcase on a real judgehost, over 7 s on a 20-testcase problem, and it kept
+# running after the submission had already failed.
+
+CHECKER = (
+    "import sys\n"
+    "ans = open(sys.argv[2], encoding='utf-8').read().split()\n"
+    "out = sys.stdin.read().split()\n"
+    # Proves the feedback directory exists and is writable, which is what a
+    # Kattis validator expects.
+    "open(sys.argv[3] + '/judgemessage.txt', 'w').write('checked')\n"
+    "sys.exit(42 if ans == out else 43)\n"
+)
+
+
+def _judge_custom(monkeypatch, testcases, **kw):
+    calls = _fake_container(monkeypatch)
+    verdict, _out, runs = _judge(
+        testcases=testcases, checker_kind="custom",
+        checker_script=CHECKER, checker_language="py3", **kw,
+    )
+    return verdict, runs, calls
+
+
+def test_custom_checker_uses_one_container_for_every_testcase(monkeypatch):
+    tcs = [(i, "x%d\n" % i, "x%d" % i) for i in range(12)]
+    verdict, runs, calls = _judge_custom(monkeypatch, tcs)
+    assert verdict == "AC"
+    assert len(runs) == 12
+    assert all(passed for _id, _res, passed in runs)
+    # One container for the runs, one for the twelve validator calls.
+    assert len(calls) == 2, calls
+
+
+def test_custom_checker_rejects_and_stops_there(monkeypatch):
+    tcs = [(1, "a\n", "a"), (2, "b\n", "NOPE"), (3, "c\n", "c")]
+    verdict, runs, _calls = _judge_custom(monkeypatch, tcs)
+    assert verdict == "WA"
+    # Testcase 3 was never validated, so it must not be recorded at all.
+    assert [tc_id for tc_id, _r, _p in runs] == [1, 2]
+    assert [p for _i, _r, p in runs] == [True, False]
+
+
+def test_custom_checker_runs_every_testcase_for_subtasks(monkeypatch):
+    """Partial credit needs the full grid, so nothing short-circuits."""
+    tcs = [(1, "a\n", "a"), (2, "b\n", "NOPE"), (3, "c\n", "c")]
+    verdict, runs, _calls = _judge_custom(monkeypatch, tcs, scoring_mode="subtasks")
+    assert verdict == "WA"
+    assert [tc_id for tc_id, _r, _p in runs] == [1, 2, 3]
+    assert [p for _i, _r, p in runs] == [True, False, True]
+
+
+def test_custom_checker_misbehaving_is_a_judge_error(monkeypatch):
+    """An exit code that is neither accept nor reject is the jury's problem,
+    never a contestant verdict."""
+    _fake_container(monkeypatch)
+    verdict, out, _runs = _judge(
+        testcases=[(1, "a\n", "a")], checker_kind="custom",
+        checker_script="import sys\nsys.exit(7)\n", checker_language="py3",
+    )
+    assert verdict == "IE"
+    assert "7" in (out or "")
+
+
+def _drive_checks(monkeypatch, tmp_path, checks, *, stop_on_fail):
+    """The driver on its own, without judge() around it."""
+    import shlex
+
+    _fake_container(monkeypatch)
+    chk = os.path.join(str(tmp_path), "chk.py")
+    with open(chk, "w", encoding="utf-8") as f:
+        f.write(CHECKER)
+    return icpc_runner._run_checkers_in_container(
+        "%s %s" % (shlex.quote(sys.executable), shlex.quote(chk)),
+        chk_workdir=str(tmp_path), checks=checks, stop_on_fail=stop_on_fail,
+    )
+
+
+_CHECKS = [(1, "", "a", "a"), (2, "", "b", "WRONG"), (3, "", "c", "c")]
+
+
+def test_checker_driver_stops_at_the_first_rejection(monkeypatch, tmp_path):
+    err, verdicts = _drive_checks(monkeypatch, tmp_path, _CHECKS, stop_on_fail=True)
+    assert err is None
+    assert verdicts == [(1, True), (2, False)]
+
+
+def test_checker_driver_checks_all_when_short_circuit_is_off(monkeypatch, tmp_path):
+    err, verdicts = _drive_checks(monkeypatch, tmp_path, _CHECKS, stop_on_fail=False)
+    assert err is None
+    assert verdicts == [(1, True), (2, False), (3, True)]
