@@ -95,6 +95,18 @@ NULL and the judge falls back to the wall clock for that run. On the host
 subprocess path (dev only) the reading covers every child of the worker, so
 it is additionally clamped to the wall clock.
 
+**Give each sandbox a whole core** (`SCORING_CPUS=1.0`, the default). runguard
+is never throttled under DOMjudge: it owns its core, so a second of wall clock
+buys a second of CPU and the two limits line up. Below 1.0 they stop lining
+up - at 0.5 a submission only earns half a second of CPU per second of wall
+clock, so a Python x3 submission would have been killed at 2 s of CPU against
+its 3 s limit, and every compile takes twice as long. The judge compensates
+(`icpc_runner.wall_budget_s` stretches the wall budget by the same factor, so
+a throttled sandbox is slow but never wrongly TLE), yet the right fix is to
+leave it at 1.0 and isolate concurrent judgings with `SCORING_CPUSET`.
+Note that the compose default only applies when the variable is unset: an
+older `.env` carrying `SCORING_CPUS=0.5` still wins.
+
 **For reproducible timings**, pin each worker to its own core with
 `SCORING_CPUSET` (maps to docker `--cpuset-cpus`). Two judgings sharing a
 core inflate each other's wall clock, and the hard limit is wall-based.
@@ -143,6 +155,14 @@ Two things the orchestrator does that are worth knowing about:
 
 A partial results file - container killed mid-run - is reported as `IE`, not
 as a verdict computed from an incomplete grid.
+
+**Custom output validators get one container too**, run after every testcase
+of the submission has finished. That ordering is what makes it safe to hand
+this container the expected answers: nothing the contestant wrote executes in
+it, or is still running anywhere. Like the run orchestrator it stops at the
+first rejection unless the problem is scored by subtasks. Per testcase it used
+to cost a full container each, which on a 20-testcase problem was more than
+the judging itself.
 
 **Caveats to validate in staging first** (`backend/icpc_sandbox.py`):
 - Container startup adds latency. It no longer inflates the judged time
@@ -358,6 +378,7 @@ no rebuild needed unless noted.
 | `SCORING_ICPC_IMAGE`        | `codearena-icpc-sandbox:latest` | Toolchain sandbox image for ICPC docker mode. |
 | `JUDGE_WORKDIR`             | `/judge-work` | Abs path mounted host↔container at the SAME path for the ICPC sandbox. |
 | `SCORING_TIMELIMIT_OVERSHOOT` | `1s\|10%` | How far past the soft limit before the hard kill; DOMjudge's grammar, where `\|` is the maximum of the two margins. Verdict still uses the soft limit. |
+| `SCORING_CPUS`              | `1.0`   | CPU each sandbox gets (`--cpus`). Keep at 1.0: less both slows judging and squeezes the CPU budget against the wall limit. |
 | `SCORING_CPUSET`            | _(unset)_ | Cores the sandbox is pinned to (`--cpuset-cpus`), e.g. `2` or `2-3`. Set it when running several workers. |
 | `POSTGRES_MAX_CONNECTIONS`  | `200`   | Postgres connection ceiling. Recreate the postgres container.     |
 | `POSTGRES_SHARED_BUFFERS`   | `256MB` | Postgres page cache. Recreate the postgres container.             |

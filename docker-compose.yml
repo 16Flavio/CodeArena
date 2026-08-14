@@ -39,7 +39,14 @@ services:
       SCORING_ICPC_IMAGE: ${SCORING_ICPC_IMAGE:-codearena-icpc-sandbox:latest}
       SCORING_WORKDIR: ${JUDGE_WORKDIR:-/judge-work}
       SCORING_MEMORY_MB: ${SCORING_MEMORY_MB:-256}
-      SCORING_CPUS: ${SCORING_CPUS:-0.5}
+      # A whole core per sandbox (docker --cpus), like the core runguard gets
+      # to itself under DOMjudge. Do NOT lower this: judging is decided on
+      # CPU time but killed on the wall clock, so throttling to 0.5 halves
+      # the CPU a submission can spend before the wall limit fires, and it
+      # also doubles every compile. Isolate concurrent judgings with
+      # SCORING_CPUSET instead. The judge compensates for a value below 1,
+      # but it cannot make it fast.
+      SCORING_CPUS: ${SCORING_CPUS:-1.0}
       # How far past the soft time limit a submission may run before being
       # killed (DOMjudge's timelimit_overshoot syntax: absolute|relative).
       # The verdict is still decided on the soft limit; the margin only
@@ -207,7 +214,9 @@ services:
       SCORING_ICPC_IMAGE: ${SCORING_ICPC_IMAGE:-codearena-icpc-sandbox:latest}
       SCORING_WORKDIR: ${JUDGE_WORKDIR:-/judge-work}
       SCORING_MEMORY_MB: ${SCORING_MEMORY_MB:-256}
-      SCORING_CPUS: ${SCORING_CPUS:-0.5}
+      # A whole core per sandbox; see the backend service for why lowering
+      # this costs both correctness and speed.
+      SCORING_CPUS: ${SCORING_CPUS:-1.0}
       SCORING_TIMELIMIT_OVERSHOOT: ${SCORING_TIMELIMIT_OVERSHOOT:-1s|10%}
       # Cores the sandbox containers are pinned to (docker --cpuset-cpus).
       # Unset = no pinning. Set this when you run more than one worker: two

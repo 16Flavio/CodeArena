@@ -153,6 +153,34 @@ def hard_limit_s(soft_s: float) -> float:
     )
 
 
+def _cpu_bandwidth() -> float:
+    """The ``--cpus`` fraction the sandboxes are given. 1.0 = a whole core."""
+    try:
+        v = float(os.environ.get("SCORING_CPUS", "1.0"))
+    except ValueError:
+        return 1.0
+    return v if v > 0 else 1.0
+
+
+def wall_budget_s(hard_s: float) -> float:
+    """The hard limit expressed in wall-clock seconds.
+
+    DOMjudge hands runguard the same number for ``--walltime`` and
+    ``--cputime`` because runguard throttles nothing: a busy process owns its
+    core, so a second of wall clock buys a second of CPU. Our sandboxes run
+    under ``--cpus``, and below 1.0 that stops being true - at 0.5 a program
+    only earns half a second of CPU per second of wall clock, so the wall
+    limit would bite at half the CPU limit and TLE submissions sitting well
+    inside it (a Python x3 submission would have died at 2 s of CPU against
+    its 3 s limit). Stretching the wall budget by the same factor keeps the
+    CPU limit the binding one whatever the operator sets. At 1.0 and above,
+    and outside docker, this changes nothing."""
+    if not _use_docker():
+        return hard_s
+    cpus = _cpu_bandwidth()
+    return hard_s if cpus >= 1.0 else hard_s / cpus
+
+
 def _verdict_time_ms(
     cpu_ms: Optional[int], elapsed_ms: int, *, cpu_exact: bool = True
 ) -> int:
@@ -568,7 +596,8 @@ def run_against_testcase(
     soft = soft_limit_s(time_limit_ms, time_factor)
     hard = hard_limit_s(soft)
     rc, out, err, elapsed_ms, cpu_ms = _run_shell(
-        cmd, cwd=workdir, stdin=stdin, timeout_s=hard, memory_mb=memory_limit_mb,
+        cmd, cwd=workdir, stdin=stdin, timeout_s=wall_budget_s(hard),
+        memory_mb=memory_limit_mb,
     )
     return verdict_from_run(
         rc=rc, stdout=out, stderr=err, elapsed_ms=elapsed_ms, cpu_ms=cpu_ms,
@@ -658,6 +687,14 @@ def _run_custom_checker(
     ans_path = os.path.join(chk_workdir, "ans.txt")
     feedback_dir = os.path.join(chk_workdir, "feedback")
     os.makedirs(feedback_dir, exist_ok=True)
+    if _use_docker():
+        # Created by the worker (root), written by the validator running as
+        # the sandbox uid: a Kattis validator that reports through
+        # judgemessage.txt would otherwise fail on a permission error.
+        try:
+            os.chmod(feedback_dir, 0o777)
+        except OSError:
+            pass
     with open(in_path, "w", encoding="utf-8") as f:
         f.write(testcase_input or "")
     with open(ans_path, "w", encoding="utf-8") as f:
@@ -676,6 +713,142 @@ def _run_custom_checker(
         f"output validator exited with unexpected code {rc}: "
         + (err or "")[:500]
     )
+
+
+# One container for EVERY output-validator run of a submission, mirroring the
+# batch runner. Per testcase it cost a full `docker run` (~370 ms on a real
+# judgehost), which on a 20-testcase problem with a custom validator was over
+# 7 s of pure container churn - more than the judging itself.
+#
+# Unlike the run orchestrator this one is handed the expected answers, which
+# would be unthinkable while contestant code can still execute. It cannot: the
+# submission's runs are all finished before this container starts, and nothing
+# but judge-authored code executes inside it.
+_CHECKER_ORCHESTRATOR = r'''
+import json, os, subprocess, sys
+
+_stdin = sys.stdin
+p = json.loads(_stdin.readline())
+argv = p["argv"]
+base = p["base"]
+timeout_s = float(p["timeout_s"])
+stop_on_fail = bool(p.get("stop_on_fail"))
+
+results = []
+for i, item in enumerate(p["checks"]):
+    # One JSON object per check, read just before it runs so only one
+    # testcase's data is ever held in memory.
+    data = json.loads(_stdin.readline())
+    d = os.path.join(base, "chk%05d" % i)
+    fb = os.path.join(d, "feedback")
+    try:
+        os.makedirs(fb, exist_ok=True)
+        in_path = os.path.join(d, "in.txt")
+        ans_path = os.path.join(d, "ans.txt")
+        for path, text in ((in_path, data["in"]), (ans_path, data["ans"])):
+            with open(path, "w", encoding="utf-8", newline="") as fh:
+                fh.write(text)
+    except Exception as e:
+        # The sandbox failed us; that is not a statement about the submission.
+        results.append({"id": item["id"], "rc": -1,
+                        "err": "orchestrator: %r" % (e,)})
+        break
+    try:
+        proc = subprocess.run(
+            argv + [in_path, ans_path, fb],
+            input=data["out"].encode("utf-8", "replace"), cwd=d,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout_s,
+        )
+        rc = proc.returncode
+        err = proc.stderr[:500].decode("utf-8", "replace")
+    except subprocess.TimeoutExpired:
+        rc, err = -9, "output validator timed out after %.0f s" % timeout_s
+    except Exception as e:
+        rc, err = -1, "orchestrator: %r" % (e,)
+    results.append({"id": item["id"], "rc": rc, "err": err})
+    # 43/1 = rejected. Stopping here is what the per-testcase path did by
+    # breaking out of its loop; anything else is a judge error the host
+    # reports, so there is no point checking further either.
+    if rc not in (42, 0) and (stop_on_fail or rc not in (43, 1)):
+        break
+
+with open(os.path.join(base, "checker_results.json"), "w") as fh:
+    json.dump({"results": results}, fh)
+'''
+
+
+def _run_checkers_in_container(
+    run_cmd_str: str,
+    *,
+    chk_workdir: str,
+    checks: list[tuple[int, str, str, str]],  # (tc_id, input, expected, team_out)
+    stop_on_fail: bool,
+    timeout_s: float = 60.0,
+) -> tuple[Optional[str], list[tuple[int, bool]]]:
+    """Run the prepared output validator over several testcases in ONE
+    container.
+
+    Returns ``(judge_error, [(testcase_id, passed), ...])`` in the order they
+    were checked. The list stops at the first rejection when ``stop_on_fail``,
+    exactly as the per-testcase path did by breaking out of its loop, so a
+    caller must treat a missing testcase as "not judged" rather than passed."""
+    import json as _json
+
+    driver = os.path.join(chk_workdir, "_checker_orch.py")
+    res_path = os.path.join(chk_workdir, "checker_results.json")
+    with open(driver, "w", encoding="utf-8") as f:
+        f.write(_CHECKER_ORCHESTRATOR)
+    if os.path.exists(res_path):
+        os.unlink(res_path)
+
+    header = {
+        "argv": shlex.split(run_cmd_str),
+        "base": chk_workdir,
+        "timeout_s": timeout_s,
+        "stop_on_fail": stop_on_fail,
+        "checks": [{"id": tc_id} for tc_id, _i, _e, _o in checks],
+    }
+    stream = "\n".join(
+        [_json.dumps(header)]
+        + [_json.dumps({"in": i or "", "ans": e or "", "out": o or ""})
+           for _id, i, e, o in checks]
+    ) + "\n"
+
+    rc, _out, err, _elapsed, _cpu = icpc_sandbox.run_in_container(
+        f"{_python_bin()} {shlex.quote(driver)}",
+        workdir=chk_workdir, stdin=stream,
+        timeout_s=timeout_s * len(checks) + 15,
+        memory_mb=1024, cpus=os.environ.get("SCORING_CPUS", "1.0"),
+        measure_cpu=False,
+    )
+    infra = icpc_sandbox.docker_infra_error(rc, err or "")
+    if infra:
+        return infra, []
+    try:
+        with open(res_path, "r", encoding="utf-8") as f:
+            raw = _json.load(f)["results"]
+    except (OSError, ValueError, KeyError):
+        return (
+            "output validator produced no results"
+            + (f": {(err or '').strip()[:400]}" if err else ""),
+            [],
+        )
+
+    out: list[tuple[int, bool]] = []
+    for r in raw:
+        code = int(r.get("rc", -1))
+        if code in (42, 0):
+            out.append((int(r["id"]), True))
+        elif code in (43, 1):
+            out.append((int(r["id"]), False))
+        else:
+            # Same contract as _run_custom_checker: anything else means the
+            # validator misbehaved, which is a judge error and not a verdict.
+            return (
+                f"output validator exited with unexpected code {code}: "
+                + (r.get("err") or "")[:500]
+            ), out
+    return None, out
 
 
 # ── Interactive judging ───────────────────────────────────────────────────────
@@ -769,7 +942,11 @@ import json, os, subprocess, sys, time
 
 p = json.load(open(sys.argv[1]))
 mem_mb = int(p.get("mem_mb") or 0)
-hard_s = float(p["wall_s"])
+# Wall budget for the pair, and the CPU hard limit for the contestant's
+# process. Equal unless the container is throttled below one core - see
+# icpc_runner.wall_budget_s.
+wall_s = float(p["wall_s"])
+cpu_hard_s = float(p.get("cpu_hard_s") or wall_s)
 
 
 def _user_limits():  # runs in the forked user child, before exec
@@ -788,7 +965,7 @@ def _user_limits():  # runs in the forked user child, before exec
     # limit rounded up, SIGKILL one second later. Only the contestant's
     # process gets it - the interactor is the judge's own code.
     try:
-        c = int(hard_s) + (0 if float(hard_s).is_integer() else 1)
+        c = int(cpu_hard_s) + (0 if float(cpu_hard_s).is_integer() else 1)
         resource.setrlimit(resource.RLIMIT_CPU, (c, c + 1))
     except Exception:
         pass
@@ -881,7 +1058,7 @@ for fd in (a_r, a_w, b_r, b_w):
     except OSError:
         pass
 try:
-    rc = inter.wait(timeout=hard_s)
+    rc = inter.wait(timeout=wall_s)
 except subprocess.TimeoutExpired:
     for pr in (inter, user):
         try:
@@ -1009,7 +1186,8 @@ def _run_interactive(
             "interactor_cwd": interactor_cwd,
             "interactor_env": inter_env_extra,
             "use_python_wrapper": use_python_wrapper,
-            "wall_s": wall,
+            "wall_s": wall_budget_s(wall),
+            "cpu_hard_s": wall,
             "mem_mb": memory_limit_mb,
             "meta_path": meta_path,
         }
@@ -1026,7 +1204,7 @@ def _run_interactive(
         # measure_cpu=False: the ``times`` capture would sum the user program
         # and the interactor, which is not a number we can attribute.
         rc, _out, err, elapsed_ms, _cpu = icpc_sandbox.run_in_container(
-            cmd, workdir=workdir, stdin=None, timeout_s=wall + 2,
+            cmd, workdir=workdir, stdin=None, timeout_s=wall_budget_s(wall) + 2,
             memory_mb=memory_limit_mb + 256,
             cpus=os.environ.get("SCORING_CPUS", "1.0"),
             measure_cpu=False,
@@ -1190,7 +1368,11 @@ p = json.loads(_stdin.readline())
 argv = p["argv"]
 base = p["base"]
 mem_mb = int(p.get("mem_mb") or 0)
+# Two faces of the same hard limit: the CPU one is what RLIMIT_CPU gets, the
+# wall one is what the run is actually killed at. They are equal unless the
+# container is throttled below one core - see icpc_runner.wall_budget_s.
 hard_s = float(p["hard_s"])
+wall_s = float(p.get("wall_s") or hard_s)
 cap = int(p["max_output_bytes"])
 stop_on_fail = bool(p.get("stop_on_fail"))
 hash_kind = p.get("hash_kind")
@@ -1265,7 +1447,7 @@ for tc in p["testcases"]:
                 preexec_fn=(_limits if resource is not None else None),
             )
             try:
-                out, err = proc.communicate(timeout=hard_s)
+                out, err = proc.communicate(timeout=wall_s)
                 rc = proc.returncode
             except subprocess.TimeoutExpired:
                 proc.kill()
@@ -1369,11 +1551,13 @@ def _run_batch_in_container(
             entry["hash"] = _digest(hash_kind, expected or "")
         payload_tcs.append(entry)
 
+    wall_s = wall_budget_s(hard_s)
     header = {
         "argv": shlex.split(argv_cmd),
         "base": workdir,
         "mem_mb": memory_limit_mb,
         "hard_s": hard_s,
+        "wall_s": wall_s,
         "max_output_bytes": BATCH_MAX_OUTPUT_BYTES,
         "stop_on_fail": stop_on_fail,
         "hash_kind": hash_kind,
@@ -1399,7 +1583,7 @@ def _run_batch_in_container(
     # plus slack for interpreter startup. The orchestrator enforces the
     # per-testcase limit itself; this is only the backstop for an
     # orchestrator that wedges.
-    total = hard_s * len(testcases) + 15
+    total = wall_s * len(testcases) + 15
     cmd = f"{_python_bin()} {shlex.quote(orch)}"
     rc, _out, err, _elapsed, _cpu = icpc_sandbox.run_in_container(
         cmd, workdir=workdir, stdin=stream, timeout_s=total,
@@ -1566,6 +1750,13 @@ def judge(
             clang = (checker_language or "py3").lower()
             chk_workdir = os.path.join(workdir, "checker")
             os.makedirs(chk_workdir, exist_ok=True)
+            if _use_docker():
+                # The validator runs as the sandbox uid and writes its
+                # per-check directories and Kattis feedback files in here.
+                try:
+                    os.chmod(chk_workdir, 0o777)
+                except OSError:
+                    pass
             for aux_name, aux_content in (checker_aux_files or {}).items():
                 safe = os.path.basename(str(aux_name))
                 if not safe:
@@ -1617,22 +1808,39 @@ def judge(
             )
             if infra:
                 return IE, infra, []
+            # The validator, if there is one, in a single container for the
+            # whole submission - the orchestrator could not decide these
+            # itself because only a hash of the answer ever reaches it.
+            checked: dict[int, bool] = {}
+            if use_custom_checker and chk_run_cmd_str:
+                pending = [
+                    (tc_id, input_by_id.get(tc_id, ""),
+                     expected_by_id.get(tc_id, ""), res.stdout or "")
+                    for tc_id, res, pre in batch
+                    if res.verdict == AC and pre is None
+                ]
+                if pending:
+                    judge_err, verdicts = _run_checkers_in_container(
+                        chk_run_cmd_str, chk_workdir=chk_workdir,
+                        checks=pending, stop_on_fail=stop_on_fail,
+                    )
+                    if judge_err is not None:
+                        return IE, judge_err, runs
+                    checked = dict(verdicts)
             for tc_id, res, pre_passed in batch:
                 expected = expected_by_id.get(tc_id, "")
-                stdin = input_by_id.get(tc_id, "")
                 passed = False
                 if res.verdict == AC:
                     if pre_passed is not None:
                         # The orchestrator already compared hashes.
                         passed = bool(pre_passed)
                     elif use_custom_checker and chk_run_cmd_str:
-                        passed, judge_err = _run_custom_checker(
-                            chk_run_cmd_str, chk_workdir=chk_workdir,
-                            testcase_input=stdin, expected_output=expected,
-                            team_output=res.stdout or "",
-                        )
-                        if judge_err is not None:
-                            return IE, judge_err, runs
+                        if tc_id not in checked:
+                            # The validator stopped at an earlier rejection;
+                            # this testcase was never judged, so it must not
+                            # be recorded either way.
+                            break
+                        passed = checked[tc_id]
                     else:
                         passed = check_output(
                             res.stdout, expected, checker_kind, checker_epsilon,
@@ -1645,6 +1853,11 @@ def judge(
                 runs.append((tc_id, res, passed))
                 if res.verdict != AC and overall == AC:
                     overall = res.verdict
+                # The orchestrator short-circuits on the checkers it can decide
+                # by itself; for the others the first failure stops us here,
+                # like the per-testcase loop below.
+                if stop_on_fail and res.verdict != AC:
+                    break
             return overall, compile_res.compile_output or None, runs
 
         for tc_id, stdin, expected in testcases:
