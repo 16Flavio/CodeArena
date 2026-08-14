@@ -170,17 +170,6 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contest.id, activeProblem?.id]);
 
-  // The judge multiplies the problem's limit by the language's time_factor
-  // (Python x3, Java x2 by default), same as DOMjudge. Showing only the base
-  // limit made an accepted 1500 ms Python run look like a bug against a
-  // "1.0 s" problem, so surface the effective limit for the language the
-  // contestant has actually selected.
-  const activeLanguage = useMemo(
-    () => languages.find((l) => l.id === language) || null,
-    [languages, language],
-  );
-  const timeFactor = Math.max(1, Number(activeLanguage?.time_factor) || 1);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!activeProblem) return;
@@ -346,6 +335,10 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                       <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
                         {activeProblem.label}. {activeProblem.name}
                       </h2>
+                      {/* The problem's own limits, and nothing else: the
+                          judge scales the time limit by the language's
+                          time_factor, but DOMjudge does not advertise the
+                          scaled figure either. It stays on the API. */}
                       <p className="text-xs text-zinc-500 mt-1 dark:text-zinc-500">
                         {t('icpc.limits', {
                           time: (activeProblem.time_limit_ms / 1000).toFixed(1),
@@ -354,16 +347,6 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                         {' · '}
                         {t('icpc.checker', { kind: activeProblem.checker_kind })}
                       </p>
-                      {timeFactor > 1 && activeLanguage && (
-                        <p className="text-xs text-accent-700 mt-0.5 dark:text-accent-400">
-                          {t('icpc.effectiveLimit', {
-                            eff: ((activeProblem.time_limit_ms * timeFactor) / 1000).toFixed(1),
-                            time: (activeProblem.time_limit_ms / 1000).toFixed(1),
-                            factor: timeFactor,
-                            lang: activeLanguage.display_name,
-                          })}
-                        </p>
-                      )}
                     </div>
                     {activeProblem.has_statement_pdf && (
                       <button
@@ -554,13 +537,6 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                           title={t('icpc.cpuVsWallHint')}
                         >
                           {t('icpc.maxRuntime', { ms: currentJudging.max_runtime_ms })}
-                        </span>
-                      ) : null}
-                      {currentJudging.time_limit_effective_ms ? (
-                        <span className="text-xs text-zinc-400 dark:text-zinc-500">
-                          {t('icpc.judgedAgainst', {
-                            eff: (currentJudging.time_limit_effective_ms / 1000).toFixed(1),
-                          })}
                         </span>
                       ) : null}
                     </div>

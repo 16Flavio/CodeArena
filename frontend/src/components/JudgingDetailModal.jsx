@@ -145,18 +145,6 @@ export default function JudgingDetailModal({ submissionId, problemLabel, onClose
                   {t('icpc.maxRuntime', { ms: judging.max_runtime_ms })}
                 </span>
               ) : null}
-              {judging.time_limit_effective_ms ? (
-                <span
-                  className="text-xs text-zinc-400 font-mono tabular-nums dark:text-zinc-500"
-                  title={judging.language_time_factor > 1
-                    ? t('icpc.factorHint', { factor: judging.language_time_factor })
-                    : undefined}
-                >
-                  {t('icpc.judgedAgainst', {
-                    eff: (judging.time_limit_effective_ms / 1000).toFixed(1),
-                  })}
-                </span>
-              ) : null}
               {judging.judged_at && (
                 <span className="text-xs text-zinc-400 font-mono tabular-nums dark:text-zinc-500">
                   {formatDateTime(judging.judged_at)}

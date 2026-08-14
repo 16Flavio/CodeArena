@@ -452,14 +452,6 @@ export default function SubmissionsTab({ contests }) {
                       ?? judgingViewer.judging.max_runtime_ms
                       ?? '-',
                   })}
-                  {judgingViewer.judging.time_limit_effective_ms ? (
-                    <>
-                      {' · '}
-                      {t('icpc.judgedAgainst', {
-                        eff: (judgingViewer.judging.time_limit_effective_ms / 1000).toFixed(1),
-                      })}
-                    </>
-                  ) : null}
                 </p>
                 {judgingViewer.judging.compile_output && (
                   <div>

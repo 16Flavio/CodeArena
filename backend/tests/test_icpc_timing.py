@@ -1,17 +1,25 @@
-"""Timing semantics of the ICPC judge.
+"""Timing semantics of the ICPC judge, ported from DOMjudge.
 
-Three things are asserted here, all of which used to be wrong:
+What is asserted here, all of which used to be wrong:
 
   * the SOFT limit (problem limit x language time_factor) decides the
-    verdict, while the process is only killed at the HARD limit, so an
-    overrun reports a real runtime instead of one pinned to the limit;
+    verdict, while the process is only killed at the HARD limit
+    (soft + overshoot), so an overrun reports a real runtime instead of one
+    pinned to the limit;
+  * the overshoot string follows DOMjudge's own grammar, where "|" is the
+    maximum of the two margins and not their sum;
   * TLE is measured on CPU time, not on the wall clock that carries
-    interpreter and container startup;
+    interpreter and container startup - for interactive problems too, where
+    only the contestant's side of the exchange counts;
   * ``--cpuset-cpus`` reaches the sandbox argv when SCORING_CPUSET is set.
 
 These are pure-function / monkeypatched tests: none of them needs a Docker
 daemon or a real toolchain.
 """
+import json
+import os
+import tempfile
+
 import pytest
 
 from backend import icpc_runner, icpc_sandbox
@@ -32,7 +40,12 @@ def _no_docker(monkeypatch):
 # ── Overshoot parsing → hard limit ───────────────────────────────────────────
 
 @pytest.mark.parametrize("spec,soft,expected", [
-    ("1s|10%", 1.0, 2.1),      # both margins
+    # "|" is the MAXIMUM of the two margins, not their sum: this is
+    # DOMjudge's default and max(1 s, 10% of 1 s) = 1 s.
+    ("1s|10%", 1.0, 2.0),
+    ("1s|10%", 20.0, 22.0),    # ... and at 20 s the 10% wins
+    ("1s+10%", 1.0, 2.1),      # "+" sums them
+    ("1s&10%", 1.0, 1.1),      # "&" takes the minimum
     ("1s", 1.0, 2.0),          # absolute only
     ("50%", 2.0, 3.0),         # relative only
     ("0s|0%", 1.0, 1.0),       # explicitly no overshoot
@@ -42,15 +55,31 @@ def test_hard_limit_applies_overshoot(monkeypatch, spec, soft, expected):
     assert icpc_runner.hard_limit_s(soft) == pytest.approx(expected)
 
 
-def test_hard_limit_falls_back_on_garbage(monkeypatch):
-    """A malformed env var must not take the judge down mid-contest."""
-    monkeypatch.setenv("SCORING_TIMELIMIT_OVERSHOOT", "not-a-limit")
-    assert icpc_runner.hard_limit_s(1.0) == pytest.approx(2.1)  # the default
+@pytest.mark.parametrize("spec", [
+    "not-a-limit",
+    "-5s|-100%",   # DOMjudge's regex rejects negatives
+    "1.5s",        # ... and non-integer values
+    "1s|10%|5s",   # ... and more than two tokens
+])
+def test_hard_limit_falls_back_on_anything_domjudge_would_reject(monkeypatch, spec):
+    """DOMjudge validates this string at config time and errors out on a bad
+    one. Ours arrives from an env var, so it falls back to the default: a
+    typo must not take the judge down mid-contest, nor make the limit absurd."""
+    monkeypatch.setenv("SCORING_TIMELIMIT_OVERSHOOT", spec)
+    assert icpc_runner.hard_limit_s(1.0) == pytest.approx(2.0)  # the default
 
 
-def test_hard_limit_is_never_below_soft(monkeypatch):
-    monkeypatch.setenv("SCORING_TIMELIMIT_OVERSHOOT", "-5s|-100%")
-    assert icpc_runner.hard_limit_s(1.0) >= 1.0
+# ── Soft limit: problem limit x language factor ─────────────────────────────
+
+@pytest.mark.parametrize("ms,factor,expected", [
+    (1000, 1.0, 1.0),
+    (1000, 3.0, 3.0),     # Python
+    (2500, 2.0, 5.0),     # Java
+    (1000, 0.5, 0.5),     # DOMjudge does not clamp a factor below 1
+    (1000, 0.0, 1.0),     # ... but 0 is corrupt data, not "no time at all"
+])
+def test_soft_limit_scales_by_language_factor(ms, factor, expected):
+    assert icpc_runner.soft_limit_s(ms, factor) == pytest.approx(expected)
 
 
 # ── Which measurement the verdict is decided on ──────────────────────────────
@@ -68,9 +97,16 @@ def test_verdict_time_falls_back_to_wall_when_cpu_unknown():
 def test_verdict_time_clamps_polluted_cpu_reading():
     """In subprocess mode cpu_ms is a getrusage delta over ALL the worker's
     children, so a concurrent sibling can inflate it. Clamping to the wall
-    clock keeps a polluted reading from being harsher than the old
-    behaviour."""
-    assert icpc_runner._verdict_time_ms(9000, 1200) == 1200
+    clock keeps a polluted reading from being harsher than plain wall-clock
+    judging."""
+    assert icpc_runner._verdict_time_ms(9000, 1200, cpu_exact=False) == 1200
+
+
+def test_verdict_time_trusts_an_exact_cpu_reading_over_the_wall_clock():
+    """The containerised paths measure one process at a time, as runguard
+    does, so CPU above wall clock is a real multithreaded program and not a
+    polluted reading - and DOMjudge calls that a TLE."""
+    assert icpc_runner._verdict_time_ms(9000, 1200) == 9000
 
 
 # ── End-to-end verdict, with the shell stubbed out ───────────────────────────
@@ -106,8 +142,8 @@ def test_python_gets_its_time_factor_and_passes(monkeypatch):
     res = _run()
     assert res.verdict == "AC"
     assert res.cpu_ms == 1400
-    # Killed at the hard limit (3.0 s x 1.1 + 1 s), not at the soft one.
-    assert seen["timeout_s"] == pytest.approx(4.3)
+    # Killed at the hard limit (3.0 s + max(1 s, 10%)), not at the soft one.
+    assert seen["timeout_s"] == pytest.approx(4.0)
 
 
 def test_startup_overhead_no_longer_causes_a_false_tle(monkeypatch):
@@ -118,7 +154,7 @@ def test_startup_overhead_no_longer_causes_a_false_tle(monkeypatch):
     res = _run(time_factor=1.0)
     assert res.verdict == "AC"
     assert res.runtime_ms == 1400 and res.cpu_ms == 900
-    assert seen["timeout_s"] == pytest.approx(2.1)
+    assert seen["timeout_s"] == pytest.approx(2.0)
 
 
 def test_cpu_over_soft_limit_is_tle_even_without_a_kill(monkeypatch):
@@ -200,9 +236,9 @@ def test_no_cpuset_flag_when_unset(monkeypatch):
     assert "--cpuset-cpus" not in argv
 
 
-def test_inner_timeout_rounds_up_never_down(monkeypatch):
-    """coreutils ``timeout`` takes whole seconds. Truncating a 1.5 s budget
-    to 1 s would kill the process before its own limit."""
+def test_inner_timeout_is_passed_through_to_the_millisecond(monkeypatch):
+    """GNU ``timeout`` takes a float, and runguard's hard limit is a float:
+    rounding a 1.5 s budget either way enforces a limit nobody asked for."""
     import subprocess
 
     seen = {}
@@ -216,7 +252,7 @@ def test_inner_timeout_rounds_up_never_down(monkeypatch):
         "true", workdir=".", stdin=None, timeout_s=1.5,
         memory_mb=64, cpus="1.0", measure_cpu=False,
     )
-    assert seen["inner"] == "2"
+    assert seen["inner"] == "1.500"
 
 
 def test_cpuset_env_is_read(monkeypatch):
@@ -340,3 +376,110 @@ def test_real_compile_error_is_still_ce(monkeypatch):
                                      workdir=".")
     assert res.verdict == "CE"
     assert "expected ';'" in res.compile_output
+
+
+# ── Interactive problems are judged on the user program's CPU too ────────────
+#
+# DOMjudge wires the two processes together with runpipe and wraps only the
+# contestant's side in a runguard carrying the CPU limit, so an interactive
+# problem gets the same soft limit as any other and a slow interactor cannot
+# cost the team a TLE. The in-container orchestrator measures the user
+# program alone (os.wait4) and leaves the figures in a meta file.
+
+def _interactive(monkeypatch, *, rc, wall_ms, cpu_ms, time_limit_ms=1000,
+                 time_factor=1.0, container_ms=800):
+    """Drive the docker branch of _run_interactive with a stubbed container
+    that leaves the meta file the real orchestrator would have written."""
+    _force_docker(monkeypatch)
+    written = {}
+
+    def fake_container(cmd, *, workdir, stdin, timeout_s, memory_mb, cpus,
+                       image=None, measure_cpu=True):
+        written["timeout_s"] = timeout_s
+        if wall_ms is not None:
+            path = os.path.join(workdir, icpc_runner._INTERACTIVE_META_NAME)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump({"wall_ms": wall_ms, "cpu_ms": cpu_ms}, f)
+        # The outer elapsed carries container startup; the orchestrator's own
+        # figure is the one that should win.
+        return rc, "", "", container_ms, None
+
+    monkeypatch.setattr(icpc_sandbox, "run_in_container", fake_container)
+    with tempfile.TemporaryDirectory() as wd:
+        res = icpc_runner._run_interactive(
+            run_cmd="{exe}", workdir=wd, testcase_input="1\n",
+            expected_output="2\n", interactor_script="verdict(0)",
+            interactor_language="py3", interactor_run_cmd_str=None,
+            interactor_workdir=None, time_limit_ms=time_limit_ms,
+            memory_limit_mb=256, time_factor=time_factor, language_id="cpp",
+        )
+        leftover = os.path.exists(
+            os.path.join(wd, icpc_runner._INTERACTIVE_META_NAME)
+        )
+    return res, written, leftover
+
+
+def test_interactive_tle_on_the_user_programs_own_cpu(monkeypatch):
+    """1.4 s of CPU against a 1.0 s limit: a TLE, even though the interactor
+    said AC and the pair finished inside the hard limit."""
+    res, _seen, _ = _interactive(monkeypatch, rc=0, wall_ms=1500, cpu_ms=1400)
+    assert res.verdict == "TLE"
+    assert res.cpu_ms == 1400
+
+
+def test_interactive_ac_when_only_the_interactor_is_slow(monkeypatch):
+    """The wall clock covers both processes, so it cannot be what the soft
+    limit is checked against: a slow interactor is the judge's problem."""
+    res, _seen, _ = _interactive(monkeypatch, rc=0, wall_ms=1900, cpu_ms=120)
+    assert res.verdict == "AC"
+    assert res.cpu_ms == 120
+
+
+def test_interactive_reports_the_exchange_not_the_container_startup(monkeypatch):
+    res, _seen, _ = _interactive(monkeypatch, rc=0, wall_ms=310, cpu_ms=90,
+                                 container_ms=800)
+    assert res.runtime_ms == 310
+
+
+def test_interactive_gets_the_language_time_factor(monkeypatch):
+    """1.4 s of Python CPU against a 1.0 s problem is fine at x3, and the
+    container is given the matching hard limit."""
+    res, seen, _ = _interactive(monkeypatch, rc=0, wall_ms=1500, cpu_ms=1400,
+                                time_factor=3.0)
+    assert res.verdict == "AC"
+    # hard = 3.0 + max(1 s, 10%), plus the 2 s the caller allows the
+    # orchestrator itself.
+    assert seen["timeout_s"] == pytest.approx(6.0)
+
+
+def test_interactive_falls_back_to_the_container_clock_without_meta(monkeypatch):
+    """A container killed at the hard limit writes nothing. The verdict is
+    still a TLE, and the runtime is all we have left."""
+    res, _seen, _ = _interactive(monkeypatch, rc=124, wall_ms=None, cpu_ms=None,
+                                 container_ms=2100)
+    assert res.verdict == "TLE"
+    assert res.runtime_ms == 2100
+    assert res.cpu_ms is None
+
+
+def test_interactive_meta_is_consumed_so_the_next_testcase_cannot_inherit_it():
+    with tempfile.TemporaryDirectory() as wd:
+        path = os.path.join(wd, icpc_runner._INTERACTIVE_META_NAME)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"wall_ms": 12, "cpu_ms": 7}, f)
+        assert icpc_runner._read_interactive_meta(wd) == (12, 7)
+        assert not os.path.exists(path)
+        assert icpc_runner._read_interactive_meta(wd) == (None, None)
+
+
+@pytest.mark.parametrize("body", ["not json", '{"cpu_ms": "lots"}', '[]',
+                                  '{"cpu_ms": -5}'])
+def test_interactive_meta_rejects_anything_it_cannot_trust(body):
+    """The file lives in the workdir the contestant's program can write to.
+    Garbage in it degrades to "no measurement", never to a free pass."""
+    with tempfile.TemporaryDirectory() as wd:
+        path = os.path.join(wd, icpc_runner._INTERACTIVE_META_NAME)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(body)
+        assert icpc_runner._read_interactive_meta(wd)[1] is None
+        assert not os.path.exists(path)
