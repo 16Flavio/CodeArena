@@ -76,7 +76,7 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
   // below needs both.
   const stopPolling = () => {
     if (pollTimer.current) {
-      clearInterval(pollTimer.current);
+      clearTimeout(pollTimer.current);
       pollTimer.current = null;
     }
     if (pollStopTimer.current) {
@@ -87,17 +87,26 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
 
   const pollJudging = (sid) => {
     stopPolling();
+    // Tight at first, then backing off. Most submissions are judged in about
+    // a second, and a flat 800 ms interval spent a good part of that just
+    // waiting for the next tick - the verdict was ready long before it showed.
+    let waited = 0;
     const run = async () => {
       try {
         const { data } = await getJudging(sid);
         setCurrentJudging(data);
-        if (data.verdict !== 'pending') stopPolling();
+        if (data.verdict !== 'pending') {
+          stopPolling();
+          return;
+        }
       } catch {
         /* keep polling briefly */
       }
+      const delay = waited < 8000 ? 200 : 800;
+      waited += delay;
+      pollTimer.current = setTimeout(run, delay);
     };
     run();
-    pollTimer.current = setInterval(run, 800);
     // Hard stop so we don't poll forever on a wedged judge. Tracked in a ref
     // so unmounting (or switching problems) cancels it - it used to be a
     // bare setTimeout that fired into a dead component.
