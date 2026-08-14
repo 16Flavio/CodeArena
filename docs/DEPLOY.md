@@ -59,30 +59,41 @@ this anyway via the read-only isolated rootfs.
 
 ### How time limits are enforced
 
-Same model as DOMjudge, in three layers:
+The same model as DOMjudge, and a deliberate port of its arithmetic
+(`judgedaemon.main.php` + `runguard.cc`), in three layers:
 
 1. **Soft limit** = the problem's `time_limit_ms` x the language's
    `time_factor` (`languages` table: Python x3, Java x2, C/C++ x1). This is
    what a verdict is decided on. A 1.0 s problem gives a Python submission
-   3.0 s, so an accepted 1500 ms Python run is correct, not a bug. The UI
-   shows the effective limit next to the base one.
-2. **Hard limit** = soft + `SCORING_TIMELIMIT_OVERSHOOT` (default `1s|10%`,
-   DOMjudge's own syntax: absolute margin, relative margin, or both). This is
-   the wall-clock budget at which the process is actually killed. The margin
+   3.0 s, so an accepted 1500 ms Python run is correct, not a bug. Like
+   DOMjudge's, the UI shows the problem's own limit and nothing else; the
+   effective one is on the API (`time_limit_effective_ms`) for jury tooling.
+2. **Hard limit** = soft + `SCORING_TIMELIMIT_OVERSHOOT` (default `1s|10%`).
+   The syntax is DOMjudge's, and so is its grammar: `<integer>s` or
+   `<integer>%`, optionally two of them joined by `+` (sum), `|` (**maximum**)
+   or `&` (minimum). The default therefore means soft + max(1 s, 10% of
+   soft), *not* soft + 1 s + 10%. Anything DOMjudge's own regex would reject
+   falls back to the default rather than taking the judge down mid-contest.
+   This is the budget at which the process is actually killed - on the wall
+   clock, and on CPU via `RLIMIT_CPU` exactly as runguard sets it. The margin
    exists so a submission that overruns slightly still reports a real
    runtime, letting a jury tell "1.05 s, algorithmically fine" from an
    infinite loop.
 3. **Which clock:** the soft limit is checked against **CPU time**
-   (user+sys of the contestant process), captured via a POSIX `times` hook
-   inside the sandbox and stored in `judging_runs.cpu_ms`. The wall clock
-   (`judging_runs.runtime_ms`) carries interpreter startup and 200-500 ms of
-   container create/teardown, so it is only used as the anti-idle guard at
-   the hard limit - which is what still catches a program that sleeps or
-   blocks on I/O rather than burning CPU.
+   (user+sys of the contestant process), stored in `judging_runs.cpu_ms`:
+   `getrusage` around each run for the batch path, a POSIX `times` hook for
+   the per-testcase one, `os.wait4` on the contestant's own process for
+   interactive problems. This mirrors runguard reporting `time-used:
+   cpu-time`, and it means a run that is slow only in **wall** clock
+   (sleeping, blocked on I/O) is not a TLE - only the hard limit catches
+   those. The wall clock (`judging_runs.runtime_ms`) carries interpreter
+   startup and 200-500 ms of container create/teardown, so it is never what
+   a verdict is decided on.
 
-If the CPU capture doesn't land (killed run, interactive problem, Windows
-dev box), `cpu_ms` is NULL and the judge falls back to the wall clock for
-that run.
+If the CPU capture doesn't land (killed run, Windows dev box), `cpu_ms` is
+NULL and the judge falls back to the wall clock for that run. On the host
+subprocess path (dev only) the reading covers every child of the worker, so
+it is additionally clamped to the wall clock.
 
 **For reproducible timings**, pin each worker to its own core with
 `SCORING_CPUSET` (maps to docker `--cpuset-cpus`). Two judgings sharing a
@@ -346,7 +357,7 @@ no rebuild needed unless noted.
 | `SCORING_MODE`              | `subprocess` | `docker` isolates each compile/run in a container (see above). |
 | `SCORING_ICPC_IMAGE`        | `codearena-icpc-sandbox:latest` | Toolchain sandbox image for ICPC docker mode. |
 | `JUDGE_WORKDIR`             | `/judge-work` | Abs path mounted host↔container at the SAME path for the ICPC sandbox. |
-| `SCORING_TIMELIMIT_OVERSHOOT` | `1s\|10%` | How far past the soft limit before the hard kill. Verdict still uses the soft limit. |
+| `SCORING_TIMELIMIT_OVERSHOOT` | `1s\|10%` | How far past the soft limit before the hard kill; DOMjudge's grammar, where `\|` is the maximum of the two margins. Verdict still uses the soft limit. |
 | `SCORING_CPUSET`            | _(unset)_ | Cores the sandbox is pinned to (`--cpuset-cpus`), e.g. `2` or `2-3`. Set it when running several workers. |
 | `POSTGRES_MAX_CONNECTIONS`  | `200`   | Postgres connection ceiling. Recreate the postgres container.     |
 | `POSTGRES_SHARED_BUFFERS`   | `256MB` | Postgres page cache. Recreate the postgres container.             |

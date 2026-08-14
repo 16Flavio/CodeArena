@@ -650,8 +650,8 @@ class JudgingRunOut(BaseModel):
     # Wall clock (carries interpreter + container startup).
     runtime_ms: Optional[int] = None
     # CPU time of the contestant process - the figure the time limit is
-    # actually checked against. None when unmeasurable (killed run,
-    # interactive problem, judging predating the measurement).
+    # actually checked against. None when unmeasurable (killed run, dev box
+    # without POSIX rusage, judging predating the measurement).
     cpu_ms: Optional[int] = None
     is_sample: bool = False
     # First ~1 KB of the program's stdout + stderr on this testcase. Only

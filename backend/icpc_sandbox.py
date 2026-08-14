@@ -35,7 +35,6 @@ This module does not import FastAPI; it is used from the worker process.
 """
 from __future__ import annotations
 
-import math
 import os
 import re
 import shlex
@@ -135,7 +134,7 @@ def build_docker_argv(
     image: str,
     memory_mb: int,
     cpus: str,
-    inner_timeout_s: int,
+    inner_timeout_s: float,
     pids_limit: int = 128,
     uid: str = SANDBOX_UID,
     cpuset_cpus: Optional[str] = None,
@@ -168,7 +167,10 @@ def build_docker_argv(
         image,
         # coreutils timeout as PID 1: enforces the wall limit and reaps the
         # whole process group with SIGKILL. rc 124/137 => timed out.
-        "timeout", "-s", "KILL", str(inner_timeout_s),
+        # Sub-second precision on purpose - GNU timeout takes a float, and
+        # rounding a 1.5 s hard limit either way would enforce a budget the
+        # caller never asked for.
+        "timeout", "-s", "KILL", f"{inner_timeout_s:.3f}",
         "sh", "-c", cmd,
     ]
     return argv
@@ -264,10 +266,9 @@ def run_in_container(
         image=image or icpc_image(),
         memory_mb=memory_mb,
         cpus=cpus,
-        # ceil, not int: coreutils ``timeout`` takes whole seconds here, and
-        # truncating would kill BEFORE the requested budget. With a 1.5 s
-        # hard limit, int() gave 1 s - a TLE the caller never asked for.
-        inner_timeout_s=max(1, math.ceil(timeout_s)),
+        # Passed through as a float: this is the hard limit the caller
+        # computed, and rounding it is a limit nobody asked for.
+        inner_timeout_s=max(0.1, float(timeout_s)),
         cpuset_cpus=cpuset(),
     )
     t0 = time.monotonic()

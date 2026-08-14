@@ -70,62 +70,108 @@ class RunResult:
 
 # ── Soft / hard time limits (DOMjudge semantics) ─────────────────────────────
 #
-# The problem's limit x the language's time_factor is the SOFT limit: the
-# one a verdict is decided on. The program is only killed at the HARD limit
-# (soft + overshoot), so a submission that overruns slightly still reports a
-# real runtime instead of "exactly the limit" - which is what lets a jury
-# tell "1.05 s, algorithmically fine" from "infinite loop".
+# A deliberate port of DOMjudge's own arithmetic, and meant to stay one:
 #
-# ``SCORING_TIMELIMIT_OVERSHOOT`` uses DOMjudge's own syntax: an absolute
-# margin, a relative one, or both separated by "|". Default "1s|10%".
+#   soft = problem time limit x the language's time_factor
+#          (judgedaemon.main.php: ``$run_config['time_limit']``)
+#   hard = soft + overshoot_time(soft, timelimit_overshoot)
+#
+# judgedaemon hands runguard BOTH figures, as ``--walltime=soft:hard`` and
+# ``--cputime=soft:hard``, and runguard reports ``time-used: cpu-time``
+# (whichever of the two options came last wins, and judgedaemon passes
+# --cputime last). The consequences, which this module reproduces:
+#
+#   * the verdict is decided on CPU time against the SOFT limit;
+#   * the process is killed at the HARD limit, on the wall clock (SIGALRM)
+#     and on CPU (RLIMIT_CPU -> SIGXCPU) alike - either is a TLE;
+#   * exceeding the soft limit in WALL clock only - a program that sleeps or
+#     blocks on I/O - is NOT a TLE: runguard notes it, but since the reported
+#     time type is CPU the verdict ignores it.
+#
+# Killing only at the hard limit is what lets a jury tell "1.05 s,
+# algorithmically fine" from "infinite loop": an overrun still reports a real
+# runtime instead of one pinned to the limit.
+#
+# ``SCORING_TIMELIMIT_OVERSHOOT`` takes DOMjudge's own config syntax, and the
+# regex below is DOMjudge's own: ``\d+[s%]``, optionally followed by one of
+# ``+|&`` (sum, maximum, minimum) and a second such token. Default "1s|10%",
+# i.e. soft + max(1 s, 10% of soft).
 _DEFAULT_OVERSHOOT = "1s|10%"
+_OVERSHOOT_RE = re.compile(r"^(\d+)([s%])(?:([+|&])(\d+)([s%]))?$")
 
 
-def _parse_overshoot(spec: str) -> tuple[float, float]:
-    """``"1s|10%"`` -> ``(absolute_seconds, relative_fraction)``. Unparseable
-    input falls back to the default rather than raising - a malformed env var
-    must not take the judge down mid-contest."""
-    abs_s = 0.0
-    rel = 0.0
-    seen = False
-    for part in (spec or "").split("|"):
-        part = part.strip().lower()
-        if not part:
-            continue
-        try:
-            if part.endswith("%"):
-                rel = float(part[:-1]) / 100.0
-                seen = True
-            else:
-                abs_s = float(part.rstrip("s"))
-                seen = True
-        except ValueError:
-            return _parse_overshoot(_DEFAULT_OVERSHOOT) if spec != _DEFAULT_OVERSHOOT else (1.0, 0.10)
-    if not seen:
-        return (1.0, 0.10)
-    return (max(0.0, abs_s), max(0.0, rel))
+def _overshoot_token(timelimit_s: float, value: str, unit: str) -> float:
+    """DOMjudge's ``overshoot_parse``: ``Xs`` is X seconds, ``Y%`` is Y
+    percent of the (already time_factor-scaled) limit."""
+    v = float(value)
+    return v if unit == "s" else timelimit_s * 0.01 * v
+
+
+def overshoot_time(timelimit_s: float, spec: str) -> float:
+    """DOMjudge's ``overshoot_time``: how far past the soft limit a
+    submission may keep running before it is killed.
+
+    Unparseable input falls back to the default instead of raising. DOMjudge
+    errors out here, but it validates the value at config time; ours arrives
+    from an env var that must not be able to take the judge down mid-contest."""
+    m = _OVERSHOOT_RE.match((spec or "").strip())
+    if m is None:
+        if (spec or "").strip() == _DEFAULT_OVERSHOOT:  # recursion guard
+            return max(1.0, timelimit_s * 0.10)
+        return overshoot_time(timelimit_s, _DEFAULT_OVERSHOOT)
+    val1 = _overshoot_token(timelimit_s, m.group(1), m.group(2))
+    op = m.group(3)
+    if op is None:
+        return val1
+    val2 = _overshoot_token(timelimit_s, m.group(4), m.group(5))
+    if op == "+":
+        return val1 + val2
+    if op == "|":
+        return max(val1, val2)
+    return min(val1, val2)
+
+
+def soft_limit_s(time_limit_ms: int, time_factor: float) -> float:
+    """The problem's limit scaled by the language's factor - the limit the
+    verdict is decided on.
+
+    DOMjudge multiplies without clamping (the webapp hands the judgehost
+    ``timelimit x timefactor`` as it stands), so neither do we. A factor of
+    zero or less can only be corrupt data; it degrades to x1 rather than
+    turning every submission into a TLE."""
+    factor = float(time_factor or 0.0)
+    if factor <= 0:
+        factor = 1.0
+    return max(0.1, (time_limit_ms / 1000.0) * factor)
 
 
 def hard_limit_s(soft_s: float) -> float:
-    """Wall-clock budget before the process is killed outright."""
-    abs_s, rel = _parse_overshoot(
-        os.environ.get("SCORING_TIMELIMIT_OVERSHOOT") or _DEFAULT_OVERSHOOT
+    """Budget before the process is killed outright - on the wall clock and
+    on CPU alike, as in DOMjudge's ``$hardtimelimit``."""
+    return soft_s + overshoot_time(
+        soft_s, os.environ.get("SCORING_TIMELIMIT_OVERSHOOT") or _DEFAULT_OVERSHOOT
     )
-    return soft_s * (1.0 + rel) + abs_s
 
 
-def _verdict_time_ms(cpu_ms: Optional[int], elapsed_ms: int) -> int:
+def _verdict_time_ms(
+    cpu_ms: Optional[int], elapsed_ms: int, *, cpu_exact: bool = True
+) -> int:
     """The number a TLE verdict is decided on.
 
-    DOMjudge enforces limits "primarily in CPU time"; the wall clock is only
-    a lax anti-idle guard. We do the same, but clamp to the wall clock: in
-    subprocess mode ``cpu_ms`` is a getrusage delta over ALL the worker's
-    children, so a concurrently-judged sibling could inflate it. Clamping
-    means a polluted reading can only ever be as harsh as the old wall-clock
-    behaviour, never harsher. In docker mode ``--cpus`` caps CPU at wall
-    anyway, so the clamp is a no-op there."""
+    runguard reports ``time-used: cpu-time`` and judgedaemon compares that,
+    and only that, against the soft limit - a run that is slow only in wall
+    clock is not a TLE there, and is not one here.
+
+    ``cpu_exact`` is False on the host-subprocess path alone: there ``cpu_ms``
+    is a getrusage delta over ALL of the worker's children, so a concurrently
+    judged sibling can inflate it. Clamping to the wall clock keeps a polluted
+    reading from ever being harsher than plain wall-clock judging. Both
+    containerised paths measure one process at a time, exactly as runguard's
+    ``times()`` does, so nothing is clamped there."""
     if cpu_ms is None:
         return elapsed_ms
+    if cpu_exact:
+        return cpu_ms
     return min(cpu_ms, elapsed_ms)
 
 
@@ -513,13 +559,13 @@ def run_against_testcase(
 
     Two limits, as in DOMjudge. The SOFT limit (``time_limit_ms`` x
     ``time_factor``) decides the verdict and is compared against CPU time.
-    The HARD limit (soft + overshoot) is the wall-clock budget the process
-    is actually killed at, so a slight overrun still yields a measurable
-    runtime instead of a value pinned to the limit."""
+    The HARD limit (soft + overshoot) is the budget the process is actually
+    killed at, so a slight overrun still yields a measurable runtime instead
+    of a value pinned to the limit."""
     exe_path = os.path.join(workdir, "bin")
     src_path = os.path.join(workdir, _guess_language_filename(language_id))
     cmd = _expand(run_cmd, src=src_path, exe=exe_path, workdir=workdir)
-    soft = max(0.1, (time_limit_ms / 1000.0) * max(1.0, time_factor))
+    soft = soft_limit_s(time_limit_ms, time_factor)
     hard = hard_limit_s(soft)
     rc, out, err, elapsed_ms, cpu_ms = _run_shell(
         cmd, cwd=workdir, stdin=stdin, timeout_s=hard, memory_mb=memory_limit_mb,
@@ -527,6 +573,9 @@ def run_against_testcase(
     return verdict_from_run(
         rc=rc, stdout=out, stderr=err, elapsed_ms=elapsed_ms, cpu_ms=cpu_ms,
         soft_ms=int(soft * 1000), check_infra=True,
+        # The container measures one process; the host getrusage delta covers
+        # every child of a worker that judges several submissions at once.
+        cpu_exact=_use_docker(),
     )
 
 
@@ -539,6 +588,7 @@ def verdict_from_run(
     cpu_ms: Optional[int],
     soft_ms: int,
     check_infra: bool = True,
+    cpu_exact: bool = True,
 ) -> RunResult:
     """Turn one raw execution into a verdict.
 
@@ -548,18 +598,18 @@ def verdict_from_run(
     single container, not per testcase."""
     err = stderr or ""
     # rc in TIMEOUT_RCS covers the subprocess wall-kill (-9), the container's
-    # coreutils ``timeout`` (124/137) and the orchestrator's own kill: the
-    # hard wall limit was blown, which is a TLE whatever the CPU says (this
-    # is what catches a program that sleeps or blocks on I/O rather than
-    # burning CPU).
+    # coreutils ``timeout`` (124/137), the orchestrator's own kill and the
+    # kernel's SIGXCPU at the hard CPU limit (normalised to 124 by the
+    # orchestrator): the hard limit was blown, which runguard reports as
+    # ``hard-timelimit`` and DOMjudge scores TLE whatever the CPU figure says.
     if rc in icpc_sandbox.TIMEOUT_RCS:
         return RunResult(
             verdict=TLE, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=err[:1000],
         )
     # Otherwise the process finished within the hard budget; the soft limit
-    # decides. Measured on CPU time when we have it, which is what stops
-    # container/interpreter startup from being charged to the contestant.
-    if _verdict_time_ms(cpu_ms, elapsed_ms) > soft_ms:
+    # decides, on CPU time when we have it - which is what stops container and
+    # interpreter startup from being charged to the contestant.
+    if _verdict_time_ms(cpu_ms, elapsed_ms, cpu_exact=cpu_exact) > soft_ms:
         return RunResult(
             verdict=TLE, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=err[:1000],
         )
@@ -678,25 +728,137 @@ sys.exit(ns["_verdict_code"])
 #   0 = AC, 42 = WA, 1 = RE, 124 = TLE.
 # The interactor-only env (which carries the testcase + EXPECTED output) is
 # applied to the interactor process ONLY, never to the user program.
+#
+# It also measures the USER program's CPU alone and writes it to
+# _INTERACTIVE_META_NAME, which is what lets an interactive problem be judged
+# on the same soft CPU limit as every other problem. DOMjudge is structured
+# the same way: runpipe wires the two processes together, and only the
+# contestant's side is wrapped in a runguard carrying the CPU limit.
+_INTERACTIVE_META_NAME = "_interactive_meta.json"
+
+
+def _read_interactive_meta(workdir: str) -> tuple[Optional[int], Optional[int]]:
+    """``(wall_ms, cpu_ms)`` written by the interactive orchestrator, or
+    ``(None, None)``. Consumes the file, so the next testcase judged in this
+    workdir can never inherit the previous one's numbers."""
+    import json as _json
+
+    path = os.path.join(workdir, _INTERACTIVE_META_NAME)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = _json.load(f)
+    except (OSError, ValueError):
+        return None, None
+    finally:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+    if not isinstance(data, dict):
+        return None, None
+
+    def _ms(key):
+        v = data.get(key)
+        return int(v) if isinstance(v, (int, float)) and v >= 0 else None
+
+    return _ms("wall_ms"), _ms("cpu_ms")
+
+
 _INTERACTIVE_ORCHESTRATOR = r'''
-import json, os, subprocess, sys
+import json, os, subprocess, sys, time
 
 p = json.load(open(sys.argv[1]))
 mem_mb = int(p.get("mem_mb") or 0)
+hard_s = float(p["wall_s"])
 
 
 def _user_limits():  # runs in the forked user child, before exec
-    if not mem_mb:
-        return
     try:
         import resource
-        b = mem_mb * 1024 * 1024
-        resource.setrlimit(resource.RLIMIT_AS, (b, b))
-        resource.setrlimit(resource.RLIMIT_NPROC, (256, 256))
+    except Exception:
+        return
+    if mem_mb:
+        try:
+            b = mem_mb * 1024 * 1024
+            resource.setrlimit(resource.RLIMIT_AS, (b, b))
+            resource.setrlimit(resource.RLIMIT_NPROC, (256, 256))
+        except Exception:
+            pass
+    # Same RLIMIT_CPU as the batch path and as runguard: SIGXCPU at the hard
+    # limit rounded up, SIGKILL one second later. Only the contestant's
+    # process gets it - the interactor is the judge's own code.
+    try:
+        c = int(hard_s) + (0 if float(hard_s).is_integer() else 1)
+        resource.setrlimit(resource.RLIMIT_CPU, (c, c + 1))
     except Exception:
         pass
 
 
+def _reap_user(proc, grace):
+    """Reap the user program ourselves instead of letting Popen do it, so its
+    rusage is attributable to it alone - the interactor is a sibling and its
+    CPU must not be charged to the contestant. Returns CPU ms, or None where
+    wait4 does not exist (non-POSIX dev boxes), in which case the host falls
+    back to the wall clock."""
+    if not hasattr(os, "wait4"):
+        # No per-child rusage off POSIX: reap the plain way, and still make
+        # sure a program that outlives the interactor cannot hold the
+        # container open by keeping its stderr pipe unclosed.
+        try:
+            proc.wait(timeout=grace)
+        except Exception:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+        return None
+    deadline = time.monotonic() + grace
+    killed = False
+    while True:
+        try:
+            pid, status, ru = os.wait4(proc.pid, os.WNOHANG)
+        except (ChildProcessError, OSError):
+            return None
+        if pid:
+            # Keep Popen's view consistent, or it will try to reap again.
+            if os.WIFSIGNALED(status):
+                proc.returncode = -os.WTERMSIG(status)
+            else:
+                proc.returncode = os.WEXITSTATUS(status)
+            return int((ru.ru_utime + ru.ru_stime) * 1000)
+        if time.monotonic() >= deadline:
+            if killed:
+                return None
+            try:
+                proc.kill()
+            except Exception:
+                pass
+            killed = True
+            deadline = time.monotonic() + 5
+        time.sleep(0.005)
+
+
+def _write_meta(wall_ms, cpu_ms):
+    """Hand the host the two figures it cannot measure from outside: the wall
+    clock of the exchange itself (no container startup) and the contestant
+    program's own CPU.
+
+    Unlinked before it is written, not just truncated: the contestant's
+    program shares this workdir and runs as this same uid, so it could
+    otherwise leave a forged file it has chmod'ed unwritable. Removing it
+    needs the directory's write bit, which the program cannot take away."""
+    try:
+        os.unlink(p["meta_path"])
+    except OSError:
+        pass
+    try:
+        with open(p["meta_path"], "w") as fh:
+            json.dump({"wall_ms": wall_ms, "cpu_ms": cpu_ms}, fh)
+    except Exception:
+        pass
+
+
+t0 = time.monotonic()
 a_r, a_w = os.pipe()   # interactor stdout -> user stdin
 b_r, b_w = os.pipe()   # user stdout -> interactor stdin
 inter_env = dict(os.environ)
@@ -719,21 +881,17 @@ for fd in (a_r, a_w, b_r, b_w):
     except OSError:
         pass
 try:
-    rc = inter.wait(timeout=float(p["wall_s"]))
+    rc = inter.wait(timeout=hard_s)
 except subprocess.TimeoutExpired:
     for pr in (inter, user):
         try:
             pr.kill()
         except Exception:
             pass
+    _write_meta(int((time.monotonic() - t0) * 1000), None)
     sys.exit(124)
-try:
-    user.wait(timeout=2)
-except Exception:
-    try:
-        user.kill()
-    except Exception:
-        pass
+_user_cpu_ms = _reap_user(user, 2)
+_write_meta(int((time.monotonic() - t0) * 1000), _user_cpu_ms)
 try:
     sys.stderr.buffer.write((user.stderr.read() or b"")[:1000])
 except Exception:
@@ -782,12 +940,14 @@ def _run_interactive(
     src_path = os.path.join(workdir, _guess_language_filename(language_id))
     exe_path = os.path.join(workdir, "bin")
     user_cmd = _expand(run_cmd, src=src_path, exe=exe_path, workdir=workdir)
-    # Interactive problems get the same soft/hard split, but only the hard
-    # limit is actionable here: the clock covers the user program AND the
-    # interactor talking to each other, so there is no per-process CPU
-    # figure worth charging to the contestant. cpu_ms stays None and the
-    # verdict comes from the interactor's exit code (or the kill).
-    soft = max(0.2, (time_limit_ms / 1000.0) * max(1.0, time_factor))
+    # Same soft/hard split as every other problem. The hard limit covers the
+    # user program AND the interactor talking to each other, since either can
+    # be the one that wedges; the soft limit is checked against the user
+    # program's own CPU, which the in-container orchestrator measures for us
+    # (DOMjudge likewise wraps only the contestant's side of runpipe in a
+    # runguard carrying the CPU limit). On the host path there is no
+    # orchestrator, so cpu stays None and the wall clock decides.
+    soft = soft_limit_s(time_limit_ms, time_factor)
     wall = hard_limit_s(soft)
     docker = _use_docker()
     pybin = "python3" if docker else (_sys.executable or "python3")
@@ -841,6 +1001,7 @@ def _run_interactive(
     # inside the network-less, read-only container, so the contestant program
     # is isolated. It normalises the verdict to an exit code we map below.
     if docker:
+        meta_path = os.path.join(workdir, _INTERACTIVE_META_NAME)
         payload = {
             "user_argv": shlex.split(user_cmd),
             "user_cwd": workdir,
@@ -850,6 +1011,7 @@ def _run_interactive(
             "use_python_wrapper": use_python_wrapper,
             "wall_s": wall,
             "mem_mb": memory_limit_mb,
+            "meta_path": meta_path,
         }
         orch_path = os.path.join(workdir, "_interactive_orch.py")
         payload_path = os.path.join(workdir, "_interactive_payload.json")
@@ -869,13 +1031,25 @@ def _run_interactive(
             cpus=os.environ.get("SCORING_CPUS", "1.0"),
             measure_cpu=False,
         )
+        # The orchestrator's own figures where it got to write them: its wall
+        # clock excludes container startup, and its CPU covers the contestant
+        # program alone. Without them (killed container) we only have the
+        # outer wall clock, startup included.
+        inter_wall_ms, cpu_ms = _read_interactive_meta(workdir)
+        if inter_wall_ms is not None:
+            elapsed_ms = inter_wall_ms
+        err = (err or "")[:1000]
         if rc in icpc_sandbox.TIMEOUT_RCS:
-            return RunResult(verdict=TLE, runtime_ms=elapsed_ms, stderr=(err or "")[:1000])
+            return RunResult(verdict=TLE, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=err)
+        # Soft limit on the contestant's CPU, exactly as for a non-interactive
+        # problem. A slow interactor cannot trigger it.
+        if cpu_ms is not None and cpu_ms > int(soft * 1000):
+            return RunResult(verdict=TLE, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=err)
         if rc == 0:
-            return RunResult(verdict=AC, runtime_ms=elapsed_ms, stderr=(err or "")[:1000])
+            return RunResult(verdict=AC, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=err)
         if rc == 42:
-            return RunResult(verdict=WA, runtime_ms=elapsed_ms, stderr=(err or "")[:1000])
-        return RunResult(verdict=RE, runtime_ms=elapsed_ms, stderr=(err or "")[:1000])
+            return RunResult(verdict=WA, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=err)
+        return RunResult(verdict=RE, runtime_ms=elapsed_ms, cpu_ms=cpu_ms, stderr=err)
 
     # ── Host subprocess path (dev / SCORING_MODE=subprocess) ─────────────
     user_env = _sandbox_env(
@@ -982,7 +1156,10 @@ def _run_interactive(
 # The orchestrator below is the batch sibling of _INTERACTIVE_ORCHESTRATOR,
 # which already runs contestant code from inside the container.
 _BATCH_ORCHESTRATOR = r'''
-import json, os, subprocess, sys, time
+import json, os, signal, subprocess, sys, time
+
+# The kernel's "hard CPU limit reached" signal (see _limits below).
+_SIGXCPU = int(getattr(signal, "SIGXCPU", 24))
 
 # Always present in the sandbox image (Linux). Guarded only so the script can
 # be executed, and therefore tested, off-POSIX - this is the riskiest piece of
@@ -1028,6 +1205,16 @@ def _limits():  # runs in the forked child, before exec
             resource.setrlimit(resource.RLIMIT_AS, (b, b))
         except Exception:
             pass
+    # RLIMIT_CPU exactly as runguard sets it: soft = ceil(hard limit), where
+    # the kernel raises SIGXCPU, and hard = one second more, where it sends an
+    # uncatchable SIGKILL. Whole seconds is all the rlimit takes; the measured
+    # CPU is what the verdict actually uses, and it is finer than that. Without
+    # this a CPU burner would only stop at the wall-clock hard limit.
+    try:
+        c = int(hard_s) + (0 if float(hard_s).is_integer() else 1)
+        resource.setrlimit(resource.RLIMIT_CPU, (c, c + 1))
+    except Exception:
+        pass
     try:
         resource.setrlimit(resource.RLIMIT_NPROC, (256, 256))
     except Exception:
@@ -1092,6 +1279,11 @@ for tc in p["testcases"]:
     wall_ms = int((time.monotonic() - t0) * 1000)
     after = _cpu_ms()
     cpu_ms = None if (before is None or after is None) else max(0, after - before)
+    # SIGXCPU means the kernel hit the hard CPU limit: runguard's
+    # `hard-timelimit`. Reported as the coreutils timeout code so the host
+    # reads it as a TLE and not as a Runtime Error.
+    if rc == -_SIGXCPU:
+        rc = 124
     # Gone before the next program starts, so a submission can never read an
     # input other than its own.
     try:
@@ -1408,7 +1600,7 @@ def judge(
         is_subtasks = (scoring_mode or "icpc").lower() == "subtasks"
         stop_on_fail = not is_subtasks and not run_all_testcases
         if _use_docker() and not is_interactive and passes == 1 and testcases:
-            soft = max(0.1, (time_limit_ms / 1000.0) * max(1.0, time_factor))
+            soft = soft_limit_s(time_limit_ms, time_factor)
             infra, batch = _run_batch_in_container(
                 argv_cmd=_expand(
                     run_cmd,

@@ -662,8 +662,9 @@ class Judging(Base):
     # Peak CPU time across the runs. This is the figure the TLE verdict was
     # decided on; ``max_runtime_ms`` is wall clock and carries container +
     # interpreter startup, so the two differ by a few hundred ms. NULL for
-    # judgings made before the CPU measurement landed, and for interactive
-    # problems (no attributable per-process CPU).
+    # judgings made before the CPU measurement landed, and wherever the
+    # capture could not run: a container killed before it could report, or a
+    # dev box with no POSIX rusage.
     max_cpu_ms = Column(Integer, nullable=True)
     compile_output = Column(Text, nullable=True)
     judged_at = Column(DateTime, nullable=True)
