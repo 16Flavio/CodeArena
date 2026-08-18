@@ -16,7 +16,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 from fastapi.responses import FileResponse, Response
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from ..auth import get_current_user, get_current_user_from_query, require_admin, require_admin_or_organizer, require_contest_owner, require_verified, can_manage_contest
 from ..audit import record as audit
@@ -124,6 +124,21 @@ def _problem_to_out(p: models.Problem, *, samples: list[models.Testcase]) -> sch
             statement_pdf_version = int(os.path.getmtime(p.statement_pdf_path))
         except OSError:
             statement_pdf_version = None
+    sample_interactions: list[schemas.SampleInteractionOut] = []
+    if p.sample_interaction:
+        try:
+            raw = json.loads(p.sample_interaction)
+        except ValueError:
+            raw = []
+        if isinstance(raw, list):
+            sample_interactions = [
+                schemas.SampleInteractionOut(
+                    name=str(item.get("name") or ""),
+                    content=str(item.get("content") or ""),
+                )
+                for item in raw
+                if isinstance(item, dict)
+            ]
     return schemas.ProblemOut(
         id=p.id, contest_id=p.contest_id, external_id=p.external_id,
         label=p.label, color=p.color or "", name=p.name,
@@ -147,6 +162,17 @@ def _problem_to_out(p: models.Problem, *, samples: list[models.Testcase]) -> sch
                 group_name=tc.group_name,
             )
             for tc in samples
+        ],
+        sample_interactions=sample_interactions,
+        # Metadata only: the bytes are served by the download endpoint, so
+        # the problem list stays small even for a package with attachments.
+        attachments=[
+            schemas.ProblemAttachmentOut(
+                id=a.id, filename=a.filename,
+                content_type=a.content_type or "application/octet-stream",
+                size_bytes=int(a.size_bytes or 0),
+            )
+            for a in sorted(p.attachments or [], key=lambda a: a.filename)
         ],
     )
 
@@ -174,6 +200,7 @@ def list_problems(
         return []
     problems = (
         db.query(models.Problem)
+        .options(selectinload(models.Problem.attachments))
         .filter(models.Problem.contest_id == contest_id)
         .order_by(models.Problem.order_idx, models.Problem.label)
         .all()
@@ -246,6 +273,57 @@ def get_problem_statement(
         filename=f"{p.label}-{p.external_id}.pdf",
         content_disposition_type="inline",
         headers={"Cache-Control": "no-store, max-age=0"},
+    )
+
+
+@router.get("/{contest_id}/problems/{problem_id}/attachments/{attachment_id}")
+def download_problem_attachment(
+    contest_id: int,
+    problem_id: int,
+    attachment_id: int,
+    # Same story as the statement PDF: a browser download has no
+    # Authorization header, so the JWT arrives as ?token=.
+    user: models.User = Depends(get_current_user_from_query),
+    db: Session = Depends(get_db),
+):
+    """Serve one problem attachment (the interactive problems' local
+    testing tool, sample inputs, ...).
+
+    Gated exactly like the statement PDF: visible contest, started, and
+    the caller registered. Attachments are part of the problem material,
+    so leaking them early leaks the problem."""
+    contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
+    if not contest or not _is_contest_visible(contest, _utcnow(), is_admin=bool(user.is_admin)):
+        raise HTTPException(status_code=404, detail="Concours introuvable")
+    if not _is_contest_started(contest, _utcnow(), is_admin=bool(user.is_admin)):
+        raise HTTPException(status_code=403, detail="L'énoncé n'est pas encore disponible")
+    if not _user_is_participant(db, contest, user):
+        raise HTTPException(status_code=403, detail="Inscrivez-vous pour accéder à l'énoncé")
+    att = (
+        db.query(models.ProblemAttachment)
+        .join(models.Problem, models.Problem.id == models.ProblemAttachment.problem_id)
+        .filter(
+            models.ProblemAttachment.id == attachment_id,
+            models.ProblemAttachment.problem_id == problem_id,
+            models.Problem.contest_id == contest_id,
+        )
+        .first()
+    )
+    if not att:
+        raise HTTPException(status_code=404, detail="Pièce jointe introuvable")
+    # The filename was sanitised on import (basename, alnum + ._-), so it
+    # cannot break out of the header - but quote it anyway, and force a
+    # download: an attachment is team-facing text/script, never something
+    # we want rendered inline in the origin.
+    safe = att.filename.replace('"', "")
+    return Response(
+        content=att.content,
+        media_type=att.content_type or "application/octet-stream",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe}"',
+            "Cache-Control": "no-store, max-age=0",
+            "X-Content-Type-Options": "nosniff",
+        },
     )
 
 
@@ -513,6 +591,12 @@ def dry_run_problem(
             )
         inter_compile_cmd = ilang.compile_cmd or ""
         inter_run_cmd = ilang.run_cmd or ""
+    inter_aux = None
+    if p.interactor_aux_files:
+        try:
+            inter_aux = json.loads(p.interactor_aux_files)
+        except ValueError:
+            inter_aux = None
 
     # Same resolution for compiled-language custom output validators.
     clang_id = (p.checker_language or "py3").lower()
@@ -553,6 +637,7 @@ def dry_run_problem(
         interactor_language=ilang_id,
         interactor_compile_cmd=inter_compile_cmd,
         interactor_run_cmd=inter_run_cmd,
+        interactor_aux_files=inter_aux,
         checker_script=p.checker_script,
         checker_language=clang_id,
         checker_compile_cmd=chk_compile_cmd,
@@ -1094,6 +1179,7 @@ def _build_icpc_scoreboard(
 
     problems = (
         db.query(models.Problem)
+        .options(selectinload(models.Problem.attachments))
         .filter(models.Problem.contest_id == contest_id)
         .order_by(models.Problem.order_idx, models.Problem.label)
         .all()
@@ -1237,6 +1323,7 @@ def icpc_presentation(
 
     problems = (
         db.query(models.Problem)
+        .options(selectinload(models.Problem.attachments))
         .filter(models.Problem.contest_id == contest_id)
         .order_by(models.Problem.order_idx, models.Problem.label)
         .all()
@@ -1918,8 +2005,10 @@ def export_problem_zip(
             problem.yaml
             problem_statement/{shortname}.pdf          (if present)
             data/sample/*.in|*.ans
+            data/sample/*.interaction                  (if interactive)
             data/secret/*.in|*.ans
             output_validators/interactor/…             (if interactive)
+            attachments/…                              (if any)
 
     Admins can round-trip problems between platforms or just take a
     backup before editing testcases."""
@@ -2008,14 +2097,44 @@ def export_problem_zip(
                 f"accept_score: {pts}\n",
             )
 
-        # Interactive problems ship their interactor under output_validators/.
+        # Interactive problems ship their interactor under output_validators/,
+        # with the headers it includes beside it - export the .cpp alone and
+        # the re-import would produce an interactor that cannot compile.
         if checker == "interactive" and (p.interactor_script or "").strip():
             ilang = (p.interactor_language or "py3").lower()
             ext = _EXT_BY_LANG.get(ilang, "txt")
+            idir = f"{shortname}/output_validators/interactor"
+            zf.writestr(f"{idir}/interactor.{ext}", p.interactor_script)
+            iaux: dict = {}
+            if p.interactor_aux_files:
+                try:
+                    iaux = json.loads(p.interactor_aux_files)
+                except ValueError:
+                    iaux = {}
+            for aux_name, aux_content in iaux.items():
+                safe = os.path.basename(str(aux_name))
+                if safe:
+                    zf.writestr(f"{idir}/{safe}", str(aux_content))
+
+        # Sample interaction transcripts (data/sample/*.interaction).
+        interactions: list = []
+        if p.sample_interaction:
+            try:
+                interactions = json.loads(p.sample_interaction) or []
+            except ValueError:
+                interactions = []
+        for i, item in enumerate(interactions):
+            if not isinstance(item, dict):
+                continue
+            stem = os.path.basename(str(item.get("name") or "")) or str(i + 1)
             zf.writestr(
-                f"{shortname}/output_validators/interactor/interactor.{ext}",
-                p.interactor_script,
+                f"{shortname}/data/sample/{stem}.interaction",
+                str(item.get("content") or ""),
             )
+
+        # Attachments, back where the packages put them.
+        for att in sorted(p.attachments or [], key=lambda a: a.filename):
+            zf.writestr(f"{shortname}/attachments/{att.filename}", att.content or b"")
 
         # Custom output validators too - without them a re-import would
         # silently downgrade the problem to token comparison.

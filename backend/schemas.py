@@ -592,6 +592,24 @@ class TestcaseOut(BaseModel):
     group_name: Optional[str] = None
 
 
+class ProblemAttachmentOut(BaseModel):
+    """One downloadable file shipped with the problem (the interactive
+    problems' ``testing_tool.py``, sample inputs, headers). Metadata only -
+    the bytes come from the download endpoint."""
+    id: int
+    filename: str
+    content_type: str = "application/octet-stream"
+    size_bytes: int = 0
+
+
+class SampleInteractionOut(BaseModel):
+    """A sample interaction transcript for an interactive problem. ``content``
+    is the raw DOMjudge ``.interaction`` text: one message per line, ``<``
+    prefix = judge to team, ``>`` prefix = team to judge."""
+    name: str = ""
+    content: str = ""
+
+
 class ProblemOut(BaseModel):
     id: int
     contest_id: int
@@ -616,6 +634,10 @@ class ProblemOut(BaseModel):
     # the download endpoint.
     statement_pdf_version: int | None = None
     sample_testcases: list[TestcaseOut] = []
+    # Interactive problems have no sample .in/.ans pair - their sample is a
+    # transcript instead. Empty for every other problem kind.
+    sample_interactions: list[SampleInteractionOut] = []
+    attachments: list[ProblemAttachmentOut] = []
     scoring_mode: str = "icpc"
 
 

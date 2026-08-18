@@ -9,9 +9,10 @@ Kattis/ICPC Problem Package Format (aka "polygon for Kattis"):
   │   ├── problem_statement/        # statement.pdf (we only grab PDFs for v1)
   │   │   └── problem.pdf
   │   ├── data/
-  │   │   ├── sample/001.in  001.ans ...
+  │   │   ├── sample/001.in  001.ans ...   # or *.interaction (interactive)
   │   │   └── secret/001.in  001.ans ...
-  │   └── output_validators/        # optional custom checker (skipped in v1)
+  │   ├── attachments/              # team-facing downloads (testing_tool.py)
+  │   └── output_validators/        # custom checker or interactor + headers
 
   single-problem.zip
   ├── problem.yaml                  # then we're just one problem
@@ -24,7 +25,10 @@ Also handled:
   * multilingual ``name:`` maps and the 2023+ ``statement/`` directory;
   * ``validation: default`` + ``validator_flags: float_tolerance X``;
   * Kattis scoring problems (``type: scoring``): secret subdirectories
-    become subtask groups, points from each group's testdata.yaml.
+    become subtask groups, points from each group's testdata.yaml;
+  * interactive problems: the interactor AND the headers it includes
+    (``validation.h``), the ``*.interaction`` sample transcripts, and the
+    ``attachments/`` teams download to test locally.
 
 Idempotency: re-importing updates existing rows keyed by
 ``(contest_id, problem.external_id)`` so admins can iterate on a package
@@ -181,40 +185,6 @@ def _parse_validation(meta: dict) -> tuple[str, Optional[float]]:
     return "tokens", None
 
 
-def _load_interactor(zf: zipfile.ZipFile, proot: str) -> tuple[Optional[str], str]:
-    """Find an interactor script inside a DOMjudge/Kattis package.
-
-    DOMjudge puts interactive validators under ``output_validators/<any>/``.
-    We pick the first source file (``.py`` first, then C/C++/Java) and
-    read its contents. Returns ``(source, language_id)`` where
-    language_id maps into our ``Language`` table. Returns ``(None, "py3")``
-    when nothing is found."""
-    base = f"{proot}/output_validators/" if proot else "output_validators/"
-    candidates = [n for n in zf.namelist() if n.startswith(base) and not n.endswith("/")]
-    if not candidates:
-        return None, "py3"
-    # Prefer Python - easier to reason about, and it's our default
-    # interactor language so new problems work without lang config.
-    order = [".py", ".cpp", ".cc", ".cxx", ".c", ".java"]
-    lang_by_ext = {
-        ".py": "py3",
-        ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp",
-        ".c": "c",
-        ".java": "java",
-    }
-    candidates.sort(key=lambda n: (order.index(os.path.splitext(n)[1]) if os.path.splitext(n)[1] in order else 99, n))
-    for member in candidates:
-        ext = os.path.splitext(member)[1]
-        if ext not in lang_by_ext:
-            continue
-        try:
-            raw = zf.read(member)
-            return raw.decode("utf-8", errors="replace"), lang_by_ext[ext]
-        except Exception:  # noqa: BLE001
-            continue
-    return None, "py3"
-
-
 _SRC_LANG_BY_EXT = {
     ".py": "py3",
     ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp",
@@ -260,6 +230,115 @@ def _load_validator(zf: zipfile.ZipFile, proot: str) -> tuple[Optional[str], str
         except Exception:  # noqa: BLE001
             continue
     return source, lang, aux
+
+
+def _load_interactor(zf: zipfile.ZipFile, proot: str) -> tuple[Optional[str], str, dict[str, str]]:
+    """Find an interactor inside a DOMjudge/Kattis package.
+
+    DOMjudge puts interactive validators under ``output_validators/<any>/``.
+    Same shape as a custom output validator, so this is ``_load_validator``
+    under another name: the main source (``.py`` first, then C/C++/Java)
+    plus every other source/header in the directory as aux files.
+
+    Those aux files matter. Real BAPC/Kattis interactors are C++ and start
+    with ``#include "validation.h"``; importing the .cpp alone produced an
+    interactor that could not compile, i.e. a judge error on every single
+    submission. Returns ``(source, language_id, aux_files)``."""
+    return _load_validator(zf, proot)
+
+
+# Attachments are contestant-facing downloads, so they are bounded much
+# tighter than the package as a whole: a testing tool plus a couple of
+# sample inputs is a few KB. The cap is per problem and per file.
+_MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024
+_MAX_ATTACHMENTS_TOTAL_BYTES = 8 * 1024 * 1024
+_MAX_ATTACHMENTS = 25
+
+_CONTENT_TYPE_BY_EXT = {
+    ".py": "text/x-python", ".txt": "text/plain", ".in": "text/plain",
+    ".ans": "text/plain", ".md": "text/markdown", ".json": "application/json",
+    ".yaml": "text/yaml", ".yml": "text/yaml", ".csv": "text/csv",
+    ".h": "text/x-c", ".hpp": "text/x-c", ".c": "text/x-c",
+    ".cpp": "text/x-c", ".cc": "text/x-c", ".java": "text/x-java-source",
+    ".kt": "text/plain", ".sh": "text/x-shellscript", ".zip": "application/zip",
+    ".pdf": "application/pdf",
+}
+
+
+def _load_attachments(zf: zipfile.ZipFile, proot: str) -> tuple[list[tuple[str, str, bytes]], list[str]]:
+    """Read ``<problem>/attachments/`` into ``[(filename, content_type,
+    bytes), ...]`` plus a list of human-readable skip reasons.
+
+    This is where interactive problems ship their local testing tool
+    (``testing_tool.py`` and the ``*.in`` files it takes). Teams cannot
+    develop an interactive solution without it, so the files have to reach
+    the problem page - the importer used to drop the directory silently.
+
+    Names are flattened to their basename and sanitised: an attachment
+    name is echoed in a Content-Disposition header, and nested paths have
+    no meaning once the files are listed side by side."""
+    base = f"{proot}/attachments/" if proot else "attachments/"
+    out: list[tuple[str, str, bytes]] = []
+    skipped: list[str] = []
+    total = 0
+    seen: set[str] = set()
+    for info in sorted(zf.infolist(), key=lambda i: i.filename):
+        name = info.filename
+        if not name.startswith(base) or name.endswith("/"):
+            continue
+        safe = _safe_filename(os.path.basename(name))
+        if not safe or safe in seen:
+            continue
+        if len(out) >= _MAX_ATTACHMENTS:
+            skipped.append(f"attachment '{safe}' skipped (more than {_MAX_ATTACHMENTS} attachments)")
+            continue
+        if info.file_size > _MAX_ATTACHMENT_BYTES:
+            skipped.append(f"attachment '{safe}' skipped ({info.file_size} bytes > {_MAX_ATTACHMENT_BYTES})")
+            continue
+        if total + info.file_size > _MAX_ATTACHMENTS_TOTAL_BYTES:
+            skipped.append(f"attachment '{safe}' skipped (total attachment size over {_MAX_ATTACHMENTS_TOTAL_BYTES} bytes)")
+            continue
+        try:
+            data = zf.read(name)
+        except Exception:  # noqa: BLE001
+            skipped.append(f"attachment '{safe}' could not be read")
+            continue
+        ext = os.path.splitext(safe)[1].lower()
+        out.append((safe, _CONTENT_TYPE_BY_EXT.get(ext, "application/octet-stream"), data))
+        seen.add(safe)
+        total += len(data)
+    return out, skipped
+
+
+def _safe_filename(name: str) -> str:
+    """Strip anything that could escape a directory or confuse a header:
+    path separators are already gone (we take the basename), so this only
+    has to kill traversal dots and control characters."""
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", (name or "").strip())
+    cleaned = cleaned.lstrip(".")
+    return cleaned[:255]
+
+
+def _load_sample_interactions(zf: zipfile.ZipFile, proot: str) -> list[dict]:
+    """Read ``data/sample/*.interaction`` transcripts.
+
+    Interactive problems have no sample ``.in``/``.ans`` pair to show - the
+    sample is a *transcript*, one line per message, prefixed ``<`` when the
+    judge speaks and ``>`` when the team does. They are display-only: they
+    carry no expected output, so turning them into Testcase rows would feed
+    the interactor garbage. Returns ``[{"name", "content"}, ...]``."""
+    prefix = f"{proot}/data/sample/" if proot else "data/sample/"
+    out: list[dict] = []
+    for name in sorted(n for n in zf.namelist() if n.startswith(prefix)):
+        if not name.endswith(".interaction"):
+            continue
+        try:
+            content = zf.read(name).decode("utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            continue
+        stem = os.path.basename(name)[: -len(".interaction")]
+        out.append({"name": stem, "content": content})
+    return out
 
 
 _FLOAT_TOKEN_RE = re.compile(r"^[+-]?(?:\d+\.\d*|\.\d+|\d+[eE][+-]?\d+|\d+\.\d*[eE][+-]?\d+)$")
@@ -750,16 +829,42 @@ def import_domjudge_package(
         # If the package is interactive, pull the interactor source from
         # output_validators/ so the admin doesn't have to paste it by hand.
         if checker_kind == "interactive":
-            inter_src, inter_lang = _load_interactor(pzf, proot)
+            inter_src, inter_lang, inter_aux = _load_interactor(pzf, proot)
             if inter_src:
                 problem.interactor_script = inter_src
                 problem.interactor_language = inter_lang
+                # Companion files (validation.h & co). Always overwrite,
+                # including with an empty map, so a re-import that dropped
+                # a header doesn't leave a stale one behind.
+                problem.interactor_aux_files = (
+                    json.dumps(inter_aux) if inter_aux else None
+                )
             elif not problem.interactor_script:
                 report.skipped.append(
                     f"{external_id}: interactive problem but no interactor "
                     "source found under output_validators/ - paste it via "
                     "the admin UI or the problem will fail to judge."
                 )
+
+        # Sample interaction transcripts (interactive problems only ship
+        # these - there is no .in/.ans sample to render).
+        interactions = _load_sample_interactions(pzf, proot)
+        problem.sample_interaction = json.dumps(interactions) if interactions else None
+
+        # Attachments: the local testing tool and whatever else the
+        # statement tells teams to download.
+        attachments, att_skipped = _load_attachments(pzf, proot)
+        report.skipped.extend(f"{external_id}: {msg}" for msg in att_skipped)
+        if attachments or not is_new:
+            db.query(models.ProblemAttachment).filter(
+                models.ProblemAttachment.problem_id == problem.id,
+            ).delete()
+            db.flush()
+        for fname, ctype, blob in attachments:
+            db.add(models.ProblemAttachment(
+                problem_id=problem.id, filename=fname,
+                content_type=ctype, size_bytes=len(blob), content=blob,
+            ))
 
         # Statement PDF - extract to uploads/icpc/{contest_id}/{external_id}.pdf.
         pdf_member = _find_pdf(pzf, proot)

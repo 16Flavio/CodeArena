@@ -1658,6 +1658,7 @@ def judge(
     interactor_language: str = "py3",
     interactor_compile_cmd: str = "",
     interactor_run_cmd: str = "",
+    interactor_aux_files: Optional[dict] = None,
     checker_script: Optional[str] = None,
     checker_language: str = "py3",
     checker_compile_cmd: str = "",
@@ -1680,7 +1681,9 @@ def judge(
     ``verdict()`` sugar. Any other language compiles ``interactor_script``
     in a sibling workdir using ``interactor_compile_cmd`` and invokes it
     with ``interactor_run_cmd``; the compiled interactor reads the testcase
-    via ``INTERACTOR_INPUT_FILE`` / ``INTERACTOR_EXPECTED_FILE`` env paths."""
+    via ``INTERACTOR_INPUT_FILE`` / ``INTERACTOR_EXPECTED_FILE`` env paths.
+    ``interactor_aux_files`` is a {filename: content} map written next to
+    the interactor source before compiling (headers it ``#include``s)."""
     # In docker mode the workdir must live where the sandbox container can
     # bind-mount it at the same absolute path (SCORING_WORKDIR, e.g.
     # /judge-work shared host↔worker). Otherwise the OS default temp dir.
@@ -1721,6 +1724,23 @@ def judge(
         if is_interactive and ilang != "py3":
             inter_workdir = os.path.join(workdir, "interactor")
             os.makedirs(inter_workdir, exist_ok=True)
+            if _use_docker():
+                # The interactor runs as the sandbox uid and writes its
+                # input/expected/feedback files in here.
+                try:
+                    os.chmod(inter_workdir, 0o777)
+                except OSError:
+                    pass
+            # Headers the interactor #includes - real Kattis/BAPC C++
+            # interactors are one file plus ``validation.h``, and without
+            # it the compile fails and every submission is a judge error.
+            aux_map = interactor_aux_files if isinstance(interactor_aux_files, dict) else {}
+            for aux_name, aux_content in aux_map.items():
+                safe = os.path.basename(str(aux_name))
+                if not safe:
+                    continue
+                with open(os.path.join(inter_workdir, safe), "w", encoding="utf-8") as f:
+                    f.write(str(aux_content))
             inter_compile = compile_source(
                 ilang, interactor_compile_cmd or "",
                 interactor_script or "", workdir=inter_workdir,

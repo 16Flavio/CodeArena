@@ -1,8 +1,8 @@
 from sqlalchemy import (
-    Column, Integer, String, Boolean, Float, Text, DateTime,
+    Column, Integer, String, Boolean, Float, Text, DateTime, LargeBinary,
     ForeignKey, UniqueConstraint, CheckConstraint,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import deferred, relationship
 from datetime import datetime, timezone
 from .database import Base
 
@@ -589,6 +589,18 @@ class Problem(Base):
     # Compiled languages read the testcase via INTERACTOR_INPUT_FILE /
     # INTERACTOR_EXPECTED_FILE env vars and speak plain stdin/stdout.
     interactor_language = Column(String(32), nullable=False, default="py3")
+    # JSON map {filename: content} for files the interactor needs beside its
+    # main source - headers it #includes, most often the BAPC/Kattis
+    # ``validation.h``. Dropping them made every compiled interactor
+    # imported from a real package fail to build (judge error on every
+    # submission), so they ride along exactly like ``checker_aux_files``.
+    interactor_aux_files = Column(Text, nullable=True)
+    # Sample *interaction transcripts* for interactive problems, as a JSON
+    # list of {"name": ..., "content": ...}. DOMjudge packages ship these
+    # as ``data/sample/*.interaction`` (lines prefixed ``<`` for judge to
+    # team, ``>`` for team to judge); they are display-only - there is no
+    # .in/.ans pair to judge, so they must not become Testcase rows.
+    sample_interaction = Column(Text, nullable=True)
     # Custom output validator (checker_kind="custom"), Kattis interface:
     # ``validator input_file answer_file feedback_dir < team_output``,
     # exit 42 = accepted, 43 = rejected. ``checker_script`` is the main
@@ -619,10 +631,47 @@ class Problem(Base):
         cascade="all, delete-orphan",
         order_by="Testcase.rank",
     )
+    attachments = relationship(
+        "ProblemAttachment",
+        back_populates="problem",
+        cascade="all, delete-orphan",
+        order_by="ProblemAttachment.filename",
+    )
 
     __table_args__ = (
         UniqueConstraint("contest_id", "external_id", name="uq_problem_contest_external"),
         UniqueConstraint("contest_id", "label", name="uq_problem_contest_label"),
+    )
+
+
+class ProblemAttachment(Base):
+    """A file shipped with a problem for contestants to download.
+
+    DOMjudge/Kattis packages put these under ``attachments/`` - most often
+    the interactive problems' ``testing_tool.py`` plus the sample inputs it
+    takes, sometimes a header or a data file the statement refers to.
+    Without them a team cannot test an interactive solution locally.
+
+    The bytes live in the DB rather than on disk: attachments are small
+    (we cap them on import), and keeping them in the row means no shared
+    volume between the backend and the workers, no orphan files after a
+    re-import, and deletion follows the problem automatically."""
+    __tablename__ = "problem_attachments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    problem_id = Column(Integer, ForeignKey("problems.id", ondelete="CASCADE"), nullable=False, index=True)
+    filename = Column(String(255), nullable=False)
+    content_type = Column(String(128), nullable=False, default="application/octet-stream")
+    size_bytes = Column(Integer, nullable=False, default=0)
+    # Deferred: listing a problem loads attachment *metadata* only. Without
+    # this every problem-list response would drag the file bodies along.
+    content = deferred(Column(LargeBinary, nullable=False))
+    created_at = Column(DateTime, default=utcnow)
+
+    problem = relationship("Problem", back_populates="attachments")
+
+    __table_args__ = (
+        UniqueConstraint("problem_id", "filename", name="uq_attachment_problem_filename"),
     )
 
 
