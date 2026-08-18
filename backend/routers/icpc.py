@@ -198,11 +198,19 @@ def list_problems(
     # PDF-statement endpoint, so a URL guess can't leak content either.
     if not _user_is_participant(db, contest, user):
         return []
+    # Alphabetical by label, like DOMjudge: the letter IS the problem's
+    # identity during a contest ("I'm on C"), so the list, the scoreboard
+    # columns and the presentation must all agree with it. ``order_idx``
+    # used to lead here, which meant a package whose problems.yaml order
+    # disagreed with its letters displayed them out of sequence. It stays
+    # on the row as import bookkeeping (the package's own order) but no
+    # longer drives display anywhere; ``id`` is the tie-break, and labels
+    # are unique per contest so it never actually decides.
     problems = (
         db.query(models.Problem)
         .options(selectinload(models.Problem.attachments))
         .filter(models.Problem.contest_id == contest_id)
-        .order_by(models.Problem.order_idx, models.Problem.label)
+        .order_by(models.Problem.label, models.Problem.id)
         .all()
     )
     if not problems:
@@ -1197,7 +1205,7 @@ def _build_icpc_scoreboard(
         db.query(models.Problem)
         .options(selectinload(models.Problem.attachments))
         .filter(models.Problem.contest_id == contest_id)
-        .order_by(models.Problem.order_idx, models.Problem.label)
+        .order_by(models.Problem.label, models.Problem.id)
         .all()
     )
     problem_out = [_problem_to_out(p, samples=[]) for p in problems]
@@ -1341,7 +1349,7 @@ def icpc_presentation(
         db.query(models.Problem)
         .options(selectinload(models.Problem.attachments))
         .filter(models.Problem.contest_id == contest_id)
-        .order_by(models.Problem.order_idx, models.Problem.label)
+        .order_by(models.Problem.label, models.Problem.id)
         .all()
     )
     problem_out = [_problem_to_out(p, samples=[]) for p in problems]
@@ -2317,7 +2325,7 @@ def icpc_contest_stats(
     problems = (
         db.query(models.Problem)
         .filter(models.Problem.contest_id == contest_id)
-        .order_by(models.Problem.order_idx, models.Problem.label)
+        .order_by(models.Problem.label, models.Problem.id)
         .all()
     )
     subs = (
@@ -2501,7 +2509,7 @@ def icpc_event_feed(
         problems = (
             db.query(models.Problem)
             .filter(models.Problem.contest_id == contest_id)
-            .order_by(models.Problem.order_idx, models.Problem.label)
+            .order_by(models.Problem.label, models.Problem.id)
             .all()
         )
         for idx, p in enumerate(problems, start=1):

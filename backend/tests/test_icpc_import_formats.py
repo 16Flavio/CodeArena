@@ -728,3 +728,63 @@ def test_interactive_problem_without_interactor_is_a_judge_error(client):
     assert "interactor" in (body["compile_output"] or "").lower()
     # Nothing ran, so nothing of the testcase reached the submission.
     assert body["runs"] == []
+
+
+def test_problems_are_listed_alphabetically_by_label(client):
+    """The letter is the problem's identity during a contest, so every view
+    orders by it. A package whose problems.yaml order disagrees with its
+    letters used to display them out of sequence."""
+    admin = auth_header(client, "root")
+    cid = _make_icpc_contest(client, admin, title="Order")
+
+    def build(zf):
+        # problems.yaml order is deliberately NOT the alphabetical one.
+        zf.writestr("problems.yaml",
+                    "- id: zeta\n  label: C\n"
+                    "- id: alpha\n  label: A\n"
+                    "- id: mid\n  label: B\n")
+        for probid, label in (("zeta", "C"), ("alpha", "A"), ("mid", "B")):
+            zf.writestr(f"problem-{probid}/problem.yaml", f"name: Prob {label}\n")
+            zf.writestr(f"problem-{probid}/domjudge-problem.ini", f"probid='{probid}'\n")
+            zf.writestr(f"problem-{probid}/data/secret/1.in", "x\n")
+            zf.writestr(f"problem-{probid}/data/secret/1.ans", "x\n")
+
+    _upload(client, admin, cid, build)
+    labels = [p["label"] for p in _problems(client, admin, cid)]
+    assert labels == ["A", "B", "C"], labels
+    # order_idx keeps the package's own order - it is import bookkeeping,
+    # not the display order.
+    by_label = {p["label"]: p["order_idx"] for p in _problems(client, admin, cid)}
+    assert by_label["C"] < by_label["A"]
+
+    # The scoreboard columns must agree with the list, or a cell lands under
+    # the wrong letter.
+    sb = client.get(f"/api/contests/{cid}/icpc-scoreboard", headers=admin).json()
+    assert [p["label"] for p in sb["problems"]] == ["A", "B", "C"]
+
+
+def test_duplicating_a_contest_carries_problem_attachments(client):
+    """Attachments live in their own table, so the column-generic problem
+    copy does not reach them. A duplicated interactive problem without its
+    testing tool is a broken problem."""
+    admin = auth_header(client, "root")
+    cid = _make_icpc_contest(client, admin, title="Dup")
+    _upload(client, admin, cid, _interactive_package)
+
+    r = client.post(f"/api/contests/{cid}/duplicate", headers=admin)
+    assert r.status_code == 200, r.text
+    copy_id = r.json()["id"]
+
+    copy = _problems(client, admin, copy_id)[0]
+    assert [a["filename"] for a in copy["attachments"]] == ["1.in", "testing_tool.py"]
+    assert len(copy["sample_interactions"]) == 1
+
+    # And the copy's attachment is its own row, downloadable on its own.
+    att = next(a for a in copy["attachments"] if a["filename"] == "testing_tool.py")
+    ticket = client.post("/api/auth/stream-ticket", headers=admin).json()["ticket"]
+    d = client.get(
+        f"/api/contests/{copy_id}/problems/{copy['id']}/attachments/{att['id']}"
+        f"?token={ticket}"
+    )
+    assert d.status_code == 200, d.text
+    assert d.content.decode() == _TESTING_TOOL
