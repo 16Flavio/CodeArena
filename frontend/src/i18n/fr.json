@@ -257,6 +257,7 @@
     "toastMissingFields": "Label, nom et identifiant externe sont requis",
     "passesField": "Passes",
     "interactive": "Interactif",
+    "interactorMissing": "interacteur manquant",
     "checkerInteractive": "Interactif (interacteur Python)",
     "exportZip": "Exporter en ZIP DOMjudge",
     "exportFailed": "Échec de l'export",

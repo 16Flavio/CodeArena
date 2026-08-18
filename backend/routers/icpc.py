@@ -521,8 +521,24 @@ def update_problem(
         p.checker_kind = payload.checker_kind
     p.checker_epsilon = payload.checker_epsilon
     p.num_passes = max(1, int(payload.num_passes or 1))
-    # Trim + normalise so empty string doesn't look like "has interactor".
-    p.interactor_script = (payload.interactor_script or "").strip() or None
+    # An empty interactor in the payload means "leave the stored one alone",
+    # NOT "delete it". The admin form cannot prefill the script (the list
+    # endpoint doesn't return the body, it's long and admin-only), so it
+    # always posts an empty one - and this used to silently wipe the
+    # interactor of an imported problem the first time anyone retimed it or
+    # fixed a typo in its name. The problem then judged as a batch problem
+    # and every submission died on EOF.
+    #
+    # Clearing is still possible, and only where it is unambiguous: moving
+    # the problem off interactive judging drops the script with it. The aux
+    # files follow the script, and survive a paste-over (a hand-edited
+    # interactor almost always still includes the same headers).
+    new_interactor = (payload.interactor_script or "").strip()
+    if new_interactor:
+        p.interactor_script = new_interactor
+    elif (p.checker_kind or "").lower() != "interactive":
+        p.interactor_script = None
+        p.interactor_aux_files = None
     if payload.interactor_language:
         p.interactor_language = payload.interactor_language
     p.order_idx = int(payload.order_idx or p.order_idx or 0)

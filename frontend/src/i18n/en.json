@@ -257,6 +257,7 @@
     "toastMissingFields": "Label, name and external id are required",
     "passesField": "Passes",
     "interactive": "Interactive",
+    "interactorMissing": "interactor missing",
     "checkerInteractive": "Interactive (Python interactor)",
     "exportZip": "Export as DOMjudge ZIP",
     "exportFailed": "Couldn't export problem",

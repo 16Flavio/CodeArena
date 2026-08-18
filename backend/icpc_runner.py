@@ -1684,6 +1684,26 @@ def judge(
     via ``INTERACTOR_INPUT_FILE`` / ``INTERACTOR_EXPECTED_FILE`` env paths.
     ``interactor_aux_files`` is a {filename: content} map written next to
     the interactor source before compiling (headers it ``#include``s)."""
+    # A misconfigured problem is a JUDGE error, never a contestant verdict.
+    # Falling through to the batch path here (what the code used to do when
+    # the interactor was missing) judges an interactive problem as if it
+    # were a plain one: the submission is handed the interactor's own input
+    # file on stdin, reads past the data the statement gives it, and dies on
+    # EOF - reported to the contestant as their bug. It also shows them a
+    # file the problem deliberately keeps on the judge's side.
+    kind = (checker_kind or "").lower()
+    if kind == "interactive" and not (interactor_script or "").strip():
+        return IE, (
+            "This problem is set to interactive judging but has no interactor "
+            "script. Re-import the package or paste the interactor in the "
+            "admin problem editor."
+        ), []
+    if kind == "custom" and not (checker_script or "").strip():
+        return IE, (
+            "This problem is set to a custom output validator but has no "
+            "validator script. Re-import the package or change the checker "
+            "kind."
+        ), []
     # In docker mode the workdir must live where the sandbox container can
     # bind-mount it at the same absolute path (SCORING_WORKDIR, e.g.
     # /judge-work shared host↔worker). Otherwise the OS default temp dir.
