@@ -7,13 +7,13 @@ import { python } from '@codemirror/lang-python';
 import { oneDark } from '@codemirror/theme-one-dark';
 import {
   ChevronRight, Upload, CheckCircle, XCircle, Clock, AlertCircle,
-  Code2, FileText as FileTextIcon, MessageCircle, Copy, Check,
+  Code2, FileText as FileTextIcon, MessageCircle, Copy, Check, Download,
 } from 'lucide-react';
 import {
   listIcpcProblems, listIcpcLanguages, submitIcpc, getJudging,
   listClarifications, createClarification, answerClarification,
   updateClarification, deleteClarification,
-  openStatementPdf, getMyLatestProblemSubmission,
+  openStatementPdf, downloadProblemAttachment, getMyLatestProblemSubmission,
 } from '../api';
 import { textOn } from '../utils/contrast';
 import { useTheme } from '../ThemeContext';
@@ -379,6 +379,35 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                     )}
                   </div>
 
+                  {(activeProblem.attachments || []).length > 0 && (
+                    <div className="mt-4">
+                      <h3 className="text-sm font-semibold text-zinc-700 mb-2 dark:text-zinc-300">
+                        {t('icpc.attachments')}
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {activeProblem.attachments.map((att) => (
+                          <button
+                            key={att.id}
+                            type="button"
+                            onClick={() =>
+                              downloadProblemAttachment(
+                                contest.id, activeProblem.id, att.id, att.filename,
+                              ).catch(() => toast.error(t('icpc.attachmentFailed')))
+                            }
+                            className="btn-secondary text-xs"
+                            title={t('icpc.attachmentDownload', { name: att.filename })}
+                          >
+                            <Download className="w-3.5 h-3.5 mr-1 inline" />
+                            {att.filename}
+                            <span className="ml-1 text-zinc-400 dark:text-zinc-500">
+                              {formatFileSize(att.size_bytes)}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {activeProblem.sample_testcases.length > 0 && (
                     <div className="mt-4 space-y-3">
                       <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
@@ -397,6 +426,29 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
                             t={t}
                           />
                         </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Interactive problems: the sample is a transcript, not an
+                      input/output pair. Rendered as two columns so it reads
+                      the way the statement shows it - what the judge sends on
+                      the left, what the program answers on the right. */}
+                  {(activeProblem.sample_interactions || []).length > 0 && (
+                    <div className="mt-4 space-y-3">
+                      <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                        {t('icpc.sampleInteractions')}
+                      </h3>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-500">
+                        {t('icpc.interactionLegend')}
+                      </p>
+                      {activeProblem.sample_interactions.map((si, i) => (
+                        <InteractionTranscript
+                          key={si.name || i}
+                          label={t('icpc.sampleInteraction', { n: i + 1 })}
+                          content={si.content || ''}
+                          t={t}
+                        />
                       ))}
                     </div>
                   )}
@@ -762,6 +814,57 @@ export default function IcpcContestView({ contest, canParticipate, selectedTeamI
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+
+// Attachment sizes are small (a testing tool, a couple of sample inputs), so
+// one decimal of KB is enough resolution and MB never shows up in practice.
+function formatFileSize(bytes) {
+  const n = Number(bytes) || 0;
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+
+// A DOMjudge ``.interaction`` transcript: every line is one message, prefixed
+// ``<`` when the judge speaks and ``>`` when the submission answers. We strip
+// the marker and put each side in its own column, which is how the printed
+// statement shows it; anything unprefixed (stray text some packages add) stays
+// in the judge column rather than being silently dropped.
+function InteractionTranscript({ label, content, t }) {
+  const lines = (content || '').split(/\r?\n/).filter((l) => l !== '');
+  return (
+    <div>
+      <p className="text-[10px] uppercase text-zinc-400 mb-1 dark:text-zinc-500">{label}</p>
+      <div className="border border-zinc-200 rounded overflow-hidden text-xs font-mono dark:border-zinc-700/40">
+        <div className="grid grid-cols-2 bg-zinc-100 text-[10px] uppercase text-zinc-500 dark:bg-zinc-800/60 dark:text-zinc-400">
+          <div className="px-2 py-1 border-r border-zinc-200 dark:border-zinc-700/40">
+            {t('icpc.interactionRead')}
+          </div>
+          <div className="px-2 py-1">{t('icpc.interactionWrite')}</div>
+        </div>
+        {lines.map((line, i) => {
+          const fromJudge = line.startsWith('<');
+          const fromTeam = line.startsWith('>');
+          const text = fromJudge || fromTeam ? line.slice(1) : line;
+          return (
+            <div
+              key={i}
+              className="grid grid-cols-2 border-t border-zinc-100 dark:border-zinc-800"
+            >
+              <div className="px-2 py-1 border-r border-zinc-200 whitespace-pre-wrap dark:border-zinc-700/40">
+                {fromTeam ? '' : text}
+              </div>
+              <div className="px-2 py-1 whitespace-pre-wrap text-accent-700 dark:text-accent-400">
+                {fromTeam ? text : ''}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

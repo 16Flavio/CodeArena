@@ -290,6 +290,12 @@ def _judge_icpc_inner(db, sub: models.Submission, contest: models.Contest) -> No
             return
         inter_compile_cmd = ilang.compile_cmd or ""
         inter_run_cmd = ilang.run_cmd or ""
+    inter_aux = None
+    if problem.interactor_aux_files:
+        try:
+            inter_aux = json.loads(problem.interactor_aux_files)
+        except ValueError:
+            inter_aux = None
 
     # Same deal for compiled-language custom output validators.
     clang_id = (problem.checker_language or "py3").lower()
@@ -340,6 +346,7 @@ def _judge_icpc_inner(db, sub: models.Submission, contest: models.Contest) -> No
         interactor_language=ilang_id,
         interactor_compile_cmd=inter_compile_cmd,
         interactor_run_cmd=inter_run_cmd,
+        interactor_aux_files=inter_aux,
         checker_script=problem.checker_script,
         checker_language=clang_id,
         checker_compile_cmd=chk_compile_cmd,

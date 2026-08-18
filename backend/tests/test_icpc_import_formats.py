@@ -8,7 +8,9 @@ path already pinned in test_icpc.py:
 * ``validator_flags: float_tolerance X`` as a plain string;
 * the 2023+ ``statement/`` directory;
 * contest packages nesting one zip per problem + problems.yaml ordering;
-* Kattis scoring problems -> subtask groups with testdata.yaml points.
+* Kattis scoring problems -> subtask groups with testdata.yaml points;
+* interactive packages: the interactor's companion headers, the
+  ``*.interaction`` sample transcripts, and ``attachments/``.
 """
 import io
 import zipfile
@@ -418,3 +420,195 @@ def test_empty_package_is_a_clear_error(client):
     )
     assert r.status_code == 400
     assert "No problem found" in r.json()["detail"]
+
+
+# ── Interactive packages ──────────────────────────────────────────────────────
+#
+# A real interactive package (BAPC/Kattis shape) is more than an interactor
+# source: the interactor #includes ``validation.h``, the only sample material
+# is a ``*.interaction`` transcript (there is no .in/.ans pair to show), and
+# ``attachments/`` carries the testing tool teams need to develop locally.
+# Importing the .cpp alone produced an interactor that could not compile, so
+# every submission came back as a judge error.
+
+_INTERACTOR_HEADER = r"""
+#pragma once
+#include <cstdio>
+// Deliberately in the header: if the importer drops it, the interactor
+// below does not compile and the problem judges as IE.
+inline long expected_reply(long n) { return 2 * n; }
+"""
+
+_INTERACTOR_CPP = r"""
+#include "helper.h"
+#include <cstdlib>
+int main(int argc, char** argv) {
+    if (argc < 2) return 1;
+    FILE* f = fopen(argv[1], "r");
+    if (!f) return 1;
+    long n;
+    if (fscanf(f, "%ld", &n) != 1) { fclose(f); return 1; }
+    fclose(f);
+    printf("%ld\n", n);
+    fflush(stdout);
+    long reply;
+    if (scanf("%ld", &reply) != 1) return 43;
+    return reply == expected_reply(n) ? 42 : 43;  // DOMjudge: 42=AC, 43=WA
+}
+"""
+
+_TESTING_TOOL = "#!/usr/bin/env python3\n# local testing tool\nprint('hi')\n"
+
+
+def _interactive_package(zf):
+    zf.writestr("problem.yaml", "name: Doubler\nvalidation: custom interactive\n")
+    zf.writestr("domjudge-problem.ini", "probid='doubler'\n")
+    zf.writestr(".timelimit", "3\n")
+    zf.writestr("output_validators/output_validator/output_validator.cpp", _INTERACTOR_CPP)
+    zf.writestr("output_validators/output_validator/helper.h", _INTERACTOR_HEADER)
+    # Interactive samples are transcripts, not input/output pairs.
+    zf.writestr("data/sample/1.interaction", "<7\n>14\n")
+    zf.writestr("data/secret/01.in", "7\n")
+    zf.writestr("data/secret/01.ans", "")
+    zf.writestr("data/secret/02.in", "1000\n")
+    zf.writestr("data/secret/02.ans", "")
+    zf.writestr("attachments/testing_tool.py", _TESTING_TOOL)
+    zf.writestr("attachments/1.in", "7\n")
+
+
+def test_interactive_package_imports_interactor_header_samples_and_attachments(client):
+    from backend import database, models
+
+    admin = auth_header(client, "root")
+    cid = _make_icpc_contest(client, admin, title="Interactive")
+    body = _upload(client, admin, cid, _interactive_package)
+    assert body["problems_imported"] == 1
+    # Only the secret pairs are testcases - the .interaction transcript is
+    # display-only and must NOT become one (the interactor would be handed a
+    # transcript as its input file).
+    assert body["testcases_imported"] == 2
+
+    p = _problems(client, admin, cid)[0]
+    assert p["checker_kind"] == "interactive"
+    assert p["has_interactor"] is True
+    assert p["interactor_language"] == "cpp"
+    assert p["sample_testcases"] == []
+    assert [si["content"] for si in p["sample_interactions"]] == ["<7\n>14\n"]
+    assert [(a["filename"], a["size_bytes"]) for a in p["attachments"]] == [
+        ("1.in", 2), ("testing_tool.py", len(_TESTING_TOOL)),
+    ]
+
+    sess = database.SessionLocal()
+    try:
+        prob = sess.query(models.Problem).filter(
+            models.Problem.contest_id == cid,
+        ).one()
+        import json as _json
+        # The header the interactor includes rode along. Without it the
+        # compile fails and every submission is a judge error.
+        assert "helper.h" in _json.loads(prob.interactor_aux_files)
+    finally:
+        sess.close()
+
+
+def test_interactive_attachment_download_and_gating(client):
+    """Attachments are problem material: same gate as the statement PDF
+    (registered participant, contest started), and served as a download."""
+    admin = auth_header(client, "root")
+    alice = auth_header(client, "alice")
+    cid = _make_icpc_contest(client, admin, title="Attach")
+    _upload(client, admin, cid, _interactive_package)
+    p = _problems(client, admin, cid)[0]
+    att = next(a for a in p["attachments"] if a["filename"] == "testing_tool.py")
+    url = f"/api/contests/{cid}/problems/{p['id']}/attachments/{att['id']}"
+
+    # No token at all.
+    assert client.get(url).status_code == 401
+
+    # A registered participant gets the bytes.
+    client.post(f"/api/contests/{cid}/register", json={}, headers=alice)
+    ticket = client.post("/api/auth/stream-ticket", headers=alice).json()["ticket"]
+    r = client.get(f"{url}?token={ticket}")
+    assert r.status_code == 200, r.text
+    assert r.content.decode() == _TESTING_TOOL
+    assert 'filename="testing_tool.py"' in r.headers["content-disposition"]
+
+    # A logged-in user who never registered does not.
+    bob = auth_header(client, "bob")
+    bob_ticket = client.post("/api/auth/stream-ticket", headers=bob).json()["ticket"]
+    assert client.get(f"{url}?token={bob_ticket}").status_code == 403
+
+
+def test_interactive_reimport_replaces_attachments(client):
+    """Re-importing an edited package must not pile duplicate attachments on
+    top of the old ones (the unique constraint would abort the import)."""
+    admin = auth_header(client, "root")
+    cid = _make_icpc_contest(client, admin, title="Reimport")
+    _upload(client, admin, cid, _interactive_package)
+
+    def build_v2(zf):
+        _interactive_package(zf)
+        zf.writestr("attachments/extra.txt", "new file\n")
+
+    _upload(client, admin, cid, build_v2)
+    p = _problems(client, admin, cid)[0]
+    assert [a["filename"] for a in p["attachments"]] == [
+        "1.in", "extra.txt", "testing_tool.py",
+    ]
+
+
+def test_interactive_package_round_trips(client):
+    """Export must carry the interactor's header, the transcripts and the
+    attachments - otherwise the re-imported copy silently fails to judge."""
+    admin = auth_header(client, "root")
+    cid_a = _make_icpc_contest(client, admin, title="RoundA")
+    cid_b = _make_icpc_contest(client, admin, title="RoundB")
+    _upload(client, admin, cid_a, _interactive_package)
+    pid = _problems(client, admin, cid_a)[0]["id"]
+
+    r = client.get(f"/api/icpc/problems/{pid}/export", headers=admin)
+    assert r.status_code == 200, r.text
+    names = zipfile.ZipFile(io.BytesIO(r.content)).namelist()
+    assert any(n.endswith("output_validators/interactor/helper.h") for n in names)
+    assert any(n.endswith("data/sample/1.interaction") for n in names)
+    assert any(n.endswith("attachments/testing_tool.py") for n in names)
+
+    r = client.post(
+        f"/api/contests/{cid_b}/import-domjudge-package",
+        headers=admin,
+        files={"file": ("doubler.zip", io.BytesIO(r.content), "application/zip")},
+    )
+    assert r.status_code == 200, r.text
+    copy = _problems(client, admin, cid_b)[0]
+    assert copy["checker_kind"] == "interactive"
+    assert copy["interactor_language"] == "cpp"
+    assert len(copy["sample_interactions"]) == 1
+    assert len(copy["attachments"]) == 2
+
+
+def test_interactive_package_judges_end_to_end(client):
+    """The whole point: an interactor that #includes a header shipped in the
+    package compiles and judges. Skips on hosts without g++."""
+    import shutil as _shutil
+    import pytest
+    if _shutil.which("g++") is None:
+        pytest.skip("g++ not available on this host")
+
+    admin = auth_header(client, "root")
+    cid = _make_icpc_contest(client, admin, title="Judge")
+    _upload(client, admin, cid, _interactive_package)
+    pid = _problems(client, admin, cid)[0]["id"]
+
+    good = "import sys\nn = int(sys.stdin.readline())\nprint(n * 2, flush=True)\n"
+    r = client.post(f"/api/icpc/problems/{pid}/dry-run",
+                    json={"language": "py3", "source": good}, headers=admin)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    # An IE here means the interactor did not build - i.e. its header was
+    # dropped on import again.
+    assert body["verdict"] == "AC", body
+
+    bad = "import sys\nn = int(sys.stdin.readline())\nprint(n * 2 + 1, flush=True)\n"
+    r = client.post(f"/api/icpc/problems/{pid}/dry-run",
+                    json={"language": "py3", "source": bad}, headers=admin)
+    assert r.json()["verdict"] == "WA", r.json()

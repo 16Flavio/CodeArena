@@ -328,6 +328,30 @@ export async function openStatementPdf(contestId, problemId, version = 0) {
   }
 }
 
+// Download a problem attachment (interactive problems ship a local testing
+// tool; some problems ship data files). Same short-lived-ticket dance as the
+// statement PDF - the durable session token never enters a URL - then a
+// synthetic <a download> click so the browser saves the file under its real
+// name instead of rendering it.
+export async function downloadProblemAttachment(contestId, problemId, attachmentId, filename) {
+  const { data } = await getStreamTicket();
+  const url =
+    `/api/contests/${contestId}/problems/${problemId}/attachments/${attachmentId}` +
+    `?token=${encodeURIComponent(data.ticket)}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(await r.text());
+  const blob = await r.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = objectUrl;
+  a.download = filename || 'attachment';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+}
+
+
 // Announcements
 export const listAnnouncements = (contestId) =>
   api.get(`/contests/${contestId}/announcements`);
