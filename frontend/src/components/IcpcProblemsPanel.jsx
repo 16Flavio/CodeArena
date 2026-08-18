@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import {
   Code, Trash2, RefreshCw, Clock, Cpu, Edit, Save, X, Plus, ChevronDown, ChevronUp,
   MessageCircle, FileDown, FileText, Upload, FileX, FlaskConical, Play,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   listIcpcProblems, deleteIcpcProblem, updateIcpcProblem, createIcpcProblem,
@@ -229,6 +230,17 @@ export default function IcpcProblemsPanel({ contestId }) {
                           <span className="text-sky-600 inline-flex items-center gap-1 dark:text-sky-400">
                             <MessageCircle className="w-3 h-3" />
                             {t('icpcProblems.interactive')}
+                          </span>
+                        )}
+                        {/* Interactive with nothing to talk to: the judge
+                            rejects every submission with a judge error until
+                            the package is re-imported. Say so here rather
+                            than let an admin discover it from a contestant's
+                            report mid-contest. */}
+                        {p.checker_kind === 'interactive' && !p.has_interactor && (
+                          <span className="text-red-600 inline-flex items-center gap-1 dark:text-red-400">
+                            <AlertTriangle className="w-3 h-3" />
+                            {t('icpcProblems.interactorMissing')}
                           </span>
                         )}
                       </p>

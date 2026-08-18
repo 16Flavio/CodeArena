@@ -612,3 +612,119 @@ def test_interactive_package_judges_end_to_end(client):
     r = client.post(f"/api/icpc/problems/{pid}/dry-run",
                     json={"language": "py3", "source": bad}, headers=admin)
     assert r.json()["verdict"] == "WA", r.json()
+
+
+def test_admin_edit_keeps_the_imported_interactor(client):
+    """Retiming an imported interactive problem must not delete its
+    interactor. The admin form cannot prefill the script body, so it always
+    posts an empty one - which used to wipe the stored interactor and leave
+    the problem judging as a batch problem (every submission dying on EOF
+    while reading the interactor's own input file)."""
+    from backend import database, models
+
+    admin = auth_header(client, "root")
+    cid = _make_icpc_contest(client, admin, title="Edit")
+    _upload(client, admin, cid, _interactive_package)
+    p = _problems(client, admin, cid)[0]
+    assert p["has_interactor"] is True
+
+    r = client.patch(
+        f"/api/icpc/problems/{p['id']}",
+        json={
+            "external_id": p["external_id"], "label": p["label"],
+            "name": "Doubler (retimed)", "color": "",
+            "time_limit_ms": 5000, "memory_limit_mb": p["memory_limit_mb"],
+            "checker_kind": "interactive", "checker_epsilon": None,
+            "num_passes": 1,
+            # What the admin UI actually sends for an existing problem.
+            "interactor_script": "",
+            "interactor_language": "cpp",
+            "order_idx": p["order_idx"], "scoring_mode": "icpc",
+        },
+        headers=admin,
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["time_limit_ms"] == 5000
+    assert r.json()["has_interactor"] is True
+
+    sess = database.SessionLocal()
+    try:
+        prob = sess.query(models.Problem).filter(
+            models.Problem.id == p["id"],
+        ).one()
+        assert (prob.interactor_script or "").strip()
+        import json as _json
+        assert "helper.h" in _json.loads(prob.interactor_aux_files)
+    finally:
+        sess.close()
+
+
+def test_moving_off_interactive_drops_the_interactor(client):
+    """The one unambiguous way to clear it: take the problem off
+    interactive judging."""
+    from backend import database, models
+
+    admin = auth_header(client, "root")
+    cid = _make_icpc_contest(client, admin, title="Clear")
+    _upload(client, admin, cid, _interactive_package)
+    p = _problems(client, admin, cid)[0]
+
+    r = client.patch(
+        f"/api/icpc/problems/{p['id']}",
+        json={
+            "external_id": p["external_id"], "label": p["label"],
+            "name": p["name"], "color": "",
+            "time_limit_ms": p["time_limit_ms"],
+            "memory_limit_mb": p["memory_limit_mb"],
+            "checker_kind": "tokens", "checker_epsilon": None,
+            "num_passes": 1, "interactor_script": "",
+            "interactor_language": "py3",
+            "order_idx": p["order_idx"], "scoring_mode": "icpc",
+        },
+        headers=admin,
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["has_interactor"] is False
+    sess = database.SessionLocal()
+    try:
+        prob = sess.query(models.Problem).filter(
+            models.Problem.id == p["id"],
+        ).one()
+        assert prob.interactor_script is None
+        assert prob.interactor_aux_files is None
+    finally:
+        sess.close()
+
+
+def test_interactive_problem_without_interactor_is_a_judge_error(client):
+    """A problem marked interactive with no interactor must report IE, never
+    fall through to batch judging: that path pipes the interactor's input
+    file into the submission, which then dies on EOF and gets blamed for it.
+    """
+    from backend import database, models
+
+    admin = auth_header(client, "root")
+    cid = _make_icpc_contest(client, admin, title="Broken")
+    _upload(client, admin, cid, _interactive_package)
+    pid = _problems(client, admin, cid)[0]["id"]
+
+    # Simulate the damaged row (however it got there: an old edit, a
+    # half-finished import, a hand-written problem).
+    sess = database.SessionLocal()
+    try:
+        sess.query(models.Problem).filter(
+            models.Problem.id == pid,
+        ).update({"interactor_script": None})
+        sess.commit()
+    finally:
+        sess.close()
+
+    src = "import sys\nn = int(sys.stdin.readline())\nprint(n * 2, flush=True)\n"
+    r = client.post(f"/api/icpc/problems/{pid}/dry-run",
+                    json={"language": "py3", "source": src}, headers=admin)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["verdict"] == "IE", body
+    assert "interactor" in (body["compile_output"] or "").lower()
+    # Nothing ran, so nothing of the testcase reached the submission.
+    assert body["runs"] == []
