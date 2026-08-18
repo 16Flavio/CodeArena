@@ -2462,6 +2462,21 @@ def duplicate_contest(
                     if c.name not in ("id", "problem_id")
                 }
                 db.add(models.Testcase(problem_id=new_p.id, **tc_data))
+            # Attachments live in their own table, so the column-generic
+            # copy above does not reach them. A duplicated interactive
+            # problem without its testing tool is a broken problem.
+            for att in (
+                db.query(models.ProblemAttachment)
+                .filter(models.ProblemAttachment.problem_id == p.id)
+                .order_by(models.ProblemAttachment.filename.asc())
+                .all()
+            ):
+                att_data = {
+                    c.name: getattr(att, c.name)
+                    for c in models.ProblemAttachment.__table__.columns
+                    if c.name not in ("id", "problem_id")
+                }
+                db.add(models.ProblemAttachment(problem_id=new_p.id, **att_data))
 
     # Copy PDF statement if present.
     if src.problem_statement_pdf_path and os.path.exists(src.problem_statement_pdf_path):
