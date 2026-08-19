@@ -135,7 +135,9 @@ def _seed_languages() -> None:
     from .database import SessionLocal
     from . import models as _m
     defaults = [
-        ("py3", "Python 3", "py", "", "{python} {src}", 3.0),
+        # Contestant Python runs on PyPy, like a DOMjudge judgehost. See
+        # icpc_runner._pypy_bin for what {pypy} resolves to and why.
+        ("py3", "Python 3 (PyPy)", "py", "", "{pypy} {src}", 3.0),
         ("cpp", "C++ (g++17)", "cpp,cc,cxx,hpp,h",
          "g++ -std=gnu++17 -O2 -o {exe} {src}", "{exe}", 1.0),
         ("c", "C (gcc)", "c,h",

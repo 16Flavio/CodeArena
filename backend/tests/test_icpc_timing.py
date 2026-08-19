@@ -542,3 +542,68 @@ def test_throttled_sandbox_does_not_shorten_the_kill_budget(monkeypatch):
     seen = _stub_run_shell(monkeypatch, rc=0, elapsed_ms=10, cpu_ms=10)
     _run(time_factor=3.0)
     assert seen["timeout_s"] == pytest.approx(8.0)  # (3.0 + 1.0) / 0.5
+
+
+# ── Contestant Python runs on PyPy ───────────────────────────────────────────
+#
+# Problems imported from a DOMjudge contest are calibrated against PyPy,
+# because that is what a judgehost runs. Measured on one such problem, same
+# machine and same input: PyPy 0.62 s, CPython 31.5 s. Judging contestant
+# Python on CPython turned a solution DOMjudge accepted in 1.055 s into a TLE
+# at our 7 s hard limit.
+
+
+def test_pypy_placeholder_resolves_to_pypy_in_the_sandbox(monkeypatch):
+    _force_docker(monkeypatch)
+    assert icpc_runner._pypy_bin() == "pypy3"
+    cmd = icpc_runner._expand("{pypy} {src}", src="/w/main.py", exe="/w/bin",
+                              workdir="/w")
+    assert cmd == "pypy3 /w/main.py"
+
+
+def test_pypy_placeholder_falls_back_to_a_real_interpreter_off_docker(monkeypatch):
+    """No PyPy on a dev box or in CI. Degrading to the worker's own
+    interpreter keeps SCORING_MODE=subprocess usable; leaving the
+    placeholder unexpanded would make every Python submission fail to
+    start."""
+    monkeypatch.setenv("SCORING_MODE", "subprocess")
+    monkeypatch.setattr(icpc_runner, "_DOCKER_MODE", False)
+    monkeypatch.setattr("shutil.which", lambda name: None)
+    resolved = icpc_runner._pypy_bin()
+    assert "{pypy}" not in resolved
+    assert resolved  # some interpreter, never an empty command
+    cmd = icpc_runner._expand("{pypy} {src}", src="/w/main.py", exe="/w/bin",
+                              workdir="/w")
+    assert cmd.endswith(" /w/main.py")
+    assert "{pypy}" not in cmd
+
+
+def test_pypy_placeholder_prefers_a_host_pypy_when_there_is_one(monkeypatch):
+    monkeypatch.setenv("SCORING_MODE", "subprocess")
+    monkeypatch.setattr(icpc_runner, "_DOCKER_MODE", False)
+    monkeypatch.setattr("shutil.which",
+                        lambda name: "/usr/local/bin/pypy3" if name == "pypy3" else None)
+    assert icpc_runner._pypy_bin() == "/usr/local/bin/pypy3"
+
+
+def test_python_placeholder_still_means_cpython(monkeypatch):
+    """The orchestrators run on {python}. They want fast startup, not a JIT,
+    and aliasing the two would put contestant code and judge code on the
+    same interpreter."""
+    _force_docker(monkeypatch)
+    assert icpc_runner._python_bin() == "python3"
+    assert icpc_runner._pypy_bin() != icpc_runner._python_bin()
+
+
+def test_seeded_py3_language_runs_on_pypy(client):
+    """The seeded row is what every Python submission is judged with."""
+    from backend import models
+    from backend.database import SessionLocal
+
+    db = SessionLocal()
+    try:
+        lang = db.query(models.Language).filter(models.Language.id == "py3").one()
+        assert lang.run_cmd == "{pypy} {src}"
+        assert "PyPy" in lang.display_name
+    finally:
+        db.close()

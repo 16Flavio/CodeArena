@@ -393,6 +393,27 @@ def _python_bin() -> str:
     return _sys.executable or "python3"
 
 
+def _pypy_bin() -> str:
+    """Which interpreter ``{pypy}`` expands to - the Python contestants get.
+
+    PyPy, because that is what the problems are calibrated against: the same
+    DP that PyPy finishes in 0.6 s takes CPython 31 s, so judging contestant
+    Python on CPython turns correct solutions into TLEs. A DOMjudge judgehost
+    is configured the same way, which is why a submission can pass there and
+    time out here on identical hardware.
+
+    Off the sandbox we fall back: PyPy if the host happens to have it, else
+    the worker's own interpreter. That keeps dev boxes and CI (no PyPy
+    installed) working, at the price of CPython speed - acceptable because
+    ``SCORING_MODE=subprocess`` is the development fallback, never the
+    contest path."""
+    if _use_docker():
+        return "pypy3"
+    import shutil as _shutil
+    import sys as _sys
+    return _shutil.which("pypy3") or _sys.executable or "python3"
+
+
 def _infra_error(rc: int, stderr: str) -> Optional[str]:
     """Docker-level failure message, or None. Always None outside docker mode:
     on the host path a non-zero exit really is the contestant's program."""
@@ -481,10 +502,12 @@ def _expand(cmd: str, *, src: str, exe: str, workdir: str) -> str:
     # {python} → the right interpreter for where the command will run:
     # ``python3`` inside the sandbox image, else the worker's own executable
     # (dev machines may only have `python`, not `python3`).
+    # {pypy} → the interpreter contestant Python runs on. See _pypy_bin.
     return (
         cmd.replace("{src}", src)
            .replace("{exe}", exe)
            .replace("{workdir}", workdir)
+           .replace("{pypy}", _pypy_bin())
            .replace("{python}", _python_bin())
     )
 

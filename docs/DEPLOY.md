@@ -14,7 +14,7 @@ docker compose up -d --build
 
 # Build BOTH sandbox images used by SCORING_MODE=docker:
 #   * scoring-image   - Python-only, for output-scoring validators.
-#   * icpc-sandbox    - g++/gcc/javac/python3, for ICPC compile+run.
+#   * icpc-sandbox    - g++/gcc/javac/python3/pypy3, for ICPC compile+run.
 docker compose --profile build-only build scoring-image icpc-sandbox
 ```
 
@@ -256,7 +256,24 @@ Recent migrations (≥ April 2026):
 - `2026_04_25_a3` - `email_outbox` table (durable email queue)
 - `2026_04_25_a4` - `users.totp_*` columns (2FA)
 
-All four are additive (no data loss on rollback via `alembic downgrade -1`).
+- `2026_08_19_a1` - points the `py3` language at PyPy (`{pypy} {src}`)
+
+`2026_08_19_a1` needs the **icpc-sandbox image rebuilt in the same
+deployment**: PyPy ships in that image, and without it every Python
+submission fails to start. Rebuild it before running the migration:
+
+```bash
+docker compose --profile build-only build icpc-sandbox
+docker compose run --rm backend alembic upgrade head
+```
+
+Contestant Python runs on PyPy because that is what the problems are
+calibrated against, exactly as on a DOMjudge judgehost. Measured on one
+imported problem, same machine and same input: PyPy 0.62 s, CPython 31.5 s.
+The judging orchestrators keep running on CPython (`{python}`), which is
+still in the image.
+
+The rest are additive (no data loss on rollback via `alembic downgrade -1`).
 The CHECK migration may fail if a row has an invalid mode/kind - verify
 first with `SELECT id, participation_mode, kind FROM contests WHERE
 participation_mode NOT IN ('team','solo','both') OR kind NOT IN ('output','icpc');`.

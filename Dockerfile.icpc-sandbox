@@ -19,6 +19,38 @@ RUN apt-get update \
         g++ gcc openjdk-17-jdk-headless python3 coreutils \
     && rm -rf /var/lib/apt/lists/*
 
+# PyPy, which is what the `py3` language actually runs. Contest problems are
+# calibrated against it, exactly as they are on a DOMjudge judgehost: a DP
+# that takes CPython 31 s finishes in 0.6 s here, so judging contestant
+# Python on CPython turns a correct solution into a TLE.
+#
+# CPython stays in the image and is NOT aliased away: the batch and
+# interactive orchestrators run on it, and they want fast startup, not a JIT.
+#
+# Pinned by version and checksum. The tarball is the official build served by
+# downloads.python.org (the same PSF host that serves CPython); the sha256 is
+# the one published on pypy.org/checksums.html. curl and bzip2 are removed in
+# the same layer, so no network tool survives into the runtime image.
+ARG PYPY_PYTHON=3.11
+ARG PYPY_VERSION=7.3.23
+ARG PYPY_SHA256=16f9f56e82d1f4ec95a324c1a8cacfd78afc7f0656c0a809a18725ef4391453a
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        ca-certificates curl bzip2 libffi8 libexpat1 libbz2-1.0 libsqlite3-0 \
+        libssl3 zlib1g libncursesw6 libtinfo6; \
+    curl -fsSL -o /tmp/pypy.tar.bz2 \
+        "https://downloads.python.org/pypy/pypy${PYPY_PYTHON}-v${PYPY_VERSION}-linux64.tar.bz2"; \
+    echo "${PYPY_SHA256}  /tmp/pypy.tar.bz2" | sha256sum -c -; \
+    mkdir -p /opt/pypy; \
+    tar -xjf /tmp/pypy.tar.bz2 -C /opt/pypy --strip-components=1; \
+    rm -f /tmp/pypy.tar.bz2; \
+    ln -s /opt/pypy/bin/pypy3 /usr/local/bin/pypy3; \
+    apt-get purge -y curl bzip2; \
+    apt-get autoremove -y; \
+    rm -rf /var/lib/apt/lists/*; \
+    pypy3 -c "import sys; print(sys.version)"
+
 # Dedicated non-root uid (matches SANDBOX_UID in backend/icpc_sandbox.py).
 # The container is additionally run with --cap-drop=ALL, --network=none,
 # --read-only and --security-opt no-new-privileges at `docker run` time.

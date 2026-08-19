@@ -110,7 +110,7 @@ def client(monkeypatch):
     _sess = TestingSessionLocal()
     try:
         defaults = [
-            ("py3", "Python 3", "py", "", "{python} {src}", 3.0),
+            ("py3", "Python 3 (PyPy)", "py", "", "{pypy} {src}", 3.0),
             ("cpp", "C++ (g++17)", "cpp,cc,cxx,hpp,h",
              "g++ -std=gnu++17 -O2 -o {exe} {src}", "{exe}", 1.0),
             ("c", "C (gcc)", "c,h",
