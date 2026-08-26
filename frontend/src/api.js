@@ -248,8 +248,9 @@ export const deleteIcpcTestcase = (testcaseId) =>
   api.delete(`/icpc/testcases/${testcaseId}`);
 // Judge a reference solution against a problem's testcases WITHOUT
 // persisting a Submission/Judging row - admin sanity check before a
-// contest opens. Synchronous on the server (compile + all runs), so
-// give it a generous timeout.
+// contest opens. The server hands it to a judging worker and blocks for the
+// result (DRY_RUN_WAIT_SECONDS, 150s), so this timeout must stay above that -
+// otherwise axios gives up first and the server's 503 message is lost.
 export const dryRunIcpcProblem = (problemId, data) =>
   api.post(`/icpc/problems/${problemId}/dry-run`, data, { timeout: 180000 });
 // Re-queue every submission of an ICPC contest (optionally one problem)
@@ -467,8 +468,11 @@ export const adminLearnExportLatex = (lang = 'fr') =>
 
 // Lesson exercises - inline coding tasks.
 export const learnGetExercise = (id) => api.get(`/learning/exercises/${id}`);
+// Timeout sits ABOVE the backend's LESSON_RUN_WAIT_SECONDS (60s), so when a
+// run is too slow the server's own 503 - which carries a message the widget
+// can show - wins the race against a bare axios timeout.
 export const learnRunExercise = (id, code, language = '') =>
-  api.post(`/learning/exercises/${id}/run`, { code, language }, { timeout: 60000 });
+  api.post(`/learning/exercises/${id}/run`, { code, language }, { timeout: 75000 });
 export const adminLearnListExercises = (lessonId) =>
   api.get(`/admin/learning/lessons/${lessonId}/exercises`);
 export const adminLearnCreateExercise = (lessonId, data) =>

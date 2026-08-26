@@ -163,31 +163,14 @@ _seed_languages()
 
 
 def _warn_insecure_scoring() -> None:
-    """Loud warning on boot if the scoring sandbox isn't Docker.
+    """Boot-time sandbox banner for the API process.
 
-    Two classes of user-controlled code run here: organizer-authored scripts
-    (scoring / output validators / ICPC interactors - organizers are trusted
-    to author these for contests they own) and, more importantly, CONTESTANT-
-    submitted source in ICPC problems. In docker mode both the output-scoring
-    path and the ICPC batch compile+run are isolated in throwaway containers;
-    in subprocess mode they run on the host with only an env scrub + rlimits
-    (fine for a trusted classroom, not for anything public)."""
-    mode = (os.environ.get("SCORING_MODE") or "").lower()
-    if mode == "docker":
-        log.info(
-            "Scoring sandbox: docker mode - output-scoring and ICPC "
-            "compile/run (batch and interactive) run in isolated containers."
-        )
-        return
-    banner = "=" * 72
-    log.warning(
-        "\n%s\n  SCORING_MODE is %r - admin-authored scoring / interactor code\n"
-        "  will run directly on this host with no container isolation.\n"
-        "  Set SCORING_MODE=docker in .env and build the sandbox image:\n"
-        "      docker compose --profile build-only build scoring-image\n"
-        "  (Safe to ignore for local dev / single-admin classroom use.)\n%s",
-        banner, mode or "unset", banner,
-    )
+    The API no longer executes anything itself - every sandbox caller moved to
+    a worker - so this only matters for the no-Redis fallback, where the web
+    process judges in-process again. The workers log the same banner for
+    themselves; see ``scoring_runner.warn_scoring_isolation``."""
+    from .scoring_runner import warn_scoring_isolation
+    warn_scoring_isolation(log, process="API process")
 
 
 _warn_insecure_scoring()

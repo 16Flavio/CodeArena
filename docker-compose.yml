@@ -58,9 +58,19 @@ services:
       # Composed URL uses the postgres service below. Override DATABASE_URL
       # in .env if you want to point at an external DB instead.
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-codearena}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-codearena}}
-      # Redis/RQ scoring queue. Unset = fallback to in-process thread pool.
+      # Redis/RQ scoring queue. Unset = fallback to in-process thread pool -
+      # which would ALSO mean judging inside the web container again, so the
+      # docker.sock and judge-workdir mounts removed below have to come back.
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       SCORING_QUEUE_NAME: ${SCORING_QUEUE_NAME:-scoring}
+      # Learn "run this exercise": its own queue, drained by learn-worker, so
+      # a student's spinner never waits behind a multi-minute ICPC judging.
+      LESSON_QUEUE_NAME: ${LESSON_QUEUE_NAME:-lesson-runs}
+      # How long the web request blocks on a worker before returning 503.
+      LESSON_RUN_WAIT_SECONDS: ${LESSON_RUN_WAIT_SECONDS:-60}
+      # Same, for the synchronously-awaited admin paths (rescore, the
+      # "test this scoring script" button). Defaults to the script timeout + 30s.
+      SCORING_SYNC_WAIT_SECONDS: ${SCORING_SYNC_WAIT_SECONDS:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
     volumes:
       # User-uploaded artefacts (submissions, statements, DOMjudge
@@ -69,16 +79,16 @@ services:
       # ``docker volume prune`` the way a named volume could. Set
       # UPLOADS_DIR in .env to move it elsewhere.
       - ${UPLOADS_DIR:-./uploads}:/app/backend/uploads
-      # SCORING_MODE=docker needs the host Docker socket so the backend can
-      # spawn sibling scoring containers. Grants the backend root-equivalent
-      # on the host - acceptable for a single-tenant contest server where
-      # the backend is the only trusted app on the box.
-      - /var/run/docker.sock:/var/run/docker.sock
-      # Shared judge workdir, mounted at the SAME absolute path on host and in
-      # the container so the ICPC sandbox's sibling containers can bind-mount
-      # each per-submission subdir at an identical path (no in-command path
-      # rewriting). Only needed for SCORING_MODE=docker.
-      - ${JUDGE_WORKDIR:-/judge-work}:${JUDGE_WORKDIR:-/judge-work}
+      # NO /var/run/docker.sock here, on purpose. This is the only container
+      # reachable from the internet, and the socket is root-equivalent on the
+      # host: an RCE in FastAPI would own the box. Everything that spawns a
+      # sandbox container now runs on a worker instead:
+      #   * contestant submissions  -> enqueue_scoring (always was)
+      #   * Learn "run this exercise" -> lesson-runs queue (learn-worker)
+      #   * rescore / test-scoring  -> scoring queue, synchronously awaited
+      # The judge workdir mount is gone with it - only the workers build in it.
+      # Both are required again if you ever run WITHOUT Redis, since the
+      # backend then falls back to judging in-process.
     # Internal only - Caddy is the one public-facing service. For local dev
     # without Caddy, add `ports: - "8000:8000"`.
     expose:
@@ -229,10 +239,70 @@ services:
       # the workers as separate services with their own SCORING_CPUSET
       # (worker-0 -> "2", worker-1 -> "3", ...) instead of using replicas.
       SCORING_CPUSET: ${SCORING_CPUSET:-}
+      # Alternative OCI runtime for every sandbox container, e.g. "runsc"
+      # (gVisor), which must be declared in the host's /etc/docker/daemon.json.
+      # Unset = the daemon's default (runc). NOTE: gVisor intercepts syscalls
+      # in userspace, so syscall-heavy submissions slow down while pure
+      # computation barely moves - and verdicts here are decided on CPU time.
+      # Re-check the time limits of already-imported problems after switching.
+      SCORING_RUNTIME: ${SCORING_RUNTIME:-}
+      # This worker drains contest judging only; the Learn queue has its own
+      # service below so the two can't starve each other.
+      WORKER_QUEUES: ${SCORING_QUEUE_NAME:-scoring}
+    volumes:
+      - ${UPLOADS_DIR:-./uploads}:/app/backend/uploads
+      # The socket lives HERE rather than on the backend: workers are not
+      # reachable from the internet, so root-equivalence on the host is not
+      # one HTTP bug away. (It is still root-equivalence - a sandbox escape
+      # lands on the host as root either way. Closing that needs a rootless
+      # or gVisor daemon for judging; see SCORING_RUNTIME and docs/DEPLOY.md.)
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Same-path shared judge workdir - see icpc_sandbox.py for why.
+      - ${JUDGE_WORKDIR:-/judge-work}:${JUDGE_WORKDIR:-/judge-work}
+    command: [ "python", "-m", "backend.worker" ]
+    restart: unless-stopped
+
+  learn-worker:
+    # Drains the Learn "run this exercise" queue, and only that queue.
+    #
+    # Same image and same sandbox as the judging worker - the separation is
+    # about latency, not isolation. A Learn run has a student watching a
+    # spinner and finishes in seconds; an ICPC judging can hold a worker for
+    # minutes. On a shared queue the spinner would sit behind the contest
+    # backlog, so the whole point of moving this off the backend would be
+    # traded for an unusable button.
+    image: ${DOCKER_USER:-codearena}/codearena-backend:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    deploy:
+      replicas: ${LEARN_WORKER_REPLICAS:-1}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-codearena}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-codearena}}
+      DB_POOL_SIZE: ${WORKER_DB_POOL_SIZE:-2}
+      DB_MAX_OVERFLOW: ${WORKER_DB_MAX_OVERFLOW:-3}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      WORKER_QUEUES: ${LESSON_QUEUE_NAME:-lesson-runs}
+      SCORING_MODE: ${SCORING_MODE:-subprocess}
+      SCORING_ICPC_IMAGE: ${SCORING_ICPC_IMAGE:-codearena-icpc-sandbox:latest}
+      SCORING_WORKDIR: ${JUDGE_WORKDIR:-/judge-work}
+      SCORING_MEMORY_MB: ${SCORING_MEMORY_MB:-256}
+      SCORING_CPUS: ${SCORING_CPUS:-1.0}
+      SCORING_TIMELIMIT_OVERSHOOT: ${SCORING_TIMELIMIT_OVERSHOOT:-1s|10%}
+      SCORING_RUNTIME: ${SCORING_RUNTIME:-}
+      # Pin Learn runs to their own core(s) if the judging workers are pinned,
+      # or a contest judging and a lesson run will inflate each other's wall
+      # clock - and the anti-idle hard limit is wall-based.
+      SCORING_CPUSET: ${LEARN_SCORING_CPUSET:-}
     volumes:
       - ${UPLOADS_DIR:-./uploads}:/app/backend/uploads
       - /var/run/docker.sock:/var/run/docker.sock
-      # Same-path shared judge workdir - see the backend service for why.
       - ${JUDGE_WORKDIR:-/judge-work}:${JUDGE_WORKDIR:-/judge-work}
     command: [ "python", "-m", "backend.worker" ]
     restart: unless-stopped

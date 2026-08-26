@@ -178,3 +178,38 @@ def run_validator(script: str, instance_data: str, submission_data: str) -> Opti
     if r.get("ok"):
         return None
     return (r.get("error") or "invalid output")[:2000]
+
+
+def warn_scoring_isolation(log, *, process: str) -> None:
+    """Log the sandbox mode of the process that will actually execute code.
+
+    Two classes of user-controlled code run through here: organizer-authored
+    scripts (scoring / output validators / ICPC interactors - organizers are
+    trusted to author these for contests they own) and, more importantly,
+    CONTESTANT-submitted source in ICPC problems. In docker mode both paths are
+    isolated in throwaway containers; in subprocess mode they run on the host
+    with only an env scrub + rlimits (fine for a trusted classroom, not for
+    anything public).
+
+    Lives here rather than in ``main`` because the warning belongs wherever the
+    code runs, and since the sandbox callers moved off the web process that is
+    the WORKERS. A worker started without SCORING_MODE would otherwise execute
+    student code uncontained in complete silence."""
+    mode = (os.environ.get("SCORING_MODE") or "").lower()
+    if mode == "docker":
+        log.info(
+            "Scoring sandbox (%s): docker mode - output-scoring and ICPC "
+            "compile/run (batch and interactive) run in isolated containers.",
+            process,
+        )
+        return
+    banner = "=" * 72
+    log.warning(
+        "\n%s\n  SCORING_MODE is %r in the %s - scoring / interactor code AND\n"
+        "  contestant submissions will run directly on this host with no\n"
+        "  container isolation.\n"
+        "  Set SCORING_MODE=docker in .env and build the sandbox images:\n"
+        "      docker compose --profile build-only build scoring-image icpc-sandbox\n"
+        "  (Safe to ignore for local dev / single-admin classroom use.)\n%s",
+        banner, mode or "unset", process, banner,
+    )

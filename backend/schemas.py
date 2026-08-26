@@ -283,6 +283,11 @@ class RescoreResult(BaseModel):
     succeeded: int
     failed: int
     unchanged: int
+    # Submissions the judge never answered for: left EXACTLY as they were,
+    # not re-scored and not marked failed. Counted apart from ``failed``
+    # because "the script rejected it" and "no worker answered" call for
+    # different actions - the second one just needs a re-run.
+    skipped: int = 0
 
 
 # ── Contests ──────────────────────────────────────────────────────────────────

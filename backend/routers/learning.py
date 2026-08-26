@@ -11,6 +11,7 @@ The student endpoints filter ``is_published=False`` rows OUT.
 Admin reads include drafts so authoring works in private."""
 from __future__ import annotations
 
+import logging
 import os
 import re
 from datetime import datetime, timezone
@@ -25,8 +26,12 @@ from sqlalchemy.orm import Session, joinedload
 from ..auth import get_current_user, require_admin
 from ..audit import record as audit
 from ..database import get_db
+from ..rate_limit import check_manual_limit
+from ..scoring_queue import JudgeUnavailable, run_lesson_exercise_sync
 from .. import models, schemas
 
+
+log = logging.getLogger("contest.learning")
 
 student_router = APIRouter(prefix="/api/learning", tags=["learning"])
 admin_router = APIRouter(prefix="/api/admin/learning", tags=["learning-admin"])
@@ -664,8 +669,9 @@ def run_exercise(
 ):
     """Compile + run the student's code against every test case in the
     exercise. Returns per-case verdicts (sample inputs visible, hidden
-    inputs redacted). Reuses ``icpc_runner`` so the sandbox + verdict
-    logic is the same as a real ICPC submission."""
+    inputs redacted). The run itself happens on a judging worker
+    (``lesson_run_jobs``) and reuses ``icpc_runner``, so the sandbox +
+    verdict logic is the same as a real ICPC submission."""
     ex = db.query(models.LessonExercise).filter(
         models.LessonExercise.id == exercise_id,
     ).first()
@@ -674,6 +680,23 @@ def run_exercise(
     lesson = db.query(models.Lesson).filter(models.Lesson.id == ex.lesson_id).first()
     if not lesson or (not lesson.is_published and not user.is_admin):
         raise HTTPException(status_code=404, detail="Exercice introuvable")
+
+    # Per-user rate limit. This endpoint buys a compile plus one run per test
+    # case, synchronously, for any authenticated account - and registration is
+    # open. Unlimited, it is a CPU-exhaustion lever that also starves contest
+    # judging, which shares the same sandbox capacity. 10/minute mirrors the
+    # ICPC submit limit (icpc.py), the platform's existing per-user judging
+    # quota. Manual rather than ``@limiter.limit`` - see rate_limit.py.
+    if not user.is_admin:
+        retry_after = check_manual_limit(
+            f"lesson-run:{user.id}", limit=10, window_s=60,
+        )
+        if retry_after is not None:
+            raise HTTPException(
+                status_code=429,
+                detail="Trop d'exécutions - patientez une minute",
+                headers={"Retry-After": str(retry_after)},
+            )
 
     language_id = (payload.language or ex.language or "py3").strip()
     lang = db.query(models.Language).filter(
@@ -689,94 +712,35 @@ def run_exercise(
     if len(code) > 64 * 1024:
         raise HTTPException(status_code=400, detail="Code trop volumineux (cap 64 KB)")
 
+    # Executed by a judging worker, not here. The compile+run needs the Docker
+    # daemon under SCORING_MODE=docker, and the backend is the one container
+    # reachable from the internet - it must not hold the socket. This call
+    # blocks, so the handler still occupies exactly one threadpool thread for
+    # the same duration as when it ran the sandbox itself; nothing about the
+    # request/response shape changes. See scoring_queue.run_lesson_exercise_sync.
     try:
-        cases = _json.loads(ex.test_cases or "[]")
-    except _json.JSONDecodeError:
-        cases = []
-    if not isinstance(cases, list):
-        cases = []
-
-    import tempfile
-    from .. import icpc_runner
-
-    results: list[schemas.LessonExerciseRunResult] = []
-    compile_output = ""
-    all_passed = True
-    # In docker mode the workdir must live under SCORING_WORKDIR - the
-    # directory shared host<->worker at the same absolute path - so the
-    # sandbox sibling container can bind-mount it and actually see main.py.
-    # (The default /tmp lives only inside the worker container, so the
-    # mount resolves against the host and the source file is missing:
-    # "python3: can't open file '/tmp/lex-.../main.py'".)
-    _wd_parent = os.environ.get("SCORING_WORKDIR") or None
-    with tempfile.TemporaryDirectory(prefix="lex-", dir=_wd_parent) as workdir:
-        if icpc_runner._use_docker():
-            # The sandbox runs as a non-root uid; let it write build
-            # artefacts into the bind-mounted workdir.
-            try:
-                os.chmod(workdir, 0o777)
-            except OSError:
-                pass
-        compile_res = icpc_runner.compile_source(
-            language_id=lang.id, compile_cmd=lang.compile_cmd or "",
-            source_code=code, workdir=workdir,
+        result = run_lesson_exercise_sync(
+            exercise_id=ex.id, code=code, language_id=lang.id,
         )
-        compile_output = compile_res.compile_output or ""
-        if compile_res.verdict != "AC":
-            # Compile failed - every test counts as failed and we
-            # return immediately so the student sees the diagnostic.
-            for c in cases:
-                results.append(schemas.LessonExerciseRunResult(
-                    is_sample=bool(c.get("is_sample", True)),
-                    passed=False,
-                    input=str(c.get("input", "")) if c.get("is_sample", True) else "",
-                    expected=str(c.get("expected", "")) if c.get("is_sample", True) else "",
-                    actual="", runtime_ms=0,
-                    error=compile_output or "compile failed",
-                ))
-            return schemas.LessonExerciseRunOut(
-                all_passed=False,
-                compile_output=compile_output,
-                results=results,
-            )
+    except JudgeUnavailable:
+        raise HTTPException(
+            status_code=503,
+            detail="Le juge est saturé - réessayez dans un instant",
+            headers={"Retry-After": "30"},
+        )
+    except LookupError as e:
+        # The exercise or language vanished between our checks and the job.
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:  # noqa: BLE001
+        # A judge-side failure is ours, not the student's: surface it as a
+        # server error instead of dressing it up as a failed test case.
+        log.exception("lesson run failed for exercise %s", ex.id)
+        raise HTTPException(
+            status_code=503,
+            detail="Le juge est indisponible - réessayez dans un instant",
+        ) from e
 
-        for c in cases:
-            if not isinstance(c, dict):
-                continue
-            stdin = str(c.get("input", ""))
-            expected = str(c.get("expected", ""))
-            is_sample = bool(c.get("is_sample", True))
-            run_res = icpc_runner.run_against_testcase(
-                language_id=lang.id, run_cmd=lang.run_cmd or "",
-                workdir=workdir, stdin=stdin,
-                time_limit_ms=ex.time_limit_ms,
-                memory_limit_mb=int(os.environ.get("SCORING_MEMORY_MB", "256")),
-                time_factor=float(lang.time_factor or 1.0),
-            )
-            actual = run_res.stdout or ""
-            error = ""
-            if run_res.verdict == "AC":
-                passed = icpc_runner.check_output(actual, expected, kind="diff", epsilon=None)
-            else:
-                passed = False
-                error = (run_res.stderr or run_res.verdict)[:1000]
-            if not passed:
-                all_passed = False
-            results.append(schemas.LessonExerciseRunResult(
-                is_sample=is_sample,
-                passed=passed,
-                input=stdin if is_sample else "",
-                expected=expected if is_sample else "",
-                actual=actual[:4000] if is_sample else "",
-                runtime_ms=run_res.runtime_ms or 0,
-                error=error if is_sample else ("" if passed else "test failed"),
-            ))
-
-    return schemas.LessonExerciseRunOut(
-        all_passed=all_passed,
-        compile_output=compile_output,
-        results=results,
-    )
+    return schemas.LessonExerciseRunOut(**result)
 
 
 # Admin CRUD for exercises.

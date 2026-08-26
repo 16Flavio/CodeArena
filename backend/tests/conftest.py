@@ -39,10 +39,17 @@ def client(monkeypatch):
     _sb_cache.clear()
 
     # `main` imports .env via python-dotenv, which can re-introduce the
-    # SCORING_MODE and SMTP_* vars. Force them back off after the import
-    # so (a) scoring takes the subprocess fallback, and (b) no test
-    # accidentally dispatches real email to fixture addresses.
+    # SCORING_MODE, REDIS_URL and SMTP_* vars. Force them back off after the
+    # import so (a) scoring takes the subprocess fallback, (b) no test
+    # accidentally dispatches real email to fixture addresses, and (c) the
+    # synchronous dispatchers in scoring_queue run their job in-process
+    # instead of enqueueing to a "redis" host that doesn't resolve from here
+    # and then blocking for their full wait. (c) only bites on a machine that
+    # actually has the optional `redis` package installed - which is exactly
+    # the kind of difference that makes a suite pass for one dev and hang for
+    # another, so pin it rather than rely on the import failing.
     monkeypatch.delenv("SCORING_MODE", raising=False)
+    monkeypatch.delenv("REDIS_URL", raising=False)
     for _v in ("SMTP_HOST", "SMTP_PORT", "SMTP_SSL", "SMTP_USER", "SMTP_PASS", "SMTP_FROM"):
         monkeypatch.delenv(_v, raising=False)
 

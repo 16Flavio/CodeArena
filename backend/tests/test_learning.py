@@ -1,6 +1,8 @@
 """Smoke tests for the learning zone endpoints. Covers the contract,
 not the rendering - the React markdown pipeline is exercised by the
 frontend's own tests."""
+import os
+
 from .conftest import auth_header
 
 
@@ -223,3 +225,174 @@ def test_exercise_admin_only_writes(client):
         json=payload, headers=alice,
     )
     assert r.status_code in (401, 403)
+
+
+def test_exercise_run_is_rate_limited(client):
+    """``/exercises/{id}/run`` compiles and runs untrusted code synchronously
+    for any authenticated account, and registration is open - without a
+    per-user cap it is a CPU-exhaustion lever that also starves contest
+    judging. The limiter is globally disabled in conftest, so this test
+    re-arms it and puts it back."""
+    from backend.rate_limit import limiter, reset_manual_limits
+
+    admin = auth_header(client, "root")
+    lid = _make_published_lesson(client, admin)
+    ex = client.post(
+        f"/api/admin/learning/lessons/{lid}/exercises",
+        json={
+            "title_fr": "Noop", "title_en": "Noop",
+            "prompt_fr": "", "prompt_en": "",
+            "language": "py3", "starter_code": "",
+            "test_cases": [], "time_limit_ms": 1000,
+        },
+        headers=admin,
+    ).json()
+    alice = auth_header(client, "alice")
+    body = {"code": "pass\n", "language": "py3"}
+
+    reset_manual_limits()
+    limiter.enabled = True
+    try:
+        for i in range(10):
+            r = client.post(
+                f"/api/learning/exercises/{ex['id']}/run", json=body, headers=alice,
+            )
+            assert r.status_code == 200, f"run {i} rejected early: {r.text}"
+        r = client.post(
+            f"/api/learning/exercises/{ex['id']}/run", json=body, headers=alice,
+        )
+        assert r.status_code == 429, r.text
+        assert int(r.headers["Retry-After"]) >= 1
+
+        # The cap is per user: another account still gets its own quota.
+        bob = auth_header(client, "bob")
+        r = client.post(
+            f"/api/learning/exercises/{ex['id']}/run", json=body, headers=bob,
+        )
+        assert r.status_code == 200, r.text
+
+        # Admins are exempt - authoring an exercise means running it a lot.
+        for _ in range(11):
+            r = client.post(
+                f"/api/learning/exercises/{ex['id']}/run", json=body, headers=admin,
+            )
+            assert r.status_code == 200, r.text
+    finally:
+        limiter.enabled = False
+        reset_manual_limits()
+
+
+# ── Learn runs execute on a worker, not in the web process ───────────────────
+
+class _FakeJob:
+    """Minimal stand-in for an RQ job."""
+
+    def __init__(self, status="finished", result=None, exc_info=None):
+        self.id = "job-1"
+        self._status = status
+        self._result = result
+        self.exc_info = exc_info
+        self.canceled = False
+
+    def get_status(self, refresh=False):
+        return self._status
+
+    def return_value(self):
+        return self._result
+
+    def cancel(self):
+        self.canceled = True
+
+
+class _FakeQueue:
+    def __init__(self, job):
+        self.job = job
+        self.calls = []
+
+    def enqueue(self, dotted, *args, **kwargs):
+        self.calls.append((dotted, args, kwargs))
+        return self.job
+
+
+def test_lesson_run_is_dispatched_to_a_worker(monkeypatch):
+    """With Redis configured the compile+run must be enqueued, not executed
+    here: the backend is the internet-facing container and must not hold the
+    Docker socket."""
+    from backend import scoring_queue
+
+    payload = {"all_passed": True, "compile_output": "", "results": []}
+    queue = _FakeQueue(_FakeJob(result=payload))
+    monkeypatch.setattr(scoring_queue, "_get_lesson_queue", lambda: queue)
+
+    out = scoring_queue.run_lesson_exercise_sync(7, "print(1)", "py3")
+    assert out == payload
+    dotted, args, kwargs = queue.calls[0]
+    assert dotted == "backend.lesson_run_jobs.run_lesson_exercise"
+    assert args == (7, "print(1)", "py3")
+    assert kwargs["result_ttl"] > 0
+
+
+def test_lesson_run_dispatch_uses_its_own_queue():
+    """The Learn queue must not be the contest-judging queue, or a student's
+    spinner sits behind a multi-minute ICPC judging."""
+    from backend import scoring_queue
+
+    assert scoring_queue.LESSON_QUEUE_NAME != os.environ.get("SCORING_QUEUE_NAME", "scoring")
+
+
+def test_lesson_run_times_out_instead_of_blocking_forever(monkeypatch):
+    """A job nobody picks up must free the request thread, not pin it."""
+    import pytest
+
+    from backend import scoring_queue
+
+    job = _FakeJob(status="queued")
+    monkeypatch.setattr(scoring_queue, "_get_lesson_queue", lambda: _FakeQueue(job))
+    monkeypatch.setattr(scoring_queue, "LESSON_RUN_WAIT_S", 0)
+
+    with pytest.raises(scoring_queue.JudgeUnavailable):
+        scoring_queue.run_lesson_exercise_sync(7, "print(1)", "py3")
+    assert job.canceled, "a queued job we gave up on must be dequeued"
+
+
+def test_lesson_run_surfaces_worker_failure(monkeypatch):
+    import pytest
+
+    from backend import scoring_queue
+
+    job = _FakeJob(status="failed", exc_info="Traceback...\nRuntimeError: boom")
+    monkeypatch.setattr(scoring_queue, "_get_lesson_queue", lambda: _FakeQueue(job))
+
+    with pytest.raises(RuntimeError, match="boom"):
+        scoring_queue.run_lesson_exercise_sync(7, "print(1)", "py3")
+
+
+def test_run_exercise_returns_503_when_the_judge_is_unavailable(client, monkeypatch):
+    """A judge-side failure is the platform's fault - it must not be dressed
+    up as the student's code failing its tests."""
+    from backend.routers import learning as learning_router
+
+    admin = auth_header(client, "root")
+    lid = _make_published_lesson(client, admin)
+    ex = client.post(
+        f"/api/admin/learning/lessons/{lid}/exercises",
+        json={
+            "title_fr": "x", "title_en": "x", "prompt_fr": "", "prompt_en": "",
+            "language": "py3", "starter_code": "",
+            "test_cases": [], "time_limit_ms": 1000,
+        },
+        headers=admin,
+    ).json()
+
+    def _boom(**kwargs):
+        from backend.scoring_queue import JudgeUnavailable
+        raise JudgeUnavailable("no worker")
+
+    monkeypatch.setattr(learning_router, "run_lesson_exercise_sync", _boom)
+    r = client.post(
+        f"/api/learning/exercises/{ex['id']}/run",
+        json={"code": "pass", "language": "py3"},
+        headers=auth_header(client, "alice"),
+    )
+    assert r.status_code == 503, r.text
+    assert r.headers.get("Retry-After")

@@ -26,7 +26,7 @@ from ..auth import (
 from ..audit import record as audit
 from ..rate_limit import limiter
 from ..scoring_queue import enqueue_scoring
-from ..scoring_runner import run_scoring as _run_scoring
+from ..scoring_queue import run_scoring_sync as _run_scoring
 
 router = APIRouter(prefix="/api/contests", tags=["contests"])
 
@@ -1159,8 +1159,12 @@ def download_instance(
 # ── Submissions ───────────────────────────────────────────────────────────────
 # Scoring wrapper + subprocess/docker dispatch live in backend/scoring_runner.py
 # so the RQ worker can import them without pulling in the FastAPI router graph.
-# _run_scoring is re-exported at the top of this module for backwards
-# compatibility with existing call sites (test_scoring_dry_run, rescore).
+# The two synchronous admin call sites (test_scoring_dry_run, rescore) go
+# through ``scoring_queue.run_scoring_sync`` / ``run_validator_sync``, which
+# hand the work to a worker and block for the result. Same request/response
+# shape as calling scoring_runner directly - but the sandbox container is
+# spawned by the worker, so the internet-facing backend needs no Docker
+# socket. With REDIS_URL unset they run in-process, as before.
 
 
 @router.post("/{contest_id}/instances/{instance_id}/submit", response_model=schemas.SubmissionOut)
@@ -2251,8 +2255,17 @@ def test_scoring(
                 error="No validator script is configured.",
                 duration_ms=int((time.monotonic() - t0) * 1000),
             )
-        from ..scoring_runner import run_validator
-        err = run_validator(validator, instance.input_data or "", data.submission_data or "")
+        from ..scoring_queue import run_validator_sync, JudgeUnavailable
+        try:
+            err = run_validator_sync(validator, instance.input_data or "", data.submission_data or "")
+        except JudgeUnavailable as e:
+            # Nothing is persisted here, so reporting it in the result pane is
+            # enough - but it must not read as "your validator rejected this".
+            return schemas.TestScoringResult(
+                ok=False,
+                error=f"Juge indisponible : {e}",
+                duration_ms=int((time.monotonic() - t0) * 1000),
+            )
         return schemas.TestScoringResult(
             ok=(err is None),
             error=err,
@@ -2314,30 +2327,71 @@ def rescore_contest(
     succeeded = 0
     failed = 0
     unchanged = 0
+    skipped = 0
     # Re-run the validator first (if set) so that, e.g., an admin who
     # fixes a validator bug sees the affected submissions flip status
     # from "invalid_output" back to "scored" on rescore. Matches the
     # submit-time pipeline in scoring_jobs._score_output.
     validator_script = (contest.output_validator_script or "").strip()
-    from ..scoring_runner import run_validator as _run_validator
+    from ..scoring_queue import run_validator_sync as _run_validator, JudgeUnavailable
+    # A judging outage must never be written to a row. The validator branch
+    # below sets status="invalid_output" and zeroes the score, so letting
+    # "no worker answered" reach it would mark real submissions invalid and
+    # commit that - the exact failure the rescore is supposed to repair.
+    # Instead we abort: the rescore is idempotent, so throwing the batch away
+    # and asking the admin to re-run once the workers are back beats leaving
+    # the contest half-corrupted.
+    consecutive_outages = 0
+    MAX_CONSECUTIVE_OUTAGES = 5
     for sub in subs:
         instance = db.query(models.Instance).filter(models.Instance.id == sub.instance_id).first()
         instance_data = instance.input_data if instance else ""
 
-        if validator_script:
-            err = _run_validator(validator_script, instance_data or "", sub.submission_data or "")
-            if err:
-                sub.score = 0
-                sub.status = "invalid_output"
-                sub.error_message = err
-                failed += 1
-                continue
-
         try:
-            new_score = _run_scoring(contest.scoring_script or "", instance_data or "", sub.submission_data or "")
+            err = (
+                _run_validator(validator_script, instance_data or "", sub.submission_data or "")
+                if validator_script else None
+            )
+            if err is None:
+                new_score = _run_scoring(
+                    contest.scoring_script or "", instance_data or "", sub.submission_data or "",
+                )
+        except JudgeUnavailable as e:
+            consecutive_outages += 1
+            if consecutive_outages >= MAX_CONSECUTIVE_OUTAGES:
+                db.rollback()
+                raise HTTPException(
+                    status_code=503,
+                    detail=(
+                        f"Le juge est indisponible ({e}) - rescore annulé, "
+                        "aucune soumission modifiée. Réessayez quand les "
+                        "workers auront rattrapé leur retard."
+                    ),
+                    headers={"Retry-After": "60"},
+                ) from e
+            # NOT ``failed``: the row is untouched, so reporting it as a
+            # failure would tell the admin a submission is broken when the
+            # judge simply never answered.
+            skipped += 1
+            log.warning(
+                "rescore: no verdict for submission %s (%s/%s consecutive)",
+                sub.id, consecutive_outages, MAX_CONSECUTIVE_OUTAGES,
+            )
+            continue
         except Exception as e:  # noqa: BLE001
+            # The scoring script itself failed on this submission - that IS a
+            # verdict about the submission, and it doesn't touch the score.
+            consecutive_outages = 0
             sub.status = "error"
             sub.error_message = str(e)[:2000]
+            failed += 1
+            continue
+        consecutive_outages = 0
+
+        if err:
+            sub.score = 0
+            sub.status = "invalid_output"
+            sub.error_message = err
             failed += 1
             continue
         old_score = sub.score if sub.score is not None else None
@@ -2352,7 +2406,10 @@ def rescore_contest(
     audit(
         db, action="rescore_contest", actor=admin,
         target_type="contest", target_id=contest.id,
-        detail=f"total={total} changed={succeeded} unchanged={unchanged} failed={failed}",
+        detail=(
+            f"total={total} changed={succeeded} unchanged={unchanged} "
+            f"failed={failed} skipped={skipped}"
+        ),
     )
     db.commit()
     # Rebuild the materialised scoreboard cache now that every submission in
@@ -2364,7 +2421,10 @@ def rescore_contest(
     # the pre-rescore numbers for up to 2 s after the rebuild.
     from ..scoreboard_response_cache import invalidate_contest
     invalidate_contest(contest_id)
-    return schemas.RescoreResult(total=total, succeeded=succeeded, failed=failed, unchanged=unchanged)
+    return schemas.RescoreResult(
+        total=total, succeeded=succeeded, failed=failed,
+        unchanged=unchanged, skipped=skipped,
+    )
 
 
 # ── CSV scoreboard export ────────────────────────────────────────────────────

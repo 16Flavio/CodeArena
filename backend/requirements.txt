@@ -27,4 +27,6 @@ PyYAML==6.0.2
 pyotp==2.9.0
 # Dev/test only (safe to install in prod too):
 pytest==8.3.3
+# Fails a hung test with a full thread dump instead of letting it wedge CI.
+pytest-timeout==2.3.1
 httpx==0.27.2

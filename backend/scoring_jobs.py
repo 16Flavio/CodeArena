@@ -74,6 +74,161 @@ def score_submission(submission_id: int) -> None:
         db.close()
 
 
+def run_script_job(script: str, instance_data: str, submission_data: str, mode: str) -> dict:
+    """Run one scoring/validator script and return the sandbox's verdict dict
+    ``{"ok": bool, "score": float, "error": str}`` verbatim.
+
+    Exists so the *synchronous* admin paths (contest rescore, the scoring-script
+    test button) can execute on a worker instead of in the web process. Under
+    SCORING_MODE=docker that is what lets the backend container drop its
+    /var/run/docker.sock mount: nothing reachable from the internet spawns
+    containers any more. Never raises - failures come back as ``ok=False``.
+
+    Deliberately a thin wrapper: the sandbox dispatch itself stays in
+    ``scoring_runner`` so both modes keep exactly one implementation."""
+    from .scoring_runner import _run_script
+    return _run_script(script or "", instance_data or "", submission_data or "", mode=mode)
+
+
+def dry_run_job(problem_id: int, language_id: str, source: str) -> dict:
+    """Judge a reference solution against every testcase of ``problem_id``,
+    persisting nothing. Backs the admin "validate my problem" button.
+
+    Runs on a worker for the same reason the Learn runs do: it compiles and
+    executes code, which under SCORING_MODE=docker means talking to the Docker
+    daemon, and the web process must not hold that socket.
+
+    Everything is re-read from the DB rather than shipped through Redis - the
+    testcases, interactor and checker aux files of a real problem are far too
+    big to serialise into a job payload, and re-reading also means the job
+    can't be handed a doctored problem definition.
+
+    Returns ``{"ok": True, "result": {...}}`` shaped like
+    ``schemas.IcpcDryRunResult``, or ``{"ok": False, "kind": "config"|"missing",
+    "error": str}`` for a misconfiguration the admin can act on."""
+    db = database.SessionLocal()
+    try:
+        p = (
+            db.query(models.Problem)
+            .options(joinedload(models.Problem.testcases))
+            .filter(models.Problem.id == problem_id)
+            .first()
+        )
+        if not p:
+            return {"ok": False, "kind": "missing", "error": "Problème introuvable"}
+        lang = db.query(models.Language).filter(
+            models.Language.id == language_id, models.Language.enabled.is_(True),
+        ).first()
+        if not lang:
+            return {
+                "ok": False, "kind": "config",
+                "error": f"Langage inconnu : {language_id}",
+            }
+
+        testcases = [
+            (tc.id, tc.input_data or "", tc.expected_output or "")
+            for tc in sorted(p.testcases or [], key=lambda t: (t.rank, t.id))
+        ]
+        tc_by_id = {tc.id: tc for tc in p.testcases}
+        meta = {
+            tc_id: (tc_by_id[tc_id].rank, bool(tc_by_id[tc_id].is_sample))
+            for tc_id in tc_by_id
+        }
+
+        # Resolve the interactor language (compiled languages need their own
+        # compile/run templates; py3 uses the inline wrapper).
+        ilang_id = (p.interactor_language or "py3").lower()
+        inter_compile_cmd = ""
+        inter_run_cmd = ""
+        if ilang_id != "py3" and p.interactor_script:
+            ilang = db.query(models.Language).filter(
+                models.Language.id == ilang_id,
+            ).first()
+            if not ilang:
+                return {
+                    "ok": False, "kind": "config",
+                    "error": f"Langage d'interacteur inconnu : {ilang_id}",
+                }
+            inter_compile_cmd = ilang.compile_cmd or ""
+            inter_run_cmd = ilang.run_cmd or ""
+        inter_aux = _json_or_none(p.interactor_aux_files)
+
+        # Same resolution for compiled-language custom output validators.
+        clang_id = (p.checker_language or "py3").lower()
+        chk_compile_cmd = ""
+        chk_run_cmd = ""
+        if (p.checker_kind or "").lower() == "custom" and p.checker_script and clang_id != "py3":
+            clang = db.query(models.Language).filter(
+                models.Language.id == clang_id,
+            ).first()
+            if not clang:
+                return {
+                    "ok": False, "kind": "config",
+                    "error": f"Langage de validateur inconnu : {clang_id}",
+                }
+            chk_compile_cmd = clang.compile_cmd or ""
+            chk_run_cmd = clang.run_cmd or ""
+        chk_aux = _json_or_none(p.checker_aux_files)
+
+        judge_kwargs = dict(
+            language_id=lang.id,
+            compile_cmd=lang.compile_cmd or "",
+            run_cmd=lang.run_cmd,
+            time_factor=lang.time_factor or 1.0,
+            source_code=source or "",
+            testcases=testcases,
+            time_limit_ms=p.time_limit_ms,
+            memory_limit_mb=p.memory_limit_mb,
+            checker_kind=p.checker_kind or "tokens",
+            checker_epsilon=p.checker_epsilon,
+            interactor_script=p.interactor_script,
+            interactor_language=ilang_id,
+            interactor_compile_cmd=inter_compile_cmd,
+            interactor_run_cmd=inter_run_cmd,
+            interactor_aux_files=inter_aux,
+            checker_script=p.checker_script,
+            checker_language=clang_id,
+            checker_compile_cmd=chk_compile_cmd,
+            checker_run_cmd=chk_run_cmd,
+            checker_aux_files=chk_aux,
+            num_passes=int(p.num_passes or 1),
+        )
+    finally:
+        # Judge outside the session: a compile + N runs can take minutes, and
+        # holding a pooled connection open for that starves the worker's pool.
+        db.close()
+
+    log.info("dry_run problem=%s language=%s", problem_id, language_id)
+    verdict, compile_output, runs = icpc_judge(**judge_kwargs)
+    return {
+        "ok": True,
+        "result": {
+            "verdict": verdict,
+            "compile_output": compile_output,
+            "runs": [
+                {
+                    "rank": meta.get(tc_id, (0, False))[0],
+                    "is_sample": meta.get(tc_id, (0, False))[1],
+                    "verdict": r.verdict,
+                    "runtime_ms": r.runtime_ms,
+                    "stdout": (r.stdout or "")[:2000],
+                    "stderr": (r.stderr or "")[:2000],
+                }
+                for (tc_id, r, _passed) in runs
+            ],
+        },
+    }
+
+
+def _json_or_none(raw):
+    if not raw:
+        return None
+    try:
+        return json.loads(raw)
+    except ValueError:
+        return None
+
+
 # ── Output-scoring path (Hashcode-style) ──────────────────────────────────────
 
 def _score_output(db, sub: models.Submission, contest: models.Contest) -> None:
