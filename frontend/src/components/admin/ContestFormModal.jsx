@@ -296,9 +296,16 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
     setRescoring(true);
     try {
       const { data } = await rescoreContest(contest.id);
-      toast.success(t('admin.form.toastRescoreDone', {
-        s: data.succeeded, u: data.unchanged, f: data.failed,
-      }));
+      // ``skipped`` = the judge never answered for those; they were left
+      // untouched, so they are not failures and must not read as such.
+      const msg = data.skipped
+        ? t('admin.form.toastRescoreDoneWithSkipped', {
+          s: data.succeeded, u: data.unchanged, f: data.failed, k: data.skipped,
+        })
+        : t('admin.form.toastRescoreDone', {
+          s: data.succeeded, u: data.unchanged, f: data.failed,
+        });
+      toast.success(msg);
       onChange();
     } catch (err) {
       toast.error(extractErrorMessage(err, t('admin.form.toastRescoreFailed')));

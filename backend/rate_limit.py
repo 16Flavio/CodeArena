@@ -4,6 +4,8 @@ The key function keys by **user id when the caller is authenticated**,
 falling back to the source IP otherwise. A classroom behind one NAT no
 longer shares a quota across every team; a logged-out attacker gets the
 classic per-IP treatment."""
+from typing import Optional
+
 from fastapi import Request
 from jose import JWTError, jwt
 from slowapi import Limiter
@@ -36,3 +38,69 @@ def _rate_limit_key(request: Request) -> str:
 
 
 limiter = Limiter(key_func=_rate_limit_key, default_limits=[])
+
+
+# ── Manual limiter ───────────────────────────────────────────────────────────
+# ``@limiter.limit`` cannot be used in a router module that carries
+# ``from __future__ import annotations``: slowapi wraps the handler with a
+# function whose ``__globals__`` are slowapi's, and FastAPI then resolves the
+# wrapper's *string* annotations against those globals - where ``schemas`` and
+# ``models`` don't exist. The route blows up at registration with
+# ``PydanticUndefinedAnnotation: name 'schemas' is not defined``. See the NOTE
+# on ``icpc.py``'s package-import endpoint.
+#
+# ``icpc.py`` works around it by counting rows the endpoint already persists.
+# Endpoints with nothing to count (a Learn exercise run leaves no row) use the
+# in-process window below.
+#
+# Storage semantics match the slowapi limiter above: in-memory, therefore
+# per uvicorn worker. With UVICORN_WORKERS=4 the effective ceiling is 4x the
+# declared one - a bound rather than an exact quota, which is what this class
+# of guard needs. Move both to a shared Redis backend together if an exact
+# cluster-wide quota is ever required.
+import threading
+import time as _time
+from collections import deque
+
+_MANUAL_HITS: dict[str, deque] = {}
+_MANUAL_LOCK = threading.Lock()
+# Keys whose window has fully drained are dropped, so the dict can't grow
+# past the number of callers active within one window.
+_MANUAL_MAX_KEYS = 50_000
+
+
+def check_manual_limit(key: str, *, limit: int, window_s: int) -> Optional[int]:
+    """Sliding-window counter. Returns ``None`` when the call is allowed, or
+    the number of seconds to wait (>= 1, for ``Retry-After``) when ``key`` has
+    already spent ``limit`` calls in the last ``window_s`` seconds.
+
+    Honours ``limiter.enabled`` so the test suite's global disable (see
+    ``conftest``) switches this off too."""
+    if not limiter.enabled:
+        return None
+    now = _time.monotonic()
+    cutoff = now - window_s
+    with _MANUAL_LOCK:
+        hits = _MANUAL_HITS.get(key)
+        if hits is None:
+            if len(_MANUAL_HITS) >= _MANUAL_MAX_KEYS:
+                _prune_locked(cutoff)
+            hits = _MANUAL_HITS.setdefault(key, deque())
+        while hits and hits[0] <= cutoff:
+            hits.popleft()
+        if len(hits) >= limit:
+            return max(1, int(hits[0] + window_s - now) + 1)
+        hits.append(now)
+        return None
+
+
+def _prune_locked(cutoff: float) -> None:
+    """Drop keys with no hit left in the window. Caller holds the lock."""
+    for k in [k for k, v in _MANUAL_HITS.items() if not v or v[-1] <= cutoff]:
+        _MANUAL_HITS.pop(k, None)
+
+
+def reset_manual_limits() -> None:
+    """Test helper - clears every window."""
+    with _MANUAL_LOCK:
+        _MANUAL_HITS.clear()

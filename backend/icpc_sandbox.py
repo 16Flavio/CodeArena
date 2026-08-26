@@ -115,6 +115,38 @@ def read_cpu_meta(workdir: str) -> Optional[int]:
     return int(seconds * 1000)
 
 
+def _create_meta_file(path: str) -> None:
+    """Create (or truncate) the cpu-meta file, refusing to follow a symlink.
+
+    ``path`` lives in the workdir the contestant's program can write, and in
+    the Learn ``run_exercise`` path that workdir is even chmod 0777. Without
+    ``O_NOFOLLOW`` a symlink planted there would be followed by *this* process
+    - the backend or worker, running as root in its container with the host
+    docker socket mounted - and the open would truncate whatever it points at:
+    another team's uploads, or the backend's own source.
+
+    ``read_cpu_meta``'s unlink normally removes any planted link before we get
+    here, so no concrete trigger is known on the nominal path. That is an
+    argument about ordering, not a proof; O_NOFOLLOW removes the class outright
+    for three lines. ``os.fchmod`` on the descriptor for the same reason - a
+    path-based chmod would re-open the name we just refused to trust."""
+    # ``O_NOFOLLOW`` and ``fchmod`` are POSIX-only; on a Windows dev box they
+    # are simply absent. Degrade instead of raising AttributeError, which the
+    # caller's ``except OSError`` would not catch. The judging host this
+    # protects is Linux - see docker-compose.yml.
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags, 0o666)
+    try:
+        # Explicit: O_CREAT's mode is masked by umask, and the sandbox uid
+        # (1997) must be able to write the file - ``times`` is a POSIX special
+        # builtin whose redirection failure can abort the shell. fchmod on the
+        # descriptor, not the path: re-opening by name would undo O_NOFOLLOW.
+        if hasattr(os, "fchmod"):
+            os.fchmod(fd, 0o666)
+    finally:
+        os.close(fd)
+
+
 def docker_available() -> bool:
     """True iff the Docker daemon is reachable from this process."""
     try:
@@ -159,6 +191,17 @@ def build_docker_argv(
         "--security-opt", "no-new-privileges",
         "-u", str(uid),
     ]
+    runtime = (os.environ.get("SCORING_RUNTIME") or "").strip()
+    if runtime:
+        # An alternative OCI runtime, e.g. ``runsc`` (gVisor), declared in
+        # /etc/docker/daemon.json. Nothing else changes: the flags above are
+        # runtime-agnostic. NOTE for whoever flips this on - gVisor intercepts
+        # syscalls in userspace, so syscall-heavy code slows down while pure
+        # computation barely moves. Verdicts here are decided on CPU time
+        # (``_verdict_time_ms``), so re-check the time limits of already
+        # imported problems after switching; a limit calibrated under runc is
+        # not the same limit under runsc.
+        argv += ["--runtime", runtime]
     if cpuset_cpus:
         # Pin to dedicated core(s). Combined with one worker per core this
         # is what makes runtimes reproducible under concurrent judging.
@@ -253,9 +296,7 @@ def run_in_container(
         read_cpu_meta(workdir)
         meta_path = os.path.join(workdir, CPU_META_NAME)
         try:
-            with open(meta_path, "w", encoding="utf-8"):
-                pass
-            os.chmod(meta_path, 0o666)
+            _create_meta_file(meta_path)
         except OSError:
             measure_cpu = False  # unwritable workdir - fall back to wall clock
         else:

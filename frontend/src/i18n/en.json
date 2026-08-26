@@ -1180,6 +1180,7 @@
       "toastPdfRemoved": "PDF removed",
       "toastPdfRemoveFailed": "Could not remove the PDF",
       "toastRescoreDone": "Rescore complete: {{s}} updated, {{u}} unchanged, {{f}} failed",
+      "toastRescoreDoneWithSkipped": "Rescore complete: {{s}} updated, {{u}} unchanged, {{f}} errored, {{k}} not judged (judge unavailable - run it again)",
       "toastRescoreFailed": "Rescore failed",
       "confirmRescore": "Rescore every submission in \"{{title}}\" with the current script? This may take several minutes.",
       "confirmRemovePdf": "Remove the PDF statement?",

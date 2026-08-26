@@ -37,13 +37,34 @@ each compile+run inside a throwaway, network-less container.
                                     # host↔container at the same path.
    SCORING_MODE=docker
    ```
-3. `docker compose up -d backend worker` to restart with the new config.
+3. `docker compose up -d backend worker learn-worker` to restart with the new
+   config.
 
 Each submission's compile and run happen in a sibling container with
 `--network=none --read-only --cap-drop=ALL --security-opt no-new-privileges
 --pids-limit=128 --memory --cpus`, as a non-root UID (1997), with a tmpfs
-`/tmp`, no swap, and a coreutils `timeout` enforcing the wall limit. The
-backend/worker mount the host Docker socket to spawn these siblings.
+`/tmp`, no swap, and a coreutils `timeout` enforcing the wall limit.
+
+**Only the workers mount the host Docker socket.** That socket is
+root-equivalent on the host, so it must not sit on the backend - the one
+container reachable from the internet, where an RCE in FastAPI would then be a
+host takeover. Everything that spawns a sandbox therefore runs on a worker:
+contestant submissions (always did), Learn "run this exercise" (the
+`lesson-runs` queue, drained by `learn-worker`), and the three synchronous
+admin paths - rescore, the "test this scoring script" button, and the ICPC
+problem dry-run - which enqueue onto the scoring queue and block for the
+result. If you run **without** Redis the
+backend judges in-process again, and then it does need the socket and the
+judge workdir back.
+
+Note what this does *not* fix: the sandbox is a sibling container started by
+the host's daemon, so a full sandbox escape lands on the host as root either
+way. Closing that means the daemon that starts sandboxes must not be root -
+either a second, rootless daemon pointed at by `DOCKER_HOST` on the worker
+services, or gVisor via `SCORING_RUNTIME=runsc`. Prefer the rootless daemon:
+gVisor intercepts syscalls in userspace, and since verdicts here are decided
+on CPU time, syscall-heavy submissions shift enough that already-imported
+problems need their time limits re-checked.
 
 Interactive problems are containerised too: a small orchestrator runs inside
 the same sandbox container and wires the contestant program to the interactor
@@ -391,6 +412,14 @@ no rebuild needed unless noted.
 | `DB_MAX_OVERFLOW`           | `15`    | Burst connections per backend worker (above pool_size).           |
 | `WORKER_DB_POOL_SIZE`       | `2`     | DB pool per scoring worker (single-threaded, low need).           |
 | `SCORING_WORKER_REPLICAS`   | `1`     | Number of RQ scoring workers. Bump for high submit rate.          |
+| `LEARN_WORKER_REPLICAS`     | `1`     | Workers draining the Learn `lesson-runs` queue. Bump if students queue behind each other on lesson exercises. |
+| `LESSON_QUEUE_NAME`         | `lesson-runs` | Queue for Learn exercise runs. Kept separate from judging so a spinner never waits behind an ICPC judging. |
+| `LESSON_RUN_WAIT_SECONDS`   | `60`    | How long the web request waits for a worker before returning 503. |
+| `SCORING_SYNC_WAIT_SECONDS` | `SCORING_TIMEOUT_SECONDS + 30` | Same, for rescore / test-scoring. |
+| `DRY_RUN_WAIT_SECONDS`      | `150`   | Same, for the ICPC problem dry-run. Keep it under the frontend's 180 s timeout on that call. |
+| `DRY_RUN_QUEUE_NAME`        | `SCORING_QUEUE_NAME` | Queue for the problem dry-run. Give it its own name (and add it to a worker's `WORKER_QUEUES`) if organisers find the button waiting behind live judging. |
+| `WORKER_QUEUES`             | `SCORING_QUEUE_NAME` | Comma-separated queues a worker process drains, in priority order. |
+| `SCORING_RUNTIME`           | _(unset)_ | Alternative OCI runtime for every sandbox, e.g. `runsc` (gVisor). Must be declared in the host `daemon.json`. Re-check problem time limits after switching. |
 | `SCORING_MODE`              | `subprocess` | `docker` isolates each compile/run in a container (see above). |
 | `SCORING_ICPC_IMAGE`        | `codearena-icpc-sandbox:latest` | Toolchain sandbox image for ICPC docker mode. |
 | `JUDGE_WORKDIR`             | `/judge-work` | Abs path mounted host↔container at the SAME path for the ICPC sandbox. |
@@ -463,7 +492,7 @@ For a botched release:
 # Set IMAGE_TAG back to the previous tag in .env, then:
 docker compose pull backend frontend
 docker compose run --rm backend alembic downgrade -1   # or specify a revision
-docker compose up -d --no-deps --force-recreate backend worker frontend
+docker compose up -d --no-deps --force-recreate backend worker learn-worker frontend
 ```
 
 Schema migrations are reversible with `alembic downgrade <revision>` -

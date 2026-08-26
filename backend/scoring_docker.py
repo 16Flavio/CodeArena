@@ -27,6 +27,17 @@ from typing import Optional
 
 
 DEFAULT_IMAGE = "codearena-scoring:latest"
+# Non-root uid baked into Dockerfile.scoring.
+SANDBOX_UID = "1999"
+
+
+def _runtime_args() -> list[str]:
+    """``--runtime`` when ``SCORING_RUNTIME`` names one (e.g. ``runsc`` for
+    gVisor), else nothing. Shared shape with ``icpc_sandbox.build_docker_argv``
+    on purpose: a hardened runtime configured for one judging path but not the
+    other is worse than none at all, because nothing surfaces the asymmetry."""
+    runtime = (os.environ.get("SCORING_RUNTIME") or "").strip()
+    return ["--runtime", runtime] if runtime else []
 
 
 def _docker_available() -> bool:
@@ -93,6 +104,14 @@ def run_in_docker(
         "--cap-drop=ALL",
         "--security-opt", "no-new-privileges",
         "--pids-limit", "64",
+        # Explicit, rather than relying on ``USER scoring`` in
+        # Dockerfile.scoring: an image rebuilt without that line would
+        # silently put untrusted validator code back at uid 0 inside the
+        # container. The ICPC sandbox passes ``-u`` for the same reason.
+        "-u", SANDBOX_UID,
+    ]
+    args += _runtime_args()
+    args += [
         image,
         "python", "-I", "-c",
         # Outer shim reads the entire JSON payload from stdin, then executes

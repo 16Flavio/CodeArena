@@ -1180,6 +1180,7 @@
       "toastPdfRemoved": "PDF supprimé",
       "toastPdfRemoveFailed": "Impossible de supprimer le PDF",
       "toastRescoreDone": "Re-notation terminée : {{s}} mises à jour, {{u}} identiques, {{f}} en erreur",
+      "toastRescoreDoneWithSkipped": "Re-notation terminée : {{s}} mises à jour, {{u}} identiques, {{f}} en erreur, {{k}} non jugées (juge indisponible - relancez)",
       "toastRescoreFailed": "Échec de la re-notation",
       "confirmRescore": "Re-noter toutes les soumissions du concours « {{title}} » avec le script actuel ? Cette action peut prendre plusieurs minutes.",
       "confirmRemovePdf": "Supprimer l'énoncé PDF ?",

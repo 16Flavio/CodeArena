@@ -68,6 +68,107 @@ def test_icpc_sandbox_docker_argv_is_locked_down():
     assert "timeout" in argv and "-s" in argv and "KILL" in argv
 
 
+def test_output_scoring_docker_argv_pins_non_root_uid(monkeypatch):
+    """The output-scoring path must pass ``-u`` explicitly like the ICPC one.
+    Relying on ``USER scoring`` in Dockerfile.scoring means an image rebuilt
+    without that line runs untrusted validator code as uid 0 in the container,
+    with nothing in the argv to show it."""
+    from backend import scoring_docker
+
+    captured = {}
+
+    class _Proc:
+        returncode = 0
+        stdout = '{"ok": true, "score": 1}'
+        stderr = ""
+
+    def _fake_run(args, **kwargs):
+        captured["args"] = args
+        return _Proc()
+
+    monkeypatch.setattr(scoring_docker, "_docker_available", lambda: True)
+    monkeypatch.setattr(scoring_docker.subprocess, "run", _fake_run)
+    monkeypatch.delenv("SCORING_RUNTIME", raising=False)
+    scoring_docker.run_in_docker("score = 1", "", "", timeout=5)
+
+    argv = captured["args"]
+    assert argv[argv.index("-u") + 1] == "1999"
+    # The uid flag must precede the image name, or docker treats it as an
+    # argument to the containerised command instead of a run flag.
+    assert argv.index("-u") < argv.index(scoring_docker.DEFAULT_IMAGE)
+    assert "--runtime" not in argv  # unset => stock runtime, no stray flag
+
+
+def test_scoring_runtime_reaches_both_judging_paths(monkeypatch):
+    """``SCORING_RUNTIME=runsc`` must apply to output scoring AND ICPC. A
+    hardened runtime wired into one path only is worse than none: nothing
+    surfaces that the other path is still on runc."""
+    from backend import scoring_docker
+    from backend.icpc_sandbox import build_docker_argv
+
+    monkeypatch.setenv("SCORING_RUNTIME", "runsc")
+
+    icpc_argv = build_docker_argv(
+        "python3 main.py",
+        workdir="/judge-work/x",
+        image="codearena-icpc-sandbox:latest",
+        memory_mb=256,
+        cpus="1.0",
+        inner_timeout_s=2,
+    )
+    assert icpc_argv[icpc_argv.index("--runtime") + 1] == "runsc"
+    assert icpc_argv.index("--runtime") < icpc_argv.index("codearena-icpc-sandbox:latest")
+
+    captured = {}
+
+    class _Proc:
+        returncode = 0
+        stdout = '{"ok": true, "score": 1}'
+        stderr = ""
+
+    monkeypatch.setattr(scoring_docker, "_docker_available", lambda: True)
+    monkeypatch.setattr(
+        scoring_docker.subprocess, "run",
+        lambda args, **kw: (captured.__setitem__("args", args), _Proc())[1],
+    )
+    scoring_docker.run_in_docker("score = 1", "", "", timeout=5)
+    argv = captured["args"]
+    assert argv[argv.index("--runtime") + 1] == "runsc"
+    assert argv.index("--runtime") < argv.index(scoring_docker.DEFAULT_IMAGE)
+
+
+def test_cpu_meta_file_refuses_to_follow_a_symlink(tmp_path):
+    """The cpu-meta file is created by the judge process (root in its
+    container) inside a directory the contestant's program can write. A
+    symlink planted there must not be followed, or the open truncates its
+    target - uploads, or the backend's own source."""
+    import os
+
+    import pytest
+
+    from backend.icpc_sandbox import _create_meta_file
+
+    victim = tmp_path / "victim.txt"
+    victim.write_text("other team's submission", encoding="utf-8")
+    link = tmp_path / ".dj_cpu.meta"
+    try:
+        os.symlink(victim, link)
+    except (OSError, NotImplementedError, AttributeError):
+        pytest.skip("symlinks unavailable (Windows without developer mode)")
+
+    with pytest.raises(OSError):
+        _create_meta_file(str(link))
+    assert victim.read_text(encoding="utf-8") == "other team's submission"
+
+    # And the ordinary case still works: a fresh file, writable by the
+    # sandbox uid so ``times`` can redirect into it.
+    plain = tmp_path / "plain.meta"
+    _create_meta_file(str(plain))
+    assert plain.exists()
+    if os.name != "nt":
+        assert (plain.stat().st_mode & 0o666) == 0o666
+
+
 def test_icpc_docker_mode_fails_closed_without_daemon(monkeypatch):
     """SCORING_MODE=docker with an unreachable daemon must raise, never fall
     back to judging contestant code as an unisolated host subprocess."""
@@ -376,3 +477,338 @@ def test_stream_ticket_is_scoped_and_short_lived(client):
     # The ticket must NOT double as a full session token on header-auth routes.
     me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {body['ticket']}"})
     assert me.status_code == 401
+
+
+# ── The internet-facing container holds no Docker socket ─────────────────────
+
+def _compose():
+    import os
+
+    import yaml
+
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    with open(os.path.join(root, "docker-compose.yml"), encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def test_backend_service_has_no_docker_socket():
+    """``/var/run/docker.sock`` is root-equivalent on the host. The backend is
+    the only service reachable from the internet, so mounting it there makes
+    any RCE in FastAPI a host takeover. Everything that spawns a sandbox
+    container runs on a worker instead - see scoring_queue."""
+    backend = _compose()["services"]["backend"]
+    mounts = backend.get("volumes") or []
+    assert not [m for m in mounts if "docker.sock" in m], (
+        "the backend must not mount the Docker socket; move whatever needs it "
+        "onto a worker queue"
+    )
+
+
+def test_judging_workers_do_hold_the_socket():
+    """The flip side: the workers are the ones that must reach the daemon, and
+    each judging path needs a service that drains its queue."""
+    services = _compose()["services"]
+    for name in ("worker", "learn-worker"):
+        mounts = services[name].get("volumes") or []
+        assert [m for m in mounts if "docker.sock" in m], f"{name} lost the socket"
+
+    # The Learn queue must be drained by a service that consumes it, or every
+    # "run this exercise" click would hang until its 60 s timeout.
+    learn_queues = services["learn-worker"]["environment"]["WORKER_QUEUES"]
+    assert "lesson-runs" in learn_queues
+    # ...and that service must not also drain contest judging, which is the
+    # whole point of the split.
+    assert "scoring" not in learn_queues
+
+
+# ── A judging outage is never written as a verdict ───────────────────────────
+
+def test_rescore_does_not_record_an_outage_as_invalid_output(client, monkeypatch):
+    """``run_validator_sync`` raising JudgeUnavailable means no worker
+    answered. Recording that as status="invalid_output" with score 0 would
+    destroy real scores on a worker outage - and rescore is exactly what an
+    admin runs mid-contest, when the queue is most backed up."""
+    from backend.routers import contests as contests_router
+    from backend.scoring_queue import JudgeUnavailable
+
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    admin = auth_header(client, "root")
+    r = client.post("/api/contests", json={
+        "title": "Rescore",
+        "is_active": True,
+        "is_public": True,
+        "participation_mode": "solo",
+        "start_time": _iso(now - timedelta(minutes=5)),
+        "end_time": _iso(now + timedelta(hours=1)),
+        "scoring_script": "score = len(submission_data)",
+    }, headers=admin)
+    assert r.status_code == 200, r.text
+    cid = r.json()["id"]
+    r = client.post(
+        f"/api/contests/{cid}/instances", headers=admin,
+        data={"name": "I"}, files={"file": ("i.txt", io.BytesIO(b"x"), "text/plain")},
+    )
+    assert r.status_code == 200, r.text
+    iid = r.json()["id"]
+    # Enough submissions to trip the consecutive-outage breaker (5).
+    for i in range(6):
+        r = client.post(
+            f"/api/contests/{cid}/instances/{iid}/submit", headers=admin,
+            files={"file": (f"s{i}.txt", io.BytesIO(f"payload-{i}".encode()), "text/plain")},
+        )
+        assert r.status_code == 200, r.text
+
+    subs = client.get(f"/api/contests/{cid}/submissions", headers=admin).json()["items"]
+    assert subs, "fixture produced no submission"
+    before = {s["id"]: (s["score"], s["status"]) for s in subs}
+
+    def _outage(*a, **kw):
+        raise JudgeUnavailable("no worker finished the scoring run within 60s")
+
+    monkeypatch.setattr(contests_router, "_run_scoring", _outage)
+    monkeypatch.setattr("backend.scoring_queue.run_validator_sync", _outage)
+
+    r = client.post(f"/api/contests/{cid}/rescore", headers=admin)
+    assert r.status_code == 503, r.text
+    assert r.headers.get("Retry-After")
+
+    after = client.get(f"/api/contests/{cid}/submissions", headers=admin).json()["items"]
+    for row in after:
+        assert (row["score"], row["status"]) == before[row["id"]], (
+            "an outage rewrote a submission's verdict"
+        )
+
+
+def test_scoring_sync_does_not_swallow_the_outage(monkeypatch):
+    """The shared dispatch must let JudgeUnavailable through. Folding it into
+    ``{"ok": False, "error": ...}`` is what let it reach a persisted verdict."""
+    import pytest
+
+    from backend import scoring_queue
+
+    class _StuckQueue:
+        connection = None
+
+        def enqueue(self, *a, **kw):
+            class _J:
+                id = "j"
+                exc_info = None
+
+                def get_status(self, refresh=False):
+                    return "queued"
+
+                def return_value(self):
+                    return None
+
+                def cancel(self):
+                    pass
+            return _J()
+
+    monkeypatch.setattr(scoring_queue, "_get_rq_queue", lambda: _StuckQueue())
+    monkeypatch.setattr(scoring_queue, "SCORING_SYNC_WAIT_S", 0)
+
+    with pytest.raises(scoring_queue.JudgeUnavailable):
+        scoring_queue.run_validator_sync("pass", "", "")
+    with pytest.raises(scoring_queue.JudgeUnavailable):
+        scoring_queue.run_scoring_sync("score = 1", "", "")
+
+
+def test_abandoned_running_job_is_stopped_not_just_dequeued(monkeypatch):
+    """``job.cancel()`` only removes a QUEUED job. One a worker already
+    started keeps the worker busy until its own job_timeout while the caller
+    has returned 503 - and the caller is free to retry, so a single user can
+    build a backlog on the one Learn worker."""
+    import pytest
+
+    from backend import scoring_queue
+
+    stopped = []
+
+    class _Job:
+        id = "job-42"
+        exc_info = None
+
+        def __init__(self):
+            self.canceled = False
+
+        def get_status(self, refresh=False):
+            return "started"
+
+        def return_value(self):
+            return None
+
+        def cancel(self):
+            self.canceled = True
+
+    job = _Job()
+
+    class _Queue:
+        connection = "conn"
+
+        def enqueue(self, *a, **kw):
+            return job
+
+    import sys
+    import types
+
+    fake = types.ModuleType("rq.command")
+    fake.send_stop_job_command = lambda conn, job_id: stopped.append((conn, job_id))
+    monkeypatch.setitem(sys.modules, "rq.command", fake)
+    monkeypatch.setattr(scoring_queue, "_get_lesson_queue", lambda: _Queue())
+    monkeypatch.setattr(scoring_queue, "LESSON_RUN_WAIT_S", 0)
+
+    with pytest.raises(scoring_queue.JudgeUnavailable):
+        scoring_queue.run_lesson_exercise_sync(1, "pass", "py3")
+
+    assert stopped == [("conn", "job-42")], "a started job must be stopped"
+    assert not job.canceled, "cancel() is the wrong call for a started job"
+
+
+def test_dry_run_does_not_execute_in_the_web_process(client, monkeypatch):
+    """The problem dry-run compiles and runs code, so it must go to a worker
+    like every other sandbox caller - the backend holds no Docker socket."""
+    from backend import scoring_queue
+    from backend.routers import icpc as icpc_router
+
+    calls = []
+    monkeypatch.setattr(
+        scoring_queue, "run_dry_run_sync",
+        lambda *a, **kw: calls.append(a) or {
+            "ok": True,
+            "result": {"verdict": "AC", "compile_output": "", "runs": []},
+        },
+    )
+    # The router imports it inside the handler, so patch the source module.
+    monkeypatch.setattr(
+        "backend.scoring_queue.run_dry_run_sync",
+        lambda *a, **kw: calls.append(a) or {
+            "ok": True,
+            "result": {"verdict": "AC", "compile_output": "", "runs": []},
+        },
+    )
+    assert icpc_router  # imported for the side effect of registering routes
+
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    admin = auth_header(client, "root")
+    r = client.post("/api/contests", json={
+        "title": "ICPC-dry-run",
+        "is_active": True,
+        "participation_mode": "solo",
+        "kind": "icpc",
+        "scoring_script": "score = 0",
+        "start_time": _iso(now - timedelta(minutes=5)),
+        "end_time": _iso(now + timedelta(hours=1)),
+    }, headers=admin)
+    assert r.status_code == 200, r.text
+    cid = r.json()["id"]
+    r = client.post(f"/api/contests/{cid}/problems", json={
+        "external_id": "a", "label": "A", "name": "A",
+        "time_limit_ms": 1000, "memory_limit_mb": 256,
+        "checker_kind": "tokens",
+    }, headers=admin)
+    assert r.status_code == 200, r.text
+    pid = r.json()["id"]
+
+    r = client.post(f"/api/icpc/problems/{pid}/dry-run",
+                    json={"language": "py3", "source": "print(1)"}, headers=admin)
+    assert r.status_code == 200, r.text
+    assert r.json()["verdict"] == "AC"
+    assert calls, "the dry-run judged in the web process instead of enqueueing"
+
+
+def test_rescore_reports_unjudged_submissions_apart_from_failures(client, monkeypatch):
+    """Below the abort threshold, an unanswered submission is left untouched -
+    so it must be reported as ``skipped``, not ``failed``. "The script rejected
+    it" and "no worker answered" call for different actions."""
+    from backend.routers import contests as contests_router
+    from backend.scoring_queue import JudgeUnavailable
+
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    admin = auth_header(client, "root")
+    cid = client.post("/api/contests", json={
+        "title": "Skipped",
+        "is_active": True,
+        "is_public": True,
+        "participation_mode": "solo",
+        "start_time": _iso(now - timedelta(minutes=5)),
+        "end_time": _iso(now + timedelta(hours=1)),
+        "scoring_script": "score = len(submission_data)",
+    }, headers=admin).json()["id"]
+    iid = client.post(
+        f"/api/contests/{cid}/instances", headers=admin,
+        data={"name": "I"}, files={"file": ("i.txt", io.BytesIO(b"x"), "text/plain")},
+    ).json()["id"]
+    # Three - below MAX_CONSECUTIVE_OUTAGES, so the rescore completes.
+    for i in range(3):
+        client.post(
+            f"/api/contests/{cid}/instances/{iid}/submit", headers=admin,
+            files={"file": (f"s{i}.txt", io.BytesIO(f"p{i}".encode()), "text/plain")},
+        )
+
+    before = {
+        r["id"]: (r["score"], r["status"])
+        for r in client.get(f"/api/contests/{cid}/submissions", headers=admin).json()["items"]
+    }
+
+    def _outage(*a, **kw):
+        raise JudgeUnavailable("no worker finished the scoring run within 60s")
+
+    monkeypatch.setattr(contests_router, "_run_scoring", _outage)
+
+    r = client.post(f"/api/contests/{cid}/rescore", headers=admin)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["skipped"] == 3, body
+    assert body["failed"] == 0, "an untouched row must not be reported as failed"
+    assert body["succeeded"] == 0
+
+    after = client.get(f"/api/contests/{cid}/submissions", headers=admin).json()["items"]
+    for row in after:
+        assert (row["score"], row["status"]) == before[row["id"]]
+
+
+# ── The isolation banner lives where the code actually runs ──────────────────
+
+def test_worker_warns_when_it_would_run_code_uncontained(monkeypatch, caplog):
+    """The banner used to live only in ``main``, i.e. the API process - which
+    no longer executes anything. A worker started without SCORING_MODE=docker
+    must say so itself, or student code runs uncontained in total silence."""
+    import logging
+
+    from backend.scoring_runner import warn_scoring_isolation
+
+    log = logging.getLogger("test.worker.banner")
+
+    monkeypatch.delenv("SCORING_MODE", raising=False)
+    with caplog.at_level(logging.WARNING, logger="test.worker.banner"):
+        warn_scoring_isolation(log, process="judging worker")
+    assert any(
+        rec.levelno == logging.WARNING and "no" in rec.getMessage()
+        and "container isolation" in rec.getMessage()
+        and "judging worker" in rec.getMessage()
+        for rec in caplog.records
+    ), caplog.text
+
+    caplog.clear()
+    monkeypatch.setenv("SCORING_MODE", "docker")
+    with caplog.at_level(logging.INFO, logger="test.worker.banner"):
+        warn_scoring_isolation(log, process="judging worker")
+    assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
+
+
+def test_worker_entrypoint_announces_its_isolation_mode():
+    """Pin the wiring, not just the helper: worker.main must call it.
+
+    Read as text rather than imported - ``backend.worker`` imports ``redis`` at
+    module level, which a dev box without the optional queue deps doesn't have,
+    and this assertion doesn't need the module loaded."""
+    import os
+    import re
+
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    with open(os.path.join(root, "backend", "worker.py"), encoding="utf-8") as f:
+        src = f.read()
+    body = src[src.index("def main("):]
+    assert re.search(r"warn_scoring_isolation\(", body), (
+        "the worker entrypoint no longer logs its sandbox mode"
+    )

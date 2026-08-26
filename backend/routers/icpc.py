@@ -579,111 +579,38 @@ def dry_run_problem(
     that passes here will behave identically in-contest."""
     p = (
         db.query(models.Problem)
-        .options(joinedload(models.Problem.testcases))
         .filter(models.Problem.id == problem_id)
         .first()
     )
     if not p:
         raise HTTPException(status_code=404, detail="Problème introuvable")
     _assert_manages(db, admin, p.contest_id)
-    lang = db.query(models.Language).filter(
-        models.Language.id == payload.language, models.Language.enabled.is_(True),
-    ).first()
-    if not lang:
-        raise HTTPException(status_code=400, detail=f"Langage inconnu : {payload.language}")
 
-    from ..icpc_runner import judge as _judge
-    testcases = [
-        (tc.id, tc.input_data or "", tc.expected_output or "")
-        for tc in sorted(p.testcases or [], key=lambda t: (t.rank, t.id))
-    ]
-    # Resolve the interactor language (compiled languages need their own
-    # compile/run templates; py3 uses the inline wrapper).
-    ilang_id = (p.interactor_language or "py3").lower()
-    inter_compile_cmd = ""
-    inter_run_cmd = ""
-    if ilang_id != "py3" and p.interactor_script:
-        ilang = (
-            db.query(models.Language)
-            .filter(models.Language.id == ilang_id)
-            .first()
-        )
-        if not ilang:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Langage d'interacteur inconnu : {ilang_id}",
-            )
-        inter_compile_cmd = ilang.compile_cmd or ""
-        inter_run_cmd = ilang.run_cmd or ""
-    inter_aux = None
-    if p.interactor_aux_files:
-        try:
-            inter_aux = json.loads(p.interactor_aux_files)
-        except ValueError:
-            inter_aux = None
+    # The judging itself happens on a worker (scoring_jobs.dry_run_job), which
+    # re-reads the problem from the DB. Two reasons: this compiles and runs
+    # code, so under SCORING_MODE=docker it needs the Docker socket the backend
+    # deliberately no longer mounts; and a problem's testcases + aux files are
+    # far too big to ship through Redis as a job argument.
+    from ..scoring_queue import run_dry_run_sync, JudgeUnavailable
+    try:
+        out = run_dry_run_sync(problem_id, payload.language, payload.source or "")
+    except JudgeUnavailable as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Le juge est indisponible : {e}",
+            headers={"Retry-After": "30"},
+        ) from e
+    if not out.get("ok"):
+        # A misconfigured problem (unknown interactor/checker language) is the
+        # admin's to fix, so it keeps its 400 - only a missing row is a 404.
+        status = 404 if out.get("kind") == "missing" else 400
+        raise HTTPException(status_code=status, detail=out.get("error") or "dry-run impossible")
 
-    # Same resolution for compiled-language custom output validators.
-    clang_id = (p.checker_language or "py3").lower()
-    chk_compile_cmd = ""
-    chk_run_cmd = ""
-    if (p.checker_kind or "").lower() == "custom" and p.checker_script and clang_id != "py3":
-        clang = (
-            db.query(models.Language)
-            .filter(models.Language.id == clang_id)
-            .first()
-        )
-        if not clang:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Langage de validateur inconnu : {clang_id}",
-            )
-        chk_compile_cmd = clang.compile_cmd or ""
-        chk_run_cmd = clang.run_cmd or ""
-    chk_aux = None
-    if p.checker_aux_files:
-        try:
-            chk_aux = json.loads(p.checker_aux_files)
-        except ValueError:
-            chk_aux = None
-
-    verdict, compile_output, runs = _judge(
-        language_id=lang.id,
-        compile_cmd=lang.compile_cmd or "",
-        run_cmd=lang.run_cmd,
-        time_factor=lang.time_factor or 1.0,
-        source_code=payload.source or "",
-        testcases=testcases,
-        time_limit_ms=p.time_limit_ms,
-        memory_limit_mb=p.memory_limit_mb,
-        checker_kind=p.checker_kind or "tokens",
-        checker_epsilon=p.checker_epsilon,
-        interactor_script=p.interactor_script,
-        interactor_language=ilang_id,
-        interactor_compile_cmd=inter_compile_cmd,
-        interactor_run_cmd=inter_run_cmd,
-        interactor_aux_files=inter_aux,
-        checker_script=p.checker_script,
-        checker_language=clang_id,
-        checker_compile_cmd=chk_compile_cmd,
-        checker_run_cmd=chk_run_cmd,
-        checker_aux_files=chk_aux,
-        num_passes=int(p.num_passes or 1),
-    )
-    tc_by_id = {tc.id: tc for tc in p.testcases}
+    res = out["result"]
     return schemas.IcpcDryRunResult(
-        verdict=verdict,
-        compile_output=compile_output,
-        runs=[
-            schemas.IcpcDryRunRun(
-                rank=tc_by_id[tc_id].rank if tc_id in tc_by_id else 0,
-                is_sample=bool(tc_by_id[tc_id].is_sample) if tc_id in tc_by_id else False,
-                verdict=r.verdict,
-                runtime_ms=r.runtime_ms,
-                stdout=(r.stdout or "")[:2000],
-                stderr=(r.stderr or "")[:2000],
-            )
-            for (tc_id, r, _passed) in runs
-        ],
+        verdict=res["verdict"],
+        compile_output=res["compile_output"],
+        runs=[schemas.IcpcDryRunRun(**r) for r in res["runs"]],
     )
 
 
