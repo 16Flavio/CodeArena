@@ -40,6 +40,12 @@ each compile+run inside a throwaway, network-less container.
 3. `docker compose up -d backend worker learn-worker` to restart with the new
    config.
 
+> For anything public, go one step further and move the workers off the web
+> host entirely - see **[JUDGE-VM.md](JUDGE-VM.md)**. The `docker.sock` mount
+> those workers need is root-equivalent on whatever holds it, so the VM split
+> is what decides whether a sandbox escape costs you a throwaway VM or the
+> host, its uploads and its LAN.
+
 Each submission's compile and run happen in a sibling container with
 `--network=none --read-only --cap-drop=ALL --security-opt no-new-privileges
 --pids-limit=128 --memory --cpus`, as a non-root UID (1997), with a tmpfs
