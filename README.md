@@ -49,6 +49,8 @@ docker compose run --rm backup          # timestamped pg_dump + uploads tarball
 
 See **[docs/DEPLOY.md](docs/DEPLOY.md)** for the full runbook: Postgres sizing, worker scaling, TLS/Caddy edge, backup/restore, migration discipline, and the security model (what runs sandboxed, what the Docker socket mount implies, 2FA recovery).
 
+For a public deployment, judging belongs on its own machine: **[docs/JUDGE-VM.md](docs/JUDGE-VM.md)** documents the two-machine topology in production - web tier on the host, RQ workers in a dedicated libvirt VM that holds no application secret and reaches the database through a data-only role.
+
 > **Security note:** `SCORING_MODE=docker` is required for anything public - it isolates both organizer-authored validators and contestant-submitted code in locked-down containers. `subprocess` mode is for trusted classroom use only, and ICPC judging refuses to run (fails closed) if docker mode is configured but the daemon is unreachable.
 
 ## Repository layout
@@ -61,6 +63,7 @@ frontend/           React app - src/pages, src/components, src/i18n/{fr,en}.json
 scripts/seed_chapterN/  Learn-section lesson seeds (FR/EN markdown pairs)
 scripts/seed_widgets/   interactive widget catalog for lessons
 docs/DEPLOY.md      production runbook
+docs/JUDGE-VM.md    two-machine topology: judging workers on a dedicated VM
 ```
 
 ## Adding Learn content
