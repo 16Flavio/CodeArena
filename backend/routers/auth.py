@@ -22,6 +22,11 @@ RESET_TOKEN_EXPIRE_HOURS = 1
 # passwords) so users who paste "password123" get rejected at register
 # time. Frontend has a strength meter - backend is the ultimate gate.
 PASSWORD_MIN_LENGTH = 10
+# bcrypt hashes at most 72 BYTES and raises past that, so an over-long
+# passphrase used to surface as a 500 from hash_password() instead of a
+# clean validation error. Bytes, not characters: accented or emoji
+# passwords hit the ceiling sooner than their length suggests.
+PASSWORD_MAX_BYTES = 72
 _PASSWORD_BLOCKLIST = frozenset(
     p.lower() for p in (
         "password", "password1", "password123", "password1234",
@@ -45,6 +50,14 @@ def _check_password_policy(password: str) -> None:
         raise HTTPException(
             status_code=400,
             detail=f"Le mot de passe doit contenir au moins {PASSWORD_MIN_LENGTH} caractères",
+        )
+    if len(pw.encode("utf-8")) > PASSWORD_MAX_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Le mot de passe ne doit pas dépasser {PASSWORD_MAX_BYTES} octets "
+                "(les caractères accentués comptent double)"
+            ),
         )
     has_letter = any(c.isalpha() for c in pw)
     has_digit = any(c.isdigit() for c in pw)
@@ -218,33 +231,34 @@ def login(request: Request, data: schemas.UserLogin, db: Session = Depends(get_d
     user = db.query(models.User).filter(models.User.username == data.username).first()
     now = datetime.now(timezone.utc)
 
-    if user is None:
-        # Equalize timing with the wrong-password path: bcrypt is the slow
-        # part, so verifying against a dummy hash stops an attacker from
-        # distinguishing "no such user" (fast) from "wrong password" (slow).
-        verify_password(data.password, _DUMMY_PASSWORD_HASH)
-
-    # Refuse early if the account is locked, *before* touching the hash
-    # - same response shape as a wrong password, so we don't leak "this
-    # username exists, it's just locked" to scanners.
+    locked_until = None
     if user is not None and user.locked_until is not None:
         locked_until = user.locked_until
         if locked_until.tzinfo is None:
             locked_until = locked_until.replace(tzinfo=timezone.utc)
-        if locked_until > now:
-            retry_s = int((locked_until - now).total_seconds())
-            raise_error(
-                code=ErrorCode.ACCOUNT_LOCKED,
-                status=429,
-                message=f"Account temporarily locked. Retry in {retry_s}s.",
-                params={"retry_seconds": retry_s},
-                headers={"Retry-After": str(retry_s)},
-            )
+    is_locked = locked_until is not None and locked_until > now
 
-    if not user or not verify_password(data.password, user.password_hash):
-        # Count the failure and maybe set the lockout. Done on the User
-        # row so it survives restarts and scales across backend replicas.
-        if user is not None:
+    # Exactly one bcrypt verification on every path - against the real
+    # hash when the account exists, against a dummy otherwise. bcrypt is
+    # the slow part, so this stops an attacker distinguishing "no such
+    # user" (fast) from "wrong password" (slow).
+    if user is not None:
+        password_ok = verify_password(data.password, user.password_hash)
+    else:
+        verify_password(data.password, _DUMMY_PASSWORD_HASH)
+        password_ok = False
+
+    if not password_ok:
+        # A wrong password answers 401 INVALID_CREDENTIALS whatever the
+        # account's state. The lockout used to be reported HERE, before
+        # the password was checked - which handed out a username oracle
+        # far louder than the timing one above: five wrong guesses turned
+        # 401 into 429 ACCOUNT_LOCKED for a real account, and left an
+        # unknown one on 401 forever.
+        if user is not None and not is_locked:
+            # Only count failures while NOT already locked. Counting
+            # during the lock window would let an attacker refresh the
+            # lock indefinitely and keep the owner out for good.
             user.failed_login_count = (user.failed_login_count or 0) + 1
             if user.failed_login_count >= LOCKOUT_THRESHOLD:
                 user.locked_until = now + timedelta(seconds=LOCKOUT_DURATION)
@@ -257,6 +271,19 @@ def login(request: Request, data: schemas.UserLogin, db: Session = Depends(get_d
             code=ErrorCode.INVALID_CREDENTIALS,
             status=401,
             message="Invalid username or password",
+        )
+
+    # The password is correct, so the caller has proved the account is
+    # theirs - only now is it safe to disclose the lockout, and the real
+    # owner gets the useful "retry in Ns" instead of a bare 401.
+    if is_locked:
+        retry_s = int((locked_until - now).total_seconds())
+        raise_error(
+            code=ErrorCode.ACCOUNT_LOCKED,
+            status=429,
+            message=f"Account temporarily locked. Retry in {retry_s}s.",
+            params={"retry_seconds": retry_s},
+            headers={"Retry-After": str(retry_s)},
         )
 
     # Successful login: clear the counters.

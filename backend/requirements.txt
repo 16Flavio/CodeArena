@@ -2,8 +2,15 @@ fastapi==0.115.0
 uvicorn[standard]==0.30.0
 sqlalchemy==2.0.35
 alembic==1.13.3
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+# 3.4.0 fixes CVE-2024-33663 (algorithm confusion) and CVE-2024-33664
+# (JWE decompression bomb). Neither is exploitable the way this app uses
+# the library - decode() always pins algorithms=["HS256"] and no JWE is
+# ever parsed - but staying on a flagged release costs nothing to fix.
+python-jose[cryptography]==3.4.0
+# bcrypt directly rather than through passlib's extra: auth.py has always
+# done ``import bcrypt`` and never called passlib, so the indirection only
+# pinned an unmaintained package (last release 2020) into the image.
+bcrypt==4.2.1
 python-multipart==0.0.9
 pydantic==2.9.0
 aiofiles==24.1.0

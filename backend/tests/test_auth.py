@@ -18,9 +18,26 @@ def test_account_lockout_after_bad_passwords(client):
 
     # 6th attempt, this time with the RIGHT password - must be rejected
     # because the account is locked.
-    r = client.post("/api/auth/login", json={"username": "locky", "password": "correct"})
+    # NOTE: this used to send "correct", which is NOT the registered
+    # password ("correct-pw-12"). It passed anyway because login checked
+    # the lockout *before* the password, so any string produced the 429 -
+    # and that ordering was itself a username-enumeration oracle (a wrong
+    # password on a real-but-locked account answered 429, while an unknown
+    # account answered 401). The password is now verified first, so only a
+    # caller who proves the credentials learns the account is locked, and
+    # the test has to send the real password to reach the 429.
+    r = client.post("/api/auth/login", json={"username": "locky", "password": "correct-pw-12"})
     assert r.status_code == 429
     assert "Retry-After" in r.headers
+
+    # The flip side of that fix: a wrong password against a locked account
+    # must be indistinguishable from one against an account that does not
+    # exist. Both 401, same error code, no lockout disclosed.
+    r_locked = client.post("/api/auth/login", json={"username": "locky", "password": "wrong"})
+    r_absent = client.post("/api/auth/login", json={"username": "nobody-here", "password": "wrong"})
+    assert r_locked.status_code == 401
+    assert r_absent.status_code == 401
+    assert r_locked.json()["detail"]["code"] == r_absent.json()["detail"]["code"]
 
     # Unlocking manually via the DB simulates waiting out the 15 min.
     from backend import database, models

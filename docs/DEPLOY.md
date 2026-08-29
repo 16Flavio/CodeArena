@@ -206,7 +206,7 @@ the judging itself.
 
 | Variable              | Default | What it does                                                        |
 | --------------------- | ------- | ------------------------------------------------------------------- |
-| `TRUST_PROXY_HEADERS` | unset   | When set (`1`), honour `X-Forwarded-For` for the recorded submitter IP. **Set this only when a trusted reverse proxy (Caddy/nginx) is in front** - the compose deployment is. Left unset, the header is ignored (it is otherwise attacker-spoofable) and the socket peer is used. |
+| `TRUST_PROXY_HEADERS` | unset   | When set (`1`), honour `X-Forwarded-For` as the client address. This governs **two** things: the submitter IP recorded on each submission, *and* the rate-limit bucket for anonymous callers (login, register, forgot-password). **Set it only when a trusted reverse proxy (Caddy/nginx) is in front** - the compose deployment is. Left unset behind a proxy, every anonymous request looks like it came from the proxy: one shared bucket, so `5/hour` on password reset becomes five per hour for the whole deployment. Left set *without* a proxy, the header is attacker-spoofable and a client picks its own bucket. |
 | `METRICS_TOKEN`       | unset   | When set, `/api/metrics` requires it via `X-Metrics-Token:` header or `?token=`. Left unset, the endpoint stays open (aggregate counts only) for existing scrapers. |
 | `CORS_ORIGINS`        | dev localhosts | Comma-separated allowed origins. Set to your real frontend origin in prod; `*` is opt-in and disables credentialed CORS. |
 

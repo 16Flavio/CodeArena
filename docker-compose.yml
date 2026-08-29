@@ -29,6 +29,18 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      # BOTH of these are read by the app from its own environment, so
+      # setting them in .env alone does nothing - Compose only injects
+      # what is declared here. They were documented in docs/DEPLOY.md and
+      # silently inert for every deployment that set them:
+      #  * TRUST_PROXY_HEADERS decides whether X-Forwarded-For is honoured.
+      #    Unset behind a reverse proxy, every request looks like it came
+      #    from the proxy: the recorded submitter IP is useless for
+      #    anti-cheat, and the rate limiter buckets the whole internet
+      #    into one key (see backend/rate_limit.py).
+      #  * METRICS_TOKEN gates /api/metrics. Unset, the endpoint is open.
+      TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-}
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
       SCORING_TIMEOUT_SECONDS: ${SCORING_TIMEOUT_SECONDS:-30}
       SCORING_MODE: ${SCORING_MODE:-subprocess}
       SCORING_IMAGE: ${SCORING_IMAGE:-codearena-scoring:latest}
