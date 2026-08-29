@@ -89,6 +89,14 @@ def test_output_scoring_docker_argv_pins_non_root_uid(monkeypatch):
     monkeypatch.setattr(scoring_docker, "_docker_available", lambda: True)
     monkeypatch.setattr(scoring_docker.subprocess, "run", _fake_run)
     monkeypatch.delenv("SCORING_RUNTIME", raising=False)
+    # SCORING_IMAGE too, for the same reason as SCORING_RUNTIME above: an
+    # earlier module in the session can leave it set, and run_in_docker
+    # honours the env over DEFAULT_IMAGE. Without this the argv carries a
+    # different image than the constant asserted below, .index() raises
+    # ValueError, and the test fails only when run after that other module
+    # - exactly the kind of order-dependent red that teaches people to
+    # ignore a failing suite.
+    monkeypatch.delenv("SCORING_IMAGE", raising=False)
     scoring_docker.run_in_docker("score = 1", "", "", timeout=5)
 
     argv = captured["args"]
@@ -107,6 +115,9 @@ def test_scoring_runtime_reaches_both_judging_paths(monkeypatch):
     from backend.icpc_sandbox import build_docker_argv
 
     monkeypatch.setenv("SCORING_RUNTIME", "runsc")
+    # See the note in the previous test: a leaked SCORING_IMAGE from an
+    # earlier module makes the DEFAULT_IMAGE lookup below raise.
+    monkeypatch.delenv("SCORING_IMAGE", raising=False)
 
     icpc_argv = build_docker_argv(
         "python3 main.py",

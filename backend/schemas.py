@@ -1,4 +1,31 @@
+import re
+
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+
+
+# Email addresses are matched case-insensitively everywhere that matters:
+# registration checks uniqueness, /forgot-password looks the address up
+# lower-cased. Normalise ONCE, at the edge, so those two can never
+# disagree. Before this, an address stored with any uppercase letter was
+# unreachable by password reset - and since that endpoint always answers
+# "if this email is registered, a link has been sent", the failure was
+# permanent and completely silent. Case-folding also stops two accounts
+# that differ only in case from coexisting.
+#
+# Deliberately a regex and NOT pydantic's ``EmailStr``: EmailStr requires
+# the ``email-validator`` package, which is not in requirements.txt -
+# switching to it would raise at import time and take the whole API down.
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$")
+_EMAIL_MAX_LENGTH = 254  # RFC 5321 practical ceiling
+
+
+def _normalise_email(value: str) -> str:
+    email = (value or "").strip().lower()
+    if len(email) > _EMAIL_MAX_LENGTH:
+        raise ValueError("Adresse email trop longue")
+    if not _EMAIL_RE.match(email):
+        raise ValueError("Adresse email invalide")
+    return email
 
 
 # Closed sets enforced at the schema layer so an invalid string can't
@@ -51,6 +78,11 @@ class UserRegister(BaseModel):
     username: str
     email: str
     password: str
+
+    @field_validator("email")
+    @classmethod
+    def _normalise(cls, v: str) -> str:
+        return _normalise_email(v)
 
 
 class UserLogin(BaseModel):

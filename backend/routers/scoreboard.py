@@ -532,20 +532,26 @@ def export_scoreboard_csv(
 
     buf = io.StringIO()
     writer = csv.writer(buf)
+    # Every cell goes through ``csv_row``: team names, member names and
+    # instance titles are user-chosen, and a spreadsheet evaluates a cell
+    # starting with = + - @ as a formula the moment the organiser opens
+    # the export. See backend/csv_utils.py.
+    from ..csv_utils import csv_row
+
     header = ["Rank", "Team", "Members"] + [i.name for i in sb.instances] + ["Total"]
-    writer.writerow(header)
+    writer.writerow(csv_row(header))
     for rank, team in enumerate(sb.teams, start=1):
         per_instance = []
         for inst in sb.instances:
             s = team.scores.get(str(inst.id))
             per_instance.append(f"{s.best_score:.6g}" if s else "")
-        writer.writerow([
+        writer.writerow(csv_row([
             rank,
             team.team_name,
             ";".join(team.members),
             *per_instance,
             f"{team.total_score:.6g}",
-        ])
+        ]))
 
     safe_title = "".join(c for c in sb.contest_title if c.isalnum() or c in "-_ ").strip() or "contest"
     filename = f"{safe_title}-scoreboard.csv"

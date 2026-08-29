@@ -1223,12 +1223,18 @@ def export_icpc_scoreboard_csv(
 
     buf = io.StringIO()
     writer = csv.writer(buf)
+    # Team names, member names, affiliations and problem labels are all
+    # user- or organiser-supplied. ``csv_row`` stops a cell beginning
+    # with = + - @ from executing as a formula in the spreadsheet the
+    # organiser opens. See backend/csv_utils.py.
+    from ..csv_utils import csv_row
+
     header = ["Rank", "Team", "Members", "Affiliation", "Solved", "Penalty"]
     header += [p.label for p in sb.problems]
-    writer.writerow(header)
+    writer.writerow(csv_row(header))
     for rank, row in enumerate(sb.rows, start=1):
         per_problem = [_fmt_cell(row.cells.get(p.label)) for p in sb.problems]
-        writer.writerow([
+        writer.writerow(csv_row([
             rank,
             row.team_name,
             ";".join(row.members),
@@ -1236,7 +1242,7 @@ def export_icpc_scoreboard_csv(
             row.solved_count,
             row.total_penalty,
             *per_problem,
-        ])
+        ]))
 
     safe_title = "".join(c for c in sb.contest_title if c.isalnum() or c in "-_ ").strip() or "contest"
     filename = f"{safe_title}-icpc-scoreboard.csv"

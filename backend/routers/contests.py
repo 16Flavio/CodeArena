@@ -52,21 +52,21 @@ _TRUTHY = {"1", "true", "yes", "on"}
 def _client_ip(request: "Request") -> Optional[str]:
     """Best-effort client IP recorded on a submission for audit/anti-cheat.
 
+    Delegates to ``rate_limit.client_ip`` so the audit trail and the rate
+    limiter can never disagree about who the caller is - they used to,
+    and the limiter's copy was the wrong one.
+
     ``X-Forwarded-For`` is only honoured when ``TRUST_PROXY_HEADERS`` is set,
     i.e. a trusted reverse proxy (Caddy/nginx) is actually in front and
     rewrites it. Otherwise the header is fully attacker-controlled - a
     contestant could forge the recorded submitter IP - so we use the real
     socket peer instead. Set TRUST_PROXY_HEADERS=1 in the compose/prod deploy
-    where the backend sits behind the edge proxy."""
-    try:
-        peer = request.client.host if request.client else None
-    except Exception:  # pragma: no cover
-        peer = None
-    if os.environ.get("TRUST_PROXY_HEADERS", "").strip().lower() in _TRUTHY:
-        fwd = request.headers.get("x-forwarded-for")
-        if fwd:
-            return (fwd.split(",")[0].strip() or peer)
-    return peer
+    where the backend sits behind the edge proxy, and make sure the compose
+    actually passes it into the container."""
+    from ..rate_limit import client_ip as _shared_client_ip
+
+    ip = _shared_client_ip(request)
+    return None if ip == "unknown" else ip
 
 
 def _aware(dt: Optional[datetime]) -> Optional[datetime]:
@@ -1149,10 +1149,21 @@ def download_instance(
     # Return input_data as downloadable text
     from fastapi.responses import Response
 
+    # ``instance.name`` is organiser-supplied free text and lands inside a
+    # quoted header value. Un-sanitised it can close the quote and inject
+    # Content-Disposition parameters, and a non-latin-1 character makes
+    # the ASGI server fail to encode the header at all - a 500 on a
+    # perfectly ordinary download. safe_filename() reduces it to
+    # [A-Za-z0-9._-].
+    from ..upload_utils import safe_filename
+
     return Response(
         content=instance.input_data,
         media_type="text/plain",
-        headers={"Content-Disposition": f'attachment; filename="{instance.name}.txt"'},
+        headers={
+            "Content-Disposition":
+                f'attachment; filename="{safe_filename(instance.name, fallback="instance")}.txt"',
+        },
     )
 
 
