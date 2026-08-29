@@ -75,10 +75,10 @@ are separate exercises.
  ══════════════════ host ══════════════════════ virbr0 ═══════════════╪═╪══
                                                                       │ │
                     judge01  (libvirt VM, 192.168.122.68)             │ │
-                      ├── codearena-judge-worker        ──────────────┘ │
-                      │     consumes "scoring"          judge role ─────┘
+                      ├── codearena-judge-worker-{0,1,2}──────────────┘ │
+                      │     drain "scoring", cores 0-2  judge role ─────┘
                       ├── codearena-judge-learn-worker
-                      │     consumes "lesson-runs"
+                      │     drains "lesson-runs", core 3
                       └── per-submission sandbox containers
                             --network=none, --read-only, non-root,
                             --pids-limit 128, --memory, --cpus
@@ -134,7 +134,27 @@ Publishing Postgres and Redis on the bridge address, in `docker-compose.yml`:
   redis:
     ports:
       - "192.168.122.1:6379:6379"
+    command:
+      - redis-server
+      # ... persistence flags ...
+      # Mandatory here: publishing Redis to the judge VM means an escaped
+      # sandbox could otherwise drive the queue unauthenticated.
+      - --requirepass
+      - ${REDIS_PASSWORD:?REDIS_PASSWORD is required - redis is exposed to the judge VM}
 ```
+
+> **These three lines are deployment-specific and are NOT in the
+> repository's `docker-compose.yml`.** The checked-in file targets a
+> single-host deployment where Postgres and Redis stay on the internal
+> Docker network and need neither a published port nor a password.
+>
+> That divergence is a live trap: copying the repo's compose over the
+> deployed one silently removes the two publishes and the Redis password.
+> Nothing breaks until the next `docker compose up -d`, which recreates
+> the containers from the new definition - and then the judge VM loses
+> both its database and its queue, while Redis comes back with no
+> password at all. Diff before you sync, and keep a backup of the
+> deployed file.
 
 ### The `judge` database role
 
@@ -210,50 +230,81 @@ problem and confirm the scoreboard moves - that exercises `submissions`,
 | Network | one virtio NIC on libvirt's `default` network (NAT via `virbr0`) |
 | Confinement | AppArmor, `enforcing`, per-domain profile |
 | Runtime | Docker Engine + Compose v2, `judge` user, no `ufw` inside |
-| Scratch | `/judge-work`, bind-mounted into both workers |
+| Scratch | `/judge-work`, bind-mounted into every worker |
 
 Sizing rationale: one sandbox gets a whole core (`SCORING_CPUS=1.0`) because
 verdicts are decided on CPU time but killed on the wall clock - throttling
 below a core halves the work a submission can do before the wall limit fires,
-and doubles every compile. 4 vCPU therefore means "up to ~3 concurrent
-judgings, one core left for the daemon". Scale by adding vCPU *and* replicas
-together, and pin with `SCORING_CPUSET` once more than one worker runs.
+and doubles every compile. So the judge count is bounded by cores, not by RAM:
+4 vCPU means three contest judges plus the Learn worker, one core each.
+
+**Scale by physical cores, not vCPU.** Handing the VM more vCPU than the host
+has physical cores buys nothing here: two vCPU backed by SMT siblings of one
+physical core inflate each other's wall clock exactly the way two containers
+sharing a core do, and the hard limit is wall-based. Add physical cores to the
+host first, then vCPU, then judges.
 
 ### `/opt/judge/docker-compose.yml` (in the VM)
 
-Two services off the same image, differing only in which queue they drain - a
-student clicking "run" on a Learn exercise must not wait behind a multi-minute
-ICPC judging:
+Four workers off one image, differing only in which queue they drain and which
+core their sandboxes are pinned to. Three drain `scoring`; the fourth drains
+`lesson-runs`, so a student clicking "run" on a Learn exercise never waits
+behind a multi-minute ICPC judging.
+
+**Declare them as separate services, never `deploy.replicas`.** Every replica
+inherits the same environment, therefore the same `SCORING_CPUSET`, so N
+replicas would pile N sandboxes onto one core - and since a verdict is decided
+on CPU time but killed on the wall clock, that manufactures false TLEs. One
+core per judge, spelled out:
 
 ```yaml
+x-judge-worker: &judge-worker
+  image: 16flavio/codearena-backend:latest
+  env_file: .env
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - /judge-work:/judge-work
+  command: [ "python", "-m", "backend.worker" ]
+  restart: unless-stopped
+
+x-judge-env: &judge-env
+  SCORING_MODE: docker
+  SCORING_ICPC_IMAGE: codearena-icpc-sandbox:latest
+  SCORING_IMAGE: 16flavio/codearena-scoring:latest
+  SCORING_WORKDIR: /judge-work
+  SCORING_MEMORY_MB: "256"
+  SCORING_CPUS: "1.0"
+  SCORING_TIMELIMIT_OVERSHOOT: 1s|10%
+  SCORING_TIMEOUT_SECONDS: "30"
+  DB_POOL_SIZE: "2"
+  DB_MAX_OVERFLOW: "3"
+
 services:
-  worker:
-    image: 16flavio/codearena-backend:latest
-    container_name: codearena-judge-worker
-    env_file: .env
+  worker-0:
+    <<: *judge-worker
+    container_name: codearena-judge-worker-0
     environment:
+      <<: *judge-env
       WORKER_QUEUES: scoring
-      SCORING_MODE: docker
-      SCORING_ICPC_IMAGE: codearena-icpc-sandbox:latest
-      SCORING_IMAGE: 16flavio/codearena-scoring:latest
-      SCORING_WORKDIR: /judge-work
-      SCORING_MEMORY_MB: "256"
-      SCORING_CPUS: "1.0"
-      SCORING_TIMELIMIT_OVERSHOOT: 1s|10%
-      SCORING_TIMEOUT_SECONDS: "30"
-      DB_POOL_SIZE: "2"
-      DB_MAX_OVERFLOW: "3"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /judge-work:/judge-work
-    command: [ "python", "-m", "backend.worker" ]
-    restart: unless-stopped
+      SCORING_CPUSET: "0"
+
+  # worker-1 and worker-2 are identical, with SCORING_CPUSET "1" and "2"
 
   learn-worker:
-    # same image, same sandbox; separate queue only
-    ...
+    <<: *judge-worker
+    container_name: codearena-judge-learn-worker
     environment:
+      <<: *judge-env
       WORKER_QUEUES: lesson-runs
+      SCORING_CPUSET: "3"
+```
+
+Check that the fleet actually registered rather than trusting `docker ps` - a
+worker whose credentials are wrong starts, stays up, and drains nothing:
+
+```bash
+docker exec codearena-redis redis-cli -a "$REDIS_PASSWORD" --no-auth-warning \
+  smembers rq:workers:scoring        # one entry per live judge
 ```
 
 And the entire `.env` next to it - two lines, `chmod 600`:
@@ -408,9 +459,9 @@ then `docker compose up -d` to drop the host workers.
 # Deploy a new backend build to the judges (after pushing the image)
 ssh judge@<vm-ip> 'cd /opt/judge && sudo docker compose pull && sudo docker compose up -d'
 
-# Are both workers alive and draining?
+# Are all four workers alive and draining?
 ssh judge@<vm-ip> 'sudo docker compose -f /opt/judge/docker-compose.yml ps'
-ssh judge@<vm-ip> 'sudo docker logs --tail 20 codearena-judge-worker'
+ssh judge@<vm-ip> 'sudo docker logs --tail 20 codearena-judge-worker-0'
 
 # Queue depth, from the host
 docker exec codearena-redis redis-cli -a "$REDIS_PASSWORD" --no-auth-warning \
@@ -418,9 +469,11 @@ docker exec codearena-redis redis-cli -a "$REDIS_PASSWORD" --no-auth-warning \
 docker exec codearena-redis redis-cli -a "$REDIS_PASSWORD" --no-auth-warning \
   smembers rq:workers:scoring     # one entry per live worker
 
-# More judging capacity: raise vCPU first, then replicas, then pin
-virsh setvcpus judge01 6 --config     # takes effect on next boot
-# in /opt/judge/docker-compose.yml: deploy.replicas + SCORING_CPUSET
+# More judging capacity, in this order:
+#   1. physical cores on the host   (vCPU beyond them buys nothing - see above)
+#   2. virsh setvcpus judge01 <n> --config   (takes effect on next boot)
+#   3. one more worker-N service in /opt/judge/docker-compose.yml,
+#      with its own SCORING_CPUSET - never deploy.replicas
 ```
 
 **When the VM is down**, submissions do not fail - they pile up in the
