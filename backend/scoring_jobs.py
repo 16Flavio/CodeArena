@@ -66,12 +66,44 @@ def score_submission(submission_id: int) -> None:
                 fresh.score = 0.0
                 fresh.error_message = f"Worker crashed: {type(e).__name__}: {e}"[:2000]
                 db.commit()
+                _refresh_cache_after_crash(db, fresh, contest)
         log.info(
             "score_submission done id=%s status=%s score=%s",
             submission_id, sub.status, sub.score,
         )
     finally:
         db.close()
+
+
+def _refresh_cache_after_crash(db, sub: models.Submission, contest: models.Contest) -> None:
+    """Best-effort recompute of the materialised scoreboard cell after a
+    submission was marked ``error`` by a crash handler.
+
+    Without this the scoreboard never hears about the submission: the cache
+    is only written by the happy path, so a scope whose first submission
+    crashed the worker had no row at all, and a cell whose verdict WAS
+    recorded before the crash stayed stale. Must be called on a clean
+    session (after the rollback + commit of the error status). Never
+    raises - the error status is already durable, and a second failure
+    here would only hide the first one's message."""
+    try:
+        if (contest.kind or "output") == "icpc":
+            problem = (
+                db.query(models.Problem)
+                .filter(models.Problem.id == sub.problem_id)
+                .first()
+            )
+            if problem is not None:
+                update_icpc_entry(db, sub, problem, "IE", contest)
+        elif sub.instance_id is not None:
+            update_entry_for_submission(db, sub)
+        db.commit()
+    except Exception:  # noqa: BLE001
+        log.exception(
+            "could not refresh the scoreboard cache after the crash of submission %s",
+            sub.id,
+        )
+        db.rollback()
 
 
 def run_script_job(script: str, instance_data: str, submission_data: str, mode: str) -> dict:
@@ -251,6 +283,8 @@ def _score_output(db, sub: models.Submission, contest: models.Contest) -> None:
         if not lang:
             sub.status = "error"
             sub.error_message = f"Unknown language: {sub.source_language}"
+            db.flush()
+            update_entry_for_submission(db, sub)
             db.commit()
             return
         import tempfile
@@ -351,36 +385,54 @@ def _judge_icpc(db, sub: models.Submission, contest: models.Contest) -> None:
     Wraps the actual work in a try/except: any unexpected error - missing
     toolchain, sandbox crash, bad language config - is caught, written
     onto the submission and the judging as a clear verdict, and the row
-    committed. Prevents the "stuck on pending forever" failure mode."""
+    committed. Prevents the "stuck on pending forever" failure mode.
+
+    The handler rolls back BEFORE it touches the session. A statement that
+    failed server-side leaves the Postgres transaction unusable, and the
+    ORM objects were expired by the commit that precedes the scoreboard
+    cache write, so reading even ``sub.id`` at that point issues a SELECT
+    that fails with "current transaction is aborted" - and THAT is the
+    message that used to reach the submission and the admin, in place of
+    the real cause (a missing privilege, on the day this was written)."""
+    sub_id = sub.id
     try:
         _judge_icpc_inner(db, sub, contest)
     except Exception as e:  # noqa: BLE001
-        log.exception("ICPC judging crashed for submission %s", sub.id)
-        # Re-open a fresh session-managed state: the outer caller will
-        # commit after this returns. Mark both the Submission and any
-        # active Judging so the admin sees a real verdict instead of
-        # "pending".
+        log.exception("ICPC judging crashed for submission %s", sub_id)
+        reason = f"{type(e).__name__}: {e}"
         try:
+            db.rollback()
+            # Mark both the Submission and the active Judging so the admin
+            # sees a real verdict instead of "pending". If the crash hit
+            # before the judging was committed, the rollback discarded it:
+            # record one so the failure is visible in the judging list too.
             active = (
                 db.query(models.Judging)
                 .filter(
-                    models.Judging.submission_id == sub.id,
+                    models.Judging.submission_id == sub_id,
                     models.Judging.is_active.is_(True),
                 )
                 .first()
             )
-            if active is not None:
-                active.verdict = "IE"
-                active.judged_at = datetime.now(timezone.utc)
-                active.compile_output = (active.compile_output or "") + (
-                    f"\n[judge error] {type(e).__name__}: {e}"
-                )[:4000]
+            if active is None:
+                active = models.Judging(submission_id=sub_id, verdict="IE", is_active=True)
+                db.add(active)
+            active.verdict = "IE"
+            active.judged_at = datetime.now(timezone.utc)
+            active.compile_output = (
+                (active.compile_output or "") + f"\n[judge error] {reason}"
+            )[:4000]
             sub.status = "error"
-            sub.error_message = f"Judge error: {type(e).__name__}: {e}"[:2000]
+            sub.error_message = f"Judge error: {reason}"[:2000]
             sub.score = 0.0
             db.commit()
         except Exception:  # noqa: BLE001 - last resort, don't re-raise
-            log.exception("Secondary failure recording IE for submission %s", sub.id)
+            log.exception("Secondary failure recording IE for submission %s", sub_id)
+            db.rollback()
+            return
+        # The verdict may already have been committed before the crash (the
+        # cache write comes after it): the cell must reflect it.
+        _refresh_cache_after_crash(db, sub, contest)
 
 
 def _judge_icpc_inner(db, sub: models.Submission, contest: models.Contest) -> None:

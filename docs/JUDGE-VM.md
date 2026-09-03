@@ -173,11 +173,14 @@ REVOKE CREATE ON SCHEMA public FROM judge;
 GRANT SELECT ON problems, testcases, languages, instances,
                 lesson_exercises TO judge;
 
--- contests needs UPDATE, not just SELECT: both scoreboard caches take a
--- row lock on the contest (SELECT ... FOR UPDATE) to serialise concurrent
--- writes, and Postgres requires the UPDATE privilege for that lock clause.
--- The workers never write a contest column.
-GRANT SELECT, UPDATE ON contests TO judge;
+-- contests is read-only too. Both scoreboard caches serialise their
+-- writers per contest with a transaction-scoped advisory lock
+-- (backend/db_locks.py), which needs no table privilege. Before
+-- 2026-09-03 that was a SELECT ... FOR UPDATE on the contest row, and
+-- Postgres demands UPDATE for any row-lock clause: a role created from
+-- that version of this page holds an UPDATE it no longer needs.
+GRANT SELECT ON contests TO judge;
+REVOKE UPDATE ON contests FROM judge;
 
 -- the verdict it is there to record
 GRANT SELECT, UPDATE         ON submissions            TO judge;
@@ -213,12 +216,45 @@ docker exec codearena-postgres psql -U judge -d codearena -tAc \
   "BEGIN; UPDATE users SET is_admin=true; ROLLBACK;"
 ```
 
-Refusals are only half the check: a role that is too *narrow* fails silently
-until the first submission, and the symptom is a judging stuck in "pending"
-rather than an obvious error. Only an end-to-end judging proves the write
-path, so after any change to these grants, submit one solution to a live
-problem and confirm the scoreboard moves - that exercises `submissions`,
+Refusals are only half the check: a role that is too *narrow* fails at the
+first submission, not at creation time. Ask Postgres which of the grants
+above are missing - the result must be empty:
+
+```bash
+docker exec codearena-postgres psql -U codearena -d codearena -c "
+SELECT t, p FROM (VALUES
+  ('contests','SELECT'),
+  ('submissions','SELECT'),('submissions','UPDATE'),
+  ('judgings','SELECT'),('judgings','INSERT'),('judgings','UPDATE'),
+  ('judging_runs','SELECT'),('judging_runs','INSERT'),('judging_runs','UPDATE'),
+  ('scoreboard_entries','SELECT'),('scoreboard_entries','INSERT'),
+  ('scoreboard_entries','UPDATE'),('scoreboard_entries','DELETE'),
+  ('icpc_scoreboard_entries','SELECT'),('icpc_scoreboard_entries','INSERT'),
+  ('icpc_scoreboard_entries','UPDATE'),('icpc_scoreboard_entries','DELETE'),
+  ('problems','SELECT'),('testcases','SELECT'),('languages','SELECT'),
+  ('instances','SELECT'),('lesson_exercises','SELECT')
+) AS v(t,p) WHERE NOT has_table_privilege('judge', t, p)
+UNION ALL
+SELECT s, 'USAGE' FROM (VALUES
+  ('judgings_id_seq'),('judging_runs_id_seq'),
+  ('scoreboard_entries_id_seq'),('icpc_scoreboard_entries_id_seq')
+) AS w(s) WHERE NOT has_sequence_privilege('judge', s, 'USAGE');"
+```
+
+Replay it after every migration and every edit of this page. Then submit one
+solution to a live problem and confirm the scoreboard moves - only an
+end-to-end judging proves the write path, and it exercises `submissions`,
 `judgings`, `judging_runs` and both scoreboard caches in one go.
+
+What a missing grant looks like, so it is recognised next time: the verdict
+itself is recorded (the tables the worker writes first are granted), then the
+scoreboard cache write is refused and the submission ends up in `error`
+carrying `Judge error: ... permission denied for table ...`, while the
+scoreboard never moves. This happened on 2026-09-03: the role had been created
+without the grants on the two `*_scoreboard_entries` tables and their
+sequences, and every judging for two days recorded its verdict and lost its
+scoreboard cell. Worker logs are on the VM; the Postgres container log on the
+host has the refused statement (`docker compose logs postgres | grep ERROR`).
 
 ## VM side
 

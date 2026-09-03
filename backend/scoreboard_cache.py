@@ -15,6 +15,7 @@ from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 from . import models
+from .db_locks import lock_contest
 
 
 def _scope_filter(team_id: int | None, user_id: int | None):
@@ -48,21 +49,19 @@ def update_entry_for_submission(db: Session, submission: models.Submission) -> N
     ``entry is None`` and both INSERT, ending up with duplicate rows
     (the UNIQUE constraint considers NULL distinct under SQL default
     semantics, so a solo entry's NULL team_id doesn't collide). We
-    take a row-level lock on the Contest at function entry so writes
-    for the same contest serialise. Coarse but cheap (one extra
-    SELECT FOR UPDATE per scoring) and works on Postgres + SQLite."""
+    take the per-contest advisory lock at function entry so writes for
+    the same contest serialise. Coarse but cheap, and it needs no table
+    privilege (see ``db_locks``)."""
     team_id = submission.team_id
     user_id = submission.submitted_by if team_id is None else None
     instance_id = submission.instance_id
     contest_id = submission.contest_id
 
-    # SELECT FOR UPDATE on the contest serialises every scoreboard
-    # write for this contest - the duplicate-row race documented above
-    # vanishes because the second worker blocks on this lock until the
-    # first one's INSERT/UPDATE has flushed and is visible.
-    db.query(models.Contest).filter(
-        models.Contest.id == contest_id,
-    ).with_for_update().first()
+    # Serialises every scoreboard write for this contest - the
+    # duplicate-row race documented above vanishes because the second
+    # worker blocks on this lock until the first one's INSERT/UPDATE has
+    # committed and is visible.
+    lock_contest(db, contest_id)
 
     scored_q = (
         db.query(models.Submission)
