@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from . import models
+from .db_locks import lock_contest
 
 
 def _scope(sub: models.Submission):
@@ -47,12 +48,10 @@ def update_icpc_entry(
     same instant for submissions sharing a (scope, problem) would
     otherwise both see ``entry is None`` and INSERT twice. SQL UNIQUE
     treats NULL as distinct, so the existing constraint doesn't catch
-    solo (team_id NULL) duplicates. SELECT FOR UPDATE on the contest
+    solo (team_id NULL) duplicates. The per-contest advisory lock
     serialises every ICPC scoreboard write for this contest - coarse
-    but correct."""
-    db.query(models.Contest).filter(
-        models.Contest.id == contest.id,
-    ).with_for_update().first()
+    but correct, and it needs no table privilege (see ``db_locks``)."""
+    lock_contest(db, contest.id)
     team_id, user_id = _scope(sub)
 
     # Pull every submission in this scope on this problem, ordered by time.
@@ -81,17 +80,19 @@ def update_icpc_entry(
         # A submission contributes once judged - pending ones don't count.
         if s.status == "pending":
             continue
-        attempts_total += 1
         # Load the active judging to read the verdict.
-        active = next(
-            (j for j in (s.judgings if hasattr(s, "judgings") else []) if j.is_active),
-            None,
-        ) if False else (
+        active = (
             db.query(models.Judging)
             .filter(models.Judging.submission_id == s.id, models.Judging.is_active.is_(True))
             .first()
         )
         v = active.verdict if active else ("AC" if s.status == "scored" else "WA")
+        # An internal error is the judge's failure, not the team's: it is
+        # neither an attempt nor a penalty, exactly like a submission still
+        # in the queue. The admin rejudges it and the cell settles then.
+        if v == "IE":
+            continue
+        attempts_total += 1
         if v == "AC":
             if not solved:
                 solved = True
