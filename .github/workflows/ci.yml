@@ -92,7 +92,10 @@ jobs:
 
   e2e:
     name: Playwright smoke
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to Ubuntu 26.04, which Playwright 1.59
+    # cannot provision ("playwright install --with-deps" fails on it). Move
+    # back to ubuntu-latest once Playwright supports that release.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
