@@ -869,7 +869,10 @@
     "loadFailedHeading": "Impossible de charger le classement",
     "refreshed": "Classement actualisé",
     "refreshFailed": "Impossible de charger le classement",
-    "judgingTooltip": "{{n}} soumission(s) en attente de notation"
+    "judgingTooltip": "{{n}} soumission(s) en attente de notation",
+    "lowerIsBetter": "Plus bas = mieux",
+    "lowerIsBetterHint": "Score à minimiser : classement par nombre d'instances résolues, puis total le plus bas.",
+    "solvedOf": "{{solved}}/{{total}} instances"
   },
   "admin": {
     "title": "Panneau d'administration",
@@ -1209,7 +1212,12 @@
       "toastParticipantAdded": "Utilisateur ajouté",
       "toastParticipantAddFailed": "Impossible d'ajouter l'utilisateur",
       "toastParticipantRemoved": "Utilisateur retiré",
-      "toastParticipantRemoveFailed": "Impossible de retirer l'utilisateur"
+      "toastParticipantRemoveFailed": "Impossible de retirer l'utilisateur",
+      "scoreDirection": "Sens du score",
+      "scoreDirectionMax": "À maximiser (plus haut = mieux)",
+      "scoreDirectionMin": "À minimiser (plus bas = mieux)",
+      "scoreDirectionMaxHint": "Le meilleur score de chaque instance est le plus élevé ; le classement trie le total par ordre décroissant.",
+      "scoreDirectionMinHint": "Le script renvoie un coût (ex. une profondeur). Le meilleur score de chaque instance est le plus bas ; le classement passe d'abord par le nombre d'instances résolues, puis par le total le plus bas."
     },
     "testScoring": {
       "title": "Tester le script de notation",

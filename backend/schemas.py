@@ -33,6 +33,7 @@ def _normalise_email(value: str) -> str:
 # referenced from validators without re-importing typing.Literal.
 _PARTICIPATION_MODES = {"team", "solo", "both"}
 _CONTEST_KINDS = {"output", "icpc"}
+_SCORE_DIRECTIONS = {"max", "min"}
 
 
 def _check_choice(value, valid_set, field_name):
@@ -338,6 +339,8 @@ class ContestCreate(BaseModel):
     is_public: bool = True
     practice_mode: bool = False
     kind: str = "output"  # "output" | "icpc"
+    # Output contests: "max" (higher score wins) or "min" (lower score wins).
+    score_direction: str = "max"
     dedup_block: bool = False
     min_seconds_between_submits: int = 0
     max_submissions_per_instance: Optional[int] = None
@@ -355,6 +358,11 @@ class ContestCreate(BaseModel):
     @classmethod
     def _check_kind(cls, v):
         return _check_choice(v, _CONTEST_KINDS, "kind")
+
+    @field_validator("score_direction")
+    @classmethod
+    def _check_score_direction(cls, v):
+        return _check_choice(v, _SCORE_DIRECTIONS, "score_direction")
 
     @model_validator(mode="after")
     def _check_dates(self):
@@ -376,6 +384,7 @@ class ContestUpdate(BaseModel):
     is_public: Optional[bool] = None
     practice_mode: Optional[bool] = None
     kind: Optional[str] = None
+    score_direction: Optional[str] = None
     dedup_block: Optional[bool] = None
     min_seconds_between_submits: Optional[int] = None
     max_submissions_per_instance: Optional[int] = None
@@ -392,6 +401,11 @@ class ContestUpdate(BaseModel):
     @classmethod
     def _check_kind(cls, v):
         return _check_choice(v, _CONTEST_KINDS, "kind")
+
+    @field_validator("score_direction")
+    @classmethod
+    def _check_score_direction(cls, v):
+        return _check_choice(v, _SCORE_DIRECTIONS, "score_direction")
 
     @model_validator(mode="after")
     def _check_dates(self):
@@ -434,6 +448,7 @@ class ContestOut(BaseModel):
     is_public: bool = True
     practice_mode: bool = False
     kind: str = "output"
+    score_direction: str = "max"
     dedup_block: bool = False
     min_seconds_between_submits: int = 0
     max_submissions_per_instance: Optional[int] = None
@@ -464,6 +479,7 @@ class ContestListOut(BaseModel):
     is_public: bool = True
     practice_mode: bool = False
     kind: str = "output"
+    score_direction: str = "max"
     is_open_for_submissions: bool = False
     created_at: datetime
     instance_count: int = 0
@@ -970,6 +986,9 @@ class InstanceScore(BaseModel):
     # known result, this one is about the result not existing yet. Never
     # contributes to best_score or the total.
     judging_pending: int = 0
+    # At least one scored submission. best_score is a 0.0 placeholder
+    # otherwise - in a "min" contest the cell must read as empty, not as 0.
+    scored: bool = False
 
 
 class TeamScore(BaseModel):
@@ -979,6 +998,9 @@ class TeamScore(BaseModel):
     scores: dict[str, InstanceScore]
     total_score: float
     kind: str = "team"  # "team" or "solo"
+    # Instances with a scored submission. In a "min" contest the ranking
+    # compares this first (more is better), then total_score (lower wins).
+    solved_count: int = 0
 
 
 class ScoreboardOut(BaseModel):
@@ -989,6 +1011,7 @@ class ScoreboardOut(BaseModel):
     frozen: bool = False
     freeze_at: Optional[datetime] = None
     end_time: Optional[datetime] = None
+    score_direction: str = "max"
 
 
 class ScoringInstanceBest(BaseModel):

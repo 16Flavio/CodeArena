@@ -33,6 +33,15 @@ from .contests import (
 router = APIRouter(prefix="/api/contests", tags=["scoreboard"])
 
 
+def scoreboard_rank_key(row: schemas.TeamScore, score_direction: str) -> tuple:
+    """Sort key of a scoreboard row, best first. "max": highest total wins.
+    "min": most instances with a score first, then the lowest total - an
+    instance left blank must never beat a submitted one."""
+    if score_direction == "min":
+        return (-row.solved_count, row.total_score)
+    return (-row.total_score,)
+
+
 @router.get("/{contest_id}/scoreboard", response_model=schemas.ScoreboardOut)
 def get_scoreboard(
     contest_id: int,
@@ -96,6 +105,8 @@ def _build_scoreboard(
     now = _utcnow()
     frozen = _is_scoreboard_frozen(contest, now, is_admin=is_admin)
     cutoff = _aware(contest.freeze_scoreboard_at) if frozen else None
+    direction = contest.score_direction or "max"
+    minimize = direction == "min"
 
     instances = sorted(contest.instances, key=lambda i: i.name)
     instance_out = [
@@ -227,25 +238,31 @@ def _build_scoreboard(
         def _collect_scores(*, team_id=None, user_id=None):
             scores = {}
             total = 0.0
+            solved = 0
             for inst in instances:
                 r = cache_by_scope.get((team_id, user_id, inst.id))
                 if r is None:
-                    scored = 0.0
+                    best = 0.0
                     count = 0
+                    has_score = False
                 else:
                     # Always take the best - the "mark as final" flow is
-                    # gone; highest scored submission per (team, instance)
-                    # wins.
-                    scored = r.best_score
+                    # gone; the best scored submission per (team, instance)
+                    # wins (highest, or lowest in a "min" contest).
+                    best = r.best_score
                     count = r.submission_count
+                    has_score = (r.scored_count or 0) > 0
                 scores[str(inst.id)] = schemas.InstanceScore(
                     instance_id=inst.id,
-                    best_score=scored,
+                    best_score=best,
                     submission_count=count,
                     judging_pending=pending_by_scope.get((team_id, user_id, inst.id), 0),
+                    scored=has_score,
                 )
-                total += scored
-            return scores, total
+                if has_score or not minimize:
+                    total += best
+                solved += has_score
+            return scores, total, solved
     else:
         # Frozen path: cache has no notion of a cutoff, so recompute
         # live. Pre-freeze submissions are visible as before; post-
@@ -255,6 +272,7 @@ def _build_scoreboard(
         def _collect_scores(*, team_id=None, user_id=None):
             scores = {}
             total = 0.0
+            solved = 0
             for inst in instances:
                 scope_filter = (
                     (models.Submission.team_id == team_id)
@@ -280,16 +298,25 @@ def _build_scoreboard(
                     )
                 )
                 scored_rows = [s for s in pre.all() if s.status == "scored"]
-                best_score = max((s.score or 0.0 for s in scored_rows), default=0.0)
+                pick = min if minimize else max
+                best_score = pick((s.score or 0.0 for s in scored_rows), default=0.0)
                 scores[str(inst.id)] = schemas.InstanceScore(
                     instance_id=inst.id,
                     best_score=best_score,
                     submission_count=pre.count(),
                     pending_changes=post.count(),
                     judging_pending=pending_by_scope.get((team_id, user_id, inst.id), 0),
+                    scored=bool(scored_rows),
                 )
-                total += best_score
-            return scores, total
+                if scored_rows or not minimize:
+                    total += best_score
+                solved += bool(scored_rows)
+            return scores, total, solved
+
+    def _penalised(total: float, penalty: float) -> float:
+        # Hints cost a fraction of the total: taken off a score to maximise,
+        # added onto a cost to minimise.
+        return total * (1.0 + penalty) if minimize else total * (1.0 - penalty)
 
     for team_id in team_ids:
         team = (
@@ -300,7 +327,7 @@ def _build_scoreboard(
         )
         if not team:
             continue
-        scores, total = _collect_scores(team_id=team_id)
+        scores, total, solved = _collect_scores(team_id=team_id)
         penalty = _penalty_fraction([m.user_id for m in team.members])
         teams_data.append(
             schemas.TeamScore(
@@ -308,8 +335,9 @@ def _build_scoreboard(
                 team_name=team.name,
                 members=[m.user.username for m in team.members],
                 scores=scores,
-                total_score=total * (1.0 - penalty),
+                total_score=_penalised(total, penalty),
                 kind="team",
+                solved_count=solved,
             )
         )
 
@@ -317,7 +345,7 @@ def _build_scoreboard(
         solo_user = db.query(models.User).filter(models.User.id == solo_uid).first()
         if not solo_user:
             continue
-        scores, total = _collect_scores(user_id=solo_uid)
+        scores, total, solved = _collect_scores(user_id=solo_uid)
         penalty = _penalty_fraction([solo_uid])
         teams_data.append(
             schemas.TeamScore(
@@ -325,12 +353,13 @@ def _build_scoreboard(
                 team_name=solo_user.username,
                 members=[solo_user.username],
                 scores=scores,
-                total_score=total * (1.0 - penalty),
+                total_score=_penalised(total, penalty),
                 kind="solo",
+                solved_count=solved,
             )
         )
 
-    teams_data.sort(key=lambda t: t.total_score, reverse=True)
+    teams_data.sort(key=lambda t: scoreboard_rank_key(t, direction))
 
     return schemas.ScoreboardOut(
         contest_id=contest.id,
@@ -340,6 +369,7 @@ def _build_scoreboard(
         frozen=frozen,
         freeze_at=contest.freeze_scoreboard_at,
         end_time=contest.end_time,
+        score_direction=direction,
     )
 
 
@@ -464,19 +494,24 @@ def scoring_presentation(
         frozen_state = final_state
 
     # Per-instance "best score" - the team holding the top score on
-    # each instance in the final state. Empty cells / zero scores skip.
+    # each instance in the final state. Empty cells / zero scores skip
+    # (in a "min" contest: cells without a scored submission skip).
+    minimize = final_state.score_direction == "min"
     instance_bests: list[schemas.ScoringInstanceBest] = []
     for inst in final_state.instances:
         best_team = None
         best_score = None
         for team in final_state.teams:
             cell = team.scores.get(str(inst.id))
-            if not cell:
+            if not cell or (minimize and not cell.scored):
                 continue
-            if best_score is None or cell.best_score > best_score:
+            better = (
+                cell.best_score < best_score if minimize else cell.best_score > best_score
+            ) if best_score is not None else True
+            if better:
                 best_score = cell.best_score
                 best_team = team
-        if best_team and best_score is not None and best_score > 0:
+        if best_team and best_score is not None and (minimize or best_score > 0):
             instance_bests.append(schemas.ScoringInstanceBest(
                 instance_id=inst.id,
                 instance_name=inst.name,
@@ -488,7 +523,10 @@ def scoring_presentation(
 
     # Medal podium - top-12 by total_score. Same tier breakdown as
     # the ICPC presentation (1-4 gold, 5-8 silver, 9-12 bronze).
-    sorted_teams = sorted(final_state.teams, key=lambda t: -t.total_score)
+    sorted_teams = sorted(
+        final_state.teams,
+        key=lambda t: scoreboard_rank_key(t, final_state.score_direction),
+    )
     medals: list[schemas.ScoringMedalEntry] = []
     for idx, team in enumerate(sorted_teams[:12]):
         rank = idx + 1
@@ -540,11 +578,13 @@ def export_scoreboard_csv(
 
     header = ["Rank", "Team", "Members"] + [i.name for i in sb.instances] + ["Total"]
     writer.writerow(csv_row(header))
+    minimize = sb.score_direction == "min"
     for rank, team in enumerate(sb.teams, start=1):
         per_instance = []
         for inst in sb.instances:
             s = team.scores.get(str(inst.id))
-            per_instance.append(f"{s.best_score:.6g}" if s else "")
+            show = s is not None and (s.scored or not minimize)
+            per_instance.append(f"{s.best_score:.6g}" if show else "")
         writer.writerow(csv_row([
             rank,
             team.team_name,

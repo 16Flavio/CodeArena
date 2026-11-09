@@ -913,19 +913,39 @@ function teamScoreKey(t) {
   return t.team_id != null ? `t:${t.team_id}` : `u:${t.team_name}`;
 }
 
-function sortTeamsByScore(teams) {
+// ``minimize``: the contest's score is a cost (score_direction "min") - rank
+// on instances with a score first, then on the lowest total, like the backend.
+function sortTeamsByScore(teams, minimize = false) {
   return [...teams].sort((a, b) => {
-    if (b.total_score !== a.total_score) return b.total_score - a.total_score;
+    if (minimize) {
+      if (b.solved_count !== a.solved_count) return b.solved_count - a.solved_count;
+      if (a.total_score !== b.total_score) return a.total_score - b.total_score;
+    } else if (b.total_score !== a.total_score) {
+      return b.total_score - a.total_score;
+    }
     return a.team_name.localeCompare(b.team_name);
   });
 }
 
-function recomputeTotal(team) {
+function recomputeTotal(team, minimize = false) {
   let total = 0;
+  let solved = 0;
   for (const cell of Object.values(team.scores || {})) {
-    total += cell?.best_score || 0;
+    if (minimize) {
+      if (cell?.scored) {
+        total += cell.best_score;
+        solved += 1;
+      }
+    } else {
+      total += cell?.best_score || 0;
+    }
   }
-  return { ...team, total_score: total };
+  return minimize ? { ...team, total_score: total, solved_count: solved } : { ...team, total_score: total };
+}
+
+// Whether a cell holds an actual result (vs. empty / errors only).
+function cellHasResult(cell, minimize) {
+  return minimize ? !!cell?.scored : (cell?.best_score || 0) > 0;
 }
 
 // DOMjudge-style reveal adapted to numeric scores. A cell is "frozen"
@@ -934,6 +954,7 @@ function recomputeTotal(team) {
 // recompute the team total, and re-sort.
 function buildScoringRevealEvents(frozenState, finalState) {
   const instances = frozenState.instances;
+  const minimize = finalState.score_direction === 'min';
   const finalByKey = new Map(finalState.teams.map((t) => [teamScoreKey(t), t]));
 
   let state = sortTeamsByScore(frozenState.teams.map((t) => ({
@@ -941,14 +962,14 @@ function buildScoringRevealEvents(frozenState, finalState) {
     scores: Object.fromEntries(
       Object.entries(t.scores || {}).map(([k, v]) => [k, { ...v }])
     ),
-  })));
+  })), minimize);
 
   const events = [];
   const guard = instances.length * state.length + 1;
   let iter = 0;
   while (iter < guard) {
     iter += 1;
-    state = sortTeamsByScore(state);
+    state = sortTeamsByScore(state, minimize);
     let target = null;
     let targetKey = null;
     let targetInstId = null;
@@ -969,10 +990,10 @@ function buildScoringRevealEvents(frozenState, finalState) {
     const afterCell = finalRow?.scores[String(targetInstId)] || beforeCell;
     const sanitised = { ...afterCell, pending_changes: 0 };
     const updated = { ...target, scores: { ...target.scores, [String(targetInstId)]: sanitised } };
-    const withTotal = recomputeTotal(updated);
+    const withTotal = recomputeTotal(updated, minimize);
 
     state = state.map((r) => (teamScoreKey(r) === targetKey ? withTotal : r));
-    state = sortTeamsByScore(state);
+    state = sortTeamsByScore(state, minimize);
 
     events.push({
       key: `${targetKey}::${targetInstId}::${events.length}`,
@@ -1038,21 +1059,25 @@ function ScoringStatsScene({ data, onContinue }) {
   const { t } = useTranslation();
   const stats = useMemo(() => {
     const teams = data.final_state.teams;
+    const minimize = data.final_state.score_direction === 'min';
     const totalTeams = teams.length;
-    const teamsScoring = teams.filter((tm) => tm.total_score > 0).length;
+    const teamsScoring = teams.filter((tm) => (minimize ? tm.solved_count > 0 : tm.total_score > 0)).length;
     let totalSubs = 0;
     for (const tm of teams) {
       for (const c of Object.values(tm.scores || {})) {
         totalSubs += c.submission_count || 0;
       }
     }
-    const topScore = teams.reduce((acc, tm) => Math.max(acc, tm.total_score || 0), 0);
+    // "min": the leader's total (teams arrive in ranking order), not the largest.
+    const topScore = minimize
+      ? (teams[0]?.total_score || 0)
+      : teams.reduce((acc, tm) => Math.max(acc, tm.total_score || 0), 0);
     const bestByInstance = new Map(data.instance_bests.map((b) => [b.instance_id, b]));
     const perInstance = data.instances.map((inst) => {
       let scorers = 0;
       for (const tm of teams) {
         const c = tm.scores?.[String(inst.id)];
-        if (c && c.best_score > 0) scorers += 1;
+        if (cellHasResult(c, minimize)) scorers += 1;
       }
       return { ...inst, best: bestByInstance.get(inst.id) || null, scorers };
     });
@@ -1124,6 +1149,7 @@ function ScoringStatsScene({ data, onContinue }) {
 
 function ScoringRevealScene({ data, onComplete }) {
   const { t } = useTranslation();
+  const minimize = data.final_state.score_direction === 'min';
   const events = useMemo(
     () => buildScoringRevealEvents(data.frozen_state, data.final_state),
     [data]
@@ -1135,7 +1161,7 @@ function ScoringRevealScene({ data, onComplete }) {
       scores: Object.fromEntries(
         Object.entries(tm.scores || {}).map(([k, v]) => [k, { ...v }])
       ),
-    })))
+    })), minimize)
   );
   const [eventIdx, setEventIdx] = useState(-1);
   const [playing, setPlaying] = useState(true);
@@ -1157,9 +1183,9 @@ function ScoringRevealScene({ data, onComplete }) {
         const next = prev.map((tm) => {
           if (teamScoreKey(tm) !== ev.teamKey) return tm;
           const updated = { ...tm, scores: { ...tm.scores, [String(ev.instanceId)]: ev.after } };
-          return recomputeTotal(updated);
+          return recomputeTotal(updated, minimize);
         });
-        return sortTeamsByScore(next);
+        return sortTeamsByScore(next, minimize);
       });
       setFlipKey(null);
       // Best-on-instance announcement: this revealed cell matches the
@@ -1212,9 +1238,9 @@ function ScoringRevealScene({ data, onComplete }) {
         const next = prev.map((tm) => {
           if (teamScoreKey(tm) !== ev.teamKey) return tm;
           const updated = { ...tm, scores: { ...tm.scores, [String(ev.instanceId)]: ev.after } };
-          return recomputeTotal(updated);
+          return recomputeTotal(updated, minimize);
         });
-        return sortTeamsByScore(next);
+        return sortTeamsByScore(next, minimize);
       });
     }
     setEventIdx(events.length - 1);
@@ -1235,6 +1261,7 @@ function ScoringRevealScene({ data, onComplete }) {
         teams={teams}
         instances={data.instances}
         flipKey={flipKey}
+        minimize={minimize}
       />
       <RevealControls
         playing={playing}
@@ -1249,7 +1276,7 @@ function ScoringRevealScene({ data, onComplete }) {
   );
 }
 
-function ScoringRevealBoard({ teams, instances, flipKey }) {
+function ScoringRevealBoard({ teams, instances, flipKey, minimize = false }) {
   const { t } = useTranslation();
   const orderedKeys = useMemo(() => teams.map(teamScoreKey), [teams]);
   const rankByKey = useMemo(() => {
@@ -1311,7 +1338,7 @@ function ScoringRevealBoard({ teams, instances, flipKey }) {
                   const isFlipping = flipKey && flipKey.teamKey === key && flipKey.instanceId === inst.id;
                   return (
                     <div key={inst.id} className="flex justify-center px-1">
-                      <ScoringCell cell={cell} flipping={isFlipping} />
+                      <ScoringCell cell={cell} flipping={isFlipping} minimize={minimize} />
                     </div>
                   );
                 })}
@@ -1324,16 +1351,20 @@ function ScoringRevealBoard({ teams, instances, flipKey }) {
   );
 }
 
-function ScoringCell({ cell, flipping }) {
-  if (!cell || (cell.best_score === 0 && (cell.pending_changes || 0) === 0 && (cell.submission_count || 0) === 0)) {
+function ScoringCell({ cell, flipping, minimize = false }) {
+  const pending = (cell?.pending_changes || 0) > 0;
+  const empty = minimize
+    ? !cell || (!cell.scored && !pending)
+    : !cell || (cell.best_score === 0 && !pending && (cell.submission_count || 0) === 0);
+  if (empty) {
     return (
       <span className="w-full h-9 rounded text-xs flex items-center justify-center text-white/20">-</span>
     );
   }
-  const pending = (cell.pending_changes || 0) > 0;
+  const hasResult = cellHasResult(cell, minimize);
   const cls = pending
     ? 'bg-sky-500/25 text-sky-100 ring-1 ring-sky-400/40'
-    : cell.best_score > 0
+    : hasResult
       ? 'bg-emerald-500/15 text-emerald-100 ring-1 ring-emerald-400/30'
       : 'bg-white/5 text-white/40 ring-1 ring-white/10';
   return (
@@ -1344,8 +1375,8 @@ function ScoringCell({ cell, flipping }) {
       style={flipping ? { transitionDuration: `${REVEAL_FLIP_MS / 2}ms` } : undefined}
     >
       <span className="font-bold tabular-nums truncate px-1">
-        {pending && cell.best_score === 0 ? '?' : formatScore(cell.best_score)}
-        {pending && cell.best_score > 0 && <span className="text-sky-200/80 ml-0.5">+?</span>}
+        {pending && !hasResult ? '?' : formatScore(cell.best_score)}
+        {pending && hasResult && <span className="text-sky-200/80 ml-0.5">+?</span>}
       </span>
     </span>
   );

@@ -30,7 +30,7 @@ from ..database import get_db
 from .. import models, schemas
 from .contests import _aware, _is_scoreboard_frozen
 from .icpc import _build_icpc_scoreboard
-from .scoreboard import _build_scoreboard
+from .scoreboard import _build_scoreboard, scoreboard_rank_key
 
 router = APIRouter(prefix="/api/leagues", tags=["leagues"])
 
@@ -89,9 +89,12 @@ def _ranked_entries(db: Session, contest: models.Contest) -> list[tuple[int, lis
     else:
         out = _build_scoreboard(contest.id, is_admin=True, db=db)
         rows = out.teams
+        direction = out.score_direction
         def keyfn(r):
-            return (-r.total_score,)
+            return scoreboard_rank_key(r, direction)
         def scoredfn(r):
+            if direction == "min":
+                return r.solved_count > 0
             return (r.total_score or 0.0) > 0
 
     ranked: list[tuple[int, list[int], bool]] = []

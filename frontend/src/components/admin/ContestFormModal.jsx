@@ -49,6 +49,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
           is_public: initialContest.is_public !== false,
           practice_mode: !!initialContest.practice_mode,
           kind: initialContest.kind || 'output',
+          score_direction: initialContest.score_direction || 'max',
           dedup_block: !!initialContest.dedup_block,
           min_seconds_between_submits: initialContest.min_seconds_between_submits || 0,
           max_submissions_per_instance: initialContest.max_submissions_per_instance ?? '',
@@ -63,6 +64,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
           is_public: true,
           practice_mode: false,
           kind: initialKind,
+          score_direction: 'max',
           dedup_block: false,
           min_seconds_between_submits: 0,
           max_submissions_per_instance: '',
@@ -162,6 +164,7 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
             ...commonPayload,
             problem_statement: contestForm.problem_statement,
             scoring_script: contestForm.scoring_script,
+            score_direction: contestForm.score_direction,
             output_validator_script: (contestForm.output_validator_script || '').trim() || null,
             max_submissions_per_instance:
               contestForm.max_submissions_per_instance === '' || contestForm.max_submissions_per_instance == null
@@ -535,6 +538,27 @@ export default function ContestFormModal({ contest: initialContest, initialKind,
                 </p>
               </div>
             </div>
+
+            {contestForm.kind !== 'icpc' && (
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1.5 dark:text-zinc-300">
+                  {t('admin.form.scoreDirection')}
+                </label>
+                <select
+                  className="input-field text-sm py-2"
+                  value={contestForm.score_direction}
+                  onChange={(e) => setContestForm({ ...contestForm, score_direction: e.target.value })}
+                >
+                  <option value="max">{t('admin.form.scoreDirectionMax')}</option>
+                  <option value="min">{t('admin.form.scoreDirectionMin')}</option>
+                </select>
+                <p className="text-[11px] text-zinc-500 mt-1.5 dark:text-zinc-400">
+                  {contestForm.score_direction === 'min'
+                    ? t('admin.form.scoreDirectionMinHint')
+                    : t('admin.form.scoreDirectionMaxHint')}
+                </p>
+              </div>
+            )}
 
             {contestForm.kind !== 'icpc' && (
             <div>

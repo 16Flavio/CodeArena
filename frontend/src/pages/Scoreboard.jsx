@@ -170,15 +170,16 @@ function OutputScoreboard() {
 
   const openDrilldown = (inst) => {
     if (!data) return;
+    const lowerWins = data.score_direction === 'min';
     const rows = data.teams
       .map((tm) => {
         const s = tm.scores[String(inst.id)];
-        return s && s.submission_count > 0
+        return s && s.submission_count > 0 && (!lowerWins || s.scored)
           ? { team: tm, best: s.best_score, subs: s.submission_count }
           : null;
       })
       .filter(Boolean)
-      .sort((a, b) => b.best - a.best);
+      .sort((a, b) => (lowerWins ? a.best - b.best : b.best - a.best));
     setDrilldown({ instance: inst, rows });
   };
 
@@ -229,7 +230,31 @@ function OutputScoreboard() {
     );
   }
 
+  // "min" contests: the score is a cost, lower wins. The backend already
+  // returns teams in ranking order (instances solved, then lowest total).
+  const minimize = data.score_direction === 'min';
+  // A cell counts as having a score once something was submitted - except
+  // in a "min" contest, where an unscored cell's 0.0 placeholder would
+  // otherwise read as the best possible result.
+  const cellHasScore = (s) => !!s && (minimize ? !!s.scored : s.submission_count > 0);
+  const backendRank = new Map(data.teams.map((tm, i) => [tm, i]));
+
+  // ``sortDir === 'desc'`` always means "best first", whatever the direction.
   const sortedTeams = [...data.teams].sort((a, b) => {
+    if (minimize) {
+      let diff;
+      if (sortBy === 'total') {
+        diff = backendRank.get(a) - backendRank.get(b);
+      } else {
+        const sa = a.scores[sortBy];
+        const sb = b.scores[sortBy];
+        const ha = cellHasScore(sa);
+        const hb = cellHasScore(sb);
+        if (ha !== hb) return ha ? -1 : 1; // no score: always at the bottom
+        diff = ha ? sa.best_score - sb.best_score : 0;
+      }
+      return sortDir === 'desc' ? diff : -diff;
+    }
     let va;
     let vb;
     if (sortBy === 'total') {
@@ -260,13 +285,29 @@ function OutputScoreboard() {
   // (without a static max_score we now compare against the current leader).
   const bestPerInstance = {};
   data.instances.forEach((inst) => {
-    let m = 0;
+    let m = minimize ? null : 0;
     data.teams.forEach((t) => {
-      const s = t.scores[String(inst.id)]?.best_score;
-      if (Number.isFinite(s) && s > m) m = s;
+      const cell = t.scores[String(inst.id)];
+      const s = cell?.best_score;
+      if (!Number.isFinite(s)) return;
+      if (minimize) {
+        if (cell.scored && (m === null || s < m)) m = s;
+      } else if (s > m) {
+        m = s;
+      }
     });
     bestPerInstance[String(inst.id)] = m;
   });
+
+  // How close a cell is to the leader on its instance, in [0, 1].
+  const ratioFor = (cell, instId) => {
+    const best = bestPerInstance[String(instId)];
+    if (minimize) {
+      if (!cell?.scored || best === null) return 0;
+      return cell.best_score <= best ? 1 : clampRatio(best, cell.best_score);
+    }
+    return clampRatio(cell.best_score, best || 1);
+  };
 
   return (
     <div className="animate-fade-in">
@@ -387,6 +428,14 @@ function OutputScoreboard() {
         );
       })()}
 
+      {minimize && sortedTeams.length > 0 && (
+        <p className="text-xs text-zinc-500 dark:text-zinc-400" title={t('scoreboard.lowerIsBetterHint')}>
+          <span className="font-semibold text-zinc-700 dark:text-zinc-200">{t('scoreboard.lowerIsBetter')}</span>
+          {' - '}
+          {t('scoreboard.lowerIsBetterHint')}
+        </p>
+      )}
+
       {sortedTeams.length === 0 ? (
         <div className="card p-12 text-center">
           <Trophy className="w-14 h-14 text-zinc-300 mx-auto mb-4 dark:text-zinc-600" />
@@ -427,22 +476,26 @@ function OutputScoreboard() {
                       </p>
                     </div>
                   </div>
-                  <span className="font-mono font-bold text-base text-zinc-900 tabular-nums dark:text-white">
+                  <span className="font-mono font-bold text-base text-zinc-900 tabular-nums dark:text-white text-right">
                     {formatScore(team.total_score)}
+                    {minimize && (
+                      <span className="block text-[10px] font-normal text-zinc-500 dark:text-zinc-400">
+                        {t('scoreboard.solvedOf', { solved: team.solved_count, total: data.instances.length })}
+                      </span>
+                    )}
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-1.5">
                   {data.instances.map((inst) => {
                     const s = team.scores[String(inst.id)];
-                    if (!s || s.submission_count === 0) {
+                    if (!cellHasScore(s)) {
                       return (
                         <div key={inst.id} className="text-[10px] text-zinc-400 px-2 py-1 rounded bg-zinc-50 dark:bg-zinc-800/30 dark:text-zinc-600 truncate">
                           {inst.name}: -
                         </div>
                       );
                     }
-                    const denom = bestPerInstance[String(inst.id)] || 1;
-                    const pct = clampRatio(s.best_score, denom);
+                    const pct = ratioFor(s, inst.id);
                     return (
                       <div
                         key={inst.id}
@@ -567,11 +620,9 @@ function OutputScoreboard() {
 
                       {data.instances.map((inst) => {
                         const score = team.scores[String(inst.id)];
-                        const pct = score
-                          ? clampRatio(score.best_score, bestPerInstance[String(inst.id)] || 1)
-                          : 0;
+                        const pct = score ? ratioFor(score, inst.id) : 0;
                         const hasPending = !!(score && score.pending_changes > 0);
-                        const hasScore = !!(score && score.submission_count > 0);
+                        const hasScore = cellHasScore(score);
                         // Submitted but not scored yet. Distinct from the
                         // freeze state above: that one hides a known result,
                         // this one is a result that does not exist yet.
@@ -673,12 +724,18 @@ function OutputScoreboard() {
                           >
                             {formatScore(team.total_score)}
                           </span>
-                          <div className="w-20 bg-zinc-200 rounded-full h-1.5 mt-1 overflow-hidden dark:bg-zinc-800">
-                            <div
-                              className="h-1.5 rounded-full bg-accent-500 transition-all duration-500"
-                              style={{ width: `${clampRatio(team.total_score, maxTotal) * 100}%` }}
-                            />
-                          </div>
+                          {minimize ? (
+                            <span className="text-[10px] text-zinc-500 mt-1 dark:text-zinc-400">
+                              {t('scoreboard.solvedOf', { solved: team.solved_count, total: data.instances.length })}
+                            </span>
+                          ) : (
+                            <div className="w-20 bg-zinc-200 rounded-full h-1.5 mt-1 overflow-hidden dark:bg-zinc-800">
+                              <div
+                                className="h-1.5 rounded-full bg-accent-500 transition-all duration-500"
+                                style={{ width: `${clampRatio(team.total_score, maxTotal) * 100}%` }}
+                              />
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>

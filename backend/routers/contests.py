@@ -381,6 +381,7 @@ def _serialize_contest(
         is_public=bool(contest.is_public),
         practice_mode=bool(contest.practice_mode),
         kind=contest.kind or "output",
+        score_direction=contest.score_direction or "max",
         dedup_block=bool(contest.dedup_block),
         min_seconds_between_submits=int(contest.min_seconds_between_submits or 0),
         max_submissions_per_instance=contest.max_submissions_per_instance,
@@ -427,6 +428,7 @@ def list_contests(
                 is_public=bool(c.is_public),
                 practice_mode=bool(c.practice_mode),
                 kind=c.kind or "output",
+                score_direction=c.score_direction or "max",
                 is_open_for_submissions=_is_contest_open(c, now, is_admin=is_admin),
                 created_at=c.created_at,
                 instance_count=count,
@@ -613,8 +615,17 @@ def update_contest(
             )
 
     old_mode = (contest.participation_mode or "team").lower()
+    old_direction = contest.score_direction or "max"
     for key, value in changed.items():
         setattr(contest, key, value)
+
+    # The cache holds each scope's best score under the old direction (max
+    # vs min of its submissions): recompute it, or the board keeps ranking
+    # on the wrong submissions until the next rescore.
+    if (contest.score_direction or "max") != old_direction:
+        db.flush()
+        from ..scoreboard_cache import rebuild_for_contest
+        rebuild_for_contest(db, contest.id)
 
     # If the participation_mode changed, clean up registrations + allowlist
     # entries that no longer fit the new mode - otherwise stale rows linger
@@ -2477,6 +2488,7 @@ def duplicate_contest(
         # duplicate came out as an empty output contest, and validator/
         # protections/modes were silently dropped.
         kind=src.kind or "output",
+        score_direction=src.score_direction or "max",
         output_validator_script=src.output_validator_script,
         participation_mode=src.participation_mode or "team",
         is_public=bool(src.is_public),

@@ -158,6 +158,10 @@ class Contest(Base):
     # it on a numeric score) or "icpc" (source code submitted, judged against
     # testcases with AC/WA/TLE/... verdicts).
     kind = Column(String(16), default="output", nullable=False)
+    # Output contests only: "max" (higher score is better - the default) or
+    # "min" (the script returns a cost, e.g. a circuit depth; lower wins).
+    # Decides the best submission per instance and the scoreboard order.
+    score_direction = Column(String(8), default="max", nullable=False)
     # Ownership for the organizer role: can_manage_contest grants
     # organizers management rights on contests they created. NULL
     # (legacy rows) means admin-only. NOTE: create_contest assigned
@@ -218,6 +222,10 @@ class Contest(Base):
         CheckConstraint(
             "kind IN ('output', 'icpc')",
             name="ck_contest_kind",
+        ),
+        CheckConstraint(
+            "score_direction IN ('max', 'min')",
+            name="ck_contest_score_direction",
         ),
     )
 
@@ -506,6 +514,10 @@ class ScoreboardEntry(Base):
     # prefers this over best_score when present.
     final_score = Column(Float, nullable=True)
     submission_count = Column(Integer, default=0, nullable=False)
+    # Submissions that actually got a score. Zero means best_score is only
+    # the 0.0 placeholder - harmless when higher wins, but in a "min" contest
+    # it would read as the best possible result.
+    scored_count = Column(Integer, default=0, nullable=False)
     updated_at = Column(DateTime, default=utcnow, nullable=False)
 
     __table_args__ = (

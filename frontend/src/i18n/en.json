@@ -869,7 +869,10 @@
     "loadFailedHeading": "Could not load scoreboard",
     "refreshed": "Scoreboard refreshed",
     "refreshFailed": "Could not load scoreboard",
-    "judgingTooltip": "{{n}} submission(s) waiting to be scored"
+    "judgingTooltip": "{{n}} submission(s) waiting to be scored",
+    "lowerIsBetter": "Lower is better",
+    "lowerIsBetterHint": "Score to minimise: ranked by number of instances solved, then lowest total.",
+    "solvedOf": "{{solved}}/{{total}} instances"
   },
   "admin": {
     "title": "Admin panel",
@@ -1209,7 +1212,12 @@
       "toastParticipantAdded": "User added",
       "toastParticipantAddFailed": "Could not add user",
       "toastParticipantRemoved": "User removed",
-      "toastParticipantRemoveFailed": "Could not remove user"
+      "toastParticipantRemoveFailed": "Could not remove user",
+      "scoreDirection": "Score direction",
+      "scoreDirectionMax": "Maximise (higher is better)",
+      "scoreDirectionMin": "Minimise (lower is better)",
+      "scoreDirectionMaxHint": "The best score on each instance is the highest; the scoreboard sorts totals in descending order.",
+      "scoreDirectionMinHint": "The script returns a cost (e.g. a depth). The best score on each instance is the lowest; the scoreboard ranks by number of instances solved, then by lowest total."
     },
     "testScoring": {
       "title": "Test the scoring script",

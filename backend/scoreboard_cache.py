@@ -72,7 +72,10 @@ def update_entry_for_submission(db: Session, submission: models.Submission) -> N
             _submission_scope(team_id, user_id),
         )
     )
-    best_score = max((s.score or 0.0) for s in scored_q.all()) if scored_q.count() else 0.0
+    scored_scores = [(s.score or 0.0) for s in scored_q.all()]
+    contest = db.query(models.Contest).filter(models.Contest.id == contest_id).first()
+    pick = min if contest is not None and contest.score_direction == "min" else max
+    best_score = pick(scored_scores) if scored_scores else 0.0
 
     final_row = (
         db.query(models.Submission)
@@ -125,6 +128,7 @@ def update_entry_for_submission(db: Session, submission: models.Submission) -> N
             best_score=best_score,
             final_score=final_score,
             submission_count=total,
+            scored_count=len(scored_scores),
             updated_at=now,
         )
         db.add(entry)
@@ -132,6 +136,7 @@ def update_entry_for_submission(db: Session, submission: models.Submission) -> N
         entry.best_score = best_score
         entry.final_score = final_score
         entry.submission_count = total
+        entry.scored_count = len(scored_scores)
         entry.updated_at = now
 
 

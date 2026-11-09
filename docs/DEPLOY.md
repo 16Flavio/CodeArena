@@ -284,6 +284,14 @@ Recent migrations (≥ April 2026):
 - `2026_04_25_a4` - `users.totp_*` columns (2FA)
 
 - `2026_08_19_a1` - points the `py3` language at PyPy (`{pypy} {src}`)
+- `2026_11_09_a1` - `contests.score_direction` (output contests whose score
+  is a cost to minimise) and `scoreboard_entries.scored_count`, backfilled
+
+`2026_11_09_a1` changes what the scoring workers write into the scoreboard
+cache: update the backend image on the judge VM in the same deployment as
+the host. An older worker still runs, but keeps the highest score per
+instance and leaves `scored_count` untouched, so a "min" contest would rank
+on stale cells until the next rescore.
 
 `2026_08_19_a1` needs the **icpc-sandbox image rebuilt in the same
 deployment**: PyPy ships in that image, and without it every Python
